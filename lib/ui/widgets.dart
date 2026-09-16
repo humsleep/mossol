@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -125,27 +127,55 @@ class BannerSlot extends StatefulWidget {
 }
 
 class _BannerSlotState extends State<BannerSlot> {
+  static const _maxAttempts = 5;
+
   BannerAd? _ad;
   bool _loaded = false;
+  int _attempts = 0;
+  Timer? _retry;
 
   @override
   void initState() {
     super.initState();
-    if (!AdManager.instance.supported) return;
-    final ad = AdManager.instance.createBanner();
+    _load();
+  }
+
+  /// SDK 초기화 전에 요청하면 조용히 실패한다. 동의 절차가 끝날 때까지 기다렸다 붙인다.
+  void _load() {
+    if (!mounted || !AdManager.instance.supported) return;
+    if (!AdManager.instance.sdkInitialized) return _scheduleRetry();
+
+    final template = AdManager.instance.createBanner();
     _ad = BannerAd(
-      adUnitId: ad.adUnitId,
-      size: ad.size,
-      request: ad.request,
+      adUnitId: template.adUnitId,
+      size: template.size,
+      request: template.request,
       listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _loaded = true),
-        onAdFailedToLoad: (a, _) => a.dispose(),
+        onAdLoaded: (_) {
+          if (mounted) setState(() => _loaded = true);
+        },
+        onAdFailedToLoad: (ad, err) {
+          ad.dispose();
+          _ad = null;
+          debugPrint('배너 로드 실패: ${err.message}');
+          _scheduleRetry();
+        },
       ),
     )..load();
   }
 
+  /// 무한 재요청은 무효 트래픽으로 잡힌다. 횟수를 제한하고 간격을 늘린다.
+  void _scheduleRetry() {
+    if (!mounted || _attempts >= _maxAttempts) return;
+    _attempts++;
+    _retry?.cancel();
+    final seconds = (1 << _attempts).clamp(2, 60);
+    _retry = Timer(Duration(seconds: seconds), _load);
+  }
+
   @override
   void dispose() {
+    _retry?.cancel();
     _ad?.dispose();
     super.dispose();
   }

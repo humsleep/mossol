@@ -198,6 +198,8 @@ class GameController extends ChangeNotifier {
     _queue
       ..clear()
       ..addAll(engine.planDay(s));
+    // 하트를 쓴 시점을 저장한다. 여기서 끊기면 하트만 사라지고 하루는 안 시작된 게 된다.
+    await save.save(s);
     _nextEvent();
     return true;
   }
@@ -223,6 +225,16 @@ class GameController extends ChangeNotifier {
   }
 
   bool get linesDone => current != null && revealed >= current!.lines.length;
+
+  /// 읽씹 대기를 끝까지 기다렸을 때의 대가. 자존감 1.
+  /// 화면에서 상태를 직접 건드리면 하루 합계·되돌리기·세이브에서 빠진다.
+  void applyWaitPenalty() {
+    final s = state;
+    if (s == null) return;
+    dayDelta.merge(applyEffects(s, const Effects(stats: {Stat.esteem: -1})));
+    save.save(s);
+    notifyListeners();
+  }
 
   /// 다음 말풍선 공개. 대기(읽씹) 줄은 화면에서 카운트다운 후 다시 호출한다.
   void revealNext() {
@@ -263,13 +275,20 @@ class GameController extends ChangeNotifier {
       _queue.removeWhere((e) => e.id == next.id);
       _queue.insert(0, next);
     }
+    // 선택은 되돌릴 수 없는 진행이다. 여기서 끊겨도 결과가 남아야 한다.
+    save.save(s);
     notifyListeners();
   }
 
   /// 선택 결과가 나쁠 때 되돌리기 제안 여부. 호감도가 떨어졌고 아직 안 썼을 때.
   bool get canOfferUndo {
+    final s = state;
+    if (s == null) return false;
     final o = lastOutcome;
     if (o == null || undoUsedThisEvent || _undoSnapshot == null) return false;
+    // 하드코어는 되돌리기를 포기하는 대신 보너스를 받는 선언이다.
+    // 이걸 막지 않으면 스탯만 공짜로 챙기고 히든 엔딩 조건까지 열린다.
+    if (s.flags.contains('hardcore')) return false;
     return o.delta.affection.values.any((v) => v < 0) || !o.success;
   }
 

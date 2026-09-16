@@ -74,14 +74,7 @@ class _EventScreenState extends State<EventScreen> {
     final next = ev.lines[c.revealed];
     if (next.isWait) {
       _waitLeft = next.wait;
-      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-        if (!mounted) return t.cancel();
-        setState(() => _waitLeft--);
-        if (_waitLeft <= 0) {
-          t.cancel();
-          _finishWait();
-        }
-      });
+      _runWaitCountdown();
       return;
     }
     final delay = switch (next.who) {
@@ -96,24 +89,41 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
+  /// 남은 시간부터 1초씩 센다. 광고가 실패해 돌아왔을 때도 이 지점부터 이어 센다.
+  void _runWaitCountdown() {
+    _timer?.cancel();
+    if (_waitLeft <= 0) return _finishWait();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      setState(() => _waitLeft--);
+      if (_waitLeft <= 0) {
+        t.cancel();
+        _finishWait();
+      }
+    });
+  }
+
   void _finishWait() {
     // 읽씹 대기는 자존감을 1 깎는다. 모쏠 체험의 핵심 감정.
-    final s = c.state!;
-    s.stats[Stat.esteem] = (s.stat(Stat.esteem) - 1).clamp(0, 100);
+    // 엔진을 거쳐야 정산 화면과 되돌리기, 세이브에 함께 잡힌다.
+    c.applyWaitPenalty();
     c.revealNext();
     _scheduleReveal();
   }
 
   Future<void> _skipWait() async {
+    // 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
+    // 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
+    _timer?.cancel();
     final ok = await AdManager.instance.showRewarded();
     if (!mounted) return;
     if (ok) {
-      _timer?.cancel();
       _waitLeft = 0;
       c.revealNext();
       _scheduleReveal();
     } else {
       _snack('광고를 불러오지 못했어요.');
+      _runWaitCountdown();
     }
   }
 
