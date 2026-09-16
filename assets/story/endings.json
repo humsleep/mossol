@@ -1,0 +1,704 @@
+[
+ {
+  "id": "legend",
+  "name": "전설의 고수",
+  "tier": "hidden",
+  "priority": 300,
+  "when": {
+   "flags": [
+    "hardcore"
+   ],
+   "trust": {
+    "seoyeon": [
+     70,
+     100
+    ],
+    "haneul": [
+     70,
+     100
+    ],
+    "jiwoo": [
+     70,
+     100
+    ],
+    "minjae": [
+     70,
+     100
+    ],
+    "yeeun": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "seoyeon": [
+     0,
+     79
+    ],
+    "haneul": [
+     0,
+     79
+    ],
+    "jiwoo": [
+     0,
+     79
+    ],
+    "minjae": [
+     0,
+     79
+    ],
+    "yeeun": [
+     0,
+     79
+    ]
+   }
+  },
+  "epilogue": "여섯 명 모두가 당신을 믿는다. 연인은 없다. 그게 고수다."
+ },
+ {
+  "id": "loop",
+  "name": "다시 첫날로",
+  "tier": "hidden",
+  "priority": 300,
+  "when": {
+   "run": [
+    3,
+    99
+   ],
+   "flags": [
+    "chose_loop"
+   ]
+  },
+  "epilogue": "눈을 뜨니 1일차. 태현이 말했다. \"일단 프사부터 바꿔.\""
+ },
+ {
+  "id": "pickup_fall",
+  "name": "픽업 아티스트 몰락",
+  "tier": "bad",
+  "priority": 250,
+  "immediate": true,
+  "when": {
+   "stats": {
+    "sincerity": [
+     0,
+     0
+    ]
+   }
+  },
+  "epilogue": "모든 방에서 차단당했다. 영상 알고리즘만 남았다."
+ },
+ {
+  "id": "burnout",
+  "name": "번아웃",
+  "tier": "bad",
+  "priority": 250,
+  "immediate": true,
+  "when": {
+   "flags": [
+    "burnout_x3"
+   ]
+  },
+  "epilogue": "100일은 못 채웠다. 다음 회차에 '휴식' 특성이 열린다."
+ },
+ {
+  "id": "seoyeon_happy",
+  "name": "서연 · 대등한 연인",
+  "tier": "happy",
+  "priority": 200,
+  "character": "seoyeon",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "seoyeon_banmal"
+   ]
+  },
+  "epilogue": "\"서연아.\" 이제 자연스럽다. 선배가 웃는다."
+ },
+ {
+  "id": "haneul_happy",
+  "name": "하늘 · 생활비 공동체",
+  "tier": "happy",
+  "priority": 200,
+  "character": "haneul",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "국밥은 반반, 마음은 전부. 하늘이 계산서를 먼저 집는다."
+ },
+ {
+  "id": "jiwoo_happy",
+  "name": "지우 · 첫인상 뒤집기",
+  "tier": "happy",
+  "priority": 200,
+  "character": "jiwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "\"첫 소개팅 때는 진짜 별로였어.\" 지우가 웃으며 말했다. \"그래서 두 번째가 있었지.\""
+ },
+ {
+  "id": "minjae_happy",
+  "name": "민재 · 오프라인 첫 만남",
+  "tier": "happy",
+  "priority": 200,
+  "character": "minjae",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "약속 장소. 프로필 사진과 달랐다. 목소리는 그대로였다."
+ },
+ {
+  "id": "yeeun_happy",
+  "name": "예은 · 동창회의 기적",
+  "tier": "happy",
+  "priority": 200,
+  "character": "yeeun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "급식실 우유 얘기를 결혼식 축사에서 들었다."
+ },
+ {
+  "id": "doyun_happy",
+  "name": "도윤 · PT 연장 계약",
+  "tier": "happy",
+  "priority": 200,
+  "character": "doyun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "charm": [
+     70,
+     100
+    ],
+    "stress": [
+     0,
+     39
+    ]
+   }
+  },
+  "epilogue": "12개월 연장. 할인은 없었다. 대신 다른 게 생겼다."
+ },
+ {
+  "id": "seoyeon_friend",
+  "name": "서연 · 선배는 선배로",
+  "tier": "good",
+  "priority": 150,
+  "character": "seoyeon",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "다음 회차, 선배는 태현 옆에서 조언을 한다."
+ },
+ {
+  "id": "haneul_friend",
+  "name": "하늘 · 마감 동료",
+  "tier": "good",
+  "priority": 150,
+  "character": "haneul",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "사장님이 둘에게 매장을 맡기겠다고 했다."
+ },
+ {
+  "id": "jiwoo_some",
+  "name": "지우 · 명함만 남았다",
+  "tier": "good",
+  "priority": 150,
+  "character": "jiwoo",
+  "when": {
+   "affection": {
+    "*": [
+     60,
+     79
+    ]
+   }
+  },
+  "epilogue": "명함 뒷면에 번호가 하나 더 적혀 있었다. 다음 회차에 이어서."
+ },
+ {
+  "id": "minjae_friend",
+  "name": "민재 · 온라인 베프",
+  "tier": "good",
+  "priority": 150,
+  "character": "minjae",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "만나지 않기로 했다. 대신 매일 밤 한 판."
+ },
+ {
+  "id": "yeeun_friend",
+  "name": "예은 · 그때 그 시절",
+  "tier": "good",
+  "priority": 150,
+  "character": "yeeun",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "동창회 총무가 됐다. 예은이 부총무다."
+ },
+ {
+  "id": "doyun_growth",
+  "name": "도윤 · 3대 500",
+  "tier": "good",
+  "priority": 150,
+  "character": "doyun",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "연애 대신 몸을 얻었다. 다음 회차 매력 +10."
+ },
+ {
+  "id": "seoyeon_bad",
+  "name": "서연 · 존댓말 엔딩",
+  "tier": "bad",
+  "priority": 120,
+  "character": "seoyeon",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "100일째. \"선배, 안녕히 가세요.\""
+ },
+ {
+  "id": "haneul_bad",
+  "name": "하늘 · 더치페이 결렬",
+  "tier": "bad",
+  "priority": 120,
+  "character": "haneul",
+  "when": {
+   "affection": {
+    "*": [
+     50,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "계좌번호만 남았다. 입금자명은 '국밥'."
+ },
+ {
+  "id": "jiwoo_bad",
+  "name": "지우 · 엄마 소개팅 재수",
+  "tier": "bad",
+  "priority": 120,
+  "character": "jiwoo",
+  "when": {
+   "flags": [
+    "jiwoo_intro"
+   ],
+   "affection": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "엄마가 네 번째 사진을 보냈다."
+ },
+ {
+  "id": "minjae_bad",
+  "name": "민재 · 프로필 사기 발각",
+  "tier": "bad",
+  "priority": 120,
+  "character": "minjae",
+  "when": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     34
+    ]
+   }
+  },
+  "epilogue": "\"사진이랑 너무 다른데.\" 통화가 끊겼다."
+ },
+ {
+  "id": "yeeun_bad",
+  "name": "예은 · 흑역사 재방송",
+  "tier": "bad",
+  "priority": 120,
+  "character": "yeeun",
+  "when": {
+   "flags": [
+    "yeeun_avoid_1"
+   ],
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   }
+  },
+  "epilogue": "단톡방에 급식실 사진이 올라왔다. 예은이 올렸다."
+ },
+ {
+  "id": "doyun_bad",
+  "name": "도윤 · 무리한 운동",
+  "tier": "bad",
+  "priority": 120,
+  "character": "doyun",
+  "when": {
+   "flags": [
+    "fake_record"
+   ]
+  },
+  "epilogue": "3대 500이라고 적었다. 허리가 먼저 알았다."
+ },
+ {
+  "id": "fishing",
+  "name": "어장 관리자",
+  "tier": "bad",
+  "priority": 125,
+  "when": {
+   "anyAffection": {
+    "min": 60,
+    "count": 2
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     49
+    ]
+   }
+  },
+  "epilogue": "두 사람이 같은 날 같은 카페에서 만났다. 당신 얘기를 하러."
+ },
+ {
+  "id": "solo_strong",
+  "name": "혼자서도 잘 살아",
+  "tier": "solo",
+  "priority": 110,
+  "when": {
+   "stats": {
+    "charm": [
+     75,
+     100
+    ],
+    "talk": [
+     75,
+     100
+    ],
+    "esteem": [
+     75,
+     100
+    ],
+    "sense": [
+     75,
+     100
+    ]
+   }
+  },
+  "epilogue": "연인은 없다. 대신 거울 속 사람이 마음에 든다."
+ },
+ {
+  "id": "coach",
+  "name": "연애 코치 크리에이터",
+  "tier": "solo",
+  "priority": 112,
+  "when": {
+   "stats": {
+    "talk": [
+     85,
+     100
+    ],
+    "reputation": [
+     75,
+     100
+    ]
+   }
+  },
+  "epilogue": "구독자 10만. 첫 영상 제목은 '모쏠이었던 내가'."
+ },
+ {
+  "id": "ceo",
+  "name": "사업가",
+  "tier": "solo",
+  "priority": 115,
+  "when": {
+   "stats": {
+    "money": [
+     500,
+     9999
+    ]
+   }
+  },
+  "epilogue": "돈이라도 벌자고 했다. 진짜 벌었다."
+ },
+ {
+  "id": "friend_wedding",
+  "name": "친구가 먼저 결혼",
+  "tier": "good",
+  "priority": 100,
+  "when": {
+   "flags": [
+    "learner"
+   ],
+   "stats": {
+    "reputation": [
+     60,
+     100
+    ]
+   }
+  },
+  "epilogue": "준호 결혼식. 축사는 당신이 했다. 3분 동안 다섯 번 웃겼다."
+ },
+ {
+  "id": "wedding_guest",
+  "name": "결혼식 하객 전문",
+  "tier": "bad",
+  "priority": 113,
+  "when": {
+   "stats": {
+    "reputation": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "seoyeon": [
+     5,
+     39
+    ],
+    "haneul": [
+     5,
+     39
+    ],
+    "jiwoo": [
+     5,
+     39
+    ],
+    "minjae": [
+     5,
+     39
+    ],
+    "yeeun": [
+     5,
+     39
+    ]
+   }
+  },
+  "epilogue": "올해 축의금 총액 180만 원. 통장이 울었다."
+ },
+ {
+  "id": "album_master",
+  "name": "흑역사 박물관",
+  "tier": "bad",
+  "priority": 121,
+  "when": {
+   "flags": [
+    "album_20"
+   ]
+  },
+  "epilogue": "실패 20개. 전시회를 열어도 될 양이다."
+ },
+ {
+  "id": "forever_solo",
+  "name": "영구 모쏠",
+  "tier": "bad",
+  "priority": 95,
+  "default": true,
+  "when": {
+   "affection": {
+    "seoyeon": [
+     0,
+     29
+    ],
+    "haneul": [
+     0,
+     29
+    ],
+    "jiwoo": [
+     0,
+     29
+    ],
+    "minjae": [
+     0,
+     29
+    ],
+    "yeeun": [
+     0,
+     29
+    ],
+    "doyun": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "100일이 지났다. 프사는 그대로다. 태현이 말했다. \"다시 해.\""
+ }
+]

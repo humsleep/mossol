@@ -1,0 +1,156 @@
+[
+ {
+  "id": "seoyeon",
+  "name": "서연",
+  "role": "동아리 선배",
+  "likes": [
+   "talk",
+   "esteem"
+  ],
+  "mines": [
+   "비굴한 선택지",
+   "늦은 답장"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.55,
+   0.8
+  ],
+  "humor": "dry",
+  "tags": [
+   "조용한",
+   "전시",
+   "야경",
+   "술"
+  ],
+  "budget": 40
+ },
+ {
+  "id": "haneul",
+  "name": "하늘",
+  "role": "알바 동료",
+  "likes": [
+   "sense",
+   "money"
+  ],
+  "mines": [
+   "허세",
+   "더치페이 실랑이"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.05,
+   0.28
+  ],
+  "humor": "loud",
+  "tags": [
+   "가성비",
+   "길거리",
+   "야시장",
+   "카페"
+  ],
+  "budget": 25
+ },
+ {
+  "id": "jiwoo",
+  "name": "지우",
+  "role": "소개팅 상대",
+  "likes": [
+   "charm",
+   "talk"
+  ],
+  "mines": [
+   "준비 안 된 데이트"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.3,
+   0.52
+  ],
+  "humor": "witty",
+  "tags": [
+   "전시",
+   "조용한",
+   "브런치",
+   "산책"
+  ],
+  "budget": 80
+ },
+ {
+  "id": "minjae",
+  "name": "민재",
+  "role": "온라인 친구",
+  "likes": [
+   "sincerity",
+   "sense"
+  ],
+  "mines": [
+   "사진 요구",
+   "과장된 프로필"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.0,
+   0.2
+  ],
+  "humor": "meme",
+  "tags": [
+   "실내",
+   "게임",
+   "야식",
+   "조용한"
+  ],
+  "budget": 30
+ },
+ {
+  "id": "yeeun",
+  "name": "예은",
+  "role": "초등 동창",
+  "likes": [
+   "esteem",
+   "sincerity"
+  ],
+  "mines": [
+   "흑역사 회피"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.38,
+   0.62
+  ],
+  "humor": "warm",
+  "tags": [
+   "추억",
+   "산책",
+   "분식",
+   "사진"
+  ],
+  "budget": 35
+ },
+ {
+  "id": "doyun",
+  "name": "도윤",
+  "role": "헬스 트레이너",
+  "likes": [
+   "charm",
+   "stress"
+  ],
+  "mines": [
+   "무리한 운동",
+   "거짓 기록"
+  ],
+  "hidden": true,
+  "replyZone": [
+   0.2,
+   0.45
+  ],
+  "humor": "warm",
+  "tags": [
+   "운동",
+   "산책",
+   "건강식",
+   "야경"
+  ],
+  "budget": 45
+ }
+]

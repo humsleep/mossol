@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 브랜드 색 #C2295A. 적응형 아이콘 배경과 스플래시에 쓴다. -->
+    <color name="ic_launcher_background">#C2295A</color>
+    <color name="brand">#C2295A</color>
+</resources>

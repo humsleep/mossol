@@ -1,0 +1,2256 @@
+[
+ {
+  "id": "c_burnout",
+  "layer": "crisis",
+  "trigger": {
+   "stats": {
+    "stress": [
+     90,
+     100
+    ]
+   }
+  },
+  "weight": 12,
+  "title": "번아웃",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "알람이 세 번 울렸다. 몸이 안 움직인다."
+   },
+   {
+    "who": "them",
+    "text": "야 너 요즘 왜 그래. 좀 쉬어",
+    "name": "태현"
+   }
+  ],
+  "choices": [
+   {
+    "text": "3일 쉰다",
+    "effects": {
+     "stats": {
+      "stress": -40,
+      "esteem": -2
+     },
+     "setFlags": [
+      "burnout"
+     ]
+    }
+   },
+   {
+    "text": "버틴다",
+    "effects": {
+     "stats": {
+      "stress": -10,
+      "sincerity": -1
+     },
+     "album": "출근길 지하철에서 졸다 종점"
+    }
+   }
+  ],
+  "once": false
+ },
+ {
+  "id": "c_drunk_confession",
+  "layer": "crisis",
+  "trigger": {
+   "stats": {
+    "stress": [
+     70,
+     89
+    ]
+   },
+   "anyAffection": {
+    "min": 40,
+    "count": 1
+   }
+  },
+  "weight": 10,
+  "title": "취중 고백 유혹",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "뒤풀이 3차. 옆자리다. 3차. 다들 취했다."
+   },
+   {
+    "who": "them",
+    "text": "너 요즘 힘들어 보여"
+   }
+  ],
+  "choices": [
+   {
+    "text": "저 사실…",
+    "effects": {
+     "affection": {
+      "seoyeon": 10,
+      "haneul": 10,
+      "jiwoo": 10,
+      "minjae": 10,
+      "yeeun": 10
+     },
+     "setFlags": [
+      "drunk_confess_ok"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "esteem": -5
+     },
+     "affection": {
+      "seoyeon": -8,
+      "haneul": -8,
+      "jiwoo": -8,
+      "minjae": -8,
+      "yeeun": -8
+     },
+     "album": "취중 고백 실패"
+    },
+    "minigame": "drink_limit"
+   },
+   {
+    "text": "집에 갈게요",
+    "effects": {
+     "stats": {
+      "stress": -10
+     }
+    }
+   },
+   {
+    "text": "태현에게 전화",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "trust": {
+      "seoyeon": 1,
+      "haneul": 1,
+      "jiwoo": 1,
+      "minjae": 1,
+      "yeeun": 1
+     }
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "c_broke",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    10,
+    100
+   ],
+   "stats": {
+    "money": [
+     0,
+     5
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "잔고 0",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "잔고 3,200원. 다음 월급까지 9일."
+   },
+   {
+    "who": "narr",
+    "text": "오늘 약속이 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "약속을 미룬다",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "seoyeon": -3,
+      "haneul": -3,
+      "jiwoo": -3,
+      "minjae": -3,
+      "yeeun": -3
+     }
+    }
+   },
+   {
+    "text": "솔직히 말하고 산책만 한다",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "seoyeon": 2,
+      "haneul": 2,
+      "jiwoo": 2,
+      "minjae": 2,
+      "yeeun": 2
+     },
+     "trust": {
+      "seoyeon": 5,
+      "haneul": 5,
+      "jiwoo": 5,
+      "minjae": 5,
+      "yeeun": 5
+     }
+    }
+   },
+   {
+    "text": "카드 한도로 버틴다",
+    "effects": {
+     "stats": {
+      "money": 120,
+      "stress": 22,
+      "sincerity": -2
+     },
+     "album": "다음 달 카드값 생각 안 하기"
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "c_rejected_hard",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    40,
+    100
+   ],
+   "stats": {
+    "sincerity": [
+     0,
+     39
+    ]
+   },
+   "anyAffection": {
+    "min": 55,
+    "count": 1
+   }
+  },
+  "weight": 10,
+  "title": "확실한 거절",
+  "lines": [
+   {
+    "who": "them",
+    "text": "우리 그만 보는 게 좋겠어"
+   },
+   {
+    "who": "sys",
+    "wait": 30
+   },
+   {
+    "who": "them",
+    "text": "이유는 너도 알 것 같은데"
+   }
+  ],
+  "choices": [
+   {
+    "text": "이유를 인정한다",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "sincerity": 5
+     },
+     "trust": {
+      "seoyeon": 2,
+      "haneul": 2,
+      "jiwoo": 2,
+      "minjae": 2,
+      "yeeun": 2
+     }
+    }
+   },
+   {
+    "text": "한 번만 더 기회를",
+    "effects": {
+     "stats": {
+      "esteem": -4
+     },
+     "affection": {
+      "seoyeon": -6,
+      "haneul": -6,
+      "jiwoo": -6,
+      "minjae": -6,
+      "yeeun": -6
+     },
+     "album": "매달리다 차단"
+    }
+   },
+   {
+    "text": "알겠어. 고마웠어",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "sincerity": 3,
+      "reputation": 2
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_low_esteem",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    15,
+    100
+   ],
+   "stats": {
+    "esteem": [
+     0,
+     8
+    ]
+   }
+  },
+  "weight": 12,
+  "title": "바닥",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "거울을 안 본 지 나흘째다."
+   },
+   {
+    "who": "narr",
+    "text": "누가 말을 걸까 봐 이어폰을 끼고 다닌다."
+   },
+   {
+    "who": "them",
+    "text": "야 살아있냐",
+    "name": "준호"
+   }
+  ],
+  "choices": [
+   {
+    "text": "살아있다고 답한다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "stress": -10
+     }
+    }
+   },
+   {
+    "text": "아무 답도 안 한다",
+    "effects": {
+     "stats": {
+      "esteem": -2,
+      "stress": 8
+     },
+     "album": "사흘 연속 카톡 무응답"
+    }
+   },
+   {
+    "text": "만나자고 한다",
+    "effects": {
+     "stats": {
+      "esteem": 6,
+      "stress": -15,
+      "reputation": 2
+     }
+    }
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "c_pickup_exposed",
+  "layer": "crisis",
+  "trigger": {
+   "flags": [
+    "pickup_2"
+   ]
+  },
+  "weight": 15,
+  "title": "픽업의 결말",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "세 사람이 같은 말을 했다."
+   },
+   {
+    "who": "them",
+    "text": "너 요즘 좀 이상해"
+   },
+   {
+    "who": "narr",
+    "text": "영상에서 배운 문장을 세 번 썼다. 세 번 다 들켰다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "전부 사과한다",
+    "effects": {
+     "stats": {
+      "sincerity": 6
+     },
+     "trust": {
+      "seoyeon": 4,
+      "haneul": 4,
+      "jiwoo": 4,
+      "minjae": 4,
+      "yeeun": 4
+     },
+     "setFlags": [
+      "pickup_confessed"
+     ],
+     "clearFlags": [
+      "pickup_2"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "sense": -1
+     }
+    },
+    "minigame": "word_order"
+   },
+   {
+    "text": "더 잘하면 된다",
+    "effects": {
+     "stats": {
+      "sincerity": -8
+     },
+     "trust": {
+      "seoyeon": -8,
+      "haneul": -8,
+      "jiwoo": -8,
+      "minjae": -8,
+      "yeeun": -8
+     },
+     "album": "들키고도 계속하기"
+    }
+   },
+   {
+    "text": "영상을 전부 지운다",
+    "effects": {
+     "stats": {
+      "sincerity": 5,
+      "esteem": 3
+     },
+     "clearFlags": [
+      "pickup_1",
+      "pickup_2"
+     ]
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_fishing_caught",
+  "layer": "crisis",
+  "trigger": {
+   "flags": [
+    "fishing_mind"
+   ],
+   "anyAffection": {
+    "min": 50,
+    "count": 2
+   }
+  },
+  "weight": 15,
+  "title": "어장 발각",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "두 사람이 같은 카페에 앉아 있다."
+   },
+   {
+    "who": "narr",
+    "text": "내 얘기를 하고 있다. 폰 화면 두 개를 나란히 놓고."
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   }
+  ],
+  "choices": [
+   {
+    "text": "지금 가서 사과한다",
+    "effects": {
+     "stats": {
+      "sincerity": 6
+     },
+     "affection": {
+      "seoyeon": -5,
+      "haneul": -5,
+      "jiwoo": -5,
+      "minjae": -5,
+      "yeeun": -5
+     },
+     "trust": {
+      "seoyeon": 3,
+      "haneul": 3,
+      "jiwoo": 3,
+      "minjae": 3,
+      "yeeun": 3
+     },
+     "clearFlags": [
+      "fishing_mind"
+     ]
+    }
+   },
+   {
+    "text": "도망친다",
+    "effects": {
+     "stats": {
+      "sincerity": -5,
+      "stress": 25
+     },
+     "affection": {
+      "seoyeon": -10,
+      "haneul": -10,
+      "jiwoo": -10,
+      "minjae": -10,
+      "yeeun": -10
+     },
+     "album": "카페 앞에서 도망"
+    }
+   },
+   {
+    "text": "한 사람을 고르고 정리한다",
+    "effects": {
+     "stats": {
+      "sincerity": 4,
+      "esteem": 2
+     },
+     "affection": {
+      "seoyeon": -6,
+      "haneul": -6,
+      "jiwoo": -6,
+      "minjae": -6,
+      "yeeun": -6
+     },
+     "setFlags": [
+      "chose_one"
+     ],
+     "clearFlags": [
+      "fishing_mind"
+     ]
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_family_pressure",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    80,
+    100
+   ],
+   "flags": [
+    "family_lie"
+   ]
+  },
+  "weight": 12,
+  "title": "가족 위기",
+  "lines": [
+   {
+    "who": "them",
+    "text": "추석에 데려온다며",
+    "name": "엄마"
+   },
+   {
+    "who": "them",
+    "text": "아주머니한테도 말해놨는데",
+    "name": "엄마"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   }
+  ],
+  "choices": [
+   {
+    "text": "거짓말이었다고 말한다",
+    "effects": {
+     "stats": {
+      "sincerity": 5,
+      "esteem": 3,
+      "stress": 12
+     },
+     "clearFlags": [
+      "family_lie"
+     ]
+    }
+   },
+   {
+    "text": "계속 미룬다",
+    "effects": {
+     "stats": {
+      "sincerity": -4,
+      "stress": 20
+     },
+     "album": "추석까지 미룬 거짓말"
+    }
+   },
+   {
+    "text": "진짜로 부탁해본다",
+    "effects": {
+     "stats": {
+      "esteem": -2
+     },
+     "affection": {
+      "seoyeon": -4,
+      "haneul": -4,
+      "jiwoo": -4,
+      "minjae": -4,
+      "yeeun": -4
+     }
+    },
+    "chance": 30,
+    "fail": {
+     "stats": {
+      "stress": 18
+     },
+     "affection": {
+      "seoyeon": -6,
+      "haneul": -6,
+      "jiwoo": -6,
+      "minjae": -6,
+      "yeeun": -6
+     },
+     "album": "가짜 애인 부탁했다 거절"
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_rumor",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    35,
+    100
+   ],
+   "stats": {
+    "sincerity": [
+     0,
+     29
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "소문",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리방에 들어가자 대화가 멈췄다."
+   },
+   {
+    "who": "narr",
+    "text": "준호가 나중에 말해줬다. 내 얘기였다고."
+   }
+  ],
+  "choices": [
+   {
+    "text": "직접 해명한다",
+    "effects": {
+     "stats": {
+      "reputation": 3,
+      "esteem": 3,
+      "sincerity": 3
+     }
+    }
+   },
+   {
+    "text": "가만히 있는다",
+    "effects": {
+     "stats": {
+      "reputation": -4,
+      "stress": 15
+     }
+    },
+    "fail": {
+     "stats": {
+      "sense": -1
+     }
+    }
+   },
+   {
+    "text": "소문의 출처를 찾는다",
+    "effects": {
+     "stats": {
+      "reputation": -2,
+      "stress": 12
+     },
+     "album": "소문 출처 추적하다 더 커짐"
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_overwork",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    25,
+    100
+   ],
+   "stats": {
+    "stress": [
+     80,
+     100
+    ],
+    "money": [
+     300,
+     9999
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "과로",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "알바 두 개, 회사 하나. 통장은 늘었다."
+   },
+   {
+    "who": "narr",
+    "text": "지난주에 만난 사람이 기억나지 않는다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "하나를 그만둔다",
+    "effects": {
+     "stats": {
+      "stress": -25,
+      "money": -50,
+      "esteem": 3
+     }
+    }
+   },
+   {
+    "text": "계속한다",
+    "effects": {
+     "stats": {
+      "money": 100,
+      "stress": 10
+     },
+     "affection": {
+      "seoyeon": -3,
+      "haneul": -3,
+      "jiwoo": -3,
+      "minjae": -3,
+      "yeeun": -3
+     }
+    }
+   },
+   {
+    "text": "그 사람에게 연락한다",
+    "effects": {
+     "stats": {
+      "stress": -12,
+      "sincerity": 3
+     },
+     "affection": {
+      "seoyeon": 4,
+      "haneul": 4,
+      "jiwoo": 4,
+      "minjae": 4,
+      "yeeun": 4
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_ghosted",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    30,
+    100
+   ],
+   "stats": {
+    "sense": [
+     0,
+     29
+    ]
+   },
+   "anyAffection": {
+    "min": 45,
+    "count": 1
+   }
+  },
+  "weight": 10,
+  "title": "잠수",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "닷새째 답이 없다."
+   },
+   {
+    "who": "narr",
+    "text": "마지막 메시지는 내가 보낸 것이다. 읽음 표시도 없다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "기다린다",
+    "effects": {
+     "stats": {
+      "esteem": -2,
+      "sense": 3
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "minigame": "reply_timing"
+   },
+   {
+    "text": "한 번만 더 보낸다",
+    "effects": {
+     "stats": {
+      "esteem": -3
+     },
+     "affection": {
+      "seoyeon": -3,
+      "haneul": -3,
+      "jiwoo": -3,
+      "minjae": -3,
+      "yeeun": -3
+     },
+     "album": "닷새째 연달아 보낸 카톡"
+    }
+   },
+   {
+    "text": "정리하고 넘어간다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "sincerity": 3
+     },
+     "affection": {
+      "seoyeon": -8,
+      "haneul": -8,
+      "jiwoo": -8,
+      "minjae": -8,
+      "yeeun": -8
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_sick",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    20,
+    100
+   ],
+   "stats": {
+    "stress": [
+     75,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "몸살",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "39도. 혼자 사는 집에서 열이 나면 할 수 있는 게 없다."
+   },
+   {
+    "who": "narr",
+    "text": "약이 없다. 편의점까지 200미터."
+   }
+  ],
+  "choices": [
+   {
+    "text": "혼자 참는다",
+    "effects": {
+     "stats": {
+      "stress": -8,
+      "esteem": -2
+     },
+     "album": "39도에 혼자 라면 끓이기"
+    }
+   },
+   {
+    "text": "누군가에게 연락한다",
+    "effects": {
+     "stats": {
+      "stress": -20,
+      "esteem": 2
+     },
+     "affection": {
+      "seoyeon": 5,
+      "haneul": 5,
+      "jiwoo": 5,
+      "minjae": 5,
+      "yeeun": 5
+     },
+     "trust": {
+      "seoyeon": 4,
+      "haneul": 4,
+      "jiwoo": 4,
+      "minjae": 4,
+      "yeeun": 4
+     }
+    }
+   },
+   {
+    "text": "엄마에게 전화한다",
+    "effects": {
+     "stats": {
+      "stress": -25,
+      "esteem": 3,
+      "sincerity": 2
+     }
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "c_money_fight",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    40,
+    100
+   ],
+   "stats": {
+    "money": [
+     0,
+     30
+    ]
+   },
+   "anyAffection": {
+    "min": 50,
+    "count": 1
+   }
+  },
+  "weight": 10,
+  "title": "돈 문제",
+  "lines": [
+   {
+    "who": "them",
+    "text": "너 요즘 왜 자꾸 약속 미뤄"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "돈 때문이야?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "맞다고 인정한다",
+    "effects": {
+     "stats": {
+      "sincerity": 5,
+      "esteem": 2
+     },
+     "affection": {
+      "seoyeon": 3,
+      "haneul": 3,
+      "jiwoo": 3,
+      "minjae": 3,
+      "yeeun": 3
+     },
+     "trust": {
+      "seoyeon": 6,
+      "haneul": 6,
+      "jiwoo": 6,
+      "minjae": 6,
+      "yeeun": 6
+     }
+    }
+   },
+   {
+    "text": "아니라고 한다",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "trust": {
+      "seoyeon": -5,
+      "haneul": -5,
+      "jiwoo": -5,
+      "minjae": -5,
+      "yeeun": -5
+     }
+    }
+   },
+   {
+    "text": "당분간 못 만난다고 한다",
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "esteem": -2
+     },
+     "affection": {
+      "seoyeon": -5,
+      "haneul": -5,
+      "jiwoo": -5,
+      "minjae": -5,
+      "yeeun": -5
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_comparison",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    62,
+    100
+   ],
+   "flags": [
+    "jealous"
+   ]
+  },
+  "weight": 12,
+  "title": "비교",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호의 커플 사진이 또 올라왔다. 이번 주 세 번째."
+   },
+   {
+    "who": "narr",
+    "text": "좋아요를 누르지 않은 지 2주가 됐다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "축하한다고 연락한다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "reputation": 3
+     },
+     "clearFlags": [
+      "jealous"
+     ]
+    }
+   },
+   {
+    "text": "계속 안 본다",
+    "effects": {
+     "stats": {
+      "stress": 15,
+      "reputation": -3
+     },
+     "album": "친구 커플 사진 2주째 무시"
+    }
+   },
+   {
+    "text": "내 얘기를 한다",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "sincerity": 4,
+      "stress": -10
+     },
+     "clearFlags": [
+      "jealous"
+     ]
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_deadline",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    90,
+    100
+   ],
+   "stats": {
+    "esteem": [
+     0,
+     44
+    ]
+   },
+   "anyAffection": {
+    "min": 35,
+    "count": 1
+   }
+  },
+  "weight": 10,
+  "title": "남은 날",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "10일 남았다."
+   },
+   {
+    "who": "narr",
+    "text": "100일 안에 뭔가 되기로 한 건 나 혼자 정한 규칙이다."
+   },
+   {
+    "who": "narr",
+    "text": "그 규칙에 쫓기고 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "규칙을 버린다",
+    "effects": {
+     "stats": {
+      "esteem": 6,
+      "stress": -20,
+      "sincerity": 3
+     }
+    }
+   },
+   {
+    "text": "남은 10일에 몰아붙인다",
+    "effects": {
+     "stats": {
+      "stress": 20,
+      "sincerity": -2
+     },
+     "affection": {
+      "seoyeon": 3,
+      "haneul": 3,
+      "jiwoo": 3,
+      "minjae": 3,
+      "yeeun": 3
+     }
+    }
+   },
+   {
+    "text": "태현에게 털어놓는다",
+    "effects": {
+     "stats": {
+      "stress": -15,
+      "esteem": 3,
+      "sense": 2
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_all_gone",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    50,
+    100
+   ],
+   "affection": {
+    "seoyeon": [
+     0,
+     5
+    ],
+    "haneul": [
+     0,
+     5
+    ],
+    "jiwoo": [
+     0,
+     5
+    ],
+    "minjae": [
+     0,
+     5
+    ],
+    "yeeun": [
+     0,
+     5
+    ]
+   }
+  },
+  "weight": 12,
+  "title": "전부 0",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "연락처를 훑는다. 최근 대화가 전부 2주 전이다."
+   },
+   {
+    "who": "narr",
+    "text": "50일 동안 남은 게 없다."
+   },
+   {
+    "who": "them",
+    "text": "야 우리 협약 아직 유효하냐",
+    "name": "준호"
+   }
+  ],
+  "choices": [
+   {
+    "text": "유효하다고 한다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "reputation": 3,
+      "stress": -10
+     }
+    }
+   },
+   {
+    "text": "포기한다고 한다",
+    "effects": {
+     "stats": {
+      "esteem": -5
+     },
+     "album": "50일 만에 프로젝트 포기 선언"
+    }
+   },
+   {
+    "text": "처음부터 다시 하겠다고 한다",
+    "effects": {
+     "stats": {
+      "esteem": 6,
+      "charm": 2,
+      "talk": 2
+     }
+    },
+    "fail": {
+     "stats": {
+      "sense": -1
+     }
+    },
+    "minigame": "reply_timing"
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "h_doyun_intro",
+  "layer": "hidden",
+  "trigger": {
+   "stats": {
+    "charm": [
+     60,
+     100
+    ]
+   },
+   "affection": {
+    "doyun": [
+     0,
+     10
+    ]
+   },
+   "run": [
+    2,
+    99
+   ]
+  },
+  "weight": 4,
+  "title": "트레이너의 제안",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "헬스장. 매번 눈만 마주치던 트레이너가 다가온다."
+   },
+   {
+    "who": "them",
+    "text": "자세 좋아지셨네요. PT 체험 한번 하실래요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네, 해볼게요",
+    "effects": {
+     "stats": {
+      "money": -20
+     },
+     "affection": {
+      "doyun": 5
+     }
+    }
+   },
+   {
+    "text": "돈이 없어서요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "doyun": 1
+     }
+    }
+   }
+  ],
+  "character": "doyun"
+ },
+ {
+  "id": "h_prev_run",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    30,
+    100
+   ],
+   "run": [
+    2,
+    99
+   ],
+   "anyAffection": {
+    "min": 30,
+    "count": 1
+   }
+  },
+  "weight": 3,
+  "title": "전 회차의 그 사람",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "낯익은 얼굴이 지나간다. 처음 보는 사람인데 낯이 익다."
+   },
+   {
+    "who": "narr",
+    "text": "어디서 봤더라."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   }
+  ],
+  "choices": [
+   {
+    "text": "모른 척 지나간다",
+    "effects": {
+     "stats": {
+      "sense": 3
+     }
+    }
+   },
+   {
+    "text": "말을 건다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 3
+     },
+     "affection": {
+      "seoyeon": 2,
+      "haneul": 2,
+      "jiwoo": 2,
+      "minjae": 2,
+      "yeeun": 2
+     }
+    }
+   },
+   {
+    "text": "\"우리 만난 적 있죠?\"",
+    "require": {
+     "stats": {
+      "sense": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3,
+      "sense": 4
+     },
+     "affection": {
+      "seoyeon": 4,
+      "haneul": 4,
+      "jiwoo": 4,
+      "minjae": 4,
+      "yeeun": 4
+     }
+    }
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "h_taehyun_truth",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    40,
+    100
+   ],
+   "flags": [
+    "taehyun_hint"
+   ],
+   "run": [
+    2,
+    99
+   ]
+  },
+  "weight": 5,
+  "title": "태현의 노트",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "태현이 두고 간 노트. 표지에 '연애 공부'라고 적혀 있다."
+   },
+   {
+    "who": "narr",
+    "text": "첫 장: \"오늘도 실패. 말을 못 걸었다.\""
+   },
+   {
+    "who": "narr",
+    "text": "날짜는 3년 전이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "덮고 돌려준다",
+    "effects": {
+     "stats": {
+      "sincerity": 4,
+      "reputation": 3
+     },
+     "setFlags": [
+      "taehyun_truth"
+     ]
+    }
+   },
+   {
+    "text": "끝까지 읽는다",
+    "effects": {
+     "stats": {
+      "sense": 4,
+      "sincerity": -2
+     },
+     "setFlags": [
+      "taehyun_truth"
+     ]
+    }
+   },
+   {
+    "text": "태현에게 물어본다",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "reputation": 4,
+      "talk": 2
+     },
+     "setFlags": [
+      "taehyun_truth"
+     ]
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "h_album_ten",
+  "layer": "hidden",
+  "trigger": {
+   "stats": {
+    "stress": [
+     0,
+     100
+    ]
+   },
+   "flags": [
+    "album_10"
+   ]
+  },
+  "weight": 6,
+  "title": "흑역사 열 개",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "흑역사가 열 개 모였다."
+   },
+   {
+    "who": "narr",
+    "text": "다시 읽어보니 절반은 웃기다."
+   },
+   {
+    "who": "narr",
+    "text": "나머지 절반도 언젠가는 웃길 것이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "전부 다시 읽는다",
+    "effects": {
+     "stats": {
+      "esteem": 6,
+      "stress": -15
+     }
+    }
+   },
+   {
+    "text": "스무 개를 채워본다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "setFlags": [
+      "album_hunter"
+     ]
+    }
+   },
+   {
+    "text": "앨범을 닫는다",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "stress": -8
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "h_second_chance",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    1,
+    10
+   ],
+   "run": [
+    2,
+    99
+   ]
+  },
+  "weight": 6,
+  "title": "두 번째 회차의 편지",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "책상 위에 편지가 있다. 내 글씨다."
+   },
+   {
+    "who": "narr",
+    "text": "\"이번엔 다르게 해봐.\""
+   },
+   {
+    "who": "narr",
+    "text": "언제 쓴 기억이 없다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "읽고 버린다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     }
+    }
+   },
+   {
+    "text": "지갑에 넣는다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "sincerity": 3
+     }
+    }
+   },
+   {
+    "text": "답장을 쓴다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "talk": 3,
+      "sincerity": 3
+     }
+    },
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "esteem": -1
+     }
+    },
+    "minigame": "word_order"
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "편지 뒷면에 한 줄이 더 있었다. \"이번에도 안 되면 세 번째가 있어.\""
+ },
+ {
+  "id": "h_ex_returns",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    45,
+    100
+   ],
+   "run": [
+    2,
+    99
+   ],
+   "anyAffection": {
+    "min": 40,
+    "count": 1
+   }
+  },
+  "weight": 5,
+  "title": "전 썸 상대 재등장",
+  "lines": [
+   {
+    "who": "them",
+    "text": "오랜만이야"
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "그때 내가 좀 심했지"
+   }
+  ],
+  "choices": [
+   {
+    "text": "모른 척한다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    }
+   },
+   {
+    "text": "사과를 받아준다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "sincerity": 3
+     },
+     "trust": {
+      "seoyeon": 5,
+      "haneul": 5,
+      "jiwoo": 5,
+      "minjae": 5,
+      "yeeun": 5
+     }
+    }
+   },
+   {
+    "text": "다시 시작하자고 한다",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "affection": {
+      "seoyeon": 5,
+      "haneul": 5,
+      "jiwoo": 5,
+      "minjae": 5,
+      "yeeun": 5
+     },
+     "setFlags": [
+      "fishing_mind"
+     ]
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "h_taehyun_date",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    85,
+    100
+   ],
+   "flags": [
+    "taehyun_truth"
+   ]
+  },
+  "weight": 8,
+  "title": "태현의 첫 연애",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 나 오늘 소개팅 했다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "3년 만에 처음 말 걸어봤어",
+    "name": "태현"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "너 보고 용기 냈다",
+    "name": "태현"
+   }
+  ],
+  "choices": [
+   {
+    "text": "잘했다",
+    "effects": {
+     "stats": {
+      "reputation": 5,
+      "esteem": 5
+     }
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "esteem": -3,
+      "stress": 8
+     }
+    }
+   },
+   {
+    "text": "나 보고 용기를 냈다고?",
+    "effects": {
+     "stats": {
+      "esteem": 7,
+      "sincerity": 3
+     }
+    }
+   },
+   {
+    "text": "이제 내가 코치해줄게",
+    "require": {
+     "stats": {
+      "talk": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 4,
+      "reputation": 4,
+      "esteem": 4
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": -3,
+      "stress": 8
+     }
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "h_junho_wedding",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    91,
+    100
+   ],
+   "flags": [
+    "best_man"
+   ]
+  },
+  "weight": 8,
+  "title": "축사 연습",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "축사 원고를 쓴다. 세 번 지웠다."
+   },
+   {
+    "who": "narr",
+    "text": "준호와 처음 만난 날부터 쓰기 시작한다."
+   },
+   {
+    "who": "narr",
+    "text": "쓰다 보니 내 얘기가 더 많다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "내 얘기를 지운다",
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "reputation": 4
+     }
+    },
+    "minigame": "word_order",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "esteem": -1
+     }
+    }
+   },
+   {
+    "text": "그대로 둔다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "reputation": 2
+     }
+    }
+   },
+   {
+    "text": "둘 얘기로 고친다",
+    "require": {
+     "stats": {
+      "talk": 52
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 4,
+      "reputation": 6,
+      "esteem": 3
+     }
+    },
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "esteem": -1
+     }
+    }
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "h_all_trust",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    70,
+    100
+   ],
+   "trust": {
+    "seoyeon": [
+     65,
+     100
+    ],
+    "haneul": [
+     65,
+     100
+    ],
+    "jiwoo": [
+     65,
+     100
+    ],
+    "minjae": [
+     65,
+     100
+    ],
+    "yeeun": [
+     65,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "다섯 명의 신뢰",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "다섯 명이 각자 다른 이유로 나를 믿는다."
+   },
+   {
+    "who": "narr",
+    "text": "연인은 없다."
+   },
+   {
+    "who": "narr",
+    "text": "이게 실패인지 성공인지 모르겠다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "성공이라고 생각한다",
+    "effects": {
+     "stats": {
+      "esteem": 8,
+      "reputation": 5
+     },
+     "setFlags": [
+      "legend_path"
+     ]
+    }
+   },
+   {
+    "text": "실패라고 생각한다",
+    "effects": {
+     "stats": {
+      "esteem": -3,
+      "stress": 12
+     }
+    }
+   },
+   {
+    "text": "아직 모르겠다고 생각한다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "sincerity": 4
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "h_hardcore",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    1,
+    5
+   ],
+   "run": [
+    3,
+    99
+   ]
+  },
+  "weight": 6,
+  "title": "하드코어 선언",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "세 번째 회차. 이제 패턴이 보인다."
+   },
+   {
+    "who": "narr",
+    "text": "쉬운 길로 가면 재미가 없다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "평범하게 간다",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     }
+    }
+   },
+   {
+    "text": "되돌리기 없이 간다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "charm": 2,
+      "talk": 2
+     },
+     "setFlags": [
+      "hardcore"
+     ]
+    }
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "h_mirror_again",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    95,
+    100
+   ],
+   "stats": {
+    "charm": [
+     60,
+     100
+    ],
+    "esteem": [
+     55,
+     100
+    ]
+   }
+  },
+  "weight": 8,
+  "title": "다시 거울 앞에서",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "8일차에 섰던 거울 앞이다."
+   },
+   {
+    "who": "narr",
+    "text": "3년 전 사진을 다시 꺼낸다."
+   },
+   {
+    "who": "narr",
+    "text": "이번엔 비교가 다르게 끝난다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "사진을 버린다",
+    "effects": {
+     "stats": {
+      "esteem": 6
+     }
+    }
+   },
+   {
+    "text": "사진을 남겨둔다",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "sincerity": 3
+     }
+    }
+   },
+   {
+    "text": "오늘 사진을 하나 찍는다",
+    "effects": {
+     "stats": {
+      "esteem": 8,
+      "charm": 2
+     },
+     "setFlags": [
+      "progress_photo"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "charm": -1,
+      "esteem": -1
+     }
+    },
+    "minigame": "outfit"
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "h_yeeun_junho",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    60,
+    100
+   ],
+   "flags": [
+    "told_junho"
+   ],
+   "affection": {
+    "yeeun": [
+     45,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "셋이 마주 앉다",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호, 예은, 나. 셋이 한 테이블에 앉았다."
+   },
+   {
+    "who": "them",
+    "text": "그래서 누가 먼저 말할 건데",
+    "name": "준호"
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   }
+  ],
+  "choices": [
+   {
+    "text": "내가 먼저 말한다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "reputation": -2
+     },
+     "affection": {
+      "yeeun": 6
+     },
+     "trust": {
+      "yeeun": 5
+     }
+    }
+   },
+   {
+    "text": "예은이 정하게 한다",
+    "effects": {
+     "stats": {
+      "sense": 4,
+      "reputation": 3
+     },
+     "affection": {
+      "yeeun": 8
+     },
+     "trust": {
+      "yeeun": 6
+     }
+    }
+   },
+   {
+    "text": "준호에게 양보한다",
+    "effects": {
+     "stats": {
+      "reputation": 5,
+      "esteem": -3
+     },
+     "affection": {
+      "yeeun": -5
+     }
+    }
+   }
+  ],
+  "character": "yeeun",
+  "hint": 1
+ },
+ {
+  "id": "h_full_stats",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    80,
+    100
+   ],
+   "stats": {
+    "charm": [
+     70,
+     100
+    ],
+    "talk": [
+     70,
+     100
+    ],
+    "esteem": [
+     70,
+     100
+    ],
+    "sense": [
+     70,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "완성된 사람",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "숫자는 다 올랐다."
+   },
+   {
+    "who": "narr",
+    "text": "3월의 나라면 지금의 나를 부러워할 것이다."
+   },
+   {
+    "who": "narr",
+    "text": "근데 지금의 나는 뭘 부러워하고 있지."
+   }
+  ],
+  "choices": [
+   {
+    "text": "아무것도 안 부럽다",
+    "effects": {
+     "stats": {
+      "esteem": 8
+     },
+     "setFlags": [
+      "self_complete"
+     ]
+    }
+   },
+   {
+    "text": "연인이 있는 사람이 부럽다",
+    "effects": {
+     "stats": {
+      "sincerity": 4,
+      "stress": 8
+     }
+    }
+   },
+   {
+    "text": "3월의 나를 부러워한다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "sincerity": 5,
+      "stress": -12
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "h_loop_hint",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    50,
+    100
+   ],
+   "run": [
+    4,
+    99
+   ]
+  },
+  "weight": 5,
+  "title": "이상한 기시감",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "이 대화를 한 적이 있다."
+   },
+   {
+    "who": "narr",
+    "text": "이 선택지도 본 적이 있다."
+   },
+   {
+    "who": "narr",
+    "text": "몇 번째일까."
+   }
+  ],
+  "choices": [
+   {
+    "text": "세어본다",
+    "effects": {
+     "stats": {
+      "sense": 5,
+      "esteem": 3
+     }
+    }
+   },
+   {
+    "text": "신경 쓰지 않는다",
+    "effects": {
+     "stats": {
+      "stress": -8
+     }
+    }
+   },
+   {
+    "text": "이번엔 다르게 고른다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "charm": 2,
+      "talk": 2,
+      "sense": 2
+     }
+    }
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "\"다음 회차에도 여기서 만나.\""
+ }
+]

@@ -1,0 +1,85 @@
+{
+ "totalDays": 100,
+ "chapterLength": 20,
+ "maxHearts": 5,
+ "heartRegenMinutes": 30,
+ "initialStats": {
+  "charm": 35,
+  "talk": 20,
+  "esteem": 15,
+  "sense": 25,
+  "money": 30,
+  "stress": 40,
+  "sincerity": 50,
+  "reputation": 30
+ },
+ "actions": [
+  {
+   "id": "gym",
+   "name": "헬스장",
+   "desc": "매력이 오르고 스트레스가 조금 쌓인다",
+   "effects": {
+    "stats": {
+     "charm": 1,
+     "stress": 4
+    }
+   }
+  },
+  {
+   "id": "read",
+   "name": "독서·영상",
+   "desc": "화술과 눈치가 조금씩 오른다",
+   "effects": {
+    "stats": {
+     "talk": 2,
+     "sense": 1
+    }
+   }
+  },
+  {
+   "id": "work",
+   "name": "알바",
+   "desc": "돈을 벌지만 스트레스가 쌓인다",
+   "effects": {
+    "stats": {
+     "money": 15,
+     "stress": 6
+    }
+   }
+  },
+  {
+   "id": "style",
+   "name": "스타일링",
+   "desc": "돈을 써서 매력을 올린다",
+   "effects": {
+    "stats": {
+     "charm": 2,
+     "money": -10
+    }
+   }
+  },
+  {
+   "id": "rest",
+   "name": "집에서 휴식",
+   "desc": "스트레스를 줄이고 자존감을 회복한다",
+   "effects": {
+    "stats": {
+     "stress": -12,
+     "esteem": 1
+    }
+   }
+  },
+  {
+   "id": "friends",
+   "name": "친구 만나기",
+   "desc": "평판과 자존감이 오른다",
+   "effects": {
+    "stats": {
+     "reputation": 2,
+     "esteem": 2,
+     "money": -5
+    }
+   }
+  }
+ ]
+}
