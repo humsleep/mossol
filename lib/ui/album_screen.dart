@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
 import '../game_controller.dart';
+import 'design_system.dart';
 import 'widgets.dart';
 
 /// 흑역사 앨범과 엔딩 앨범. 실패도 수집 요소가 된다.
+///
+/// 규격: docs/DESIGN_SYSTEM.md §2.6.
+/// - 주인공은 상단 수집 진행도와 카드 목록, 배경은 탭 바와 티어 라벨.
+/// - 엔딩은 트로피(메달 + 좌측 강조 띠), 흑역사는 번호가 붙은 수집 카드.
+/// - 미획득은 불투명도를 내리지 않고 자물쇠 + 글자색으로만 구분한다.
 class AlbumScreen extends StatelessWidget {
   final GameController c;
   const AlbumScreen({super.key, required this.c});
@@ -35,57 +41,152 @@ class AlbumScreen extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 수집 진행도
+// ---------------------------------------------------------------------------
+
+/// 탭 상단의 수집 진행도. 개수(`'2 / 20'`)와 막대를 함께 둔다.
+///
+/// 개수 문자열은 하나의 Text 로 유지한다(테스트 고정, §4.1).
+/// 탭 라벨과 같은 낱말('흑역사' / '엔딩')을 본문에 두면 탭을 문구로 찾는
+/// 테스트가 중복으로 걸리므로, 무엇을 모으는 중인지는 아이콘으로만 말한다.
+class _CollectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String count;
+  final double value;
+  final String semanticLabel;
+
+  const _CollectionHeader({
+    required this.icon,
+    required this.count,
+    required this.value,
+    required this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: scheme.primary),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                count,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.numericMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.sm),
+        AppProgressBar(
+          value: value,
+          semanticLabel: semanticLabel,
+          height: AppSpace.sm,
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 흑역사
+// ---------------------------------------------------------------------------
+
 class _ShameTab extends StatelessWidget {
   final GameController c;
   const _ShameTab({required this.c});
 
+  /// 전용 엔딩이 열리는 수집 목표. 표기 `'N / 20'` 은 테스트가 고정한 형식이다.
+  static const int _goal = 20;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final album = c.state?.album ?? const <String>[];
     if (album.isEmpty) {
-      return _Empty(
+      return const AppEmptyState(
         icon: Icons.sentiment_satisfied_alt,
         title: '아직 흑역사가 없다',
         body: '실패한 선택은 여기에 카드로 남는다. 20개를 모으면 전용 엔딩이 열린다.',
       );
     }
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppInsets.screen,
       children: [
-        Text(
-          '${album.length} / 20',
-          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+        _CollectionHeader(
+          icon: Icons.local_fire_department_outlined,
+          count: '${album.length} / $_goal',
+          value: album.length / _goal,
+          semanticLabel: '수집한 흑역사 ${album.length}개 / $_goal개',
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: (album.length / 20).clamp(0, 1),
-            minHeight: 6,
-            backgroundColor: scheme.surfaceContainerHighest,
-          ),
-        ),
-        const SizedBox(height: 16),
-        for (var i = album.length - 1; i >= 0; i--)
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: scheme.errorContainer,
-                foregroundColor: scheme.onErrorContainer,
-                child: Text('${i + 1}', style: const TextStyle(fontSize: 13)),
-              ),
-              title: Text(
-                album[i],
-                style: const TextStyle(fontSize: 14, height: 1.4),
-              ),
-            ),
-          ),
+        const SizedBox(height: AppSpace.sectionGap),
+        // 최근 것이 위로. 번호는 실제 수집 순서를 유지한다.
+        for (var i = album.length - 1; i >= 0; i--) ...[
+          _ShameCard(number: i + 1, text: album[i]),
+          if (i > 0) const SizedBox(height: AppSpace.listGap),
+        ],
       ],
     );
   }
 }
+
+/// 흑역사 한 장. 번호 메달이 붙은 수집 카드처럼 보이게 한다.
+class _ShameCard extends StatelessWidget {
+  final int number;
+  final String text;
+
+  const _ShameCard({required this.number, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return AppCard(
+      padding: AppInsets.cardTight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 고정 높이 대신 최소 크기. 글자를 키워도 번호가 잘리지 않는다.
+          Container(
+            constraints: const BoxConstraints(
+              minWidth: AppSpace.xxxl,
+              minHeight: AppSpace.xxxl,
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.xs,
+            ),
+            decoration: BoxDecoration(
+              color: t.dangerContainer,
+              borderRadius: AppRadius.rPill,
+            ),
+            child: Text(
+              '$number',
+              style: t.numericSmall.copyWith(color: t.onDangerContainer),
+            ),
+          ),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppSpace.xs),
+              child: Text(text, style: context.text.bodyMedium),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 엔딩
+// ---------------------------------------------------------------------------
 
 class _EndingTab extends StatelessWidget {
   final GameController c;
@@ -93,51 +194,34 @@ class _EndingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final got = c.endingAlbum.toSet();
     final all = c.bundle.endings;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppInsets.screen,
       children: [
-        Text(
-          '${got.length} / ${all.length}',
-          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+        _CollectionHeader(
+          icon: Icons.emoji_events_outlined,
+          count: '${got.length} / ${all.length}',
+          value: all.isEmpty ? 0 : got.length / all.length,
+          semanticLabel: '본 엔딩 ${got.length}개 / ${all.length}개',
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: all.isEmpty ? 0 : got.length / all.length,
-            minHeight: 6,
-            backgroundColor: scheme.surfaceContainerHighest,
+        const SizedBox(height: AppSpace.sectionGap),
+        for (var i = 0; i < all.length; i++) ...[
+          Builder(
+            builder: (context) {
+              final e = all[i];
+              final owned = got.contains(e.id);
+              return _EndingCard(
+                title: owned ? e.name : '???',
+                body: owned ? e.epilogue : _hintFor(e, c),
+                tierLabel: _tier(e.tier),
+                owned: owned,
+                accent: context.tokens.accentFor(e.character),
+              );
+            },
           ),
-        ),
-        const SizedBox(height: 16),
-        for (final e in all)
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(
-                got.contains(e.id) ? Icons.check_circle : Icons.lock_outline,
-                color: got.contains(e.id) ? scheme.primary : scheme.outline,
-              ),
-              title: Text(
-                got.contains(e.id) ? e.name : '???',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: got.contains(e.id) ? null : scheme.outline,
-                ),
-              ),
-              subtitle: Text(
-                got.contains(e.id) ? e.epilogue : _hintFor(e, c),
-                style: const TextStyle(fontSize: 12, height: 1.4),
-              ),
-              trailing: Text(
-                _tier(e.tier),
-                style: const TextStyle(fontSize: 11),
-              ),
-            ),
-          ),
+          if (i < all.length - 1) const SizedBox(height: AppSpace.listGap),
+        ],
       ],
     );
   }
@@ -207,31 +291,134 @@ class _EndingTab extends StatelessWidget {
   }
 }
 
-class _Empty extends StatelessWidget {
-  final IconData icon;
+/// 엔딩 한 장.
+///
+/// 획득: 좌측 강조 띠 + 메달(체크) + 이름 + 티어 pill + 에필로그 — 트로피.
+/// 미획득: 자물쇠 메달 + `'???'` + 조건 힌트. 카드 전체를 흐리게 하지 않고
+/// 제목과 자물쇠의 글자색만 [AppTokens.lockedForeground] 로 내린다(§2.6).
+class _EndingCard extends StatelessWidget {
   final String title;
   final String body;
-  const _Empty({required this.icon, required this.title, required this.body});
+  final String tierLabel;
+  final bool owned;
+  final CharacterAccent accent;
+
+  const _EndingCard({
+    required this.title,
+    required this.body,
+    required this.tierLabel,
+    required this.owned,
+    required this.accent,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: scheme.outline),
-            const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.5),
+    final t = context.tokens;
+    final scheme = context.scheme;
+
+    return AppCard(
+      padding: AppInsets.cardTight,
+      accentStripe: owned ? accent.base : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 메달. 획득 여부를 색이 아니라 모양(체크/자물쇠)으로 먼저 알린다.
+          Container(
+            constraints: const BoxConstraints(
+              minWidth: AppSpace.huge,
+              minHeight: AppSpace.huge,
             ),
-          ],
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: owned ? accent.container : scheme.surfaceContainerHigh,
+              borderRadius: AppRadius.rPill,
+              border: Border.all(
+                color: owned ? accent.base : scheme.outlineVariant,
+                width: AppBorderWidth.hairline,
+              ),
+            ),
+            child: Icon(
+              owned ? Icons.check_circle : Icons.lock_outline,
+              size: 20,
+              color: owned ? accent.base : t.lockedForeground,
+            ),
+          ),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleMedium?.copyWith(
+                          color: owned ? scheme.onSurface : t.lockedForeground,
+                        ),
+                      ),
+                    ),
+                    if (tierLabel.isNotEmpty) ...[
+                      const SizedBox(width: AppSpace.sm),
+                      _TierPill(label: tierLabel, owned: owned, accent: accent),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  body,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 티어 라벨 pill. 획득이면 캐릭터 강조색, 미획득이면 중립.
+class _TierPill extends StatelessWidget {
+  final String label;
+  final bool owned;
+  final CharacterAccent accent;
+
+  const _TierPill({
+    required this.label,
+    required this.owned,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: owned ? accent.container : scheme.surfaceContainerHigh,
+        borderRadius: AppRadius.rPill,
+        border: Border.all(
+          color: owned ? accent.base : scheme.outlineVariant,
+          width: AppBorderWidth.hairline,
+        ),
+      ),
+      child: Text(
+        label,
+        style: context.text.labelSmall?.copyWith(
+          color: owned ? accent.onContainer : t.lockedForeground,
         ),
       ),
     );

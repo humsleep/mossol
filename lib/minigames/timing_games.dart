@@ -4,9 +4,17 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
+import '../ui/design_system.dart';
+import '../ui/widgets.dart';
 import 'minigame.dart';
 
 /// 좌우로 움직이는 마커를 원하는 구간에서 멈추는 공용 위젯.
+///
+/// 조작 대상은 **마커 하나**다. 그래서 마커에만 머리(원)를 달아 굵게 세우고,
+/// 트랙과 구간은 뒤로 물린다: 트랙은 `gaugeTrack`, 안전 구간은
+/// `primaryContainer`, 크리티컬 구간은 `primary` 로 세 단계를 만든다.
+/// 반복 애니메이션은 판정에 필요하므로 동작 줄이기 설정에서도 멈추지 않는다
+/// (규격서 §1.10).
 class _SweepBar extends StatefulWidget {
   final double speed;
   final List<double> zone;
@@ -28,6 +36,9 @@ class _SweepBar extends StatefulWidget {
 
 class _SweepBarState extends State<_SweepBar>
     with SingleTickerProviderStateMixin {
+  /// 마커가 선 자리를 그대로 두기 위한 표시용 플래그. 판정과 무관하다.
+  bool _stopped = false;
+
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: Duration(milliseconds: (1600 / widget.speed).round()),
@@ -39,93 +50,143 @@ class _SweepBarState extends State<_SweepBar>
     super.dispose();
   }
 
+  void _stop() {
+    if (_stopped) return;
+    _c.stop();
+    setState(() => _stopped = true);
+    widget.onStop(_c.value);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final scheme = context.scheme;
+    final t = context.tokens;
     final zone = widget.zone;
     final mid = (zone[0] + zone[1]) / 2;
     final half = (zone[1] - zone[0]) * widget.critWidth / 2;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        _c.stop();
-        widget.onStop(_c.value);
-      },
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LayoutBuilder(
-                builder: (context, box) => SizedBox(
-                  height: 72,
-                  child: Stack(
-                    children: [
+
+    // 전부 간격 토큰에서 끌어온 치수다.
+    const boxH = AppSpace.huge + AppSpace.xxxl; // 72
+    const barH = AppSpace.lg; // 16
+    const needleW = AppSpace.xs; // 4
+    const needleH = AppSpace.minTouch; // 44
+    const headD = AppSpace.md; // 12
+    const barTop = (boxH - barH) / 2;
+    const needleTop = (boxH - needleH - headD) / 2;
+
+    return Semantics(
+      container: true,
+      button: true,
+      label: '화면 아무 데나 눌러서 멈추기',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _stop,
+        child: CenteredScrollColumn(
+          padding: AppInsets.screenX,
+          children: [
+            LayoutBuilder(
+              builder: (context, box) => SizedBox(
+                height: boxH,
+                child: Stack(
+                  children: [
+                    // 트랙.
+                    Positioned(
+                      top: barTop,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: barH,
+                        decoration: BoxDecoration(
+                          color: t.gaugeTrack,
+                          borderRadius: AppRadius.rSm,
+                        ),
+                      ),
+                    ),
+                    if (widget.zoneVisible) ...[
+                      // 안전 구간.
                       Positioned(
-                        top: 28,
-                        left: 0,
-                        right: 0,
+                        top: barTop,
+                        left: box.maxWidth * zone[0],
+                        width: box.maxWidth * (zone[1] - zone[0]),
                         child: Container(
-                          height: 16,
+                          height: barH,
                           decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
+                            color: scheme.primaryContainer,
+                            borderRadius: AppRadius.rSm,
                           ),
                         ),
                       ),
-                      if (widget.zoneVisible) ...[
-                        Positioned(
-                          top: 28,
-                          left: box.maxWidth * zone[0],
-                          width: box.maxWidth * (zone[1] - zone[0]),
-                          child: Container(
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: scheme.primary.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 28,
-                          left: box.maxWidth * (mid - half),
-                          width: box.maxWidth * half * 2,
-                          child: Container(
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: scheme.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ],
-                      AnimatedBuilder(
-                        animation: _c,
-                        builder: (context, _) => Positioned(
-                          left: (box.maxWidth - 4) * _c.value,
-                          top: 14,
-                          child: Container(
-                            width: 4,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: scheme.onSurface,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
+                      // 크리티컬 구간. 안전 구간보다 한 단 진하다.
+                      Positioned(
+                        top: barTop,
+                        left: box.maxWidth * (mid - half),
+                        width: box.maxWidth * half * 2,
+                        child: Container(
+                          height: barH,
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: AppRadius.rXs,
                           ),
                         ),
                       ),
                     ],
-                  ),
+                    // 마커. 머리(원)를 달아 "이게 내가 멈출 것" 임을 드러낸다.
+                    // 좌표는 원래 식을 그대로 두어 체감 속도가 바뀌지 않는다.
+                    AnimatedBuilder(
+                      animation: _c,
+                      builder: (context, _) => Positioned(
+                        left:
+                            (box.maxWidth - needleW) * _c.value +
+                            needleW / 2 -
+                            headD / 2,
+                        top: needleTop,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: headD,
+                              height: headD,
+                              decoration: BoxDecoration(
+                                color: scheme.onSurface,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            Container(
+                              width: needleW,
+                              height: needleH,
+                              decoration: BoxDecoration(
+                                color: scheme.onSurface,
+                                borderRadius: AppRadius.rXs,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                '화면 아무 데나 눌러서 멈추기',
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpace.xl),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.touch_app_outlined,
+                  size: 16,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpace.sm),
+                Flexible(
+                  child: Text(
+                    '화면 아무 데나 눌러서 멈추기',
+                    style: context.text.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -153,6 +214,7 @@ class _ReplyTimingGameState extends State<ReplyTimingGame> {
     final zone = ctx.replyZone;
     return MinigameScaffold(
       title: '답장 타이밍',
+      badge: '${Stat.label(Stat.sense)} $sense',
       instruction: visible
           ? '${ctx.partnerName}이(가) 좋아하는 속도 구간이 보인다. 진한 칸이 크리티컬.'
           : '눈치가 40을 넘으면 상대가 좋아하는 구간이 보인다. 지금은 감으로.',
@@ -208,6 +270,7 @@ class _NerveGaugeGameState extends State<NerveGaugeGame> {
   Widget build(BuildContext context) {
     return MinigameScaffold(
       title: '결심의 순간',
+      badge: '${Stat.label(Stat.esteem)} ${widget.ctx.stat(Stat.esteem)}',
       instruction:
           '자존감이 높을수록 안전 구간이 넓어진다. '
           '지금 구간 폭 ${(_half * 200).round()}%.',
@@ -311,62 +374,107 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final scheme = context.scheme;
     final elapsed = _sw.elapsedMilliseconds;
+    final read = elapsed >= _readMs;
+    // 조작 대상은 말풍선 하나다. 이벤트 화면과 같은 말풍선 토큰을 써서
+    // "방금 내가 보낸 그 메시지" 로 읽히게 한다.
+    final bubbleMax = MediaQuery.sizeOf(context).width * 0.72;
+
     return MinigameScaffold(
       title: '삭제',
       instruction: '메시지를 길게 눌러 삭제한다. 상대가 읽기 전에.',
       result: _result,
       child: CenteredScrollColumn(
+        padding: AppInsets.screenX,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Align(
             alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTapDown: (_) => _down(),
-              onTapUp: (_) => _up(),
-              onTapCancel: _up,
-              child: AnimatedScale(
-                scale: _holding ? 0.94 : 1,
-                duration: const Duration(milliseconds: 120),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    '야 서연 선배 오늘 진짜 멋있지 않았냐',
-                    style: TextStyle(color: scheme.onPrimary),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: bubbleMax,
+                minHeight: AppSpace.minTouch,
+              ),
+              child: GestureDetector(
+                onTapDown: (_) => _down(),
+                onTapUp: (_) => _up(),
+                onTapCancel: _up,
+                child: AnimatedScale(
+                  scale: _holding ? 0.96 : 1,
+                  duration: AppMotion.instant(context),
+                  curve: AppMotion.curve(context),
+                  child: Container(
+                    padding: AppInsets.bubble,
+                    decoration: BoxDecoration(
+                      color: t.bubbleMine,
+                      borderRadius: AppRadius.bubble(mine: true),
+                    ),
+                    child: Text(
+                      '야 서연 선배 오늘 진짜 멋있지 않았냐',
+                      style: t.bubbleText.copyWith(color: t.onBubbleMine),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpace.xs),
+          // 읽음 여부는 색만으로 말하지 않는다. 읽히면 아이콘이 함께 붙는다.
           Align(
             alignment: Alignment.centerRight,
-            child: Text(
-              elapsed < _readMs ? '읽지 않음' : '읽음',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (read) ...[
+                  Icon(Icons.visibility_outlined, size: 14, color: t.danger),
+                  const SizedBox(width: AppSpace.xxs),
+                ],
+                Text(
+                  read ? '읽음' : '읽지 않음',
+                  style: context.text.labelSmall?.copyWith(
+                    color: read ? t.danger : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 28),
-          if (_holding)
-            SizedBox(
-              width: 120,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  minHeight: 6,
-                  color: scheme.error,
-                ),
-              ),
-            )
-          else
-            Text('길게 누르기', style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: AppSpace.xxxl),
+          // 누르는 동안 차오르는 막대. 판정에 쓰는 연출이라 동작 줄이기
+          // 설정에서도 그대로 돈다(규격서 §1.10).
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpace.minTouch),
+            child: Center(
+              child: _holding
+                  ? SizedBox(
+                      width: AppSpace.huge * 3,
+                      child: TweenAnimationBuilder<double>(
+                        key: const ValueKey('hold'),
+                        tween: Tween<double>(begin: 0, end: 1),
+                        duration: _hold,
+                        builder: (context, v, _) => AppProgressBar(
+                          value: v,
+                          semanticLabel: '길게 누르기',
+                          height: AppSpace.sm,
+                          fill: t.danger,
+                        ),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.touch_app_outlined,
+                          size: 16,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpace.sm),
+                        Text('길게 누르기', style: context.text.labelMedium),
+                      ],
+                    ),
+            ),
+          ),
         ],
       ),
       onFinished: () => widget.done(_result!),

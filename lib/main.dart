@@ -10,6 +10,7 @@ import 'game_controller.dart';
 import 'minigames/minigame.dart';
 import 'minigames/registry.dart';
 import 'ui/action_screen.dart';
+import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
@@ -58,10 +59,8 @@ class StartupFailureApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC2295A)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       home: Scaffold(
         body: Center(
           child: Padding(
@@ -112,15 +111,11 @@ class MossolApp extends StatelessWidget {
     return MaterialApp(
       title: '모쏠 키우기',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC2295A)),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFF06A8F), brightness: Brightness.dark),
-        useMaterial3: true,
-      ),
+      // 테마는 전부 lib/ui/design_system.dart 에서 나온다.
+      // 화면에서 색·간격·모서리를 다시 정의하지 마라. 규격은 docs/DESIGN_SYSTEM.md.
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => switch (controller.phase) {

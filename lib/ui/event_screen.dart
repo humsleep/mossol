@@ -3,13 +3,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart';
 import '../minigames/registry.dart';
+import 'design_system.dart';
 import 'widgets.dart';
 
-/// 카톡형 이벤트 화면. 말풍선이 순서대로 나타나고, 끝나면 선택지가 뜬다.
+/// 채팅형 이벤트 화면. 말풍선이 순서대로 나타나고, 끝나면 하단 패널이 올라온다.
+///
+/// 규격: docs/DESIGN_SYSTEM.md §2.3.
+/// - 주인공은 말풍선 흐름이다. 대화 영역은 `tokens.chatBackground` 로 화면 바탕과
+///   한 단 구분하고, 상단 헤더와 하단 패널은 배경으로 물러난다.
+/// - 헤더는 상대(이니셜 원형 + 이름) · 이벤트 제목 · 날짜 · 진행 막대까지
+///   한 줄로 정리한다. 진행 막대는 이 대화가 얼마나 남았는지를 알려 준다.
+/// - 컨트롤러 호출과 상태 사용 방식은 이전과 같다. 표현 계층만 바뀌었다.
 class EventScreen extends StatefulWidget {
   final GameController c;
   const EventScreen({super.key, required this.c});
@@ -48,10 +57,11 @@ class _EventScreenState extends State<EventScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 프레임 사이에 화면이 내려갔을 수 있다. dispose 된 컨트롤러는 건드리지 않는다.
       if (!mounted || !_scroll.hasClients) return;
+      // 동작 줄이기가 켜져 있으면 0ms 라 곧바로 끝까지 내려간다.
       _scroll.animateTo(
         _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
+        duration: AppMotion.base(context),
+        curve: AppMotion.curve(context),
       );
     });
   }
@@ -130,72 +140,65 @@ class _EventScreenState extends State<EventScreen> {
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  /// 말풍선 묶음 기준. 같은 사람이 이어 말하면 같은 키가 나온다.
+  String _speakerKey(Line l, String partner) => switch (l.who) {
+    'narr' => '#narr',
+    'sys' => '#sys',
+    'me' => '#me',
+    _ => 'them:${l.name ?? partner}',
+  };
+
   @override
   Widget build(BuildContext context) {
     final ev = c.current;
     if (ev == null) return const SizedBox.shrink();
     final s = c.state!;
     final partner = c.characterName(ev.character);
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final accent = t.accentFor(ev.character);
     final visible = ev.lines.take(c.revealed).toList();
-    final waiting =
-        !c.linesDone && ev.lines[c.revealed].isWait && _waitLeft > 0;
+    final waitLine = c.linesDone ? null : ev.lines[c.revealed];
+    final waiting = waitLine != null && waitLine.isWait && _waitLeft > 0;
+    final total = ev.lines.length;
+    final progress = total == 0 ? 1.0 : c.revealed / total;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(partner.isEmpty ? ev.title : '$partner  ·  ${ev.title}'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: Text('D+${s.day}', style: const TextStyle(fontSize: 13)),
-            ),
-          ),
-        ],
-      ),
+      appBar: _header(context, ev, partner, accent, s.day, progress),
       body: Column(
         children: [
+          // 대화 영역만 한 단 어두운(밝은) 바탕을 깔아 패널·헤더와 분리한다.
           Expanded(
-            child: ListView(
-              controller: _scroll,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              children: [
-                for (final l in visible)
-                  ChatBubble(line: l, partnerName: partner),
-                if (waiting)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        children: [
-                          Text(
-                            '— 읽음 · $_waitLeft초째 답이 없다 —',
-                            style: TextStyle(
-                              color: scheme.outline,
-                              fontSize: 12,
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: _skipWait,
-                            icon: const Icon(
-                              Icons.play_circle_outline,
-                              size: 18,
-                            ),
-                            label: const Text('광고 보고 기다리지 않기'),
-                          ),
-                        ],
-                      ),
+            child: ColoredBox(
+              color: t.chatBackground,
+              child: ListView(
+                controller: _scroll,
+                padding: const EdgeInsets.only(
+                  top: AppSpace.sm,
+                  bottom: AppSpace.lg,
+                ),
+                children: [
+                  for (var i = 0; i < visible.length; i++)
+                    ChatBubble(
+                      line: visible[i],
+                      partnerName: partner,
+                      accent: accent,
+                      isFirstOfGroup: i == 0 ||
+                          _speakerKey(visible[i - 1], partner) !=
+                              _speakerKey(visible[i], partner),
+                      isLastOfGroup: i == visible.length - 1 ||
+                          _speakerKey(visible[i + 1], partner) !=
+                              _speakerKey(visible[i], partner),
                     ),
-                  )
-                else if (!c.linesDone)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text(
-                      '…',
-                      style: TextStyle(color: scheme.outline, fontSize: 20),
-                    ),
-                  ),
-              ],
+                  if (waiting)
+                    _WaitingBlock(
+                      secondsLeft: _waitLeft,
+                      secondsTotal: waitLine.wait,
+                      onSkip: _skipWait,
+                    )
+                  else if (!c.linesDone)
+                    const _TypingBubble(),
+                ],
+              ),
             ),
           ),
           if (c.lastOutcome != null)
@@ -206,8 +209,225 @@ class _EventScreenState extends State<EventScreen> {
       ),
     );
   }
+
+  /// 상대 · 제목 · 날짜 · 대화 진행도를 한 줄에 정리한 헤더.
+  PreferredSizeWidget _header(
+    BuildContext context,
+    StoryEvent ev,
+    String partner,
+    CharacterAccent accent,
+    int day,
+    double progress,
+  ) {
+    final scheme = context.scheme;
+    final t = context.tokens;
+    final hasPartner = partner.isNotEmpty;
+
+    return AppBar(
+      titleSpacing: AppSpace.lg,
+      title: Row(
+        children: [
+          if (hasPartner) ...[
+            _AvatarDot(name: partner, accent: accent),
+            const SizedBox(width: AppSpace.sm),
+          ],
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  if (hasPartner) ...[
+                    TextSpan(text: partner, style: context.text.titleLarge),
+                    TextSpan(
+                      text: '  ·  ',
+                      style: context.text.bodyMedium?.copyWith(
+                        color: scheme.outlineVariant,
+                      ),
+                    ),
+                  ],
+                  TextSpan(
+                    text: ev.title,
+                    style: (hasPartner
+                        ? context.text.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          )
+                        : context.text.titleLarge),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.xs,
+            ),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: AppRadius.rPill,
+            ),
+            child: Text(
+              'D+$day',
+              style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(AppSpace.xs),
+        child: AppProgressBar(
+          value: progress,
+          height: AppSpace.xs,
+          semanticLabel: '대화 진행',
+          fill: accent.base,
+        ),
+      ),
+    );
+  }
 }
 
+/// 상대 이니셜 원형. 사진 대신 강조색 한 글자로 누구인지 알린다(§4.3).
+class _AvatarDot extends StatelessWidget {
+  final String name;
+  final CharacterAccent accent;
+  const _AvatarDot({required this.name, required this.accent});
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Container(
+      width: AppSpace.xxxl,
+      height: AppSpace.xxxl,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: accent.container,
+        borderRadius: AppRadius.rPill,
+        border: Border.all(
+          color: accent.base,
+          width: AppBorderWidth.hairline,
+        ),
+      ),
+      child: Text(
+        name.substring(0, 1),
+        maxLines: 1,
+        style: context.text.labelMedium?.copyWith(color: accent.onContainer),
+      ),
+    ),
+  );
+}
+
+/// 타이핑 중 표시. 상대 말풍선과 같은 껍데기라 "다음 줄이 오는 중" 으로 읽힌다.
+///
+/// 문구 '…' 는 고정이다(§4.1 이벤트 화면 테스트). 깜빡이는 반복 애니메이션은
+/// 넣지 않는다 — 읽는 흐름을 방해하고 동작 줄이기 설정과도 충돌한다.
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpace.md,
+        right: AppSpace.md,
+        top: AppSpace.sm,
+      ),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Container(
+          padding: AppInsets.bubble,
+          decoration: BoxDecoration(
+            color: t.bubbleTheirs,
+            borderRadius: AppRadius.bubble(mine: false),
+            border: Border.all(
+              color: t.bubbleBorder,
+              width: AppBorderWidth.hairline,
+            ),
+          ),
+          child: Text(
+            '…',
+            style: context.text.titleMedium?.copyWith(color: t.systemLine),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 읽씹 대기 연출. 중립 pill 안에서 숫자가 줄고, 아래 막대가 남은 시간을 그린다.
+///
+/// 카운트다운 문구는 숫자를 포함한 **하나의 Text** 여야 한다(테스트 고정).
+/// 자리수가 흔들리지 않도록 tabular 숫자를 쓴다.
+class _WaitingBlock extends StatelessWidget {
+  final int secondsLeft;
+  final int secondsTotal;
+  final Future<void> Function() onSkip;
+
+  const _WaitingBlock({
+    required this.secondsLeft,
+    required this.secondsTotal,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final base = context.text.labelSmall ?? const TextStyle();
+    final left = secondsTotal <= 0
+        ? 0.0
+        : (secondsLeft / secondsTotal).clamp(0.0, 1.0).toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.xl,
+        vertical: AppSpace.md,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.md,
+              vertical: AppSpace.xs + 2,
+            ),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: AppRadius.rPill,
+            ),
+            child: Text(
+              '— 읽음 · $secondsLeft초째 답이 없다 —',
+              textAlign: TextAlign.center,
+              style: AppTypography.tabular(base.copyWith(color: t.systemLine)),
+            ),
+          ),
+          const SizedBox(height: AppSpace.sm),
+          // 기다림의 길이를 형태로도 보여 준다. 색만으로 말하지 않는다.
+          AppProgressBar(
+            value: left,
+            height: AppSpace.xs,
+            semanticLabel: '답장 대기 남은 시간',
+            fill: t.systemLine,
+          ),
+          const SizedBox(height: AppSpace.xs),
+          TextButton.icon(
+            onPressed: onSkip,
+            icon: const Icon(Icons.play_circle_outline, size: 18),
+            label: const Text('광고 보고 기다리지 않기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 선택지 패널. 대화와 같은 세계에 있되 한 단 위로 올라온 종이처럼 보인다.
+///
+/// 선택지는 `ChoiceButton` 하나로 통일한다. 내부가 `OutlinedButton` 이고
+/// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1).
 class _ChoicePanel extends StatelessWidget {
   final GameController c;
   const _ChoicePanel({required this.c});
@@ -233,119 +453,96 @@ class _ChoicePanel extends StatelessWidget {
     );
   }
 
+  /// 우측 짧은 라벨: 미니게임 이름 또는 성공 확률. 잠긴 선택지는 이유만 보여 준다.
+  String? _trailingLabel(ChoiceView v) {
+    if (v.locked) return null;
+    final mg = v.choice.minigame;
+    if (mg != null) return minigameLabels[mg] ?? '미니게임';
+    final chance = v.choice.chance;
+    if (chance == null) return null;
+    return c.onFire ? '${(chance + 20).clamp(0, 100)}%' : '$chance%';
+  }
+
+  /// 미니게임은 브랜드, 물올라 보정된 확률은 성공, 나머지는 중립.
+  AppTone _trailingTone(ChoiceView v) {
+    if (v.choice.minigame != null) return AppTone.brand;
+    if (v.choice.chance != null && c.onFire) return AppTone.success;
+    return AppTone.neutral;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final ev = c.current!;
-    // 선택지 4개 + 힌트 버튼이 큰 글꼴로 두 줄씩 접히면 대화 영역을 다 먹는다.
-    // 패널은 화면의 55% 까지만 차지하고 그 안에서 스크롤한다.
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.55;
-    return Container(
-      color: scheme.surfaceContainerLow,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: SingleChildScrollView(
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final v in c.choices)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    side: BorderSide(
-                      color: c.hintIndex == v.index
-                          ? scheme.primary
-                          : scheme.outlineVariant,
-                      width: c.hintIndex == v.index ? 2 : 1,
-                    ),
-                  ),
-                  onPressed: v.locked ? null : () => _pick(context, v.index),
-                  child: Row(
-                    children: [
-                      if (v.locked) const Icon(Icons.lock_outline, size: 16),
-                      if (v.locked) const SizedBox(width: 6),
-                      if (!v.locked && v.choice.minigame != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: Icon(
-                            Icons.sports_esports_outlined,
-                            size: 16,
-                            color: scheme.primary,
-                          ),
-                        ),
-                      Expanded(child: Text(v.choice.text)),
-                      if (v.locked)
-                        Flexible(
-                          child: Text(
-                            v.reason,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: scheme.outline,
-                            ),
-                          ),
-                        )
-                      else if (v.choice.minigame != null)
-                        Text(
-                          minigameLabels[v.choice.minigame] ?? '미니게임',
-                          style: TextStyle(fontSize: 11, color: scheme.primary),
-                        )
-                      else if (v.choice.chance != null)
-                        Text(
-                          c.onFire
-                              ? '${(v.choice.chance! + 20).clamp(0, 100)}%'
-                              : '${v.choice.chance}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: c.onFire ? scheme.primary : scheme.outline,
-                          ),
-                        ),
-                    ],
-                  ),
+    final choices = c.choices;
+
+    return BottomPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < choices.length; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
+              ),
+              child: ChoiceButton(
+                text: choices[i].choice.text,
+                onPressed: choices[i].locked
+                    ? null
+                    : () => _pick(context, choices[i].index),
+                lockedReason: choices[i].locked ? choices[i].reason : null,
+                leadingIcon: choices[i].locked
+                    ? Icons.lock_outline
+                    : choices[i].choice.minigame != null
+                    ? Icons.sports_esports_outlined
+                    : null,
+                trailingLabel: _trailingLabel(choices[i]),
+                trailingTone: _trailingTone(choices[i]),
+                recommended: c.hintIndex == choices[i].index,
+              ),
+            ),
+          // 힌트는 선택지보다 한 단 아래. 광고 제안이 선택을 밀어내지 않게 한다.
+          if (ev.hint != null && c.hintIndex == null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.xs),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final ok = await AdManager.instance.showRewarded();
+                    if (ok) c.revealHint();
+                  },
+                  icon: const Icon(Icons.lightbulb_outline, size: 18),
+                  label: const Text('태현에게 물어보기 (광고)'),
                 ),
               ),
-            if (ev.hint != null && c.hintIndex == null)
-              TextButton.icon(
-                onPressed: () async {
-                  final ok = await AdManager.instance.showRewarded();
-                  if (ok) c.revealHint();
-                },
-                icon: const Icon(Icons.lightbulb_outline, size: 18),
-                label: const Text('태현에게 물어보기 (광고)'),
-              ),
-          ],
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
 }
 
+/// 결과 패널. 크리티컬·성공·실패를 배경 톤 + 아이콘 + 문구 3중으로 알린다(§2.3).
 class _ResultPanel extends StatelessWidget {
   final GameController c;
   const _ResultPanel({required this.c});
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final scheme = context.scheme;
     final o = c.lastOutcome!;
-    final parts = <String>[
-      ...o.delta.stats.entries.map(
-        (e) => '${Stat.label(e.key)} ${_sign(e.value)}',
-      ),
-      ...o.delta.affection.entries.map(
-        (e) => '${c.characterName(e.key)} 호감 ${_sign(e.value)}',
-      ),
-      ...o.delta.trust.entries.map(
-        (e) => '${c.characterName(e.key)} 신뢰 ${_sign(e.value)}',
-      ),
-    ];
+
+    final tone = o.critical
+        ? AppTone.brand
+        : !o.success
+        ? AppTone.danger
+        : AppTone.neutral;
+    // 패널 배경이 톤에 따라 바뀌므로 글자색도 그 배경 위의 색으로 맞춘다.
+    final fg = o.critical
+        ? scheme.onPrimaryContainer
+        : !o.success
+        ? t.onDangerContainer
+        : scheme.onSurface;
     final headline = o.critical
         ? '크리티컬! 호감 2배'
         : !o.success
@@ -353,83 +550,166 @@ class _ResultPanel extends StatelessWidget {
         : o.comboStarted
         ? '물올랐다!'
         : '결과';
-    return Container(
-      color: o.critical
-          ? scheme.primaryContainer
-          : !o.success
-          ? scheme.errorContainer
-          : scheme.surfaceContainerLow,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    headline,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                if (o.combo > 0)
-                  ComboBadge(combo: o.combo, onFire: o.combo >= 3),
-                if (o.comboBroken)
-                  Text(
-                    '콤보 끊김',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-            if (c.minigameNote != null) ...[
-              const SizedBox(height: 4),
-              Text(c.minigameNote!, style: const TextStyle(height: 1.4)),
-            ],
-            const SizedBox(height: 4),
-            Text(parts.isEmpty ? '변화 없음' : parts.join(' · ')),
-            if (o.delta.album != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
+    final icon = o.critical
+        ? Icons.auto_awesome
+        : !o.success
+        ? Icons.error_outline
+        : o.comboStarted
+        ? Icons.local_fire_department
+        : Icons.check_circle_outline;
+
+    final parts = <_DeltaPart>[
+      for (final e in o.delta.stats.entries)
+        _DeltaPart(
+          '${Stat.label(e.key)} ${_sign(e.value)}',
+          e.key == Stat.stress ? e.value < 0 : e.value > 0,
+        ),
+      for (final e in o.delta.affection.entries)
+        _DeltaPart('${c.characterName(e.key)} 호감 ${_sign(e.value)}', e.value > 0),
+      for (final e in o.delta.trust.entries)
+        _DeltaPart('${c.characterName(e.key)} 신뢰 ${_sign(e.value)}', e.value > 0),
+    ];
+
+    return BottomPanel(
+      tone: tone,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: fg),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
                 child: Text(
-                  '흑역사 앨범에 추가: ${o.delta.album}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  headline,
+                  style: context.text.titleMedium?.copyWith(color: fg),
                 ),
               ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                if (c.canOfferUndo)
+              if (o.combo > 0) ...[
+                const SizedBox(width: AppSpace.sm),
+                ComboBadge(combo: o.combo, onFire: o.combo >= 3, dense: true),
+              ],
+            ],
+          ),
+          if (o.comboBroken)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.xs),
+              child: Row(
+                children: [
+                  Icon(Icons.trending_down, size: 14, color: fg),
+                  const SizedBox(width: AppSpace.xs),
+                  Text(
+                    '콤보 끊김',
+                    style: context.text.labelMedium?.copyWith(color: fg),
+                  ),
+                ],
+              ),
+            ),
+          if (c.minigameNote != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.sm),
+              child: Text(
+                c.minigameNote!,
+                style: context.text.bodyMedium?.copyWith(color: fg),
+              ),
+            ),
+          const SizedBox(height: AppSpace.md),
+          // 변화량은 색 + 부호 + 화살표 3중. 한 줄 문장 나열보다 눈에 먼저 든다.
+          if (parts.isEmpty)
+            Text(
+              '변화 없음',
+              style: context.text.bodyMedium?.copyWith(color: fg),
+            )
+          else
+            Wrap(
+              spacing: AppSpace.sm,
+              runSpacing: AppSpace.sm,
+              children: [for (final p in parts) _DeltaChip(part: p)],
+            ),
+          if (o.delta.album != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.photo_album_outlined, size: 16, color: fg),
+                  const SizedBox(width: AppSpace.xs),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final ok = await AdManager.instance.showRewarded();
-                        if (ok) c.undoChoice();
-                      },
-                      icon: const Icon(Icons.replay, size: 18),
-                      label: const Text('10초 전으로 (광고)'),
+                    child: Text(
+                      '흑역사 앨범에 추가: ${o.delta.album}',
+                      style: context.text.bodySmall?.copyWith(color: fg),
                     ),
                   ),
-                if (c.canOfferUndo) const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: c.continueAfterChoice,
-                    child: const Text('계속'),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
-        ),
+          const SizedBox(height: AppSpace.lg),
+          // 되돌리기(광고)는 구제책이지 주된 길이 아니다. 조용한 텍스트 버튼으로
+          // 1차 버튼 위에 두어 "계속" 을 가리거나 밀어내지 않게 한다.
+          if (c.canOfferUndo)
+            Center(
+              child: TextButton.icon(
+                onPressed: () async {
+                  final ok = await AdManager.instance.showRewarded();
+                  if (ok) c.undoChoice();
+                },
+                icon: const Icon(Icons.replay, size: 18),
+                // 톤 배경 위에서도 대비를 지키기 위해 전경색만 맞춘다.
+                style: TextButton.styleFrom(foregroundColor: fg),
+                label: const Text('10초 전으로 (광고)'),
+              ),
+            ),
+          if (c.canOfferUndo) const SizedBox(height: AppSpace.sm),
+          FilledButton(
+            onPressed: c.continueAfterChoice,
+            child: const Text('계속'),
+          ),
+        ],
       ),
     );
   }
 
   String _sign(int v) => v > 0 ? '+$v' : '$v';
+}
+
+/// 결과 한 항목. 문자열은 가공하지 않고 방향만 따로 들고 있다.
+@immutable
+class _DeltaPart {
+  final String text;
+  final bool good;
+  const _DeltaPart(this.text, this.good);
+}
+
+/// 변화량 칩. 색 + 부호(문자열에 이미 있음) + 화살표 아이콘으로 방향을 말한다.
+class _DeltaChip extends StatelessWidget {
+  final _DeltaPart part;
+  const _DeltaChip({required this.part});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final color = t.deltaColor(good: part.good);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.xs,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.rSm,
+        border: Border.all(color: color, width: AppBorderWidth.hairline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            part.good ? Icons.arrow_upward : Icons.arrow_downward,
+            size: 13,
+            color: color,
+          ),
+          const SizedBox(width: AppSpace.xxs),
+          Text(part.text, style: t.numericSmall.copyWith(color: color)),
+        ],
+      ),
+    );
+  }
 }

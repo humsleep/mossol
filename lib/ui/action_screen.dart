@@ -4,10 +4,15 @@ import '../ads/ad_manager.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
+import 'design_system.dart';
 import 'roulette_sheet.dart';
 import 'widgets.dart';
 
 /// 아침 행동 선택 화면. 하트 1개를 쓰고 하루를 시작한다.
+///
+/// 규격: docs/DESIGN_SYSTEM.md §2.2.
+/// 이 화면의 주인공은 "오늘 뭘 할까" 아래 행동 목록이다. 하트·콤보·클리프행어·
+/// 스탯·관계는 결정을 돕는 배경이라 위에서부터 한 단씩 낮춰 쌓는다.
 class ActionScreen extends StatefulWidget {
   final GameController c;
   const ActionScreen({super.key, required this.c});
@@ -49,7 +54,13 @@ class _ActionScreenState extends State<ActionScreen> {
   @override
   Widget build(BuildContext context) {
     final s = c.state!;
-    final theme = Theme.of(context);
+    // 히든 캐릭터는 한 번이라도 얽힌 뒤에야 관계 줄에 나온다(기존 규칙 유지).
+    final cast = [
+      for (final ch in c.bundle.characters)
+        if (!ch.hidden || s.affectionOf(ch.id) > 0) ch,
+    ];
+    final cliffhanger = s.lastCliffhanger;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('D+${s.day}  ·  ${s.chapter(c.config)}장'),
@@ -68,67 +79,69 @@ class _ActionScreenState extends State<ActionScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.screenX,
+          AppSpace.screenY,
+          AppSpace.screenX,
+          AppSpace.xxl,
+        ),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: HeartsRow(
-                  hearts: c.hearts,
-                  max: c.config.maxHearts,
-                  nextIn: c.nextHeartIn,
-                ),
-              ),
-              if (c.combo > 0) ...[
-                const SizedBox(width: 8),
-                ComboBadge(combo: c.combo, onFire: c.onFire),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (s.lastCliffhanger != null)
-            Card(
-              color: theme.colorScheme.tertiaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  '어젯밤: ${s.lastCliffhanger}',
-                  style: TextStyle(
-                    color: theme.colorScheme.onTertiaryContainer,
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-          StatBars(state: s),
-          const SizedBox(height: 16),
-          Text('관계', style: theme.textTheme.titleSmall),
+          // 1. 자원 줄. 폭이 모자라면 콤보 배지가 아랫줄로 내려간다.
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              for (final ch in c.bundle.characters)
-                if (!ch.hidden || s.affectionOf(ch.id) > 0)
-                  Chip(
-                    label: Text(
-                      '${ch.name} ♥${s.affectionOf(ch.id)} ✓${s.trustOf(ch.id)}',
-                    ),
-                    visualDensity: VisualDensity.compact,
-                  ),
+              HeartsRow(
+                hearts: c.hearts,
+                max: c.config.maxHearts,
+                nextIn: c.nextHeartIn,
+              ),
+              if (c.combo > 0) ComboBadge(combo: c.combo, onFire: c.onFire),
             ],
           ),
-          const SizedBox(height: 20),
-          Text('오늘 아침에 뭘 할까', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (final a in c.config.actions)
-            Card(
-              child: ListTile(
-                title: Text(a.name),
-                subtitle: Text(a.desc),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _start(context, a),
-              ),
+
+          // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
+          if (cliffhanger != null) ...[
+            const SizedBox(height: AppSpace.md),
+            _CliffhangerCard(text: '어젯밤: $cliffhanger'),
+          ],
+
+          // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
+          const SizedBox(height: AppSpace.lg),
+          StatBars(state: s, compact: true),
+
+          // 4. 관계.
+          if (cast.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.sectionGap),
+            const SectionHeader(title: '관계'),
+            Wrap(
+              spacing: AppSpace.sm,
+              runSpacing: AppSpace.sm,
+              children: [
+                for (final ch in cast)
+                  CharacterChip(
+                    name: ch.name,
+                    affection: s.affectionOf(ch.id),
+                    trust: s.trustOf(ch.id),
+                    accent: context.tokens.accentFor(ch.id),
+                  ),
+              ],
             ),
+          ],
+
+          // 5. 오늘의 결정. 화면의 주인공.
+          const SizedBox(height: AppSpace.sectionGap),
+          const SectionHeader(title: '오늘 아침에 뭘 할까'),
+          for (var i = 0; i < c.config.actions.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpace.listGap),
+            AppListRow(
+              title: c.config.actions[i].name,
+              subtitle: c.config.actions[i].desc,
+              leading: _ActionGlyph(id: c.config.actions[i].id),
+              onTap: () => _start(context, c.config.actions[i]),
+            ),
+          ],
         ],
       ),
       bottomNavigationBar: const BannerSlot(),
@@ -167,5 +180,63 @@ class _ActionScreenState extends State<ActionScreen> {
         const SnackBar(content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
       );
     }
+  }
+}
+
+/// 어젯밤의 예고. 좌측 청록 띠로 "어제에서 이어진 줄" 임을 표시한다.
+class _CliffhangerCard extends StatelessWidget {
+  final String text;
+  const _CliffhangerCard({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return AppCard(
+      accentStripe: scheme.tertiary,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.bedtime_outlined, size: 18, color: scheme.tertiary),
+          const SizedBox(width: AppSpace.sm),
+          // '어젯밤: ...' 은 한 덩어리 Text 로 유지한다(테스트 고정).
+          Expanded(child: Text(text, style: context.text.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+/// 행동 목록 왼쪽의 아이콘 원. 여섯 줄이 글자만으로 늘어서지 않게 잡아 준다.
+/// 색으로 뜻을 전하지 않으므로 전부 같은 중립색을 쓴다(구분은 아이콘 모양).
+class _ActionGlyph extends StatelessWidget {
+  final String id;
+  const _ActionGlyph({required this.id});
+
+  static const _icons = <String, IconData>{
+    'gym': Icons.fitness_center,
+    'read': Icons.menu_book_outlined,
+    'work': Icons.work_outline,
+    'style': Icons.checkroom_outlined,
+    'rest': Icons.bedtime_outlined,
+    'friends': Icons.groups_outlined,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return Container(
+      width: AppSpace.huge,
+      height: AppSpace.huge,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: AppRadius.rPill,
+      ),
+      child: Icon(
+        _icons[id] ?? Icons.wb_twilight,
+        size: AppSpace.xl,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
   }
 }

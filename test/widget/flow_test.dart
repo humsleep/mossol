@@ -66,8 +66,13 @@ void main() {
     expect(find.text('D+2  ·  1장'), findsOneWidget);
 
     // D+2 의 m02 에는 미니게임 선택지(표정 읽기)가 있다.
-    await tester.tap(find.text(c.config.actions[1].name));
+    // 어젯밤 예고 카드가 생겨 행동 목록이 아래로 밀리므로 먼저 보이게 스크롤한다.
+    final secondAction = find.text(c.config.actions[1].name);
+    await tester.ensureVisible(secondAction);
+    await tester.pumpAndSettle();
+    await tester.tap(secondAction);
     await tester.pump();
+    expect(c.phase, Phase.event, reason: '행동을 고르면 하루가 시작돼야 한다');
     expect(c.current!.id, 'm02');
     await revealAll(tester, c);
     await tester.tap(find.widgetWithText(OutlinedButton, '알겠어, 연습해 볼게'));

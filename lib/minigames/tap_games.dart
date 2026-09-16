@@ -4,7 +4,28 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
+import '../ui/design_system.dart';
+import '../ui/widgets.dart';
 import 'minigame.dart';
+
+/// 보낸 사람 자리. 사진 대신 강조색 이니셜 원형을 쓴다(규격서 §4.3).
+class _Initial extends StatelessWidget {
+  final String name;
+  final CharacterAccent accent;
+  const _Initial({required this.name, required this.accent});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: AppSpace.xxxl,
+    height: AppSpace.xxxl,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: accent.container, shape: BoxShape.circle),
+    child: Text(
+      name.isEmpty ? '' : name.substring(0, 1),
+      style: context.text.labelMedium?.copyWith(color: accent.onContainer),
+    ),
+  );
+}
 
 /// 8. 단톡방 대응 — 눈치
 /// 쏟아지는 메시지 중 답할 사람을 중요도 순서대로 눌러야 한다.
@@ -84,7 +105,8 @@ class _GroupChatGameState extends State<GroupChatGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final partnerName = widget.ctx.partnerName;
     return MinigameScaffold(
       title: '단톡방 대응',
       instruction: '10초 안에 답할 순서대로 누른다. 급한 사람이 먼저.',
@@ -92,7 +114,10 @@ class _GroupChatGameState extends State<GroupChatGame> {
       result: _result,
       onFinished: () => widget.done(_result!),
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.screenX,
+          vertical: AppSpace.sm,
+        ),
         children: [
           for (var i = 0; i < _msgs.length; i++)
             MinigameOption(
@@ -100,13 +125,17 @@ class _GroupChatGameState extends State<GroupChatGame> {
               sub: _order.contains(i) ? '${_order.indexOf(i) + 1}번째로 답함' : null,
               selected: _order.contains(i),
               dimmed: _order.contains(i),
+              // 상대만 캐릭터 강조색을 받는다. 나머지는 중립.
+              leading: _Initial(
+                name: _msgs[i].who,
+                accent: _msgs[i].who == partnerName
+                    ? t.accentFor(widget.ctx.partner?.id)
+                    : t.neutralAccent,
+              ),
               onTap: () => _tap(i),
             ),
-          const SizedBox(height: 12),
-          Text(
-            '누른 순서가 곧 답장 순서다.',
-            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-          ),
+          const SizedBox(height: AppSpace.md),
+          Text('누른 순서가 곧 답장 순서다.', style: context.text.bodySmall),
         ],
       ),
     );
@@ -147,6 +176,10 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
   Timer? _timer;
   MinigameResult? _result;
 
+  /// 박자마다 맞췄는지(true) 놓쳤는지(false)의 기록. 판정은 [_hits] 로 하고
+  /// 이 목록은 화면 표시에만 쓴다 — 놓친 순간이 눈에 남아야 다음 박자를 노린다.
+  final _marks = <bool>[];
+
   @override
   void initState() {
     super.initState();
@@ -173,6 +206,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
           _open = false;
           _combo = 0;
           _index++;
+          _marks.add(false);
         });
         _next();
       });
@@ -188,6 +222,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
       _maxCombo = max(_maxCombo, _combo);
       _open = false;
       _index++;
+      _marks.add(true);
     });
     _next();
   }
@@ -210,10 +245,16 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final scheme = context.scheme;
     final line = _index < _beats.length ? _beats[_index] : _beats.last;
+    final done = _index.clamp(0, _beats.length);
+    // 조작 대상은 가운데 원 하나. 열렸을 때만 색·크기·테두리가 동시에 바뀐다.
+    const dial = AppSpace.huge * 4; // 160
+
     return MinigameScaffold(
       title: '맞장구',
+      badge: '${Stat.label(Stat.talk)} ${widget.ctx.stat(Stat.talk)}',
       instruction: '말풍선이 켜지면 바로 누른다. 화술이 높을수록 창이 넓다.',
       result: _result,
       onFinished: () => widget.done(_result!),
@@ -221,45 +262,95 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
         behavior: HitTestBehavior.opaque,
         onTap: _tap,
         child: CenteredScrollColumn(
+          padding: AppInsets.screenX,
           children: [
+            // 상대가 하는 말. 이벤트 화면의 상대 말풍선과 같은 토큰.
             Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.72,
                 ),
+                child: Container(
+                  padding: AppInsets.bubble,
+                  decoration: BoxDecoration(
+                    color: t.bubbleTheirs,
+                    borderRadius: AppRadius.bubble(mine: false),
+                    border: Border.all(
+                      color: t.bubbleBorder,
+                      width: AppBorderWidth.hairline,
+                    ),
+                  ),
+                  child: Text(
+                    line.$1,
+                    style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpace.xxxl),
+            AnimatedScale(
+              scale: _open ? 1 : 0.94,
+              duration: AppMotion.fast(context),
+              curve: AppMotion.curve(context),
+              child: AnimatedContainer(
+                duration: AppMotion.fast(context),
+                curve: AppMotion.curve(context),
+                width: dial,
+                height: dial,
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(14),
+                  shape: BoxShape.circle,
+                  color: _open ? scheme.primary : scheme.surfaceContainer,
+                  border: Border.all(
+                    color: _open ? scheme.primary : scheme.outlineVariant,
+                    width: _open
+                        ? AppBorderWidth.emphasis
+                        : AppBorderWidth.hairline,
+                  ),
                 ),
-                child: Text(line.$1),
-              ),
-            ),
-            const SizedBox(height: 32),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _open ? scheme.primary : scheme.surfaceContainerHighest,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _open ? line.$2 : '…',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: _open ? scheme.onPrimary : scheme.onSurfaceVariant,
+                alignment: Alignment.center,
+                padding: AppInsets.card,
+                child: Text(
+                  _open ? line.$2 : '…',
+                  textAlign: TextAlign.center,
+                  style: context.text.headlineSmall?.copyWith(
+                    color: _open ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              '${_index.clamp(0, _beats.length)} / ${_beats.length}   콤보 $_combo',
-              style: TextStyle(color: scheme.onSurfaceVariant),
+            const SizedBox(height: AppSpace.xxl),
+            // 진행도는 막대보다 박자 하나하나로 읽는 게 낫다. 남은 박자는 빈 원,
+            // 맞춘 박자는 채운 체크, 놓친 박자는 뚫린 원 — 색 + 모양 두 신호다.
+            Semantics(
+              container: true,
+              label: '맞장구 $done / ${_beats.length}',
+              child: ExcludeSemantics(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: AppSpace.xs,
+                  runSpacing: AppSpace.xs,
+                  children: [
+                    for (var i = 0; i < _beats.length; i++)
+                      Icon(
+                        i >= _marks.length
+                            ? Icons.circle_outlined
+                            : _marks[i]
+                            ? Icons.check_circle
+                            : Icons.remove_circle_outline,
+                        size: AppSpace.xl,
+                        color: i >= _marks.length
+                            ? t.gaugeTrack
+                            : _marks[i]
+                            ? t.success
+                            : t.danger,
+                      ),
+                  ],
+                ),
+              ),
             ),
+            const SizedBox(height: AppSpace.md),
+            Text('$done / ${_beats.length}   콤보 $_combo', style: t.numericSmall),
           ],
         ),
       ),
@@ -278,20 +369,25 @@ class ProfileSwipeGame extends StatefulWidget {
 }
 
 class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
+  /// (제목, 한 줄, 호응 확률, 아이콘). 확률은 판정용이고 아이콘은 표시용이다.
+  /// 여덟 장이 전부 같은 사람 실루엣이면 카드가 넘어간 것도 눈에 안 띈다.
   static const _profiles = [
-    ('러닝하는 사람', '주 3회 한강. 대화는 짧게.', 0.5),
-    ('책 읽는 사람', '조용한 카페를 좋아합니다.', 0.6),
-    ('여행 사진만 12장', '다음 달 유럽 갑니다.', 0.25),
-    ('고양이 두 마리', '집사 구함 (농담)', 0.7),
-    ('프로필 사진 없음', '만나서 얘기해요.', 0.15),
-    ('맛집 리스트 보유', '먹는 거 좋아하는 분.', 0.65),
-    ('헬스장 거울샷', '3대 400.', 0.3),
-    ('그림 그리는 사람', '주말엔 전시 보러 다녀요.', 0.55),
+    ('러닝하는 사람', '주 3회 한강. 대화는 짧게.', 0.5, Icons.directions_run),
+    ('책 읽는 사람', '조용한 카페를 좋아합니다.', 0.6, Icons.menu_book_outlined),
+    ('여행 사진만 12장', '다음 달 유럽 갑니다.', 0.25, Icons.flight_takeoff),
+    ('고양이 두 마리', '집사 구함 (농담)', 0.7, Icons.pets),
+    ('프로필 사진 없음', '만나서 얘기해요.', 0.15, Icons.person_off_outlined),
+    ('맛집 리스트 보유', '먹는 거 좋아하는 분.', 0.65, Icons.restaurant_outlined),
+    ('헬스장 거울샷', '3대 400.', 0.3, Icons.fitness_center),
+    ('그림 그리는 사람', '주말엔 전시 보러 다녀요.', 0.55, Icons.brush_outlined),
   ];
 
   int _index = 0;
   int _matches = 0;
   final _log = <String>[];
+
+  /// 마지막 결과가 매칭이었는지. 배지 색을 고르는 표시용이며 판정과 무관하다.
+  bool? _lastHit;
   MinigameResult? _result;
   late final Random _rng = Random(widget.ctx.state.seed ^ widget.ctx.state.day);
 
@@ -307,6 +403,7 @@ class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
       final hit = _rng.nextDouble() < chance;
       if (hit) _matches++;
       _log.add('${p.$1} · ${hit ? '매칭' : '무응답'}');
+      _lastHit = hit;
     }
     setState(() {
       _index++;
@@ -331,102 +428,166 @@ class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final scheme = context.scheme;
     final done = _index >= _profiles.length;
     final p = done ? _profiles.last : _profiles[_index];
+    final seen = _index.clamp(0, _profiles.length);
+
     return MinigameScaffold(
       title: '프로필 고르기',
+      badge: '${Stat.label(Stat.charm)} ${widget.ctx.stat(Stat.charm)}',
       instruction: '오늘 볼 수 있는 프로필 8장. 매력이 높을수록 호응 확률이 오른다.',
       result: _result,
       onFinished: () => widget.done(_result!),
       child: CenteredScrollColumn(
+        padding: AppInsets.screenX,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  size: 64,
-                  color: scheme.onSurfaceVariant,
+          // 카드 한 장이 주인공. 높이를 고정하지 않고 최소 높이만 줘서
+          // 카드가 바뀌어도 아래 버튼이 덜 흔들린다.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpace.huge * 4),
+            // 카드가 넘어갔다는 사실 자체가 피드백이다. 글자만 바뀌면 탭이
+            // 먹혔는지 알 수 없어서, 다음 장은 짧은 페이드로 갈아든다
+            // (동작 줄이기에서는 AppMotion 이 0ms 를 주므로 즉시 교체).
+            child: AnimatedSwitcher(
+              duration: AppMotion.base(context),
+              switchInCurve: AppMotion.curve(context),
+              switchOutCurve: AppMotion.curve(context),
+              child: AppCard(
+                key: ValueKey(_index),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: AppSpace.huge + AppSpace.xxl, // 64
+                      height: AppSpace.huge + AppSpace.xxl,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHigh,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        p.$4,
+                        size: AppSpace.xxxl,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.md),
+                    Text(
+                      p.$1,
+                      textAlign: TextAlign.center,
+                      style: context.text.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpace.xs),
+                    Text(
+                      p.$2,
+                      textAlign: TextAlign.center,
+                      style: context.text.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  p.$1,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  p.$2,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: scheme.onSurfaceVariant),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpace.xxl),
+          // 넘기기와 관심은 무게가 다르다. 하나만 채운 원으로 위계를 준다.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _RoundBtn(
                 icon: Icons.close,
-                color: scheme.outline,
+                semanticLabel: '넘기기',
+                filled: false,
                 onTap: done ? null : () => _swipe(false),
               ),
               _RoundBtn(
                 icon: Icons.favorite,
-                color: scheme.primary,
+                semanticLabel: '관심 있음',
+                filled: true,
                 onTap: done ? null : () => _swipe(true),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            '${_index.clamp(0, _profiles.length)} / ${_profiles.length}   매칭 $_matches',
-            style: TextStyle(color: scheme.onSurfaceVariant),
+          const SizedBox(height: AppSpace.xl),
+          AppProgressBar(
+            value: seen / _profiles.length,
+            semanticLabel: '프로필 고르기',
           ),
-          const SizedBox(height: 8),
-          if (_log.isNotEmpty)
-            Text(
-              _log.last,
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          const SizedBox(height: AppSpace.sm),
+          Center(
+            child: Text(
+              '$seen / ${_profiles.length}   매칭 $_matches',
+              style: t.numericSmall,
             ),
+          ),
+          if (_log.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.md),
+            // 직전 결과. 색 + 아이콘 + 낱말이 함께 움직인다.
+            Align(
+              alignment: Alignment.center,
+              child: ResultBadge(
+                tone: _lastHit == true ? AppTone.success : AppTone.neutral,
+                label: _log.last,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
+/// 원형 조작 버튼. 지름 최소 64(규격서 §2.8).
 class _RoundBtn extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final String semanticLabel;
+  final bool filled;
   final VoidCallback? onTap;
-  const _RoundBtn({required this.icon, required this.color, this.onTap});
+  const _RoundBtn({
+    required this.icon,
+    required this.semanticLabel,
+    required this.filled,
+    this.onTap,
+  });
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: color,
-    shape: const CircleBorder(),
-    child: InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Icon(
-          icon,
-          color: Theme.of(context).colorScheme.surface,
-          size: 28,
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final bg = filled ? scheme.primary : scheme.surfaceContainerHigh;
+    final fg = filled ? scheme.onPrimary : scheme.onSurfaceVariant;
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: bg,
+        shape: CircleBorder(
+          side: filled
+              ? BorderSide.none
+              : BorderSide(
+                  color: scheme.outlineVariant,
+                  width: AppBorderWidth.hairline,
+                ),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: AppSpace.huge + AppSpace.xxl, // 64
+              minHeight: AppSpace.huge + AppSpace.xxl,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpace.xl),
+              child: Icon(icon, color: fg, size: AppSpace.xxl + AppSpace.xs),
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

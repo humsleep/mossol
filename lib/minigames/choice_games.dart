@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
+import '../ui/design_system.dart';
+import '../ui/widgets.dart';
 import 'minigame.dart';
 
 /// 4. 표정 읽기 퀴즈 — 눈치
@@ -85,12 +87,22 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
     });
   }
 
+  /// 고른 뒤의 정답 공개. 색 + 테두리 + 아이콘이 함께 바뀐다.
+  MinigameOptionTone _toneFor(int i, int answer) {
+    if (_picked == null) return MinigameOptionTone.neutral;
+    if (i == answer) return MinigameOptionTone.correct;
+    if (i == _picked) return MinigameOptionTone.wrong;
+    return MinigameOptionTone.neutral;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
     final r = _rounds[_round];
+
     return MinigameScaffold(
       title: '진짜 감정은?',
+      badge: '${Stat.label(Stat.sense)} ${widget.ctx.stat(Stat.sense)}',
       instruction:
           '${(_limit / 1000).toStringAsFixed(1)}초 안에 고른다. '
           '눈치가 높을수록 시간이 늘어난다.',
@@ -98,39 +110,39 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
       result: _result,
       onFinished: () => widget.done(_result!),
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: AppInsets.screenX,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
+          // 읽어야 할 대상. 표정과 말이 한 덩어리로 보여야 한다.
+          AppCard(
             child: Column(
               children: [
-                Text(r.$2, style: const TextStyle(fontSize: 40)),
-                const SizedBox(height: 8),
+                Text(r.$2, style: context.text.displayLarge),
+                const SizedBox(height: AppSpace.sm),
                 Text(
                   '"${r.$1}"',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
+                  style: context.text.bodyLarge,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpace.lg),
           for (var i = 0; i < r.$3.length; i++)
             MinigameOption(
               label: r.$3[i],
               selected: _picked == i,
               sub: _picked != null && i == r.$4 ? '정답' : null,
+              tone: _toneFor(i, r.$4),
+              dimmed:
+                  _picked != null &&
+                  _toneFor(i, r.$4) == MinigameOptionTone.neutral,
               onTap: () => _pick(i),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpace.md),
           Text(
             '${_round + 1} / ${_rounds.length}',
             textAlign: TextAlign.center,
-            style: TextStyle(color: scheme.onSurfaceVariant),
+            style: t.numericSmall,
           ),
         ],
       ),
@@ -188,34 +200,65 @@ class _PickMemeGameState extends State<PickMemeGame> {
     });
   }
 
+  /// 고른 칸만 결과 색을 입는다. 고르지 않은 칸의 정답 여부는 밝히지 않는다
+  /// (다음 판의 난이도를 건드리지 않기 위해서다).
+  MinigameOptionTone _toneFor(int slot) {
+    if (_picked != slot || _result == null) return MinigameOptionTone.neutral;
+    return _result!.success
+        ? MinigameOptionTone.correct
+        : MinigameOptionTone.wrong;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+
     return MinigameScaffold(
       title: '짤 고르기',
+      badge: '${Stat.label(Stat.talk)} ${widget.ctx.stat(Stat.talk)}',
       instruction: '${widget.ctx.partnerName}의 유머 코드에 맞는 짤을 고른다.',
       result: _result,
       onFinished: () => widget.done(_result!),
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: AppInsets.screenX,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              '"방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ"',
-              style: TextStyle(color: scheme.onSurface),
+          // 답해야 할 말. 이벤트 화면의 상대 말풍선과 같은 옷을 입는다.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+              ),
+              child: Container(
+                padding: AppInsets.bubble,
+                decoration: BoxDecoration(
+                  color: t.bubbleTheirs,
+                  borderRadius: AppRadius.bubble(mine: false),
+                  border: Border.all(
+                    color: t.bubbleBorder,
+                    width: AppBorderWidth.hairline,
+                  ),
+                ),
+                child: Text(
+                  '"방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ"',
+                  style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpace.lg),
           for (var i = 0; i < _order.length; i++)
             MinigameOption(
               label: _memes[_order[i]].$2,
               sub: _memes[_order[i]].$3,
               selected: _picked == i,
+              dimmed: _picked != null && _picked != i,
+              tone: _toneFor(i),
+              leading: Icon(
+                Icons.image_outlined,
+                size: AppSpace.xl,
+                color: context.scheme.onSurfaceVariant,
+              ),
               onTap: () => _pick(i),
             ),
         ],
@@ -236,6 +279,11 @@ class OutfitGame extends StatefulWidget {
 
 class _OutfitGameState extends State<OutfitGame> {
   static const _slots = ['상의', '하의', '신발'];
+  static const _slotIcons = [
+    Icons.checkroom,
+    Icons.dry_cleaning,
+    Icons.hiking,
+  ];
   static const _items = [
     [
       ('검정 니트', ['조용한', '전시']),
@@ -287,48 +335,48 @@ class _OutfitGameState extends State<OutfitGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final scheme = context.scheme;
+
     return MinigameScaffold(
       title: '옷장',
       instruction:
           '${widget.ctx.partnerName}의 취향: ${widget.ctx.tags.join(", ")}',
       result: _result,
       onFinished: () => widget.done(_result!),
+      // 세 칸을 다 채워야 나갈 수 있다. 버튼이 스크롤과 함께 사라지면
+      // 무엇이 남았는지 알기 어려우므로 아래에 고정한다.
+      footer: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: _picked.length == 3 && _result == null ? _finish : null,
+          child: const Text('이걸로 나간다'),
+        ),
+      ),
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.screenX,
+          vertical: AppSpace.sm,
+        ),
         children: [
           for (var s = 0; s < _slots.length; s++) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Text(
-                _slots[s],
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSurfaceVariant,
+            if (s > 0) const SizedBox(height: AppSpace.sectionGap),
+            SectionHeader(title: _slots[s]),
+            for (var i = 0; i < _items[s].length; i++)
+              MinigameOption(
+                label: _items[s][i].$1,
+                selected: _picked[s] == i,
+                leading: Icon(
+                  _slotIcons[s],
+                  size: AppSpace.xl,
+                  color: _picked[s] == i
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant,
                 ),
+                onTap: _result != null
+                    ? null
+                    : () => setState(() => _picked[s] = i),
               ),
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (var i = 0; i < _items[s].length; i++)
-                  ChoiceChip(
-                    label: Text(_items[s][i].$1),
-                    selected: _picked[s] == i,
-                    onSelected: _result != null
-                        ? null
-                        : (_) => setState(() => _picked[s] = i),
-                  ),
-              ],
-            ),
           ],
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _picked.length == 3 && _result == null ? _finish : null,
-            child: const Text('이걸로 나간다'),
-          ),
         ],
       ),
     );
@@ -402,9 +450,12 @@ class _DateCourseGameState extends State<DateCourseGame> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final scheme = context.scheme;
     final budget = min(widget.ctx.budget, widget.ctx.stat(Stat.money));
     final over = _cost > budget;
+    final spent = budget <= 0 ? (_cost > 0 ? 1.0 : 0.0) : _cost / budget;
+
     return MinigameScaffold(
       title: '코스 짜기',
       instruction:
@@ -412,31 +463,67 @@ class _DateCourseGameState extends State<DateCourseGame> {
           '${widget.ctx.partnerName}의 취향: ${widget.ctx.tags.join(", ")}',
       result: _result,
       onFinished: () => widget.done(_result!),
+      // 예산은 고르는 내내 보여야 하는 정보다. 목록과 함께 스크롤되면
+      // 초과를 모른 채 고르게 되므로 아래에 고정한다.
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppProgressBar(
+            value: spent,
+            semanticLabel: '예산',
+            fill: over ? t.danger : scheme.primary,
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (over) ...[
+                Icon(Icons.warning_amber_rounded, size: 16, color: t.danger),
+                const SizedBox(width: AppSpace.xs),
+              ],
+              Flexible(
+                child: Text(
+                  '합계 $_cost / $budget${over ? "  (예산 초과)" : ""}',
+                  textAlign: TextAlign.center,
+                  style: t.numericMedium.copyWith(
+                    color: over ? t.danger : scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _picked.length == 3 && _result == null ? _finish : null,
+              child: const Text('이 코스로 간다'),
+            ),
+          ),
+        ],
+      ),
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.screenX,
+          vertical: AppSpace.sm,
+        ),
         children: [
           for (var i = 0; i < _places.length; i++)
             MinigameOption(
               label: _places[i].$1,
-              sub: _places[i].$2 == 0 ? '무료' : '${_places[i].$2}',
+              // 값은 오른쪽에 tabular 로 세워 줄마다 자리수가 흔들리지 않는다.
+              trailingLabel: _places[i].$2 == 0 ? '무료' : '${_places[i].$2}',
               selected: _picked.contains(i),
               dimmed: !_picked.contains(i) && _picked.length >= 3,
+              leading: Icon(
+                Icons.place_outlined,
+                size: AppSpace.xl,
+                color: _picked.contains(i)
+                    ? scheme.onPrimaryContainer
+                    : scheme.onSurfaceVariant,
+              ),
               onTap: () => _toggle(i),
             ),
-          const SizedBox(height: 16),
-          Text(
-            '합계 $_cost / $budget${over ? "  (예산 초과)" : ""}',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: over ? scheme.error : scheme.onSurfaceVariant,
-              fontWeight: over ? FontWeight.w700 : FontWeight.normal,
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _picked.length == 3 && _result == null ? _finish : null,
-            child: const Text('이 코스로 간다'),
-          ),
         ],
       ),
     );
