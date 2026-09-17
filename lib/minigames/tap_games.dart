@@ -124,7 +124,13 @@ class _GroupChatGameState extends State<GroupChatGame> {
               label: '${_msgs[i].who}  ·  ${_msgs[i].text}',
               sub: _order.contains(i) ? '${_order.indexOf(i) + 1}번째로 답함' : null,
               selected: _order.contains(i),
-              dimmed: _order.contains(i),
+              dimmed: _order.contains(i) && _result == null,
+              // 끝나면 누른 칸마다 순서가 맞았는지 공개한다(색 + 테두리 + 아이콘).
+              tone: _result == null || !_order.contains(i)
+                  ? MinigameOptionTone.neutral
+                  : _msgs[i].priority == _order.indexOf(i)
+                  ? MinigameOptionTone.correct
+                  : MinigameOptionTone.wrong,
               // 상대만 캐릭터 강조색을 받는다. 나머지는 중립.
               leading: _Initial(
                 name: _msgs[i].who,

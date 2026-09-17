@@ -22,12 +22,17 @@ class _SweepBar extends StatefulWidget {
   final double critWidth;
   final void Function(double value) onStop;
 
+  /// 판정이 끝난 뒤 멈춘 마커가 입을 톤. 판정은 부모가 하고 여기선 색만 받는다.
+  /// null 이면 판정 전.
+  final AppTone? outcome;
+
   const _SweepBar({
     required this.speed,
     required this.zone,
     required this.zoneVisible,
     required this.onStop,
     this.critWidth = 0.25,
+    this.outcome,
   });
 
   @override
@@ -73,6 +78,13 @@ class _SweepBarState extends State<_SweepBar>
     const headD = AppSpace.md; // 12
     const barTop = (boxH - barH) / 2;
     const needleTop = (boxH - needleH - headD) / 2;
+    // 멈춘 순간 마커가 결과 톤으로 물든다. 문구는 스캐폴드의 결과 배지가 함께 말한다.
+    final needle = switch (widget.outcome) {
+      AppTone.brand => scheme.primary,
+      AppTone.success => t.success,
+      AppTone.danger => t.danger,
+      _ => scheme.onSurface,
+    };
 
     return Semantics(
       container: true,
@@ -148,7 +160,7 @@ class _SweepBarState extends State<_SweepBar>
                               width: headD,
                               height: headD,
                               decoration: BoxDecoration(
-                                color: scheme.onSurface,
+                                color: needle,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -156,7 +168,7 @@ class _SweepBarState extends State<_SweepBar>
                               width: needleW,
                               height: needleH,
                               decoration: BoxDecoration(
-                                color: scheme.onSurface,
+                                color: needle,
                                 borderRadius: AppRadius.rXs,
                               ),
                             ),
@@ -193,6 +205,15 @@ class _SweepBarState extends State<_SweepBar>
   }
 }
 
+/// 결과를 마커 톤으로 옮긴다. 스캐폴드의 결과 배지와 같은 대응이다.
+AppTone? _outcomeTone(MinigameResult? r) => r == null
+    ? null
+    : r.critical
+    ? AppTone.brand
+    : r.success
+    ? AppTone.success
+    : AppTone.danger;
+
 /// 1. 답장 타이밍 슬라이더 — 눈치
 class ReplyTimingGame extends StatefulWidget {
   final MinigameContext ctx;
@@ -224,6 +245,7 @@ class _ReplyTimingGameState extends State<ReplyTimingGame> {
         speed: 1 + sense / 120,
         zone: zone,
         zoneVisible: visible,
+        outcome: _outcomeTone(_result),
         onStop: _judge,
       ),
     );
@@ -280,7 +302,10 @@ class _NerveGaugeGameState extends State<NerveGaugeGame> {
         speed: 1.6,
         zone: [0.5 - _half, 0.5 + _half],
         zoneVisible: true,
-        critWidth: 0.3,
+        // 판정은 `d <= _half * 0.15` 다. 표시 폭 = 구간폭 × critWidth / 2 = _half × critWidth
+        // 이므로 0.15 여야 진한 칸이 실제 크리티컬 범위와 일치한다(기존 0.3 은 두 배로 보였다).
+        critWidth: 0.15,
+        outcome: _outcomeTone(_result),
         onStop: _judge,
       ),
     );

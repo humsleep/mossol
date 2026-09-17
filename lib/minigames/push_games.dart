@@ -71,6 +71,8 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
     final bust = _bustPercent;
     // 위험 구간은 경고 상태색으로만 알린다. 노랑 계열을 브랜드로 쓰지 않는다.
     final risky = bust >= 40;
+    // 표시용. 실패 결과는 한도를 넘긴 경우 하나뿐이다.
+    final busted = _result != null && !_result!.success;
 
     return MinigameScaffold(
       title: '선 지키기',
@@ -113,11 +115,20 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                 alignment: WrapAlignment.center,
                 children: [
                   for (var i = 0; i < 5; i++)
-                    Icon(
-                      i < _glasses ? Icons.local_bar : Icons.local_bar_outlined,
-                      size: AppSpace.xxxl,
-                      color: i < _glasses ? scheme.primary : t.gaugeTrack,
-                    ),
+                    // 선을 넘은 잔은 모양(금지 잔)과 위험색이 함께 바뀐다.
+                    i == _glasses && busted
+                        ? Icon(
+                            Icons.no_drinks_outlined,
+                            size: AppSpace.xxxl,
+                            color: t.danger,
+                          )
+                        : Icon(
+                            i < _glasses
+                                ? Icons.local_bar
+                                : Icons.local_bar_outlined,
+                            size: AppSpace.xxxl,
+                            color: i < _glasses ? scheme.primary : t.gaugeTrack,
+                          ),
                 ],
               ),
             ),
@@ -157,8 +168,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                     Expanded(
                       child: Text(
                         '다음 잔 흑역사 확률 $bust%',
-                        style: t.numericSmall.copyWith(
-                          fontSize: 15,
+                        style: t.numericMedium.copyWith(
                           color: risky
                               ? t.onWarningContainer
                               : scheme.onSurface,

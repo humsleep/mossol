@@ -162,9 +162,14 @@ void main() {
       c.phase = Phase.summary;
       await tester.pumpWidget(fullApp(c));
       expect(find.text('D+1 정산'), findsOneWidget);
-      expect(find.text('서연 호감 +4'), findsOneWidget);
+      // 라벨과 변화량을 나눠 변화량을 앞세운다. 둘 다 화면에 있어야 한다.
+      expect(find.text('오늘의 변화'), findsOneWidget);
+      expect(find.text('서연 호감'), findsOneWidget);
+      expect(find.text('+4'), findsOneWidget);
       expect(find.text('내일은 뭔가 다르다'), findsOneWidget);
-      expect(find.textContaining('(+3)'), findsOneWidget);
+      // 매력 막대 옆에 변화량(+3)과 오늘 값이 따로 보인다.
+      expect(find.text('+3'), findsOneWidget);
+      expect(find.text('${c.state!.stat(Stat.charm)}'), findsWidgets);
       await tester.tap(find.text('다음 날로'));
       await tester.pump();
       expect(c.state!.day, 2);

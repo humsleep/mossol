@@ -33,6 +33,10 @@ class _EventScreenState extends State<EventScreen> {
   String? _eventId;
   final _scroll = ScrollController();
 
+  /// 방금 고른 선택지 문구. 결과 패널이 떠 있는 동안 내 말풍선으로 대화에 남긴다.
+  /// 표시 전용이며 컨트롤러 상태와 무관하다.
+  String? _picked;
+
   GameController get c => widget.c;
 
   @override
@@ -52,6 +56,7 @@ class _EventScreenState extends State<EventScreen> {
 
   void _onChange() {
     if (!mounted) return;
+    if (c.lastOutcome == null) _picked = null;
     _syncEvent();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -189,6 +194,14 @@ class _EventScreenState extends State<EventScreen> {
                           _speakerKey(visible[i + 1], partner) !=
                               _speakerKey(visible[i], partner),
                     ),
+                  if (c.lastOutcome != null && _picked != null)
+                    ChatBubble(
+                      line: Line(who: 'me', text: _picked!),
+                      partnerName: partner,
+                      accent: accent,
+                      isFirstOfGroup: visible.isEmpty ||
+                          _speakerKey(visible.last, partner) != '#me',
+                    ),
                   if (waiting)
                     _WaitingBlock(
                       secondsLeft: _waitLeft,
@@ -204,7 +217,7 @@ class _EventScreenState extends State<EventScreen> {
           if (c.lastOutcome != null)
             _ResultPanel(c: c)
           else if (c.linesDone)
-            _ChoicePanel(c: c),
+            _ChoicePanel(c: c, onPicked: (text) => _picked = text),
         ],
       ),
     );
@@ -261,7 +274,9 @@ class _EventScreenState extends State<EventScreen> {
         ],
       ),
       actions: [
-        Center(
+        Padding(
+          padding: const EdgeInsets.only(right: AppSpace.sm),
+          child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.sm,
@@ -276,6 +291,7 @@ class _EventScreenState extends State<EventScreen> {
               style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
             ),
           ),
+          ),
         ),
       ],
       bottom: PreferredSize(
@@ -284,7 +300,8 @@ class _EventScreenState extends State<EventScreen> {
           value: progress,
           height: AppSpace.xs,
           semanticLabel: '대화 진행',
-          fill: accent.base,
+          // 상대가 없는 독백 이벤트는 강조색이 중립(거의 검정)이라 선이 무겁다.
+          fill: hasPartner ? accent.base : t.systemLine,
         ),
       ),
     );
@@ -399,7 +416,7 @@ class _WaitingBlock extends StatelessWidget {
               borderRadius: AppRadius.rPill,
             ),
             child: Text(
-              '— 읽음 · $secondsLeft초째 답이 없다 —',
+              '읽음 · $secondsLeft초째 답이 없다',
               textAlign: TextAlign.center,
               style: AppTypography.tabular(base.copyWith(color: t.systemLine)),
             ),
@@ -430,13 +447,17 @@ class _WaitingBlock extends StatelessWidget {
 /// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1).
 class _ChoicePanel extends StatelessWidget {
   final GameController c;
-  const _ChoicePanel({required this.c});
+
+  /// 선택이 확정되기 직전에 부른다. 화면이 내 말풍선을 그리는 데만 쓴다.
+  final ValueChanged<String> onPicked;
+  const _ChoicePanel({required this.c, required this.onPicked});
 
   /// 미니게임이 붙은 선택지는 먼저 게임을 돌리고 그 결과로 성패를 정한다.
   Future<void> _pick(BuildContext context, int index) async {
     final ev = c.current!;
     final id = ev.choices[index].minigame;
     if (id == null) {
+      onPicked(ev.choices[index].text);
       c.choose(index);
       return;
     }
@@ -445,6 +466,8 @@ class _ChoicePanel extends StatelessWidget {
       id,
       MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
     );
+    // 미니게임 도중 컨트롤러가 갱신돼도 지워지지 않게 결과 직전에 넘긴다.
+    onPicked(ev.choices[index].text);
     c.choose(
       index,
       minigameSuccess: result.success,
@@ -549,7 +572,7 @@ class _ResultPanel extends StatelessWidget {
         ? '실패…'
         : o.comboStarted
         ? '물올랐다!'
-        : '결과';
+        : '성공';
     final icon = o.critical
         ? Icons.auto_awesome
         : !o.success
@@ -561,13 +584,22 @@ class _ResultPanel extends StatelessWidget {
     final parts = <_DeltaPart>[
       for (final e in o.delta.stats.entries)
         _DeltaPart(
-          '${Stat.label(e.key)} ${_sign(e.value)}',
-          e.key == Stat.stress ? e.value < 0 : e.value > 0,
+          '${Stat.label(e.key)} ${signed(e.value)}',
+          good: e.key == Stat.stress ? e.value < 0 : e.value > 0,
+          up: e.value > 0,
         ),
       for (final e in o.delta.affection.entries)
-        _DeltaPart('${c.characterName(e.key)} 호감 ${_sign(e.value)}', e.value > 0),
+        _DeltaPart(
+          '${c.characterName(e.key)} 호감 ${signed(e.value)}',
+          good: e.value > 0,
+          up: e.value > 0,
+        ),
       for (final e in o.delta.trust.entries)
-        _DeltaPart('${c.characterName(e.key)} 신뢰 ${_sign(e.value)}', e.value > 0),
+        _DeltaPart(
+          '${c.characterName(e.key)} 신뢰 ${signed(e.value)}',
+          good: e.value > 0,
+          up: e.value > 0,
+        ),
     ];
 
     return BottomPanel(
@@ -668,16 +700,19 @@ class _ResultPanel extends StatelessWidget {
       ),
     );
   }
-
-  String _sign(int v) => v > 0 ? '+$v' : '$v';
 }
 
 /// 결과 한 항목. 문자열은 가공하지 않고 방향만 따로 들고 있다.
 @immutable
 class _DeltaPart {
   final String text;
+
+  /// 이로운 변화인지. 색을 정한다.
   final bool good;
-  const _DeltaPart(this.text, this.good);
+
+  /// 수치가 올랐는지. 화살표 방향을 정한다(스트레스 +2 는 ↑ + 위험색).
+  final bool up;
+  const _DeltaPart(this.text, {required this.good, required this.up});
 }
 
 /// 변화량 칩. 색 + 부호(문자열에 이미 있음) + 화살표 아이콘으로 방향을 말한다.
@@ -689,12 +724,15 @@ class _DeltaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final color = t.deltaColor(good: part.good);
+    // 결과 패널 배경이 톤(로즈·위험)으로 바뀌어도 의미색 대비가 무너지지 않게
+    // 칩은 항상 가장 밝은(다크: 가장 어두운) 표면 위에 올린다.
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.sm,
         vertical: AppSpace.xs,
       ),
       decoration: BoxDecoration(
+        color: context.scheme.surfaceContainerLowest,
         borderRadius: AppRadius.rSm,
         border: Border.all(color: color, width: AppBorderWidth.hairline),
       ),
@@ -702,7 +740,7 @@ class _DeltaChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            part.good ? Icons.arrow_upward : Icons.arrow_downward,
+            part.up ? Icons.arrow_upward : Icons.arrow_downward,
             size: 13,
             color: color,
           ),

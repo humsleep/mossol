@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
-import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
 import 'widgets.dart';
@@ -22,17 +21,19 @@ class SummaryScreen extends StatelessWidget {
     final hasRelation = d.affection.isNotEmpty || d.trust.isNotEmpty;
     final cliffhanger = c.cliffhanger;
 
-    // 관계 변화 줄. 표시 문자열('서연 호감 +4')은 고정이다.
+    // 관계 변화 줄. 라벨('서연 호감')과 변화량('+4')을 나눠 변화량을 앞세운다.
     final relations = <_RelationDelta>[
       for (final e in d.affection.entries)
         _RelationDelta(
-          label: '${c.characterName(e.key)} 호감 ${_signed(e.value)}',
-          up: e.value > 0,
+          id: e.key,
+          label: '${c.characterName(e.key)} 호감',
+          value: e.value,
         ),
       for (final e in d.trust.entries)
         _RelationDelta(
-          label: '${c.characterName(e.key)} 신뢰 ${_signed(e.value)}',
-          up: e.value > 0,
+          id: e.key,
+          label: '${c.characterName(e.key)} 신뢰',
+          value: e.value,
         ),
     ];
 
@@ -49,8 +50,12 @@ class SummaryScreen extends StatelessWidget {
           AppSpace.xxl,
         ),
         children: [
-          // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '42 (+3)'.
-          StatBars(state: s, delta: d.stats),
+          // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
+          const SectionHeader(title: '오늘의 변화'),
+          AppCard(
+            padding: AppInsets.cardTight,
+            child: StatBars(state: s, delta: d.stats),
+          ),
 
           // 2. 관계 변화. 한 줄씩 차례로 쌓인다.
           if (hasRelation) ...[
@@ -61,11 +66,10 @@ class SummaryScreen extends StatelessWidget {
                 index: i,
                 child: StatTile(
                   label: relations[i].label,
-                  // 색(상승/하락) + 부호(라벨 안) + 화살표 3중 표시.
-                  accent: context.tokens.deltaColor(good: relations[i].up),
-                  icon: relations[i].up
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
+                  // 점은 누구인지(캐릭터색), 변화량은 색 + 부호 + 화살표 3중.
+                  accent: context.tokens.accentFor(relations[i].id).base,
+                  delta: signed(relations[i].value),
+                  good: relations[i].value > 0,
                 ),
               ),
           ],
@@ -75,7 +79,7 @@ class SummaryScreen extends StatelessWidget {
             const SizedBox(height: AppSpace.sectionGap),
             _Reveal(
               index: relations.length,
-              child: _CliffhangerCard(text: cliffhanger),
+              child: CliffhangerCard(text: cliffhanger, emphasized: true),
             ),
           ],
 
@@ -93,7 +97,7 @@ class SummaryScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpace.sm),
           Text(
-            '스트레스 ${s.stat(Stat.stress)} · 흑역사 ${s.album.length}개',
+            '흑역사 ${s.album.length}개',
             textAlign: TextAlign.center,
             style: context.text.bodySmall,
           ),
@@ -103,37 +107,18 @@ class SummaryScreen extends StatelessWidget {
     );
   }
 
-  static String _signed(int v) => v > 0 ? '+$v' : '$v';
 }
 
 /// 관계 변화 한 줄분.
 class _RelationDelta {
+  final String id;
   final String label;
-  final bool up;
-  const _RelationDelta({required this.label, required this.up});
-}
-
-/// 내일의 예고. 좌측 청록 띠로 "아직 안 끝난 줄" 임을 표시한다.
-class _CliffhangerCard extends StatelessWidget {
-  final String text;
-  const _CliffhangerCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return AppCard(
-      accentStripe: scheme.tertiary,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.more_horiz, size: 20, color: scheme.tertiary),
-          const SizedBox(width: AppSpace.md),
-          // 컨트롤러가 준 문장을 그대로 한 덩어리로 둔다(테스트 고정).
-          Expanded(child: Text(text, style: context.text.bodyLarge)),
-        ],
-      ),
-    );
-  }
+  final int value;
+  const _RelationDelta({
+    required this.id,
+    required this.label,
+    required this.value,
+  });
 }
 
 /// 하루치 변화가 위에서부터 차례로 쌓이는 느낌만 준다.

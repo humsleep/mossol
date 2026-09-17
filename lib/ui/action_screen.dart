@@ -104,7 +104,7 @@ class _ActionScreenState extends State<ActionScreen> {
           // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
           if (cliffhanger != null) ...[
             const SizedBox(height: AppSpace.md),
-            _CliffhangerCard(text: '어젯밤: $cliffhanger'),
+            CliffhangerCard(text: '어젯밤: $cliffhanger'),
           ],
 
           // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
@@ -132,7 +132,7 @@ class _ActionScreenState extends State<ActionScreen> {
 
           // 5. 오늘의 결정. 화면의 주인공.
           const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '오늘 아침에 뭘 할까'),
+          const SectionHeader(title: '오늘 뭘 할까'),
           for (var i = 0; i < c.config.actions.length; i++) ...[
             if (i > 0) const SizedBox(height: AppSpace.listGap),
             AppListRow(
@@ -180,29 +180,6 @@ class _ActionScreenState extends State<ActionScreen> {
         const SnackBar(content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
       );
     }
-  }
-}
-
-/// 어젯밤의 예고. 좌측 청록 띠로 "어제에서 이어진 줄" 임을 표시한다.
-class _CliffhangerCard extends StatelessWidget {
-  final String text;
-  const _CliffhangerCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return AppCard(
-      accentStripe: scheme.tertiary,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.bedtime_outlined, size: 18, color: scheme.tertiary),
-          const SizedBox(width: AppSpace.sm),
-          // '어젯밤: ...' 은 한 덩어리 Text 로 유지한다(테스트 고정).
-          Expanded(child: Text(text, style: context.text.bodyMedium)),
-        ],
-      ),
-    );
   }
 }
 

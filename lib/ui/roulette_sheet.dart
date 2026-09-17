@@ -270,6 +270,7 @@ class _SlotCard extends StatelessWidget {
                   label:
                       '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
                   good: _isGood(e.key, e.value),
+                  up: e.value > 0,
                   muted: !result,
                 ),
             ],
@@ -313,12 +314,16 @@ class _EffectChip extends StatelessWidget {
   final String label;
   final bool good;
 
+  /// 수치가 오르는지. 화살표 방향만 정한다(스트레스 -20 은 ↓ + 성공색).
+  final bool up;
+
   /// 회전 중처럼 아직 결과가 아닐 때. 의미색을 켜지 않는다.
   final bool muted;
 
   const _EffectChip({
     required this.label,
     required this.good,
+    required this.up,
     required this.muted,
   });
 
@@ -332,7 +337,7 @@ class _EffectChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          good ? Icons.arrow_upward : Icons.arrow_downward,
+          up ? Icons.arrow_upward : Icons.arrow_downward,
           size: 14,
           color: color,
         ),

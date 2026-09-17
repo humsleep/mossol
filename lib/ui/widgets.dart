@@ -102,6 +102,9 @@ IconData _statIcon(String key) {
   }
 }
 
+/// 부호 붙인 정수. '+3' / '-2' / '0'.
+String signed(int v) => v > 0 ? '+$v' : '$v';
+
 // ---------------------------------------------------------------------------
 // 1. 진행 막대
 // ---------------------------------------------------------------------------
@@ -189,31 +192,50 @@ class StatBars extends StatelessWidget {
   /// 값이 오르면 좋은 스탯인지. 스트레스만 반대다.
   static bool _isGood(String key, int d) => key == Stat.stress ? d < 0 : d > 0;
 
-  /// '42' 또는 '42 (+3)'. 괄호 형식은 정산 테스트가 고정한 표기다.
-  String _valueLabel(String k) {
-    final v = state.stat(k).toString();
-    final d = delta?[k];
-    if (d == null || d == 0) return v;
-    return '$v (${d > 0 ? '+' : ''}$d)';
+  TextStyle? _labelStyle(BuildContext context) =>
+      (compact ? context.text.labelSmall : context.text.labelMedium)
+          ?.copyWith(color: context.scheme.onSurface);
+
+  /// 가장 긴 라벨('스트레스')이 잘리지 않는 폭. 글자 배율까지 반영해 실제로 잰다.
+  double _labelWidth(BuildContext context, List<String> show) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = _labelStyle(context);
+    var widest = 0.0;
+    for (final k in show) {
+      final tp = TextPainter(
+        text: TextSpan(text: Stat.label(k), style: style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      if (tp.width > widest) widest = tp.width;
+      tp.dispose();
+    }
+    final icon = compact ? 14.0 : 16.0;
+    // 아이콘 + 간격 + 글자 + 반올림 여유. 화면 폭을 다 먹지 않도록 상한을 둔다.
+    return (icon + AppSpace.xs + widest + AppSpace.xxs).ceilToDouble().clamp(
+      48.0,
+      140.0,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final show = keys ?? Stat.visible;
+    final labelW = _labelWidth(context, show);
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [for (final k in show) _row(context, k)],
+      children: [for (final k in show) _row(context, k, labelW)],
     );
   }
 
-  Widget _row(BuildContext context, String k) {
+  Widget _row(BuildContext context, String k, double labelW) {
     final t = context.tokens;
     final scheme = context.scheme;
     final scaler = MediaQuery.textScalerOf(context);
 
-    // 고정 폭은 1.3배 글꼴에서 잘린다. 배율을 곱해 두고 상한만 건다.
-    final labelW = scaler.scale(compact ? 52.0 : 58.0).clamp(48.0, 132.0);
-    final valueW = scaler.scale(compact ? 58.0 : 66.0).clamp(52.0, 148.0);
+    // 값('42')과 변화량('+3')이 나란히 들어갈 폭. 1.3배 글꼴까지 배율을 곱한다.
+    final valueW = scaler.scale(compact ? 40.0 : 88.0).clamp(36.0, 160.0);
 
     final value = state.stat(k);
     final max = Stat.maxOf(k);
@@ -252,10 +274,7 @@ class StatBars extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: (compact
-                                ? context.text.labelSmall
-                                : context.text.labelMedium)
-                            ?.copyWith(color: scheme.onSurface),
+                        style: _labelStyle(context),
                       ),
                     ),
                   ],
@@ -290,27 +309,34 @@ class StatBars extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    // 변화량이 주인공이다. 화살표는 실제 증감 방향, 색은 좋고 나쁨.
                     if (hasDelta) ...[
                       Icon(
-                        good ? Icons.arrow_upward : Icons.arrow_downward,
+                        d > 0 ? Icons.arrow_upward : Icons.arrow_downward,
                         size: 13,
                         color: t.deltaColor(good: good),
                       ),
                       const SizedBox(width: AppSpace.xxs),
+                      Flexible(
+                        child: Text(
+                          signed(d),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.numericMedium.copyWith(
+                            color: t.deltaColor(good: good),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.sm),
                     ],
-                    Flexible(
-                      child: Text(
-                        _valueLabel(k),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: hasDelta
-                            ? t.numericSmall.copyWith(
-                                color: t.deltaColor(good: good),
-                              )
-                            : t.numericSmall.copyWith(
-                                color: scheme.onSurface,
-                              ),
+                    Text(
+                      '$value',
+                      maxLines: 1,
+                      textAlign: TextAlign.right,
+                      style: t.numericSmall.copyWith(
+                        color: hasDelta
+                            ? scheme.onSurfaceVariant
+                            : scheme.onSurface,
                       ),
                     ),
                   ],
@@ -352,11 +378,12 @@ class StatTile extends StatelessWidget {
     final t = context.tokens;
     final scheme = context.scheme;
     final dir = good == null ? null : t.deltaColor(good: good!);
-    final arrow = good == null
+    // 화살표는 실제 증감 방향을 따른다. 색([good])과 따로 논다(스트레스 +4 는 ↑ + 위험색).
+    final arrow = delta == null
         ? Icons.remove
-        : good!
-        ? Icons.arrow_upward
-        : Icons.arrow_downward;
+        : delta!.startsWith('-')
+        ? Icons.arrow_downward
+        : Icons.arrow_upward;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: AppSpace.minTouch),
@@ -380,7 +407,7 @@ class StatTile extends StatelessWidget {
               const SizedBox(width: AppSpace.sm),
             ],
             Expanded(
-              child: Text(label, style: context.text.bodyMedium),
+              child: Text(label, style: context.text.bodyLarge),
             ),
             if (value != null) ...[
               const SizedBox(width: AppSpace.sm),
@@ -395,7 +422,7 @@ class StatTile extends StatelessWidget {
               const SizedBox(width: AppSpace.xxs),
               Text(
                 delta!,
-                style: t.numericSmall.copyWith(
+                style: t.numericMedium.copyWith(
                   color: dir ?? scheme.onSurfaceVariant,
                 ),
               ),
@@ -620,18 +647,44 @@ class _BannerSlotState extends State<BannerSlot> {
     // 광고가 없으면 높이 0. 여백도 경계선도 만들지 않는다.
     if (ad == null || !_loaded) return const SizedBox.shrink();
 
+    return BannerFrame(
+      width: ad.size.width.toDouble(),
+      height: ad.size.height.toDouble(),
+      safeArea: widget.safeArea,
+      child: AdWidget(ad: ad),
+    );
+  }
+}
+
+/// 배너 한 장의 틀. 광고 SDK 와 분리해 두어 위젯 테스트로 배치를 검증한다.
+///
+/// `Scaffold.bottomNavigationBar` 는 세로로 느슨한 제약(0 ~ 화면 높이)을 준다.
+/// 여기서 세로로 늘어나는 위젯을 쓰면 본문이 0 높이로 밀려난다.
+class BannerFrame extends StatelessWidget {
+  final double width;
+  final double height;
+  final bool safeArea;
+  final Widget child;
+
+  const BannerFrame({
+    super.key,
+    required this.width,
+    required this.height,
+    required this.child,
+    this.safeArea = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = context.scheme;
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Center(
-        child: SizedBox(
-          width: ad.size.width.toDouble(),
-          height: ad.size.height.toDouble(),
-          child: AdWidget(ad: ad),
-        ),
+        heightFactor: 1,
+        child: SizedBox(width: width, height: height, child: child),
       ),
     );
-    if (widget.safeArea) content = SafeArea(top: false, child: content);
+    if (safeArea) content = SafeArea(top: false, child: content);
 
     return Container(
       // 위 콘텐츠(버튼)와의 간격. 경계선 위로 8, 아래로 8.
@@ -748,7 +801,7 @@ class ChatBubble extends StatelessWidget {
               borderRadius: AppRadius.rPill,
             ),
             child: Text(
-              line.text.isEmpty ? '— 읽음 —' : line.text,
+              line.text.isEmpty ? '읽음' : line.text,
               textAlign: TextAlign.center,
               style: context.text.labelSmall?.copyWith(color: t.systemLine),
             ),
@@ -1184,6 +1237,53 @@ class BottomPanel extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // 7. 배지 · 칩 · 빈 상태 · 선택지
 // ---------------------------------------------------------------------------
+
+/// 어제와 오늘을 잇는 한 줄(클리프행어). 행동 화면과 정산 화면이 같은 껍데기를 쓴다.
+///
+/// 청록(tertiary) 좌측 띠 + 밤 아이콘으로 "아직 안 끝난 줄" 임을 알린다.
+/// [text] 는 가공하지 않고 한 덩어리 Text 로 렌더한다(테스트 고정).
+class CliffhangerCard extends StatelessWidget {
+  final String text;
+
+  /// 정산 화면처럼 이 줄이 화면의 마지막 여운일 때 한 단 크게.
+  final bool emphasized;
+
+  const CliffhangerCard({
+    super.key,
+    required this.text,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return AppCard(
+      accentStripe: scheme.tertiary,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xxs),
+            child: Icon(
+              Icons.bedtime_outlined,
+              size: 18,
+              color: scheme.tertiary,
+            ),
+          ),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Text(
+              text,
+              style: emphasized
+                  ? context.text.bodyLarge
+                  : context.text.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// 결과 배지. 색과 아이콘과 낱말로 동시에 알린다.
 class ResultBadge extends StatelessWidget {

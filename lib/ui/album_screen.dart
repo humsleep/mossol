@@ -48,17 +48,21 @@ class AlbumScreen extends StatelessWidget {
 /// 탭 상단의 수집 진행도. 개수(`'2 / 20'`)와 막대를 함께 둔다.
 ///
 /// 개수 문자열은 하나의 Text 로 유지한다(테스트 고정, §4.1).
-/// 탭 라벨과 같은 낱말('흑역사' / '엔딩')을 본문에 두면 탭을 문구로 찾는
-/// 테스트가 중복으로 걸리므로, 무엇을 모으는 중인지는 아이콘으로만 말한다.
+/// 제목은 탭 라벨('흑역사' / '엔딩')과 정확히 같은 낱말이 되지 않게 짓는다
+/// ('모은 흑역사' / '본 엔딩'). 탭을 문구로 찾을 때 중복으로 걸리지 않게 하려는 것이다.
 class _CollectionHeader extends StatelessWidget {
   final IconData icon;
+  final String title;
   final String count;
+  final String? note;
   final double value;
   final String semanticLabel;
 
   const _CollectionHeader({
     required this.icon,
+    required this.title,
     required this.count,
+    this.note,
     required this.value,
     required this.semanticLabel,
   });
@@ -76,12 +80,15 @@ class _CollectionHeader extends StatelessWidget {
             const SizedBox(width: AppSpace.sm),
             Expanded(
               child: Text(
-                count,
+                title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.numericMedium,
+                style: context.text.titleMedium,
               ),
             ),
+            const SizedBox(width: AppSpace.sm),
+            // 개수는 하나의 Text 로 둔다(테스트 고정).
+            Text(count, maxLines: 1, style: t.numericMedium),
           ],
         ),
         const SizedBox(height: AppSpace.sm),
@@ -90,6 +97,10 @@ class _CollectionHeader extends StatelessWidget {
           semanticLabel: semanticLabel,
           height: AppSpace.sm,
         ),
+        if (note != null) ...[
+          const SizedBox(height: AppSpace.sm),
+          Text(note!, style: context.text.bodySmall),
+        ],
       ],
     );
   }
@@ -121,7 +132,10 @@ class _ShameTab extends StatelessWidget {
       children: [
         _CollectionHeader(
           icon: Icons.local_fire_department_outlined,
+          title: '모은 흑역사',
           count: '${album.length} / $_goal',
+          // 수집 목표가 빈 상태에서만 보이면 한 장 모으는 순간 동기가 사라진다.
+          note: album.length < _goal ? '20개를 모으면 전용 엔딩이 열린다' : null,
           value: album.length / _goal,
           semanticLabel: '수집한 흑역사 ${album.length}개 / $_goal개',
         ),
@@ -201,6 +215,7 @@ class _EndingTab extends StatelessWidget {
       children: [
         _CollectionHeader(
           icon: Icons.emoji_events_outlined,
+          title: '본 엔딩',
           count: '${got.length} / ${all.length}',
           value: all.isEmpty ? 0 : got.length / all.length,
           semanticLabel: '본 엔딩 ${got.length}개 / ${all.length}개',
@@ -358,7 +373,10 @@ class _EndingCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: context.text.titleMedium?.copyWith(
-                          color: owned ? scheme.onSurface : t.lockedForeground,
+                          // 잠김은 자물쇠 메달이 먼저 말한다. 글자는 본문 대비(4.5:1)를 지킨다.
+                          color: owned
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -400,7 +418,6 @@ class _TierPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.tokens;
     final scheme = context.scheme;
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -418,7 +435,7 @@ class _TierPill extends StatelessWidget {
       child: Text(
         label,
         style: context.text.labelSmall?.copyWith(
-          color: owned ? accent.onContainer : t.lockedForeground,
+          color: owned ? accent.onContainer : scheme.onSurfaceVariant,
         ),
       ),
     );

@@ -104,7 +104,7 @@ class _MinigameHostState extends State<_MinigameHost> {
 /// 모든 미니게임이 쓰는 껍데기. 제목, 설명, 남은 시간, 본문, 결과를 맡는다.
 ///
 /// 위계: 놀이판([child])이 주인공이고 제목·설명은 물러난다. 결과가 정해지면
-/// 본문을 0.25 로 내리고 화면 배경과 결과 배지를 tone 에 맞춰 함께 바꾼다
+/// 본문을 0.5 로 내리고 화면 배경과 결과 배지를 tone 에 맞춰 함께 바꾼다
 /// (크리티컬 = brand / 성공 = success / 실패 = danger). 문구
 /// `크리티컬!` / `성공` / `실패` 는 고정이다.
 class MinigameScaffold extends StatefulWidget {
@@ -237,9 +237,12 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
             // 남은 시간. 30% 아래면 위험색으로 바뀐다(색 + 길이 두 신호).
             if (time != null)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.screenX,
-                  vertical: AppSpace.xs,
+                // 아래 놀이판과 붙어 보이지 않게 섹션 사이 간격을 둔다.
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.screenX,
+                  AppSpace.xs,
+                  AppSpace.screenX,
+                  AppSpace.md,
                 ),
                 child: AppProgressBar(
                   value: time,
@@ -250,7 +253,8 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
               ),
             Expanded(
               child: AnimatedOpacity(
-                opacity: r == null ? 1 : 0.25,
+                // 0.25 면 정답 공개(체크·정답 문구)가 읽히지 않는다. 물러나되 알아볼 수는 있게.
+                opacity: r == null ? 1 : 0.5,
                 duration: AppMotion.base(context),
                 curve: AppMotion.curve(context),
                 child: IgnorePointer(ignoring: r != null, child: widget.child),

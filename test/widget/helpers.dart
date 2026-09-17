@@ -9,6 +9,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/main.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
+import 'package:mossol/ui/design_system.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 StoryBundle? _cached;
@@ -35,17 +36,10 @@ Future<GameController> makeController() async {
   return c;
 }
 
-/// 앱과 같은 테마로 화면 하나를 감싼다.
+/// 앱과 같은 테마로 화면 하나를 감싼다. 실제 앱의 AppTheme 를 그대로 쓴다.
 Widget wrapApp(Widget child, {ThemeMode mode = ThemeMode.light}) => MaterialApp(
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC2295A)),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFF06A8F), brightness: Brightness.dark),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       themeMode: mode,
       home: child,
     );
