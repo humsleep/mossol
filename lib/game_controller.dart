@@ -2,12 +2,16 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
 import 'engine/event_engine.dart';
+import 'engine/meta_service.dart';
 import 'engine/models.dart';
 import 'engine/save_service.dart';
 import 'engine/story_repository.dart';
+
+export 'engine/attendance.dart' show CheckInResult, Attendance;
 
 enum Phase { home, action, event, summary, ending }
 
@@ -16,6 +20,7 @@ enum Phase { home, action, event, summary, ending }
 class GameController extends ChangeNotifier {
   final StoryBundle bundle;
   final SaveService save;
+  final MetaService metaService;
   late final EventEngine engine = EventEngine(bundle);
   late final EndingResolver resolver = EndingResolver(bundle.endings);
 
@@ -25,13 +30,21 @@ class GameController extends ChangeNotifier {
   GameController({
     required this.bundle,
     required this.save,
+    MetaService? meta,
     int Function()? clock,
-  }) : nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
+  })  : metaService = meta ?? MetaService(),
+        nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   Phase phase = Phase.home;
   GameState? state;
   bool hasSave = false;
   List<String> endingAlbum = [];
+
+  /// 회차를 넘어 유지되는 기록. [init] 에서 읽는다. 그 전에는 null.
+  PlayerMeta? meta;
+
+  /// 이번 회차 시작 때 받은 회차 간 보너스. 새 회차 화면에서 보여 준다.
+  Map<String, int> runBonus = const {};
 
   final List<StoryEvent> _queue = [];
   StoryEvent? current;
@@ -103,13 +116,146 @@ class GameController extends ChangeNotifier {
   Future<void> init() async {
     hasSave = await save.exists();
     endingAlbum = await save.loadEndings();
+    final m = await metaService.load();
+    if (m.firstLaunchMs <= 0) {
+      m.firstLaunchMs = nowMs();
+      await metaService.save(m);
+    }
+    meta = m;
     notifyListeners();
+  }
+
+  DateTime get _now => DateTime.fromMillisecondsSinceEpoch(nowMs());
+
+  // ---- 출석·메타 ----
+
+  /// 앱 실행·홈 진입 때 부른다. 오늘 첫 출석이면 연속 일수를 갱신하고 보상을 준다.
+  /// 세이브가 있으면 하트를 바로 얹고, 없으면 메타에 보류해 뒀다가 다음
+  /// [newGame]/[continueGame] 에서 얹는다. [init] 전에 부르면 null.
+  Future<CheckInResult?> checkInToday() async {
+    final m = meta;
+    if (m == null) return null;
+    final r = Attendance.checkIn(m, _now);
+    if (!r.first) return r;
+    final s = state;
+    var granted = 0;
+    if (s != null) {
+      granted = Attendance.grantHearts(s, r.heartsGranted, config.maxHearts);
+      await save.save(s);
+    }
+    // 세이브가 없거나 상한에 걸려 못 얹은 몫은 보관해 뒀다가 다음에 얹는다.
+    _bankHearts(m, r.heartsGranted - granted);
+    await metaService.save(m);
+    notifyListeners();
+    return r;
+  }
+
+  /// 출석 하트 보관함. 상한은 세이브의 하트 상한과 같다(최대치 두 배).
+  void _bankHearts(PlayerMeta m, int n) {
+    if (n <= 0) return;
+    m.pendingHearts = min(Attendance.heartCeiling(config.maxHearts), m.pendingHearts + n);
+  }
+
+  /// 연속 출석 일수. 마지막 출석이 오늘·어제가 아니면 0.
+  int get streakDays => meta == null ? 0 : Attendance.liveStreak(meta!, _now);
+
+  bool get checkedInToday => meta != null && Attendance.checkedInOn(meta!, _now);
+
+  int get bestStreak => meta?.bestStreak ?? 0;
+  int get totalRuns => meta?.totalRuns ?? 0;
+  int get bestDayReached => meta?.bestDayReached ?? 0;
+
+  /// 아직 세이브에 얹히지 않은 출석 하트. 세이브 없이 출석했을 때만 0 보다 크다.
+  int get pendingHearts => meta?.pendingHearts ?? 0;
+
+  /// 룰렛 무료 재도전권 (7일 연속 출석 보상).
+  int get rerollTickets => meta?.rerollTickets ?? 0;
+  bool get canUseRerollTicket => rerollTickets > 0 && canRerollRoulette;
+
+  /// 재도전권으로 룰렛을 한 번 더 돌린다. 광고 없이 [rerollRoulette] 과 같다.
+  Future<int> useRerollTicket() async {
+    final m = meta;
+    if (m == null || !canUseRerollTicket) throw StateError('쓸 수 있는 재도전권이 없다');
+    final slot = rerollRoulette();
+    m.rerollTickets -= 1;
+    await metaService.save(m);
+    notifyListeners();
+    return slot;
+  }
+
+  /// 보류 중인 출석 하트를 세이브에 얹는다. 회차 시작·복원 직후에 부른다.
+  Future<void> _applyPendingHearts(GameState s) async {
+    final m = meta;
+    if (m == null || m.pendingHearts <= 0) return;
+    m.pendingHearts -= Attendance.grantHearts(s, m.pendingHearts, config.maxHearts);
+    await metaService.save(m);
+  }
+
+  Future<void> _recordBestDay(int day) async {
+    final m = meta;
+    if (m == null) return;
+    final d = min(day, config.totalDays);
+    if (d <= m.bestDayReached) return;
+    m.bestDayReached = d;
+    await metaService.save(m);
+  }
+
+  /// 호감도가 가장 높은 캐릭터. 세이브가 없거나 전원 0 이면 null.
+  /// 동률이면 characters.json 순서가 앞선 쪽.
+  String? get topCharacterId {
+    final s = state;
+    if (s == null) return null;
+    String? best;
+    var bestAff = 0;
+    for (final c in bundle.characters) {
+      final a = s.affectionOf(c.id);
+      if (a > bestAff) {
+        bestAff = a;
+        best = c.id;
+      }
+    }
+    return best;
+  }
+
+  int get topAffection => state?.affectionOf(topCharacterId ?? '') ?? 0;
+
+  /// 앨범에 있는 엔딩을 등급(tier)별로 센다. 등급은 endings.json 의 tier 전부를
+  /// 키로 가지며 없는 등급은 0.
+  Map<String, int> get endingCountsByTier {
+    final got = endingAlbum.toSet();
+    final out = <String, int>{};
+    for (final e in bundle.endings) {
+      out.putIfAbsent(e.tier, () => 0);
+      if (got.contains(e.id)) out[e.tier] = out[e.tier]! + 1;
+    }
+    return out;
+  }
+
+  /// 등급별 전체 엔딩 수. "행복 2 / 6" 식으로 쓸 때 분모.
+  Map<String, int> get endingTotalsByTier {
+    final out = <String, int>{};
+    for (final e in bundle.endings) {
+      out[e.tier] = (out[e.tier] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  /// 아직 못 본 엔딩 중 priority 가 가장 낮은 것 (대체로 가장 쉬운 목표).
+  /// 기본(default) 엔딩은 목표가 아니므로 뺀다. 전부 봤으면 null.
+  Ending? get nextLockedEndingHint {
+    final got = endingAlbum.toSet();
+    Ending? best;
+    for (final e in bundle.endings) {
+      if (e.isDefault || got.contains(e.id)) continue;
+      if (best == null || e.priority < best.priority) best = e;
+    }
+    return best;
   }
 
   // ---- 회차 시작·복원 ----
 
   Future<void> newGame({int? seed, int run = 1}) async {
-    state = GameState.fresh(
+    final s = GameState.fresh(
       config,
       bundle.characters,
       seed: seed ?? Random().nextInt(1 << 31),
@@ -117,10 +263,19 @@ class GameController extends ChangeNotifier {
       previousEndings: endingAlbum,
       nowMs: nowMs(),
     );
+    runBonus = crossRunBonus(endingAlbum.length);
+    applyCrossRunBonus(s, runBonus);
+    state = s;
     ending = null;
     _resetDay();
     phase = Phase.action;
-    await save.save(state!);
+    final m = meta;
+    if (m != null) {
+      m.totalRuns += 1;
+      await metaService.save(m);
+    }
+    await _applyPendingHearts(s);
+    await save.save(s);
     hasSave = true;
     notifyListeners();
   }
@@ -129,9 +284,14 @@ class GameController extends ChangeNotifier {
     final s = await save.load();
     if (s == null) return false;
     state = s;
+    runBonus = const {};
     _regenHearts();
     _resetDay();
     phase = Phase.action;
+    if (pendingHearts > 0) {
+      await _applyPendingHearts(s);
+      await save.save(s);
+    }
     notifyListeners();
     return true;
   }
@@ -150,11 +310,35 @@ class GameController extends ChangeNotifier {
 
   void _regenHearts() => engine.regenHearts(state!, nowMs: nowMs());
 
+  /// 홈·행동 화면의 타이머 틱에서 부른다. 시간이 지나 찬 하트를 반영하고,
+  /// 하나라도 찼으면 저장한다. 찬 개수를 돌려준다.
+  Future<int> refreshHearts() async {
+    final s = state;
+    if (s == null) return 0;
+    final gained = engine.regenHearts(s, nowMs: nowMs());
+    if (gained > 0) {
+      await save.save(s);
+      notifyListeners();
+    }
+    return gained;
+  }
+
   Duration get nextHeartIn {
     final s = state;
     if (s == null) return Duration.zero;
     return Duration(milliseconds: engine.nextHeartInMs(s, nowMs: nowMs()));
   }
+
+  /// 다음 하트까지 남은 초 (올림). 세이브가 없거나 최대치 이상이면 0.
+  /// 0 인데 하트가 안 찼다면 [refreshHearts] 를 부르면 된다.
+  int get secondsToNextHeart {
+    final s = state;
+    if (s == null || s.hearts >= config.maxHearts) return 0;
+    final ms = s.lastHeartMs + engine.heartPeriodMs - nowMs();
+    return ms <= 0 ? 0 : (ms + 999) ~/ 1000;
+  }
+
+  bool get heartsFull => state != null && state!.hearts >= config.maxHearts;
 
   /// 하루 단위로 쌓이는 것들을 비운다. 새 날이 시작되기 직전(마감 직후)에 부른다.
   /// 룰렛은 아침 행동보다 먼저 돌므로 startDay 에서 비우면 룰렛 결과가 정산에서 빠진다.
@@ -342,6 +526,7 @@ class GameController extends ChangeNotifier {
     final s = state!;
     engine.endDay(s, cliffhanger: cliffhanger);
     _resetDay();
+    await _recordBestDay(s.day);
     final imm = resolver.immediate(s);
     if (imm != null) {
       await _finish(imm);
@@ -358,6 +543,7 @@ class GameController extends ChangeNotifier {
 
   Future<void> _finish(Ending e) async {
     ending = e;
+    await _recordBestDay(state?.day ?? 0);
     await save.addEnding(e.id);
     endingAlbum = await save.loadEndings();
     await save.clear();

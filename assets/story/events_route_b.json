@@ -4187,5 +4187,164 @@
    }
   ],
   "hint": 0
+ },
+ {
+  "id": "minjae_r00",
+  "layer": "route",
+  "character": "minjae",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ]
+  },
+  "weight": 5,
+  "title": "듀오 신청",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 랭크 게임. 게임이 끝나자 팀원에게서 귓속말."
+   },
+   {
+    "who": "them",
+    "text": "님 아까 그 판 ㄹㅇ 잘함"
+   },
+   {
+    "who": "them",
+    "text": "친추 ㄱ? 나 매일 이 시간에 함"
+   },
+   {
+    "who": "them",
+    "text": "아 나 민재. 닉 말고 이름"
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㄱㄱ 나도 매일 함",
+    "effects": {
+     "affection": {
+      "*": 2
+     }
+    }
+   },
+   {
+    "text": "짤로 답한다",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "album": "게임 친구에게 보낸 첫 짤이 아재 짤"
+    }
+   },
+   {
+    "text": "프로필 사진 실물이에요?",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     },
+     "album": "친추 1분 만에 실물 검증"
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "민재: \"내일은 음성 켜고 하자.\" 그냥 게임 얘기겠지."
+ },
+ {
+  "id": "yeeun_r00",
+  "layer": "route",
+  "character": "yeeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ]
+  },
+  "weight": 5,
+  "title": "모르는 번호, 아는 이름",
+  "lines": [
+   {
+    "who": "them",
+    "text": "혹시 너 우리 초등학교 6학년 3반 맞지?"
+   },
+   {
+    "who": "them",
+    "text": "나 예은이. 옆자리. 기억 안 나면 좀 섭섭"
+   },
+   {
+    "who": "them",
+    "text": "동창회 단톡에서 프사 보고 바로 알아봤어 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "예은이!! 당연히 기억하지",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 1
+     }
+    }
+   },
+   {
+    "text": "…미안 잘 기억이",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": -1
+     }
+    }
+   },
+   {
+    "text": "너 그때 지우개 반 잘라 줬잖아",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "chance": 55,
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "album": "동창 기억을 딴 애랑 헷갈림"
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "예은: \"이번 주 동창회 오지? 안 오면 데리러 감.\""
  }
 ]

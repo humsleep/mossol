@@ -4282,5 +4282,174 @@
    }
   ],
   "hint": 1
+ },
+ {
+  "id": "seoyeon_r00",
+  "layer": "route",
+  "character": "seoyeon",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ]
+  },
+  "weight": 5,
+  "title": "단톡 호명",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리 단톡. 신입 환영 메시지가 쏟아지는 중."
+   },
+   {
+    "who": "them",
+    "text": "@신입 너 지난주에 강의실 앞에서 나한테 길 물어봤던 사람 맞지?"
+   },
+   {
+    "who": "narr",
+    "text": "단톡방 전원이 보고 있다. 1이 빠르게 줄어든다."
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   }
+  ],
+  "choices": [
+   {
+    "text": "네! 그때 감사했어요",
+    "effects": {
+     "affection": {
+      "*": 2
+     }
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "reputation": -2
+     },
+     "album": "단톡에서 선배 호명에 답 늦어 정적"
+    }
+   },
+   {
+    "text": "선배 눈썰미 좋으시네요",
+    "require": {
+     "stats": {
+      "talk": 20
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 2
+     }
+    }
+   },
+   {
+    "text": "아닌 것 같은데요",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -1
+     }
+    }
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "서연 선배가 내 프로필을 눌렀다. 개인톡 알림은 아직 없다."
+ },
+ {
+  "id": "haneul_r00",
+  "layer": "route",
+  "character": "haneul",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ]
+  },
+  "weight": 5,
+  "title": "출근 전날 톡",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "내일 카페 알바 첫 출근. 저장 안 된 번호로 톡이 왔다."
+   },
+   {
+    "who": "them",
+    "text": "안녕 나 하늘. 내일 마감 조 같이야"
+   },
+   {
+    "who": "them",
+    "text": "앞치마 사이즈 뭐야? 사장님이 물어보래"
+   },
+   {
+    "who": "them",
+    "text": "아 그리고 늦으면 죽음 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "M이요! 잘 부탁드려요",
+    "effects": {
+     "affection": {
+      "*": 2
+     }
+    }
+   },
+   {
+    "text": "늦으면 하늘 씨가 커버해 주는 거 아니에요?",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "affection": {
+      "*": -2
+     },
+     "album": "첫 만남 전에 농담 헛스윙"
+    }
+   },
+   {
+    "text": "앞치마 사진 있어요? 미리 맞춰 보게요",
+    "require": {
+     "stats": {
+      "sense": 25
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     }
+    }
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "하늘: \"내일 6시. 컵 위치는 내가 알려줄게.\""
  }
 ]

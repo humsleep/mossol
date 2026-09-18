@@ -49,3 +49,6 @@ app.*.map.json
 
 # 시뮬레이션 산출물 (flutter test 마다 새로 생성됨)
 /tool/sim_out/
+
+# 서브셋 전 Pretendard 원본 (6MB). tool/subset_fonts.py 가 여기서 읽어 assets/fonts/ 로 출력한다.
+/tool/fonts_src/

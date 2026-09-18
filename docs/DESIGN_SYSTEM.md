@@ -57,9 +57,9 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 | `onSurface` | `#1C1216` | `#F2E5E7` | 본문 1차 글자 |
 | `onSurfaceVariant` | `#5B4A4F` | `#D4BFC5` | 본문 2차 글자 (회색 대신 **항상 이것**) |
 | `surfaceContainerLowest` | `#FFFFFF` | `#100A0E` | 상대 말풍선, 카드 안의 카드 |
-| `surfaceContainerLow` | `#FFF4F4` | `#1E1519` | 카드 기본 배경, 바텀시트, 하단 패널 |
+| `surfaceContainerLow` | `#FFF4F4` | `#1E1519` | 카드 기본 배경, 하단 패널, **라이트의** 바텀시트·다이얼로그 |
 | `surfaceContainer` | `#FAEDEE` | `#241A1E` | 선택 안 된 옵션 |
-| `surfaceContainerHigh` | `#F4E7E8` | `#2F2429` | 배지 바탕, 눌린 상태 |
+| `surfaceContainerHigh` | `#F4E7E8` | `#2F2429` | 배지 바탕, 눌린 상태, **다크의** 바텀시트·다이얼로그(모달은 바탕보다 두 단 위) |
 | `surfaceContainerHighest` | `#EEE0E2` | `#3A2E33` | 비활성 배경 |
 | `outline` | `#8C7A7F` | `#9C868C` | 잠금 아이콘, 시스템 줄 |
 | `outlineVariant` | `#E0CFD3` | `#4E3F44` | 카드·칩·말풍선 테두리 (1px 기본선) |
@@ -206,7 +206,8 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 | `tokens.shadowRaised` | y6 blur18 | 떠 있는 요소, 강조 카드 |
 | `tokens.shadowSheet` | y−6 blur28 | 바텀시트, 하단 패널 상단 |
 
-**다크 모드에서는 그림자가 거의 보이지 않는다.** 다크에서 깊이는 표면 단계
+**다크 모드에서는 그림자가 거의 보이지 않는다.** 모달 시트·다이얼로그는 다크에서 바탕보다 두 단 위
+(`surfaceContainerHigh`) + 상단 1px 테두리, 스크림 α0.62(라이트 α0.48). 다크에서 깊이는 표면 단계
 (`surfaceContainerLow` → `High`)와 `outlineVariant` 테두리로 만든다. 그래서 카드
 elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이상 쌓지 마라.
 
@@ -238,15 +239,24 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 있는 화면은 광고가 없을 때 높이 0 이어야 한다(현재 동작 유지).
 
 ### 2.1 홈 (`home_screen.dart`)
-- **주인공**: 타이틀 "모쏠 키우기"(`displaySmall`)와 그 아래 1차 버튼 하나.
-- **배경**: 부제, 앨범 진입, 개인정보 설정. 개인정보 설정은 `labelSmall` 크기로 가장 뒤.
-- 구성: 상단 40% 여백 → 타이틀 블록(타이틀 + 부제, 사이 `sm`) → `huge` → 버튼 묶음
-  (`이어하기` FilledButton, `새 게임` OutlinedButton, 사이 `md`) → `xxl` → 앨범 진입
-  (TextButton.icon, 진행도 `N / M` 는 `numericSmall`).
-- 세이브가 없으면 `이어하기` 자리를 비우지 말고 **`새 게임` 이 1차 버튼 위치로 올라온다**
-  (현재는 `SizedBox(height: 12)` 가 남아 위치가 어긋난다).
-- 배경에 은은한 로즈 방사 그라데이션(위→아래, `primary` 6% → 투명) 한 겹 허용.
-  그 외 장식 금지.
+
+상세 규격은 `docs/HOME_REDESIGN.md` §1. 여기는 요약이다. 둘이 다르면 HOME_REDESIGN 이 맞다.
+
+- **주인공**: 히어로 카드(첫 실행: 소개 카드 / 세이브 있음: 이어하기 카드)와 그 아래 1차 버튼 하나.
+- **배경**: 헤더 워드마크, 자원 줄(하트), 출석 줄, 사람들 스트립, 앨범 카드. 설정은 헤더 우측 아이콘.
+- 구성(위→아래, `ListView`, 패딩 20/16/20/24): 헤더 줄(높이 44, `모쏠 키우기` `titleLarge` + 설정
+  `IconButton`) → `md` → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
+  TextButton, 한 줄 고정) → `md` → 출석 줄(`RewardStrip`) → `md` → 1차 버튼(`이어하기` 또는 `새 게임`
+  FilledButton) → [세이브 있음] `sm` + `새 게임` TextButton → `sectionGap` → `SectionHeader('사람들')`
+  + `CastStrip` → `sectionGap` → 앨범 `AppCard(onTap)`(`'앨범  N / M'` 단일 Text + `EndingTierDots` +
+  다음 엔딩 힌트).
+- 세이브가 없으면 `새 게임` 이 1차 버튼 자리에 온다. 빈자리를 남기지 않는다.
+- **상단 여백 40% 와 로즈 방사 그라데이션은 폐지.** 배경은 `surface` 단색. 빈 공간으로 만든 여백은
+  실기기에서 휑함으로 읽혔다.
+- 높이 예산: 320×568 · 글자 1.3배 · 배너 있음에서 1차 버튼 하단 ≤ 568. 이를 위해 카드 안 텍스트는
+  전부 `maxLines` 를 건다(예고 2줄, 소개 헤드라인 2줄, 단계 1줄). 예산표는 HOME_REDESIGN §1.5.
+- 캐릭터는 `CastStrip` 으로 호감 순 가로 한 줄. 히든(도윤)은 해금 전 `???` + 실루엣 아바타, 항상 맨 뒤.
+- 화면당 `primaryContainer` 면은 하나: 첫 실행은 소개 카드, 세이브 있음은 미수령 출석 줄.
 
 ### 2.2 행동 선택 (`action_screen.dart`)
 - **주인공**: "오늘 뭘 할까" 아래 행동 카드 목록.
@@ -255,6 +265,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `StatBars(compact: true)`
   → `sectionGap` → `SectionHeader('관계')` + 캐릭터 칩 Wrap → `sectionGap`
   → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`).
+- `StatBars` 의 돈 행은 막대 없이 숫자(`numericMedium`)만, 맨 아래에 구분선 위로 둔다
+  (HOME_REDESIGN §4). `Stat.maxOf` 는 손대지 않는다.
 - 행동 행은 높이 최소 64, 제목 `titleSmall`, 설명 `bodySmall` 2줄까지, 우측 `chevron_right`.
   글자 1.3배에서 3줄이 되어도 깨지지 않도록 고정 높이를 주지 마라.
 - 클리프행어는 하루의 감정 연결선이다. 좌측에 `tertiary` 3px 띠를 두고 라벨 "어젯밤:" 은
@@ -310,11 +322,13 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ### 2.7 룰렛 시트 (`roulette_sheet.dart`)
 - **주인공**: 결과 슬롯 카드 하나.
 - **배경**: 제목, 설명, 버튼.
-- 시트 상단 모서리 `AppRadius.xl`, 배경 `surfaceContainerLow`, 드래그 핸들 없음
+- 시트 상단 모서리 `AppRadius.xl`, 배경은 테마 기본(라이트 `surfaceContainerLow`, 다크
+  `surfaceContainerHigh`, 상단 1px `outlineVariant`), 드래그 핸들 없음
   (닫기 불가한 시트이므로 드래그 가능처럼 보이면 안 된다).
 - 슬롯 카드 높이는 고정 132 대신 `minHeight: 132` 로 두고 글자 확대에 따라 늘어나게 한다.
 - 결과 tone: 좋으면 `successContainer` + 상승 아이콘, 나쁘면 `dangerContainer` +
-  하락 아이콘. 돌리기 전은 `surfaceContainerHigh` + `?`.
+  하락 아이콘. 돌리기 전은 `surfaceContainerHighest` + `?` (시트 배경보다 한 단 위. 다크 시트가
+  `High` 로 올라가면서 같이 올렸다).
 - 회전 중에는 `dim` 상태를 불투명도 0.6 대신 **색 채도 낮춤 + 블러 없음** 으로 표현하고,
   축소 모션 설정에서는 중간 프레임 없이 결과만 보여 준다.
 
@@ -759,6 +773,134 @@ class ChoiceButton extends StatelessWidget {
 }
 ```
 
+
+```dart
+/// 캐릭터 이니셜 원형 아바타. 사진 대신 강조색 + 이름 첫 글자 (§4.3).
+class CharacterAvatar extends StatelessWidget {
+  final String name;
+
+  /// null 이면 tokens.neutralAccent.
+  final CharacterAccent? accent;
+
+  /// 32 · 40 · 56 만 쓴다.
+  final double size;
+
+  /// 히든 미해금. 글자 대신 Icons.person_outline, 배경 surfaceContainerHigh.
+  final bool mystery;
+
+  const CharacterAvatar({
+    super.key,
+    required this.name,
+    this.accent,
+    this.size = 40,
+    this.mystery = false,
+  });
+}
+
+/// CastStrip 한 칸의 데이터.
+class CastEntry {
+  final String id;
+  final String name;
+
+  /// null 이면 ♥ 줄을 그리지 않는다(세이브 없음).
+  final int? affection;
+  final bool mystery;
+
+  const CastEntry({
+    required this.id,
+    required this.name,
+    this.affection,
+    this.mystery = false,
+  });
+}
+
+/// 캐릭터 가로 한 줄(홈). 정렬은 호출부가 끝내서 넘긴다. 항목 폭 56, 사이 md.
+class CastStrip extends StatelessWidget {
+  final List<CastEntry> entries;
+
+  const CastStrip({super.key, required this.entries});
+}
+
+/// 홈 이어하기 카드. 회차·진행·어젯밤 예고·가장 가까운 사람.
+class ContinueCard extends StatelessWidget {
+  final int run;
+  final int chapter;
+  final int day;
+  final int totalDays;
+
+  /// null 이면 '아직 아무 일도 없었다. 오늘부터다.' 라벨 '어젯밤:' 은 항상 붙는다.
+  final String? cliffhanger;
+
+  /// null 이면 '아직 아무와도 가까워지지 않았다'.
+  final String? topName;
+  final int topAffection;
+  final CharacterAccent? topAccent;
+
+  const ContinueCard({
+    super.key,
+    required this.run,
+    required this.chapter,
+    required this.day,
+    required this.totalDays,
+    this.cliffhanger,
+    this.topName,
+    this.topAffection = 0,
+    this.topAccent,
+  });
+
+  /// 세이브 요약을 아직 못 읽은 첫 프레임용.
+  const ContinueCard.placeholder({super.key})
+      : run = 0, chapter = 0, day = 0, totalDays = 100,
+        cliffhanger = null, topName = null, topAffection = 0, topAccent = null;
+}
+
+/// 출석 보상 줄의 상태.
+enum RewardStripState { unclaimed, unclaimedBonus, claimed }
+
+/// 홈 출석 보상 줄. 미수령이면 primaryContainer + '받기', 수령이면 중립 + 체크.
+class RewardStrip extends StatelessWidget {
+  final RewardStripState state;
+  final int streakDays;
+
+  /// unclaimedBonus 에서 부제에 붙는 보너스 문구. 예: '룰렛 재도전권 +1'.
+  final String? bonusLabel;
+
+  /// 세이브 없이 받아 둔 하트. 0 보다 크면 수령 상태 부제가 바뀐다.
+  final int pendingHearts;
+
+  /// unclaimed / unclaimedBonus 에서 필수.
+  final Future<void> Function()? onClaim;
+
+  const RewardStrip({
+    super.key,
+    required this.state,
+    required this.streakDays,
+    this.bonusLabel,
+    this.pendingHearts = 0,
+    this.onClaim,
+  });
+}
+
+/// 엔딩 등급별 획득 점. 순서 happy → good → solo → bad → hidden 고정.
+class EndingTierDots extends StatelessWidget {
+  /// tier → (획득, 전체).
+  final Map<String, (int, int)> counts;
+
+  const EndingTierDots({super.key, required this.counts});
+}
+
+/// 홈·행동·설정의 showDialog 를 대신한다. 스크림 불투명도를 시트와 맞춘다.
+Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builder});
+```
+
+`AppListRow` 에 매개변수 하나 추가:
+
+```dart
+/// danger 면 제목·leading 아이콘 색을 tokens.danger 로. 배경은 그대로.
+/// neutral | danger 만 지원. locked 가 true 면 tone 을 무시한다.
+final AppTone tone;   // 기본 AppTone.neutral
+```
+
 ### 3.3 유지하는 것
 
 - `CenteredScrollColumn` — 시그니처 변경 없음. 작은 화면 + 큰 글꼴 대응의 핵심이라
@@ -792,6 +934,9 @@ class ChoiceButton extends StatelessWidget {
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |
 | 앨범 아이콘 | AppBar 액션은 `Icons.photo_album_outlined` |
 | 빈 앨범 | `'아직 흑역사가 없다'` |
+| 홈 버튼 | `'새 게임'`, `'이어하기'` 각각 정확히 한 개의 Text. 다른 Text 가 이 문구와 완전히 같으면 안 된다 |
+| 홈 앨범 카드 | `'앨범  N / M'`(공백 2개) 단일 Text |
+| 홈 예고 | `'어젯밤: ...'` 단일 Text(행동 화면과 같은 규칙) |
 
 `test/widget/helpers.dart` 의 `wrapApp` 은 아직 자체 `ThemeData` 를 만든다. QA 단계에서
 `AppTheme.light` / `AppTheme.dark` 로 교체해야 화면이 실제 테마로 검증된다.
@@ -836,6 +981,9 @@ class ChoiceButton extends StatelessWidget {
    강조 1~2곳. 나머지는 표면 단계와 테두리로 위계를 만든다.
 7. **화면마다 컴포넌트 스타일 재정의** — `FilledButton.styleFrom(...)` 을 화면에서 다시
    쓰지 마라. 테마가 이미 정의했다. 예외가 필요하면 이 문서에 근거를 남긴다.
+   허용된 예외(HOME_REDESIGN 참고): ① `RewardStrip` 안 `받기` 버튼 최소 높이 44(카드 안 보조 버튼),
+   ② 홈 2차 `새 게임` TextButton 의 `foregroundColor: onSurfaceVariant`(1차와 무게 차이),
+   ③ 설정 초기화 확인 다이얼로그의 `지우기` FilledButton `backgroundColor: error`(파괴적 확인).
 8. **고정 높이로 텍스트 담기** — 1.3배 글꼴에서 잘린다.
 9. **그림자 두 겹 이상, 다크 모드에서 그림자로 깊이 만들기.**
 10. **애니메이션 상수 직접 쓰기** — `Duration(milliseconds: 250)` 대신 `AppMotion.base(context)`.

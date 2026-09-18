@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
 
 import 'ads/ad_manager.dart';
+import 'debug/debug_gallery.dart';
 import 'engine/save_service.dart';
 import 'engine/story_repository.dart';
 import 'game_controller.dart';
@@ -22,6 +23,12 @@ Future<void> main() async {
   registerMinigames();
   try {
     final bundle = await StoryBundle.loadFromAssets(knownMinigames: minigameIds);
+    if (kDebugMode && kDebugGallery) {
+      // QA 용. `--dart-define=MOSSOL_DEBUG_GALLERY=true` 로 미니게임·엔딩 갤러리에서 시작.
+      // kDebugMode 가 const false 인 릴리스 빌드에서는 갤러리 코드가 트리셰이킹된다.
+      runApp(DebugGalleryApp(bundle: bundle));
+      return;
+    }
     final controller = GameController(bundle: bundle, save: SaveService());
     await controller.init();
     unawaited(AdManager.instance.init());

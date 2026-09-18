@@ -5846,5 +5846,864 @@
   ],
   "once": false,
   "hint": 0
+ },
+ {
+  "id": "d_open_bet",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 5,
+  "once": true,
+  "title": "100일 내기",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 오늘부터 D-100이다"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "100일 안에 연애 못 하면 네가 치킨 열 마리"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "하면 내가 열 마리"
+   },
+   {
+    "who": "me",
+    "text": "판돈이 왜 치킨이야"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "돈으로 하면 너 파산할까 봐 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "콜. 대신 내가 이기면 스무 마리",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "setFlags": [
+      "bet_doubled"
+     ]
+    },
+    "chance": 55,
+    "fail": {
+     "stats": {
+      "esteem": -2,
+      "stress": 3
+     },
+     "album": "허세 부리다 판돈만 두 배"
+    },
+    "next": "d_open_bet_2"
+   },
+   {
+    "text": "…열 마리는 좀",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "stress": 2
+     },
+     "setFlags": [
+      "bet_accepted"
+     ]
+    }
+   },
+   {
+    "text": "증인 세워. 단톡에 올려",
+    "require": {
+     "stats": {
+      "esteem": 20
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "reputation": 2
+     },
+     "setFlags": [
+      "bet_accepted"
+     ]
+    },
+    "next": "d_open_bet_2"
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "태현이 단톡방에 \"증인 모집\"을 올렸다. 읽은 사람 7명."
+ },
+ {
+  "id": "d_open_bet_2",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    0,
+    0
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "증인 모집",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "10분 뒤. 친구들 단톡방."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "얘 100일 안에 연애한대 ㅋㅋ 증인 구함"
+   },
+   {
+    "who": "narr",
+    "text": "읽은 사람 7. 아무도 말이 없다."
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㅋㅋ 다들 지켜봐 주세요",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "reputation": 2
+     },
+     "setFlags": [
+      "bet_public"
+     ]
+    }
+   },
+   {
+    "text": "태현 지워 빨리",
+    "effects": {
+     "stats": {
+      "stress": 2,
+      "sense": 1
+     }
+    },
+    "minigame": "delete_fast",
+    "fail": {
+     "stats": {
+      "esteem": -2,
+      "reputation": -2
+     },
+     "album": "단톡에 내기 박제됨"
+    }
+   },
+   {
+    "text": "…(읽씹)",
+    "effects": {
+     "stats": {
+      "stress": 3,
+      "reputation": -1
+     }
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "단톡방 누군가가 \"나도 걸래\"라고 했다. 판돈이 늘었다."
+ },
+ {
+  "id": "d_open_groupchat",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "단톡 자기소개",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "과 단톡방에 초대됐다. 들어가자마자 안 읽은 메시지 47."
+   },
+   {
+    "who": "them",
+    "name": "과대",
+    "text": "새로 들어온 분들 자기소개 한 줄씩 ㄱㄱ"
+   },
+   {
+    "who": "narr",
+    "text": "앞사람 세 명이 순식간에 올렸다. 다음은 나다."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   }
+  ],
+  "choices": [
+   {
+    "text": "한 줄로 깔끔하게",
+    "effects": {
+     "stats": {
+      "reputation": 3,
+      "talk": 1
+     }
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "reputation": -2,
+      "stress": 3
+     },
+     "album": "자기소개 타이밍 놓치고 혼자 늦게 등장"
+    }
+   },
+   {
+    "text": "ㅋㅋ 안녕하세요!",
+    "effects": {
+     "stats": {
+      "reputation": 1
+     }
+    }
+   },
+   {
+    "text": "읽기만 한다",
+    "effects": {
+     "stats": {
+      "stress": -2,
+      "reputation": -1
+     },
+     "setFlags": [
+      "lurker"
+     ]
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_open_story",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "첫 스토리",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "프사 바꾼 김에 스토리도 하나 올렸다. 카페 창가, 커피, 손 살짝."
+   },
+   {
+    "who": "narr",
+    "text": "30분 뒤. 반응 1."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "스토리 내린다",
+    "effects": {
+     "stats": {
+      "esteem": -1,
+      "stress": -3
+     }
+    }
+   },
+   {
+    "text": "무시하고 하나 더 올린다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "reputation": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "album": "스토리 2연속 조회수 3"
+    }
+   },
+   {
+    "text": "\"?는 무슨 ?야\" 받아친다",
+    "require": {
+     "stats": {
+      "talk": 20
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 1
+     }
+    }
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "새벽 2시. 처음 보는 계정이 스토리를 봤다. 프로필이 자물쇠다."
+ },
+ {
+  "id": "d_open_wrong_number",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "잘못 온 문자",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "저장 안 된 번호."
+   },
+   {
+    "who": "them",
+    "name": "모르는 번호",
+    "text": "내일 3시 거기서 봐. 늦지 마"
+   },
+   {
+    "who": "narr",
+    "text": "거기가 어딘지 모른다. 나는 아무 약속도 없다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "잘못 보내신 것 같아요",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "sense": 1
+     }
+    },
+    "next": "d_open_wrong_number_2"
+   },
+   {
+    "text": "네 알겠습니다 (장난)",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "stress": 3
+     }
+    },
+    "chance": 40,
+    "fail": {
+     "stats": {
+      "stress": 6,
+      "reputation": -1
+     },
+     "album": "남의 약속에 대답했다가 호출당함"
+    }
+   },
+   {
+    "text": "읽씹",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": 1
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_open_wrong_number_2",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    0,
+    0
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "잘못 온 문자, 그 뒤",
+  "lines": [
+   {
+    "who": "them",
+    "name": "모르는 번호",
+    "text": "헉 죄송해요 번호 잘못 눌렀어요"
+   },
+   {
+    "who": "them",
+    "name": "모르는 번호",
+    "text": "근데 프사 분위기 좋으시네요 ㅋㅋ"
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   }
+  ],
+  "choices": [
+   {
+    "text": "감사합니다 ㅎㅎ 좋은 하루 보내세요",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 2
+     }
+    }
+   },
+   {
+    "text": "약속 잘 다녀오세요. 늦지 마시고요",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 2
+     },
+     "setFlags": [
+      "stranger_laugh"
+     ]
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "stress": 3
+     },
+     "album": "모르는 번호에 드립 쳤는데 답 없음"
+    }
+   },
+   {
+    "text": "혹시 몇 살이세요?",
+    "effects": {
+     "stats": {
+      "sincerity": -2,
+      "reputation": -1
+     },
+     "album": "잘못 온 문자에 나이 물어보기"
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "모르는 번호가 프사를 바꿨다. 내가 볼 걸 알았다는 듯이."
+ },
+ {
+  "id": "d_open_app_match",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "앱 첫 매칭",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "태현이 깔아 준 소개팅 앱. \"일단 세 명만 넘겨 봐.\""
+   },
+   {
+    "who": "narr",
+    "text": "세 번째에서 진동. 매칭!"
+   },
+   {
+    "who": "narr",
+    "text": "상대가 먼저 인사를 보냈다. \"프사 고양이 실화예요?\""
+   }
+  ],
+  "choices": [
+   {
+    "text": "취향대로 골라 본다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "charm": 1
+     },
+     "setFlags": [
+      "app_installed"
+     ]
+    },
+    "minigame": "profile_swipe",
+    "fail": {
+     "stats": {
+      "stress": 4
+     },
+     "album": "앱 첫날 전부 왼쪽으로 넘김"
+    }
+   },
+   {
+    "text": "일단 앱을 지운다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2,
+      "sincerity": 1
+     }
+    }
+   },
+   {
+    "text": "먼저 온 인사에 답한다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "album": "\"안녕하세요\" 보내고 매칭 취소됨"
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "앱 알림이 밤새 세 번 더 울렸다. 전부 광고였다."
+ },
+ {
+  "id": "d_open_late_msg",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "새벽 1시 14분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 1시 14분. 알림 하나."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "자?"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "테스트야. 답장 속도 재는 중. 지금부터 시작"
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   }
+  ],
+  "choices": [
+   {
+    "text": "지금이다 싶을 때 답장",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "esteem": 1
+     },
+     "setFlags": [
+      "night_drill"
+     ]
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "stress": 4
+     },
+     "album": "새벽 1시에 0.3초 만에 답장"
+    }
+   },
+   {
+    "text": "자는 척 읽씹",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -1
+     }
+    }
+   },
+   {
+    "text": "야 지금 몇 신데",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "esteem": 1,
+      "stress": 2
+     }
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현: \"합격. 내일부터 진짜 시작이다.\""
+ },
+ {
+  "id": "d_open_pfp_who",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 4,
+  "once": true,
+  "title": "누구세요?",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "프사를 바꾼 지 한 시간. 3년 만에 톡이 온 고등학교 동창."
+   },
+   {
+    "who": "them",
+    "name": "동창",
+    "text": "누구세요?"
+   },
+   {
+    "who": "them",
+    "name": "동창",
+    "text": "아 뭐야 너였어? 프사 보고 잘못 온 줄"
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㅋㅋ 나야 나. 바꿨어",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "reputation": 1
+     }
+    }
+   },
+   {
+    "text": "그렇게 달라?",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 2
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "esteem": -3
+     },
+     "album": "\"응 못 알아볼 정도로\"라는 답장"
+    }
+   },
+   {
+    "text": "…누구세요? (되묻기)",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": 2,
+      "sincerity": -1
+     }
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "동창: \"근데 예전 프사가 더 나았는데.\" 답장하지 않았다."
+ },
+ {
+  "id": "d_open_outfit",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "옷장 앞 20분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "100일 프로젝트 첫 외출. 옷장 앞에서 20분째."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "아직도 안 나왔냐. 뭐 입든 아무도 안 봐"
+   },
+   {
+    "who": "narr",
+    "text": "그 말이 더 무섭다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "코디 맞춰 입는다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 1
+     }
+    },
+    "minigame": "outfit",
+    "fail": {
+     "stats": {
+      "charm": -1
+     },
+     "album": "상하의 둘 다 체크무늬"
+    }
+   },
+   {
+    "text": "늘 입던 대로",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    }
+   },
+   {
+    "text": "태현에게 사진 보내 물어본다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": 2,
+      "reputation": -1
+     }
+    }
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "지하철 유리에 비친 내 모습. 나쁘지 않았다. 아마도."
+ },
+ {
+  "id": "d_open_meme",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "위로 짤 타이밍",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "친구들 단톡. 누군가 \"오늘 소개팅 망함\"을 올렸다."
+   },
+   {
+    "who": "narr",
+    "text": "위로 짤을 보낼 타이밍. 3초 안에 다른 사람이 먼저 보낼 것이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "짤로 위로한다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 2
+     }
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "stats": {
+      "reputation": -2
+     },
+     "album": "위로한다고 보낸 짤이 조롱짤"
+    }
+   },
+   {
+    "text": "ㅠㅠ 다음엔 잘될 거야",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "reputation": 1
+     }
+    }
+   },
+   {
+    "text": "누군데? 사진 있어?",
+    "effects": {
+     "stats": {
+      "sincerity": -2,
+      "reputation": -1
+     }
+    }
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_open_hello",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    1,
+    3
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "옆자리",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "전공 수업. 같은 수업을 세 학기째 듣는 사람이 옆자리에 앉았다."
+   },
+   {
+    "who": "narr",
+    "text": "세 학기 동안 한 번도 말을 건 적이 없다. 100일 프로젝트 첫 실전."
+   }
+  ],
+  "choices": [
+   {
+    "text": "먼저 인사한다",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "charm": 1,
+      "talk": 1
+     }
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "album": "인사하려다 기침한 척"
+    }
+   },
+   {
+    "text": "노트 펴고 집중하는 척",
+    "effects": {
+     "stats": {
+      "stress": -1
+     }
+    }
+   },
+   {
+    "text": "\"이 수업 세 학기째 같이 듣는 거 알아요?\"",
+    "require": {
+     "stats": {
+      "talk": 20
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 2
+     }
+    }
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "수업 끝나고 옆자리가 먼저 말을 걸었다. \"다음 주에도 여기 앉아요?\""
  }
 ]

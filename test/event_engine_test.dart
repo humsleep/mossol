@@ -39,7 +39,7 @@ void main() {
   group('데이터 로드', () {
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 6);
-      expect(bundle.events.length, 240);
+      expect(bundle.events.length, 256);
       expect(bundle.endings.length, 30);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
@@ -47,19 +47,20 @@ void main() {
     test('레이어별 분량이 기획대로다', () {
       expect(bundle.countByLayer, {
         EventLayer.main: 40,
-        EventLayer.route: 90,
-        EventLayer.daily: 80,
+        EventLayer.route: 94,
+        EventLayer.daily: 92,
         EventLayer.crisis: 16,
         EventLayer.hidden: 14,
       });
     });
 
-    test('캐릭터마다 루트 이벤트가 15개씩 있다', () {
+    test('캐릭터마다 루트 이벤트가 15개씩, 오프닝 r00 이 있는 4명은 16개', () {
+      const withR00 = {'seoyeon', 'haneul', 'minjae', 'yeeun'};
       for (final c in bundle.characters) {
         final n = bundle.events
             .where((e) => e.layer == EventLayer.route && e.character == c.id)
             .length;
-        expect(n, 15, reason: '${c.name} 루트');
+        expect(n, withR00.contains(c.id) ? 16 : 15, reason: '${c.name} 루트');
       }
     });
 

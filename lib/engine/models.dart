@@ -4,8 +4,10 @@ library;
 
 enum EventLayer { main, route, daily, crisis, hidden }
 
-EventLayer layerFrom(String? s) =>
-    EventLayer.values.firstWhere((e) => e.name == s, orElse: () => EventLayer.daily);
+EventLayer layerFrom(String? s) => EventLayer.values.firstWhere(
+  (e) => e.name == s,
+  orElse: () => EventLayer.daily,
+);
 
 /// 스탯 키와 표시 이름.
 class Stat {
@@ -112,7 +114,10 @@ class Trigger {
       notFlags: _strList(j['notFlags']),
       anyAffection: any == null
           ? null
-          : CountCondition((any['min'] as num).toInt(), (any['count'] as num).toInt()),
+          : CountCondition(
+              (any['min'] as num).toInt(),
+              (any['count'] as num).toInt(),
+            ),
     );
   }
 }
@@ -132,11 +137,11 @@ class Requirement {
   });
 
   factory Requirement.fromJson(Map<String, dynamic> j) => Requirement(
-        stats: _intMap(j['stats']),
-        affection: _intMap(j['affection']),
-        trust: _intMap(j['trust']),
-        flags: _strList(j['flags']),
-      );
+    stats: _intMap(j['stats']),
+    affection: _intMap(j['affection']),
+    trust: _intMap(j['trust']),
+    flags: _strList(j['flags']),
+  );
 }
 
 /// 선택 결과로 적용되는 변화.
@@ -184,11 +189,11 @@ class Line {
   bool get isWait => who == 'sys' && wait > 0;
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
-        who: (j['who'] as String?) ?? 'them',
-        text: (j['text'] as String?) ?? '',
-        wait: ((j['wait'] as num?) ?? 0).toInt(),
-        name: j['name'] as String?,
-      );
+    who: (j['who'] as String?) ?? 'them',
+    text: (j['text'] as String?) ?? '',
+    wait: ((j['wait'] as num?) ?? 0).toInt(),
+    name: j['name'] as String?,
+  );
 }
 
 class Choice {
@@ -217,17 +222,17 @@ class Choice {
   });
 
   factory Choice.fromJson(Map<String, dynamic> j) => Choice(
-        text: j['text'] as String,
-        require: j['require'] == null
-            ? null
-            : Requirement.fromJson(j['require'] as Map<String, dynamic>),
-        effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
-        next: j['next'] as String?,
-        chance: (j['chance'] as num?)?.toInt(),
-        fail: Effects.fromJson(j['fail'] as Map<String, dynamic>?),
-        failNext: j['failNext'] as String?,
-        minigame: j['minigame'] as String?,
-      );
+    text: j['text'] as String,
+    require: j['require'] == null
+        ? null
+        : Requirement.fromJson(j['require'] as Map<String, dynamic>),
+    effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
+    next: j['next'] as String?,
+    chance: (j['chance'] as num?)?.toInt(),
+    fail: Effects.fromJson(j['fail'] as Map<String, dynamic>?),
+    failNext: j['failNext'] as String?,
+    minigame: j['minigame'] as String?,
+  );
 }
 
 class StoryEvent {
@@ -317,19 +322,19 @@ class CharacterDef {
   });
 
   factory CharacterDef.fromJson(Map<String, dynamic> j) => CharacterDef(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        role: (j['role'] as String?) ?? '',
-        likes: _strList(j['likes']),
-        mines: _strList(j['mines']),
-        hidden: (j['hidden'] as bool?) ?? false,
-        replyZone: j['replyZone'] == null
-            ? const [0.35, 0.6]
-            : (j['replyZone'] as List).map((e) => (e as num).toDouble()).toList(),
-        humor: (j['humor'] as String?) ?? 'warm',
-        tags: _strList(j['tags']),
-        budget: ((j['budget'] as num?) ?? 40).toInt(),
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    role: (j['role'] as String?) ?? '',
+    likes: _strList(j['likes']),
+    mines: _strList(j['mines']),
+    hidden: (j['hidden'] as bool?) ?? false,
+    replyZone: j['replyZone'] == null
+        ? const [0.35, 0.6]
+        : (j['replyZone'] as List).map((e) => (e as num).toDouble()).toList(),
+    humor: (j['humor'] as String?) ?? 'warm',
+    tags: _strList(j['tags']),
+    budget: ((j['budget'] as num?) ?? 40).toInt(),
+  );
 }
 
 class Ending {
@@ -340,6 +345,10 @@ class Ending {
   final String? character;
   final Trigger when;
   final String epilogue;
+
+  /// 앨범에서 아직 못 본 엔딩에 보여 줄 한 줄 힌트. 사람이 쓴 문장.
+  /// 없으면 UI 가 조건으로 기계 문장을 만든다.
+  final String? hint;
 
   /// true 면 100일을 기다리지 않고 조건 충족 즉시 종료.
   final bool immediate;
@@ -353,21 +362,23 @@ class Ending {
     this.character,
     this.when = Trigger.always,
     this.epilogue = '',
+    this.hint,
     this.immediate = false,
     this.isDefault = false,
   });
 
   factory Ending.fromJson(Map<String, dynamic> j) => Ending(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        tier: (j['tier'] as String?) ?? 'good',
-        priority: ((j['priority'] as num?) ?? 0).toInt(),
-        character: j['character'] as String?,
-        when: Trigger.fromJson(j['when'] as Map<String, dynamic>?),
-        epilogue: (j['epilogue'] as String?) ?? '',
-        immediate: (j['immediate'] as bool?) ?? false,
-        isDefault: (j['default'] as bool?) ?? false,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    tier: (j['tier'] as String?) ?? 'good',
+    priority: ((j['priority'] as num?) ?? 0).toInt(),
+    character: j['character'] as String?,
+    when: Trigger.fromJson(j['when'] as Map<String, dynamic>?),
+    epilogue: (j['epilogue'] as String?) ?? '',
+    hint: j['hint'] as String?,
+    immediate: (j['immediate'] as bool?) ?? false,
+    isDefault: (j['default'] as bool?) ?? false,
+  );
 }
 
 class DayAction {
@@ -384,11 +395,11 @@ class DayAction {
   });
 
   factory DayAction.fromJson(Map<String, dynamic> j) => DayAction(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        desc: (j['desc'] as String?) ?? '',
-        effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    desc: (j['desc'] as String?) ?? '',
+    effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
+  );
 }
 
 class GameConfig {
@@ -409,15 +420,15 @@ class GameConfig {
   });
 
   factory GameConfig.fromJson(Map<String, dynamic> j) => GameConfig(
-        totalDays: ((j['totalDays'] as num?) ?? 100).toInt(),
-        chapterLength: ((j['chapterLength'] as num?) ?? 20).toInt(),
-        maxHearts: ((j['maxHearts'] as num?) ?? 5).toInt(),
-        heartRegenMinutes: ((j['heartRegenMinutes'] as num?) ?? 30).toInt(),
-        initialStats: _intMap(j['initialStats']),
-        actions: ((j['actions'] as List?) ?? const [])
-            .map((e) => DayAction.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    totalDays: ((j['totalDays'] as num?) ?? 100).toInt(),
+    chapterLength: ((j['chapterLength'] as num?) ?? 20).toInt(),
+    maxHearts: ((j['maxHearts'] as num?) ?? 5).toInt(),
+    heartRegenMinutes: ((j['heartRegenMinutes'] as num?) ?? 30).toInt(),
+    initialStats: _intMap(j['initialStats']),
+    actions: ((j['actions'] as List?) ?? const [])
+        .map((e) => DayAction.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 /// 캐릭터 한 명과의 관계.
@@ -428,14 +439,17 @@ class Relation {
 
   Relation({this.affection = 0, this.trust = 0, this.contactedToday = false});
 
-  Map<String, dynamic> toJson() =>
-      {'affection': affection, 'trust': trust, 'contactedToday': contactedToday};
+  Map<String, dynamic> toJson() => {
+    'affection': affection,
+    'trust': trust,
+    'contactedToday': contactedToday,
+  };
 
   factory Relation.fromJson(Map<String, dynamic> j) => Relation(
-        affection: ((j['affection'] as num?) ?? 0).toInt(),
-        trust: ((j['trust'] as num?) ?? 0).toInt(),
-        contactedToday: (j['contactedToday'] as bool?) ?? false,
-      );
+    affection: ((j['affection'] as num?) ?? 0).toInt(),
+    trust: ((j['trust'] as num?) ?? 0).toInt(),
+    contactedToday: (j['contactedToday'] as bool?) ?? false,
+  );
 }
 
 /// 한 회차의 전체 상태. 저장·복원 대상.
@@ -474,10 +488,10 @@ class GameState {
     this.lastCliffhanger,
     this.combo = 0,
     this.rouletteDay = 0,
-  })  : flags = flags ?? {},
-        seen = seen ?? {},
-        album = album ?? [],
-        endings = endings ?? [];
+  }) : flags = flags ?? {},
+       seen = seen ?? {},
+       album = album ?? [],
+       endings = endings ?? [];
 
   /// [nowMs] 는 하트 회복 기준 시각. 테스트에서 시계를 고정할 때 넘긴다.
   factory GameState.fresh(
@@ -487,16 +501,15 @@ class GameState {
     int run = 1,
     List<String>? previousEndings,
     int? nowMs,
-  }) =>
-      GameState(
-        seed: seed,
-        run: run,
-        stats: {for (final k in Stat.all) k: cfg.initialStats[k] ?? 0},
-        relations: {for (final c in characters) c.id: Relation()},
-        hearts: cfg.maxHearts,
-        lastHeartMs: nowMs ?? DateTime.now().millisecondsSinceEpoch,
-        endings: List.of(previousEndings ?? const []),
-      );
+  }) => GameState(
+    seed: seed,
+    run: run,
+    stats: {for (final k in Stat.all) k: cfg.initialStats[k] ?? 0},
+    relations: {for (final c in characters) c.id: Relation()},
+    hearts: cfg.maxHearts,
+    lastHeartMs: nowMs ?? DateTime.now().millisecondsSinceEpoch,
+    endings: List.of(previousEndings ?? const []),
+  );
 
   int stat(String key) => stats[key] ?? 0;
 
@@ -512,38 +525,39 @@ class GameState {
 
   /// 되돌리기 스냅샷으로도 쓰이므로 live 컬렉션을 그대로 넣지 않고 복사한다.
   Map<String, dynamic> toJson() => {
-        'day': day,
-        'run': run,
-        'seed': seed,
-        'stats': Map.of(stats),
-        'relations': relations.map((k, v) => MapEntry(k, v.toJson())),
-        'flags': flags.toList(),
-        'seen': seen.toList(),
-        'album': List.of(album),
-        'endings': List.of(endings),
-        'hearts': hearts,
-        'lastHeartMs': lastHeartMs,
-        'lastCliffhanger': lastCliffhanger,
-        'combo': combo,
-        'rouletteDay': rouletteDay,
-      };
+    'day': day,
+    'run': run,
+    'seed': seed,
+    'stats': Map.of(stats),
+    'relations': relations.map((k, v) => MapEntry(k, v.toJson())),
+    'flags': flags.toList(),
+    'seen': seen.toList(),
+    'album': List.of(album),
+    'endings': List.of(endings),
+    'hearts': hearts,
+    'lastHeartMs': lastHeartMs,
+    'lastCliffhanger': lastCliffhanger,
+    'combo': combo,
+    'rouletteDay': rouletteDay,
+  };
 
   factory GameState.fromJson(Map<String, dynamic> j) => GameState(
-        day: (j['day'] as num).toInt(),
-        run: ((j['run'] as num?) ?? 1).toInt(),
-        seed: (j['seed'] as num).toInt(),
-        stats: _intMap(j['stats']),
-        relations: ((j['relations'] as Map?) ?? const {}).map(
-          (k, v) => MapEntry(k as String, Relation.fromJson(v as Map<String, dynamic>)),
-        ),
-        flags: _strList(j['flags']).toSet(),
-        seen: _strList(j['seen']).toSet(),
-        album: _strList(j['album']),
-        endings: _strList(j['endings']),
-        hearts: ((j['hearts'] as num?) ?? 5).toInt(),
-        lastHeartMs: ((j['lastHeartMs'] as num?) ?? 0).toInt(),
-        lastCliffhanger: j['lastCliffhanger'] as String?,
-        combo: ((j['combo'] as num?) ?? 0).toInt(),
-        rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
-      );
+    day: (j['day'] as num).toInt(),
+    run: ((j['run'] as num?) ?? 1).toInt(),
+    seed: (j['seed'] as num).toInt(),
+    stats: _intMap(j['stats']),
+    relations: ((j['relations'] as Map?) ?? const {}).map(
+      (k, v) =>
+          MapEntry(k as String, Relation.fromJson(v as Map<String, dynamic>)),
+    ),
+    flags: _strList(j['flags']).toSet(),
+    seen: _strList(j['seen']).toSet(),
+    album: _strList(j['album']),
+    endings: _strList(j['endings']),
+    hearts: ((j['hearts'] as num?) ?? 5).toInt(),
+    lastHeartMs: ((j['lastHeartMs'] as num?) ?? 0).toInt(),
+    lastCliffhanger: j['lastCliffhanger'] as String?,
+    combo: ((j['combo'] as num?) ?? 0).toInt(),
+    rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
+  );
 }

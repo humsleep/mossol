@@ -2,7 +2,7 @@
  "totalDays": 100,
  "chapterLength": 20,
  "maxHearts": 5,
- "heartRegenMinutes": 30,
+ "heartRegenMinutes": 15,
  "initialStats": {
   "charm": 35,
   "talk": 20,
