@@ -99,11 +99,15 @@
    }
   },
   "weight": 10,
-  "title": "취중 고백 유혹",
+  "title": "막차 놓친 정류장",
   "lines": [
    {
     "who": "narr",
-    "text": "뒤풀이 3차. 옆자리다. 3차. 다들 취했다."
+    "text": "동아리 뒤풀이가 새벽에 끝났다. 막차는 방금 떠났다."
+   },
+   {
+    "who": "narr",
+    "text": "정류장 벤치, 옆자리다."
    },
    {
     "who": "them",
@@ -115,11 +119,7 @@
     "text": "저 사실…",
     "effects": {
      "affection": {
-      "seoyeon": 10,
-      "haneul": 10,
-      "jiwoo": 10,
-      "minjae": 10,
-      "yeeun": 10
+      "@top": 10
      },
      "setFlags": [
       "drunk_confess_ok"
@@ -130,33 +130,29 @@
       "esteem": -5
      },
      "affection": {
-      "seoyeon": -8,
-      "haneul": -8,
-      "jiwoo": -8,
-      "minjae": -8,
-      "yeeun": -8
+      "@top": -8
      },
-     "album": "취중 고백 실패"
+     "album": "막차 끊긴 정류장 고백 실패"
     },
-    "minigame": "drink_limit",
+    "minigame": "nerve_gauge",
     "reply": [
      {
       "who": "them",
-      "text": "…그 말, 내일 맨정신으로 한 번 더 해줄래?"
+      "text": "…그 말, 내일 밝을 때 한 번 더 해줄래?"
      }
     ],
     "failReply": [
      {
       "who": "narr",
-      "text": "혀가 꼬였다. 무슨 말을 했는지 기억나지 않는다."
+      "text": "말이 엉켰다. 뭐라고 했는지 나도 모르겠다."
      },
      {
       "who": "them",
-      "text": "…너 많이 취했어. 택시 불러줄게"
+      "text": "…너 많이 피곤한가 봐. 택시 잡아줄게"
      },
      {
       "who": "narr",
-      "text": "다음 날, 단톡방이 이상하게 조용했다."
+      "text": "다음 날, 그 사람 답장이 유난히 짧았다."
      }
     ],
     "critReply": [
@@ -166,12 +162,12 @@
      },
      {
       "who": "them",
-      "text": "근데 내일 다시 말해줘. 오늘 말고, 멀쩡한 너로"
+      "text": "근데 내일 다시 말해줘. 새벽 말고, 해 뜬 다음에"
      }
     ]
    },
    {
-    "text": "집에 갈게요",
+    "text": "택시 타고 먼저 갈게요",
     "effects": {
      "stats": {
       "stress": -10
@@ -191,11 +187,7 @@
       "stress": -5
      },
      "trust": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -206,7 +198,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "잘 불렀다. 그런 얘긴 맨정신에 해. 물 마시고 자"
+      "text": "잘 불렀다. 그런 얘긴 새벽 정류장에서 하는 거 아니야. 들어가 자"
      }
     ]
    }
@@ -229,11 +221,11 @@
    }
   },
   "weight": 10,
-  "title": "잔고 0",
+  "title": "잔고 바닥",
   "lines": [
    {
     "who": "narr",
-    "text": "잔고 3,200원. 다음 월급까지 9일."
+    "text": "잔고 삼천 원. 다음 월급까지 9일."
    },
    {
     "who": "narr",
@@ -248,11 +240,7 @@
       "sincerity": 2
      },
      "affection": {
-      "seoyeon": -3,
-      "haneul": -3,
-      "jiwoo": -3,
-      "minjae": -3,
-      "yeeun": -3
+      "@top": -3
      }
     },
     "reply": [
@@ -269,18 +257,10 @@
       "sincerity": 4
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 5
      }
     },
     "reply": [
@@ -313,7 +293,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "결제 알림이 울린다. 할부 3개월."
+      "text": "현금서비스 12만 원. 할부 3개월 알림이 울린다."
      },
      {
       "who": "them",
@@ -368,11 +348,7 @@
       "sincerity": 5
      },
      "trust": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -399,11 +375,7 @@
       "esteem": -4
      },
      "affection": {
-      "seoyeon": -6,
-      "haneul": -6,
-      "jiwoo": -6,
-      "minjae": -6,
-      "yeeun": -6
+      "@top": -6
      },
      "album": "매달리다 차단"
     },
@@ -498,7 +470,7 @@
       "esteem": -2,
       "stress": 8
      },
-     "album": "사흘 연속 카톡 무응답"
+     "album": "사흘 연속 메시지 무응답"
     },
     "reply": [
      {
@@ -575,11 +547,12 @@
       "sincerity": 6
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 2,
+      "seoyeon": 2,
+      "haneul": 2,
+      "jiwoo": 2,
+      "minjae": 2,
+      "yeeun": 2
      },
      "setFlags": [
       "pickup_confessed"
@@ -632,11 +605,12 @@
       "sincerity": -8
      },
      "trust": {
-      "seoyeon": -8,
-      "haneul": -8,
-      "jiwoo": -8,
-      "minjae": -8,
-      "yeeun": -8
+      "@top": -4,
+      "seoyeon": -4,
+      "haneul": -4,
+      "jiwoo": -4,
+      "minjae": -4,
+      "yeeun": -4
      },
      "album": "들키고도 계속하기"
     },
@@ -713,18 +687,20 @@
       "sincerity": 6
      },
      "affection": {
-      "seoyeon": -5,
-      "haneul": -5,
-      "jiwoo": -5,
-      "minjae": -5,
-      "yeeun": -5
+      "@top": -3,
+      "seoyeon": -2,
+      "haneul": -2,
+      "jiwoo": -2,
+      "minjae": -2,
+      "yeeun": -2
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 2,
+      "seoyeon": 1,
+      "haneul": 1,
+      "jiwoo": 1,
+      "minjae": 1,
+      "yeeun": 1
      },
      "clearFlags": [
       "fishing_mind"
@@ -759,11 +735,12 @@
       "stress": 25
      },
      "affection": {
-      "seoyeon": -10,
-      "haneul": -10,
-      "jiwoo": -10,
-      "minjae": -10,
-      "yeeun": -10
+      "@top": -6,
+      "seoyeon": -4,
+      "haneul": -4,
+      "jiwoo": -4,
+      "minjae": -4,
+      "yeeun": -4
      },
      "album": "카페 앞에서 도망"
     },
@@ -786,11 +763,12 @@
       "esteem": 2
      },
      "affection": {
-      "seoyeon": -6,
-      "haneul": -6,
-      "jiwoo": -6,
-      "minjae": -6,
-      "yeeun": -6
+      "@top": 4,
+      "seoyeon": -3,
+      "haneul": -3,
+      "jiwoo": -3,
+      "minjae": -3,
+      "yeeun": -3
      },
      "setFlags": [
       "chose_one"
@@ -897,11 +875,7 @@
       "esteem": -2
      },
      "affection": {
-      "seoyeon": -4,
-      "haneul": -4,
-      "jiwoo": -4,
-      "minjae": -4,
-      "yeeun": -4
+      "@top": -4
      }
     },
     "chance": 30,
@@ -910,11 +884,7 @@
       "stress": 18
      },
      "affection": {
-      "seoyeon": -6,
-      "haneul": -6,
-      "jiwoo": -6,
-      "minjae": -6,
-      "yeeun": -6
+      "@top": -6
      },
      "album": "가짜 애인 부탁했다 거절"
     },
@@ -935,7 +905,7 @@
      },
      {
       "who": "narr",
-      "text": "대화방에 아무도 남지 않았다."
+      "text": "그 사람이 대화방을 나갔다."
      }
     ]
    }
@@ -1010,11 +980,6 @@
       "stress": 15
      }
     },
-    "fail": {
-     "stats": {
-      "sense": -1
-     }
-    },
     "reply": [
      {
       "who": "narr",
@@ -1044,7 +1009,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "야… 이젠 너 뒤캐고 다닌다는 소문까지 났어"
+      "text": "야… 이젠 너 사람들 뒤 캐고 다닌다는 소문까지 났어"
      }
     ]
    }
@@ -1111,11 +1076,7 @@
       "stress": 10
      },
      "affection": {
-      "seoyeon": -3,
-      "haneul": -3,
-      "jiwoo": -3,
-      "minjae": -3,
-      "yeeun": -3
+      "@top": -3
      }
     },
     "reply": [
@@ -1137,11 +1098,7 @@
       "sincerity": 3
      },
      "affection": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -1238,18 +1195,14 @@
       "esteem": -3
      },
      "affection": {
-      "seoyeon": -3,
-      "haneul": -3,
-      "jiwoo": -3,
-      "minjae": -3,
-      "yeeun": -3
+      "@top": -3
      },
-     "album": "닷새째 연달아 보낸 카톡"
+     "album": "닷새째 연달아 보낸 메시지"
     },
     "reply": [
      {
       "who": "narr",
-      "text": "숫자 1이 사라지지 않는다."
+      "text": "한참 뒤, 숫자 1이 사라졌다."
      },
      {
       "who": "them",
@@ -1265,11 +1218,7 @@
       "sincerity": 3
      },
      "affection": {
-      "seoyeon": -8,
-      "haneul": -8,
-      "jiwoo": -8,
-      "minjae": -8,
-      "yeeun": -8
+      "@top": -8
      }
     },
     "reply": [
@@ -1342,18 +1291,10 @@
       "esteem": 2
      },
      "affection": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 5
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -1442,18 +1383,10 @@
       "esteem": 2
      },
      "affection": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      },
      "trust": {
-      "seoyeon": 6,
-      "haneul": 6,
-      "jiwoo": 6,
-      "minjae": 6,
-      "yeeun": 6
+      "@top": 6
      }
     },
     "reply": [
@@ -1480,11 +1413,7 @@
       "sincerity": -3
      },
      "trust": {
-      "seoyeon": -5,
-      "haneul": -5,
-      "jiwoo": -5,
-      "minjae": -5,
-      "yeeun": -5
+      "@top": -5
      }
     },
     "reply": [
@@ -1506,11 +1435,7 @@
       "esteem": -2
      },
      "affection": {
-      "seoyeon": -5,
-      "haneul": -5,
-      "jiwoo": -5,
-      "minjae": -5,
-      "yeeun": -5
+      "@top": -5
      }
     },
     "reply": [
@@ -1648,7 +1573,7 @@
    },
    {
     "who": "narr",
-    "text": "100일 안에 뭔가 되기로 한 건 나 혼자 정한 규칙이다."
+    "text": "100일은 첫날 태현이 던진 말이었다. 그걸 규칙으로 만든 건 나다."
    },
    {
     "who": "narr",
@@ -1684,11 +1609,7 @@
       "sincerity": -2
      },
      "affection": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -1711,7 +1632,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "누가 100일 안에 되래. 그건 시작하려고 정한 숫자지"
+      "text": "누가 100일 안에 되래. 그건 시작하라고 던진 숫자지"
      },
      {
       "who": "them",
@@ -1763,7 +1684,7 @@
    },
    {
     "who": "narr",
-    "text": "50일 동안 남은 게 없다."
+    "text": "여기까지 오는 동안 남은 게 없다."
    },
    {
     "who": "them",
@@ -1795,7 +1716,7 @@
      "stats": {
       "esteem": -5
      },
-     "album": "50일 만에 프로젝트 포기 선언"
+     "album": "프로젝트 중도 포기 선언"
     },
     "reply": [
      {
@@ -1847,7 +1768,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "야 이 답장 뭐냐. 50일 전 너보다 백 배 낫다"
+      "text": "야 이 답장 뭐냐. 처음 시작할 때 너보다 백 배 낫다"
      },
      {
       "who": "them",
@@ -1984,11 +1905,7 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -1999,6 +1916,10 @@
      {
       "who": "them",
       "text": "이상하다. 저도 그쪽 목소리를 들어본 것 같은데"
+     },
+     {
+      "who": "narr",
+      "text": "그날 밤, 괜히 요즘 제일 가까운 사람에게 먼저 연락했다."
      }
     ]
    },
@@ -2015,11 +1936,7 @@
       "sense": 4
      },
      "affection": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -2030,6 +1947,10 @@
      {
       "who": "narr",
       "text": "그 사람이 웃었다. 지난번과 똑같은 얼굴로."
+     },
+     {
+      "who": "narr",
+      "text": "돌아오는 길, 요즘 제일 가까운 사람 얼굴이 자꾸 겹쳐 보였다."
      }
     ],
     "critReply": [
@@ -2161,12 +2082,6 @@
   "id": "h_album_ten",
   "layer": "hidden",
   "trigger": {
-   "stats": {
-    "stress": [
-     0,
-     100
-    ]
-   },
    "flags": [
     "album_10"
    ]
@@ -2424,17 +2339,17 @@
       "sincerity": 3
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 3
      }
     },
     "reply": [
      {
       "who": "them",
       "text": "…고마워. 너 많이 달라졌다"
+     },
+     {
+      "who": "narr",
+      "text": "대화방을 닫고, 요즘 제일 자주 연락하는 이름을 눌렀다."
      }
     ],
     "critReply": [
@@ -2452,14 +2367,8 @@
     "text": "다시 시작하자고 한다",
     "effects": {
      "stats": {
-      "sincerity": -2
-     },
-     "affection": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "sincerity": -2,
+      "esteem": 2
      },
      "setFlags": [
       "fishing_mind"
@@ -2601,6 +2510,7 @@
       "esteem": 4
      }
     },
+    "chance": 80,
     "fail": {
      "stats": {
       "esteem": -3,
@@ -2617,6 +2527,18 @@
       "who": "them",
       "name": "태현",
       "text": "좋습니다 코치님. 첫 수업 언제입니까"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "ㅋㅋㅋ 코치님, 본인 앞가림부터 하시죠"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…농담이다. 근데 반은 진담"
      }
     ]
    }
@@ -2719,12 +2641,6 @@
       "talk": 4,
       "reputation": 6,
       "esteem": 3
-     }
-    },
-    "fail": {
-     "stats": {
-      "talk": -1,
-      "esteem": -1
      }
     },
     "reply": [
@@ -2888,7 +2804,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "세 번째 회차. 이제 패턴이 보인다."
+    "text": "또 첫날이다. 몇 번째든, 이제 패턴이 보인다."
    },
    {
     "who": "narr",
@@ -3081,12 +2997,17 @@
   "lines": [
    {
     "who": "narr",
-    "text": "준호, 예은, 나. 셋이 한 테이블에 앉았다."
+    "text": "준호가 잡은 자리다. 준호, 예은, 나. 셋이 한 테이블에 앉았다."
    },
    {
     "who": "them",
-    "text": "그래서 누가 먼저 말할 건데",
-    "name": "준호"
+    "name": "준호",
+    "text": "나 여친 기다리게 하고 왔다. 빨리 끝내라"
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "그래서 누가 먼저 말할 건데"
    },
    {
     "who": "sys",
@@ -3113,7 +3034,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "…아 뭐야. 나 완전 들러리네"
+      "text": "…됐다. 내 할 일은 여기까지네 ㅋㅋ"
      }
     ]
    },
@@ -3148,7 +3069,7 @@
     ]
    },
    {
-    "text": "준호에게 양보한다",
+    "text": "준호에게 대신 말해달라고 한다",
     "effects": {
      "stats": {
       "reputation": 5,
@@ -3159,7 +3080,7 @@
      }
     },
     "reply": [
-     "…양보? 내가 무슨 물건이야?",
+     "…그걸 왜 준호가 말해? 네 입으로 들어야지",
      {
       "who": "narr",
       "text": "예은은 빨대만 오래 저었다."

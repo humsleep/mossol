@@ -2,6 +2,7 @@
  {
   "id": "d_kakao_01",
   "layer": "daily",
+  "character": "seoyeon",
   "trigger": {
    "day": [
     8,
@@ -15,7 +16,7 @@
    }
   },
   "weight": 3,
-  "title": "잘못 보낸 카톡",
+  "title": "잘못 보낸 톡",
   "lines": [
    {
     "who": "me",
@@ -113,11 +114,16 @@
       "seoyeon": 6
      }
     },
+    "chance": 75,
     "fail": {
      "stats": {
-      "stress": 10
+      "stress": 10,
+      "esteem": -2
      },
-     "album": "삭제 실패, 읽음 표시 제거됨"
+     "affection": {
+      "seoyeon": -2
+     },
+     "album": "오발송에 '네 예뻤어요'로 확인 사살"
     },
     "reply": [
      {
@@ -129,6 +135,17 @@
       "who": "them",
       "name": "서연",
       "text": "알고는 있었는데. 직접 들으니까 좀 다르네"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "…그래. 고마워"
+     },
+     {
+      "who": "narr",
+      "text": "대화는 거기서 멈췄다. 이틀 동안 이모티콘만 왔다."
      }
     ],
     "critReply": [
@@ -299,11 +316,7 @@
       "sense": 1
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -311,7 +324,7 @@
       "sense": -1
      }
     },
-    "minigame": "delete_fast",
+    "minigame": "reply_timing",
     "reply": [
      "…별거 아니야",
      "그냥 너 지금 뭐 하나 궁금해서"
@@ -336,18 +349,8 @@
       "sense": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
-    },
-    "fail": {
-     "stats": {
-      "stress": 10
-     },
-     "album": "삭제 실패, 읽음 표시 제거됨"
     },
     "reply": "…그렇게 나오면 더 말하고 싶어지잖아",
     "critReply": [
@@ -362,11 +365,7 @@
       "sincerity": -4
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "삭제 메시지 몰래 복구"
     },
@@ -419,20 +418,16 @@
       "stress": 10
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
      "stats": {
       "stress": 10
      },
-     "album": "삭제 실패, 읽음 표시 제거됨"
+     "album": "해명하다 '아니 그게'만 전송"
     },
-    "minigame": "delete_fast",
+    "minigame": "word_order",
     "reply": [
      "ㅋㅋㅋ 봤어",
      "내 프사가 그렇게 좋았어?"
@@ -470,11 +465,7 @@
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -518,18 +509,10 @@
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "fail": {
@@ -561,18 +544,10 @@
     "text": "길게 사과 메시지",
     "effects": {
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -587,21 +562,13 @@
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "chance": 55,
     "fail": {
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "우울하다는 말에 ㅋㅋ"
     },
@@ -680,11 +647,7 @@
       "esteem": -2
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "답장 없는데 연달아 3통"
     },
@@ -710,11 +673,6 @@
      "stats": {
       "stress": -5,
       "esteem": 2
-     }
-    },
-    "fail": {
-     "stats": {
-      "esteem": -1
      }
     },
     "reply": [
@@ -752,7 +710,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "새벽 4시. 술이 덜 깼다."
+    "text": "새벽 4시. 잠이 안 온다. 감성이 차오른다."
    },
    {
     "who": "narr",
@@ -768,11 +726,7 @@
     "text": "보낸다",
     "effects": {
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "fail": {
@@ -780,15 +734,11 @@
       "esteem": -5
      },
      "affection": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -2
      },
-     "album": "새벽 4시 술 취한 장문"
+     "album": "새벽 4시 감성 장문"
     },
-    "minigame": "drink_limit",
+    "minigame": "nerve_gauge",
     "reply": [
      "…지금 몇 신 줄 알아?",
      "근데 그 뒤에 뭐라고 하려고 했는데?"
@@ -800,12 +750,18 @@
      },
      {
       "who": "them",
-      "text": "괜찮아? 물 많이 마셔…"
+      "text": "괜찮아? 새벽에 무슨 일 있었어?"
      }
     ],
     "critReply": [
-     "처음 봤을 때부터 뭐?",
-     "내일 맨정신에 끝까지 말해. 기다릴게"
+     {
+      "who": "them",
+      "text": "처음 봤을 때부터 뭐?"
+     },
+     {
+      "who": "them",
+      "text": "내일 밝을 때 끝까지 말해. 기다릴게"
+     }
     ]
    },
    {
@@ -824,7 +780,7 @@
     ]
    },
    {
-    "text": "내일 맨정신에 보낸다",
+    "text": "내일 아침에 다시 읽고 보낸다",
     "require": {
      "stats": {
       "sense": 45
@@ -835,11 +791,7 @@
       "sense": 4
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -868,7 +820,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "주머니 속에서 음성통화이 걸렸다. 통화 시간 1분 12초."
+    "text": "주머니 속에서 음성통화가 걸렸다. 통화 시간 1분 12초."
    },
    {
     "who": "narr",
@@ -883,18 +835,10 @@
       "sincerity": 4
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 5
      }
     },
     "fail": {
@@ -930,11 +874,7 @@
       "sincerity": -2
      },
      "trust": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -2
      }
     },
     "reply": [
@@ -953,11 +893,7 @@
       "stress": 8
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -971,6 +907,7 @@
  {
   "id": "d_sns_01",
   "layer": "daily",
+  "character": "seoyeon",
   "trigger": {
    "day": [
     3,
@@ -978,11 +915,11 @@
    ]
   },
   "weight": 2,
-  "title": "인스타 스토리 좋아요",
+  "title": "새벽 스토리 좋아요",
   "lines": [
    {
     "who": "narr",
-    "text": "새벽 1시. 스토리가 다섯 개 올라왔다. 엄지가 하트 위를 맴돈다."
+    "text": "새벽 1시. 서연 선배 스토리가 다섯 개 올라왔다. 엄지가 하트 위를 맴돈다."
    }
   ],
   "choices": [
@@ -993,8 +930,7 @@
       "reputation": -1
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1
+      "seoyeon": -1
      }
     },
     "reply": [
@@ -1012,11 +948,16 @@
     "text": "하나만",
     "effects": {
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1
+      "seoyeon": 1
      }
     },
-    "reply": "ㅋㅋ 그거 나도 제일 맘에 들었던 건데"
+    "reply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "ㅋㅋ 그거 나도 제일 맘에 들었던 건데"
+     }
+    ]
    },
    {
     "text": "안 누른다",
@@ -1027,11 +968,6 @@
      "setFlags": [
       "they_dm_first"
      ]
-    },
-    "fail": {
-     "stats": {
-      "sense": 1
-     }
     },
     "reply": [
      {
@@ -1066,7 +1002,7 @@
    },
    {
     "who": "narr",
-    "text": "2023년 3월 게시물. 하트가 켜졌다."
+    "text": "3년 전 봄에 올린 게시물. 하트가 켜졌다."
    }
   ],
   "choices": [
@@ -1079,11 +1015,7 @@
     },
     "fail": {
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "3년 전 사진 좋아요 알림 발송 완료"
     },
@@ -1100,7 +1032,7 @@
     ]
    },
    {
-    "text": "선제 카톡: \"옛날 사진 귀엽네\"",
+    "text": "선제 톡: \"옛날 사진 귀엽네\"",
     "require": {
      "stats": {
       "esteem": 48
@@ -1111,18 +1043,8 @@
       "talk": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
-    },
-    "fail": {
-     "stats": {
-      "stress": 10
-     },
-     "album": "삭제 실패, 읽음 표시 제거됨"
     },
     "reply": [
      "ㅋㅋㅋ 거기까지 내려갔어?",
@@ -1148,7 +1070,7 @@
      },
      {
       "who": "them",
-      "text": "너 인스타 없어졌던데 무슨 일 있어?"
+      "text": "너 계정 없어졌던데 무슨 일 있어?"
      }
     ]
    }
@@ -1184,11 +1106,7 @@
       "sincerity": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -1277,11 +1195,7 @@
       "esteem": -2
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      }
     },
     "reply": [
@@ -1326,18 +1240,10 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -1366,7 +1272,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "추천 피드가 전부 커플 숏폼다."
+    "text": "추천 피드가 전부 커플 숏폼이다."
    },
    {
     "who": "narr",
@@ -1452,11 +1358,7 @@
       "esteem": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -1490,11 +1392,7 @@
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -1538,21 +1436,13 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "chance": 70,
     "fail": {
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "상대가 태그 해제함"
     },
@@ -1579,18 +1469,10 @@
       "sense": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -1625,7 +1507,7 @@
    ]
   },
   "weight": 2,
-  "title": "엘리베이터 3초",
+  "title": "엘리베이터 8초",
   "lines": [
    {
     "who": "narr",
@@ -1706,11 +1588,11 @@
    ]
   },
   "weight": 3,
-  "title": "헌팅 포차",
+  "title": "옆 테이블",
   "lines": [
    {
     "who": "narr",
-    "text": "준호가 끌고 왔다. 옆 테이블에 사람이 있다."
+    "text": "준호가 끌고 간 보드게임 카페. 옆 테이블에 사람이 있다."
    },
    {
     "who": "them",
@@ -1733,9 +1615,9 @@
       "esteem": -5,
       "stress": 12
      },
-     "album": "헌팅 시도 3초 만에 실패"
+     "album": "옆 테이블에 말 걸다 3초 만에 실패"
     },
-    "minigame": "profile_swipe",
+    "minigame": "nerve_gauge",
     "reply": [
      "아 저희 곧 가려고 했는데…",
      "이름이 뭐예요?"
@@ -1770,7 +1652,7 @@
     ]
    },
    {
-    "text": "조용히 술만 마신다",
+    "text": "조용히 게임만 한다",
     "effects": {
      "stats": {
       "stress": -6
@@ -1878,7 +1760,7 @@
    ]
   },
   "weight": 3,
-  "title": "알바 첫 손님",
+  "title": "알바 단골손님",
   "lines": [
    {
     "who": "narr",
@@ -2043,11 +1925,6 @@
      },
      "affection": {
       "seoyeon": 2
-     }
-    },
-    "fail": {
-     "stats": {
-      "reputation": -2
      }
     },
     "reply": [
@@ -2281,18 +2158,10 @@
       "sincerity": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "minigame": "date_course",
@@ -2328,11 +2197,7 @@
       "stress": 12
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "album": "공포영화 내내 눈 감고 있기"
     },
@@ -2353,17 +2218,7 @@
       "charm": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
-     }
-    },
-    "fail": {
-     "stats": {
-      "money": -20,
-      "stress": 6
+      "@top": 1
      }
     },
     "reply": [
@@ -2407,11 +2262,7 @@
       "money": -18
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -2426,11 +2277,7 @@
       "money": -2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -2442,26 +2289,18 @@
     ]
    },
    {
-    "text": "한 잔만 더 하자고 한다",
+    "text": "30분만 더 있다 가자고 한다",
     "effects": {
      "stats": {
       "money": -25
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "fail": {
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "막차 놓치게 하려다 거절당함"
     },
@@ -2516,11 +2355,7 @@
       "charm": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -2532,11 +2367,7 @@
     "text": "같이 쓴다",
     "effects": {
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "chance": 70,
@@ -2545,11 +2376,7 @@
       "esteem": -2
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      }
     },
     "reply": [
@@ -2578,11 +2405,7 @@
       "sense": 2
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -2630,11 +2453,7 @@
       "stress": 10
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -2669,14 +2488,10 @@
       "money": -45
      },
      "affection": {
-      "haneul": 3
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -2692,11 +2507,7 @@
       "talk": 2
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -2741,11 +2552,7 @@
       "sense": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -2765,11 +2572,7 @@
       "sense": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -2785,11 +2588,7 @@
     "text": "\"너무 많이 찍는 거 아니야?\"",
     "effects": {
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "사진 20장에 짜증내기"
     },
@@ -2837,11 +2636,7 @@
       "esteem": 4
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "fail": {
@@ -2849,11 +2644,7 @@
       "esteem": -5
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "손 잡으려다 허공"
     },
@@ -2916,24 +2707,10 @@
       "sincerity": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
-     }
-    },
-    "fail": {
-     "stats": {
-      "esteem": -3,
-      "stress": 8
+      "@top": 5
      }
     },
     "reply": [
@@ -2980,11 +2757,7 @@
       "charm": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -2999,11 +2772,7 @@
       "charm": 4
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "chance": 45,
@@ -3036,11 +2805,7 @@
       "reputation": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -3088,11 +2853,7 @@
       "sense": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -3111,11 +2872,7 @@
       "sense": -1
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "만난 날짜 못 맞춤"
     },
@@ -3135,11 +2892,7 @@
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -3164,7 +2917,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "진실게임. 화살이 나에게 왔다."
+    "text": "동아리 MT 진실게임. 화살이 나에게 왔다."
    },
    {
     "who": "them",
@@ -3174,15 +2927,11 @@
   ],
   "choices": [
    {
-    "text": "인정한다",
+    "text": "인정하고 드립으로 받는다",
     "effects": {
      "stats": {
       "sincerity": 3,
       "esteem": 2
-     },
-     "affection": {
-      "yeeun": 2,
-      "minjae": 2
      }
     },
     "fail": {
@@ -3190,7 +2939,7 @@
       "stress": 12,
       "esteem": -2
      },
-     "album": "그날 밤 기억 없음"
+     "album": "모쏠 인정 드립이 선을 넘음"
     },
     "minigame": "drink_limit",
     "reply": [
@@ -3207,7 +2956,11 @@
     "failReply": [
      {
       "who": "narr",
-      "text": "그 뒤는 기억이 없다. 아침에 보니 단톡방이 99+다."
+      "text": "드립이 한 번 더 나갔다. 선을 넘었다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 단톡방에 그 드립이 박제돼 있었다."
      }
     ]
    },
@@ -3279,15 +3032,15 @@
    ]
   },
   "weight": 3,
-  "title": "주량 관리",
+  "title": "텐션 관리",
   "lines": [
    {
     "who": "narr",
-    "text": "다섯 잔째. 여기서 멈추면 안전하다."
+    "text": "동아리 뒤풀이. 드립 세 개가 연달아 터졌다. 여기서 멈추면 안전하다."
    },
    {
     "who": "narr",
-    "text": "한 잔 더 마시면 말이 늘고, 실수도 는다."
+    "text": "한 번 더 치면 판이 커지고, 실수도 는다."
    }
   ],
   "choices": [
@@ -3302,34 +3055,45 @@
     "reply": [
      {
       "who": "narr",
-      "text": "물을 시켰다. 다음 날 아침이 가볍다."
+      "text": "음료를 한 모금 마시고 남의 얘기를 들었다. 집에 가는 길이 가볍다."
      }
     ]
    },
    {
-    "text": "한 잔 더",
+    "text": "한 번 더",
     "effects": {
      "stats": {
       "talk": 4,
       "charm": 2
      }
     },
+    "chance": 60,
     "fail": {
      "stats": {
       "stress": 15,
       "esteem": -3
      },
-     "album": "6잔째 이후 기억 없음"
+     "album": "네 번째 드립에서 정적"
     },
     "reply": [
      {
       "who": "narr",
-      "text": "말이 조금 풀렸다. 옆 사람이 자꾸 웃는다."
+      "text": "한 번 더 터졌다. 옆 사람이 자꾸 웃는다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "네 번째 드립이 나가자 테이블이 조용해졌다."
+     },
+     {
+      "who": "narr",
+      "text": "누군가 헛기침을 하고 화제를 바꿨다."
      }
     ]
    },
    {
-    "text": "두 잔 더",
+    "text": "두 번 더",
     "effects": {
      "stats": {
       "talk": 7,
@@ -3342,19 +3106,23 @@
       "esteem": -6,
       "reputation": -3
      },
-     "album": "회식 자리에서 잠듦"
+     "album": "뒤풀이 드립 폭주"
     },
     "minigame": "drink_limit",
     "reply": [
      {
       "who": "narr",
-      "text": "분위기는 잡았다. 다만 내일의 나에게 미안하다."
+      "text": "판은 잡았다. 다만 내일 단톡방을 열기가 조금 무섭다."
      }
     ],
     "failReply": [
      {
       "who": "narr",
-      "text": "눈을 뜨니 다들 계산을 끝내고 나를 보고 있었다."
+      "text": "정신 차려 보니 다들 나를 보고 있었다."
+     },
+     {
+      "who": "narr",
+      "text": "웃는 얼굴은 하나도 없었다."
      }
     ]
    }
@@ -3372,15 +3140,15 @@
    ]
   },
   "weight": 2,
-  "title": "선배의 술잔",
+  "title": "선배의 마이크",
   "lines": [
    {
     "who": "narr",
-    "text": "선배가 잔을 채운다. 거절하면 분위기가 깨진다."
+    "text": "뒤풀이 자리. 선배가 마이크를 넘긴다. \"분위기 좀 띄워 봐.\""
    },
    {
     "who": "narr",
-    "text": "받으면 내일이 깨진다."
+    "text": "거절하면 분위기가 깨진다. 받으면 내 체면이 깨질 수도 있다."
    }
   ],
   "choices": [
@@ -3397,7 +3165,7 @@
       "stress": 12,
       "esteem": -2
      },
-     "album": "택시에서 잠들어 종점"
+     "album": "선배 앞에서 드립 선 넘음"
     },
     "minigame": "drink_limit",
     "reply": [
@@ -3408,13 +3176,18 @@
      },
      {
       "who": "narr",
-      "text": "내일 아침의 나는 오늘의 나를 원망할 것이다."
+      "text": "박수가 나왔다. 적당한 데서 마이크를 내려놓았다."
      }
     ],
     "failReply": [
      {
       "who": "narr",
-      "text": "눈을 떴다. 기사님이 말했다. \"종점입니다.\""
+      "text": "세 번째 드립에서 선배 표정이 굳었다."
+     },
+     {
+      "who": "them",
+      "name": "선배",
+      "text": "…그건 좀 아니다"
      }
     ]
    },
@@ -3427,8 +3200,7 @@
     },
     "effects": {
      "stats": {
-      "esteem": 4,
-      "reputation": -1
+      "esteem": 4
      }
     },
     "reply": [
@@ -3444,7 +3216,7 @@
     ]
    },
    {
-    "text": "몰래 버린다",
+    "text": "화장실 간 척한다",
     "effects": {
      "stats": {
       "sincerity": -2
@@ -3455,23 +3227,23 @@
      "stats": {
       "reputation": -4
      },
-     "album": "술 버리다 걸림"
+     "album": "화장실 간 척하다 걸림"
     },
     "reply": [
      {
       "who": "narr",
-      "text": "화분에 부었다. 화분에게 미안하다."
+      "text": "화장실에서 5분을 버텼다. 돌아오니 마이크는 다른 사람 손에 있었다."
      }
     ],
     "failReply": [
      {
       "who": "them",
       "name": "선배",
-      "text": "…너 방금 뭐 했어?"
+      "text": "…너 방금 화장실 다녀왔잖아"
      },
      {
       "who": "narr",
-      "text": "모두의 시선이 화분으로 향했다."
+      "text": "모두의 시선이 나에게 향했다."
      }
     ]
    }
@@ -3495,7 +3267,7 @@
    }
   },
   "weight": 3,
-  "title": "취중 전화",
+  "title": "잠결 전화",
   "lines": [
    {
     "who": "narr",
@@ -3503,23 +3275,19 @@
    },
    {
     "who": "narr",
-    "text": "통화 시간 4분 33초. 기억이 없다."
+    "text": "통화 시간 4분 33초. 잠결이었다. 기억이 없다."
    }
   ],
   "choices": [
    {
-    "text": "먼저 사과 카톡",
+    "text": "먼저 사과 톡",
     "effects": {
      "stats": {
       "sincerity": 3,
       "stress": 8
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -3534,11 +3302,7 @@
       "esteem": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -3548,7 +3312,7 @@
      },
      "album": "다음 날 사과 메시지 12통"
     },
-    "minigame": "drink_limit",
+    "minigame": "read_emotion",
     "reply": [
      "…진짜 하나도 기억 안 나?",
      "그럼 나만 알고 있을게 ㅋㅋ"
@@ -3564,8 +3328,14 @@
      }
     ],
     "critReply": [
-     "…기억 안 나면",
-     "다음엔 맨정신에 다시 말해줘. 그 얘기"
+     {
+      "who": "them",
+      "text": "…기억 안 나면"
+     },
+     {
+      "who": "them",
+      "text": "다음엔 깨어 있을 때 다시 말해줘. 그 얘기"
+     }
     ]
    },
    {
@@ -3575,11 +3345,7 @@
       "stress": 15
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "4분 33초의 공백"
     },
@@ -3607,17 +3373,17 @@
    ]
   },
   "weight": 2,
-  "title": "해장",
+  "title": "아침 국밥",
   "lines": [
    {
     "who": "them",
-    "text": "야 살아있냐",
-    "name": "준호"
+    "name": "준호",
+    "text": "야 살아있냐. 어제 밤새 게임했더니 죽겠다"
    },
    {
     "who": "them",
-    "text": "해장 콜?",
-    "name": "준호"
+    "name": "준호",
+    "text": "국밥 콜?"
    }
   ],
   "choices": [
@@ -3668,7 +3434,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "약한 놈 ㅋㅋ 물이나 마셔라"
+      "text": "약한 놈 ㅋㅋ 더 자라"
      }
     ]
    },
@@ -3685,11 +3451,7 @@
       "money": -18
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -3700,7 +3462,7 @@
      },
      {
       "who": "them",
-      "text": "해장하는데 나를 불렀어? ㅋㅋ 갈게"
+      "text": "아침 국밥에 나를 불렀어? ㅋㅋ 갈게"
      }
     ]
    }
@@ -3726,7 +3488,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "1차가 끝났다. 절반이 집에 간다."
+    "text": "동아리 뒤풀이, 저녁 자리가 끝났다. 절반이 집에 간다."
    },
    {
     "who": "narr",
@@ -3742,11 +3504,7 @@
       "money": -20
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -3754,13 +3512,13 @@
       "stress": 12,
       "esteem": -2
      },
-     "album": "취해서 한 얘기 또 하기"
+     "album": "같은 드립 세 번 하기"
     },
     "minigame": "drink_limit",
     "reply": [
      {
       "who": "narr",
-      "text": "사람이 줄자 자연스럽게 옆자리가 됐다."
+      "text": "사람이 줄자 자연스럽게 옆자리가 됐다. 드립 두 개에 둘 다 웃었다."
      },
      {
       "who": "them",
@@ -3798,7 +3556,7 @@
     ]
    },
    {
-    "text": "2차를 제안한다",
+    "text": "카페로 2차를 제안한다",
     "require": {
      "stats": {
       "talk": 42
@@ -3810,25 +3568,32 @@
       "money": -30
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
+    "chance": 75,
     "fail": {
      "stats": {
       "stress": 12,
       "esteem": -2
      },
-     "album": "계산은 내가 한다고 우김"
+     "album": "2차 제안했다가 나 혼자 남음"
     },
     "reply": [
      "오 좋아. 근데 이번엔 조용한 데 가자",
      {
       "who": "narr",
       "text": "조용한 곳에서, 조금 더 솔직한 얘기가 오갔다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "text": "아 오늘은 좀 피곤해 ㅠ 다음에 가자"
+     },
+     {
+      "who": "narr",
+      "text": "'2차 갈 사람!'에 손 든 건 나 하나였다."
      }
     ]
    }
@@ -3866,11 +3631,7 @@
       "sincerity": -2
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "setFlags": [
       "played_games"
@@ -3931,11 +3692,6 @@
      "stats": {
       "sense": 3,
       "talk": 2
-     }
-    },
-    "fail": {
-     "stats": {
-      "esteem": -1
      }
     },
     "reply": [
@@ -4062,6 +3818,7 @@
  {
   "id": "d_friend_03",
   "layer": "daily",
+  "character": "seoyeon",
   "trigger": {
    "day": [
     30,
@@ -4185,7 +3942,7 @@
   "lines": [
    {
     "who": "them",
-    "text": "오빠 친구분은 여자친구 없어요?",
+    "text": "오빠 친구분은 만나는 사람 없어요?",
     "name": "준호 여친"
    },
    {
@@ -4314,9 +4071,6 @@
      "stats": {
       "money": -300,
       "reputation": 5
-     },
-     "trust": {
-      "haneul": -2
      }
     },
     "reply": [
@@ -4410,18 +4164,10 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 5
      }
     },
     "fail": {
@@ -4483,18 +4229,10 @@
       "sincerity": -5
      },
      "affection": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -2
      },
      "trust": {
-      "seoyeon": -6,
-      "haneul": -6,
-      "jiwoo": -6,
-      "minjae": -6,
-      "yeeun": -6
+      "@top": -6
      },
      "album": "뒷담화에 숟가락 얹기"
     },
@@ -4855,7 +4593,7 @@
   "lines": [
    {
     "who": "them",
-    "text": "아들 그 사진 뭐니",
+    "text": "얘, 너 그 사진 뭐니",
     "name": "엄마"
    },
    {
@@ -4961,24 +4699,11 @@
       "esteem": -2
      }
     },
-    "fail": {
-     "stats": {
-      "money": -20,
-      "stress": 6
-     }
-    },
-    "minigame": "date_course",
     "reply": [
      {
       "who": "them",
       "name": "엄마",
       "text": "잘 쓰고 와. 사진은 엄마한테 먼저 보여주고"
-     }
-    ],
-    "failReply": [
-     {
-      "who": "narr",
-      "text": "계획 없이 쓰다 보니 봉투가 금방 가벼워졌다."
      }
     ]
    },
@@ -5111,11 +4836,11 @@
    ]
   },
   "weight": 3,
-  "title": "회식 \"여친 없냐\"",
+  "title": "회식 \"애인 없냐\"",
   "lines": [
    {
     "who": "them",
-    "text": "김 대리, 여자친구 없어?",
+    "text": "김 대리, 만나는 사람 없어?",
     "name": "부장"
    },
    {
@@ -5130,9 +4855,6 @@
     "effects": {
      "stats": {
       "sincerity": -3
-     },
-     "affection": {
-      "haneul": -3
      }
     },
     "reply": [
@@ -5247,14 +4969,8 @@
     "effects": {
      "stats": {
       "money": -20,
-      "charm": 2
-     },
-     "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "charm": 2,
+      "reputation": 2
      }
     },
     "reply": [
@@ -5267,14 +4983,8 @@
     "effects": {
      "stats": {
       "talk": 2,
-      "reputation": 1
-     },
-     "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "reputation": 1,
+      "stress": -5
      }
     },
     "reply": [
@@ -5329,18 +5039,14 @@
     ]
    },
    {
-    "text": "그 사람에게 카톡한다",
+    "text": "그 사람에게 톡한다",
     "effects": {
      "stats": {
       "esteem": 4,
       "talk": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -5349,7 +5055,7 @@
       "stress": 5
      }
     },
-    "minigame": "call_rhythm",
+    "minigame": "word_order",
     "reply": [
      "진짜? 떨리진 않았어?",
      "…대단하다. 저녁에 자세히 얘기해줘"
@@ -5508,11 +5214,7 @@
       "stress": 12
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      }
     },
     "reply": [
@@ -5536,11 +5238,7 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -5565,11 +5263,7 @@
       "stress": 8
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -5680,11 +5374,7 @@
       "sincerity": 1
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      }
     },
     "reply": [
@@ -5707,11 +5397,7 @@
       "sincerity": -4
      },
      "affection": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -2
      },
      "album": "같은 날 두 약속, 둘 다 망함"
     },
@@ -5738,18 +5424,10 @@
       "sincerity": 5
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "trust": {
-      "seoyeon": 5,
-      "haneul": 5,
-      "jiwoo": 5,
-      "minjae": 5,
-      "yeeun": 5
+      "@top": 5
      }
     },
     "reply": [
@@ -5794,11 +5472,7 @@
       "stress": 12
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "fail": {
@@ -5844,13 +5518,6 @@
      "stats": {
       "sincerity": 4,
       "esteem": 2
-     },
-     "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
      }
     },
     "reply": [
@@ -5898,18 +5565,10 @@
       "sincerity": 4
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "trust": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -5924,11 +5583,7 @@
       "sincerity": -4
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "album": "이름 잘못 부르고 발뺌"
     },
@@ -5947,18 +5602,10 @@
       "sincerity": 6
      },
      "affection": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -2
      },
      "trust": {
-      "seoyeon": 6,
-      "haneul": 6,
-      "jiwoo": 6,
-      "minjae": 6,
-      "yeeun": 6
+      "@top": 6
      }
     },
     "reply": [
@@ -5999,11 +5646,7 @@
       "sincerity": -3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "album": "같은 선물 두 개"
     },
@@ -6023,11 +5666,7 @@
       "sense": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "fail": {
@@ -6058,14 +5697,8 @@
     "effects": {
      "stats": {
       "money": -45,
-      "sincerity": 1
-     },
-     "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "sincerity": 1,
+      "stress": 5
      }
     },
     "reply": [
@@ -6116,13 +5749,6 @@
       "sincerity": 5,
       "esteem": 3
      },
-     "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
-     },
      "setFlags": [
       "chose_one"
      ]
@@ -6146,11 +5772,7 @@
       "sincerity": 6
      },
      "affection": {
-      "seoyeon": -2,
-      "haneul": -2,
-      "jiwoo": -2,
-      "minjae": -2,
-      "yeeun": -2
+      "@top": -1
      },
      "setFlags": [
       "self_focus"
@@ -6226,11 +5848,7 @@
       "sincerity": -5
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "setFlags": [
       "pickup_1"
@@ -6286,7 +5904,7 @@
    }
   ],
   "hint": 1,
-  "cliffhanger": "3일 뒤, 영상대로 한 사람은 신뢰를 잃는다."
+  "cliffhanger": "맨 위 댓글: \"이거 따라 하면 사흘 뒤에 신뢰 잃음. 경험담\""
  },
  {
   "id": "d_temp_02",
@@ -6305,7 +5923,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "사흘 전 밀당이 먹혔다. 호감도가 올랐다."
+    "text": "사흘 전 밀당이 먹혔다. 먼저 연락이 왔었다."
    },
    {
     "who": "narr",
@@ -6324,18 +5942,10 @@
       "sincerity": 4
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      },
      "setFlags": [
       "pickup_confessed"
@@ -6370,11 +5980,7 @@
       "sincerity": -4
      },
      "trust": {
-      "seoyeon": -6,
-      "haneul": -6,
-      "jiwoo": -6,
-      "minjae": -6,
-      "yeeun": -6
+      "@top": -6
      },
      "album": "밀당 들키고 거짓말"
     },
@@ -6393,18 +5999,10 @@
       "sincerity": -6
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "trust": {
-      "seoyeon": -8,
-      "haneul": -8,
-      "jiwoo": -8,
-      "minjae": -8,
-      "yeeun": -8
+      "@top": -8
      },
      "setFlags": [
       "pickup_2"
@@ -6455,11 +6053,7 @@
       "sincerity": -2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "album": "12개월 할부 선물"
     },
@@ -6476,11 +6070,7 @@
       "sense": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -6500,18 +6090,10 @@
       "stress": 8
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -6551,11 +6133,7 @@
       "sincerity": -3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "setFlags": [
       "small_lie"
@@ -6576,18 +6154,10 @@
       "sincerity": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -6602,23 +6172,10 @@
       "sincerity": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
-     }
-    },
-    "fail": {
-     "stats": {
-      "sense": -1
+      "@top": 3
      }
     },
     "reply": [
@@ -6745,7 +6302,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "픽업 영상 채널을 구독한 게 인스타 추천에 떴다."
+    "text": "픽업 영상 채널을 구독한 게 SNS 추천에 떴다."
    },
    {
     "who": "narr",
@@ -6764,18 +6321,10 @@
       "sincerity": 5
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      },
      "trust": {
-      "seoyeon": 3,
-      "haneul": 3,
-      "jiwoo": 3,
-      "minjae": 3,
-      "yeeun": 3
+      "@top": 3
      }
     },
     "reply": [
@@ -6790,11 +6339,7 @@
       "sincerity": -3
      },
      "trust": {
-      "seoyeon": -5,
-      "haneul": -5,
-      "jiwoo": -5,
-      "minjae": -5,
-      "yeeun": -5
+      "@top": -5
      },
      "album": "알고리즘 탓하기"
     },
@@ -6818,18 +6363,10 @@
       "talk": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -6936,11 +6473,7 @@
       "charm": 2
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -6971,13 +6504,13 @@
       "sincerity": -1
      }
     },
+    "chance": 65,
     "fail": {
      "stats": {
       "money": -20,
       "stress": 6
      }
     },
-    "minigame": "date_course",
     "reply": [
      {
       "who": "narr",
@@ -7031,11 +6564,7 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "reply": [
@@ -7050,11 +6579,7 @@
       "stress": 8
      },
      "affection": {
-      "seoyeon": -1,
-      "haneul": -1,
-      "jiwoo": -1,
-      "minjae": -1,
-      "yeeun": -1
+      "@top": -1
      }
     },
     "reply": [
@@ -7072,11 +6597,7 @@
       "charm": 2
      },
      "affection": {
-      "seoyeon": 2,
-      "haneul": 2,
-      "jiwoo": 2,
-      "minjae": 2,
-      "yeeun": 2
+      "@top": 2
      }
     },
     "chance": 65,
@@ -7287,7 +6808,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "인스타에 모르는 사람이 나온다. 팔짱을 끼고 있다."
+    "text": "SNS에 모르는 사람이 나온다. 팔짱을 끼고 있다."
    },
    {
     "who": "narr",
@@ -7302,18 +6823,10 @@
       "esteem": 3
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      },
      "trust": {
-      "seoyeon": 4,
-      "haneul": 4,
-      "jiwoo": 4,
-      "minjae": 4,
-      "yeeun": 4
+      "@top": 4
      }
     },
     "reply": [
@@ -7370,11 +6883,11 @@
    ]
   },
   "weight": 3,
-  "title": "태현의 인스타",
+  "title": "태현의 SNS",
   "lines": [
    {
     "who": "narr",
-    "text": "태현의 인스타를 오랜만에 들어갔다."
+    "text": "태현의 SNS 계정에 오랜만에 들어갔다."
    },
    {
     "who": "narr",
@@ -7446,6 +6959,7 @@
  {
   "id": "d_twist_03",
   "layer": "daily",
+  "character": "haneul",
   "trigger": {
    "day": [
     40,
@@ -7540,6 +7054,7 @@
  {
   "id": "d_twist_04",
   "layer": "daily",
+  "character": "jiwoo",
   "trigger": {
    "day": [
     45,
@@ -7642,6 +7157,7 @@
  {
   "id": "d_twist_05",
   "layer": "daily",
+  "character": "yeeun",
   "trigger": {
    "day": [
     50,
@@ -7769,7 +7285,7 @@
    }
   ],
   "hint": 1,
-  "cliffhanger": "편지 마지막 줄: \"답장 안 해도 돼. 그냥 알고만 있어.\""
+  "cliffhanger": "봉투 뒷면에 적힌 한 줄: \"답장 안 해도 돼. 그냥 알고만 있어.\""
  },
  {
   "id": "d_misc_01",
@@ -7794,10 +7310,6 @@
     "effects": {
      "stats": {
       "sincerity": 1
-     },
-     "affection": {
-      "seoyeon": 1,
-      "jiwoo": -1
      }
     },
     "reply": [
@@ -7917,6 +7429,7 @@
       "money": -25
      }
     },
+    "chance": 60,
     "fail": {
      "stats": {
       "charm": -2,
@@ -8028,6 +7541,7 @@
       "money": -80
      }
     },
+    "chance": 65,
     "fail": {
      "stats": {
       "charm": -1,
@@ -8159,11 +7673,7 @@
       "money": -15
      },
      "affection": {
-      "seoyeon": 1,
-      "haneul": 1,
-      "jiwoo": 1,
-      "minjae": 1,
-      "yeeun": 1
+      "@top": 1
      }
     },
     "reply": [
@@ -8331,6 +7841,7 @@
      },
      "album": "허세 부리다 판돈만 두 배",
      "setFlags": [
+      "bet_doubled",
       "bet_accepted"
      ]
     },
@@ -8406,7 +7917,7 @@
    }
   ],
   "hint": 2,
-  "cliffhanger": "태현이 단톡방에 \"증인 모집\"을 올렸다. 읽은 사람 7명."
+  "cliffhanger": "태현의 상태 메시지가 바뀌었다. \"D-100. 치킨 대기 중\""
  },
  {
   "id": "d_open_bet_2",
@@ -8780,7 +8291,7 @@
    }
   ],
   "hint": 2,
-  "cliffhanger": "새벽 2시. 처음 보는 계정이 스토리를 봤다. 프로필이 자물쇠다."
+  "cliffhanger": "새벽 2시. 처음 보는 계정이 팔로우 요청을 보냈다. 프로필이 자물쇠다."
  },
  {
   "id": "d_open_wrong_number",
@@ -9132,7 +8643,7 @@
    }
   ],
   "hint": 0,
-  "cliffhanger": "앱 알림이 밤새 세 번 더 울렸다. 전부 광고였다."
+  "cliffhanger": "그날 밤 태현이 물었다. \"그래서 몇 명 넘겼냐?\""
  },
  {
   "id": "d_open_late_msg",
@@ -9267,7 +8778,7 @@
    }
   ],
   "hint": 0,
-  "cliffhanger": "태현: \"합격. 내일부터 진짜 시작이다.\""
+  "cliffhanger": "태현: \"내일부터 진짜 시작이다. 알림 켜 둬.\""
  },
  {
   "id": "d_open_pfp_who",
@@ -10250,7 +9761,7 @@
    }
   ],
   "hint": 1,
-  "cliffhanger": "번호를 저장했다. 이름은 아직 \"3시\"."
+  "cliffhanger": "그날 오후 3시, 괜히 시계를 한 번 봤다."
  },
  {
   "id": "d_fu_locked",
@@ -10373,7 +9884,7 @@
    }
   ],
   "hint": 0,
-  "cliffhanger": "수락 10분 뒤, 자물쇠 계정이 3년 전 게시물에 좋아요를 눌렀다."
+  "cliffhanger": "그날 밤, 앱에 새 메시지가 하나 와 있었다. 고양이 이모지 하나."
  },
  {
   "id": "d_fu_lurker",

@@ -8,6 +8,7 @@ import '../minigames/minigame.dart';
 import '../minigames/registry.dart';
 import '../ui/design_system.dart';
 import '../ui/ending_screen.dart';
+import '../ui/widgets.dart';
 
 /// QA 용 디버그 갤러리. 미니게임 12종과 엔딩 화면을 100일 플레이 없이 연다.
 ///
@@ -159,6 +160,43 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
                   ),
               ],
             ),
+          // 서사 신호: 캐릭터별 구간 문장과 정산 "관계 변화" 카드 모양을 한눈에 본다.
+          _Header('서사 신호 (${bundle.signals.byCharacter.length}명)'),
+          for (final ch in bundle.characters)
+            if (bundle.signals.byCharacter[ch.id] case final sig?)
+              ExpansionTile(
+                title: Text('${ch.name} 신호'),
+                children: [
+                  for (final band in sig.bands)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.screenX,
+                        vertical: AppSpace.xs,
+                      ),
+                      child: RelationShiftCard(
+                        name: '${ch.name} ♥${band.min}~${band.max}',
+                        text: band.lines.join('\n'),
+                        up: true,
+                        accent: context.tokens.accentFor(ch.id),
+                      ),
+                    ),
+                  if (sig.down.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpace.screenX,
+                        AppSpace.xs,
+                        AppSpace.screenX,
+                        AppSpace.md,
+                      ),
+                      child: RelationShiftCard(
+                        name: ch.name,
+                        text: sig.down.join('\n'),
+                        up: false,
+                        accent: context.tokens.accentFor(ch.id),
+                      ),
+                    ),
+                ],
+              ),
         ],
       ),
     );

@@ -8,10 +8,11 @@ import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import 'minigame.dart';
 
-/// 9. 선 지키기 — 술자리
-/// 분위기는 맞추되 내 주량을 넘기지 않는 게임.
-/// 멈추는 것 자체가 성공이고, 한도를 넘겨 필름이 끊기는 것만 실패다.
-/// 잔 수가 많다고 더 큰 보상을 주지 않는다(음주 미화 방지).
+/// 9. 선 지키기 — 드립 한 번 더
+/// 분위기가 좋을 때 드립을 몇 번까지 치고 멈출지 고르는 게임.
+/// 멈추는 것 자체가 성공이고, 선을 넘어 드립이 흑역사가 되는 것만 실패다.
+/// 한 번 더 칠수록 다음 드립이 선을 넘을 확률이 오른다(최대 5번).
+/// id `drink_limit` 와 클래스 이름은 세이브·이벤트 데이터 호환 때문에 그대로 둔다.
 class DrinkLimitGame extends StatefulWidget {
   final MinigameContext ctx;
   final void Function(MinigameResult) done;
@@ -22,44 +23,45 @@ class DrinkLimitGame extends StatefulWidget {
 }
 
 class _DrinkLimitGameState extends State<DrinkLimitGame> {
-  int _glasses = 0;
+  /// 지금까지 친 드립 수.
+  int _jokes = 0;
   MinigameResult? _result;
   late final Random _rng = Random(
     widget.ctx.state.seed ^ widget.ctx.state.day ^ 7,
   );
 
-  /// 자존감이 높을수록 자기 한도를 잘 안다.
+  /// 자존감이 높을수록 어디까지가 선인지 잘 안다.
   int get _bustPercent {
     final tolerance = widget.ctx.stat(Stat.esteem) ~/ 12;
-    return (_glasses * _glasses * 5 - tolerance).clamp(0, 95);
+    return (_jokes * _jokes * 5 - tolerance).clamp(0, 95);
   }
 
-  void _drink() {
+  void _joke() {
     if (_result != null) return;
     if (_rng.nextInt(100) < _bustPercent) {
       setState(() {
-        _result = const MinigameResult.miss('선을 넘었다. 여기부터 기억이 없다.');
+        _result = const MinigameResult.miss('선을 넘었다. 방금 그 드립은 흑역사가 됐다.');
       });
       return;
     }
-    setState(() => _glasses++);
-    if (_glasses >= 5) _stop();
+    setState(() => _jokes++);
+    if (_jokes >= 5) _stop();
   }
 
-  /// 멈추면 언제든 성공. 보상은 잔 수와 무관하게 고정이고,
-  /// 자리 분위기를 읽고 일찍 멈춘 판단만 크리티컬로 쳐준다.
+  /// 멈추면 언제든 성공. 보상은 드립 수와 무관하게 고정이고,
+  /// 분위기를 읽고 일찍 멈춘 판단만 크리티컬로 쳐준다.
   void _stop() {
     if (_result != null) return;
     setState(() {
       _result = MinigameResult(
         success: true,
-        critical: _glasses <= 2,
+        critical: _jokes <= 2,
         score: 1,
-        message: _glasses == 0
-            ? '한 잔도 안 마시고 대화를 이끌었다.'
-            : _glasses <= 2
-            ? '$_glasses잔에서 멈췄다. 끝까지 내 말투였다.'
-            : '적당히 마시고 자리를 마무리했다.',
+        message: _jokes == 0
+            ? '드립 없이도 대화를 이끌었다.'
+            : _jokes <= 2
+            ? '$_jokes번에서 멈췄다. 딱 좋았다.'
+            : '$_jokes번에서 멈췄다. 아슬아슬했지만 선은 지켰다.',
       );
     });
   }
@@ -71,14 +73,14 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
     final bust = _bustPercent;
     // 위험 구간은 경고 상태색으로만 알린다. 노랑 계열을 브랜드로 쓰지 않는다.
     final risky = bust >= 40;
-    // 표시용. 실패 결과는 한도를 넘긴 경우 하나뿐이다.
+    // 표시용. 실패 결과는 선을 넘긴 경우 하나뿐이다.
     final busted = _result != null && !_result!.success;
 
     return MinigameScaffold(
       title: '선 지키기',
       badge: '${Stat.label(Stat.esteem)} ${widget.ctx.stat(Stat.esteem)}',
-      instruction: '분위기는 맞추되 내 주량을 넘기지 않는다. '
-          '언제 멈춰도 성공이고, 확률은 화면에 그대로 보인다.',
+      instruction: '분위기가 좋을 때 드립을 몇 번까지 칠지 고른다. '
+          '언제 멈춰도 성공이고, 선을 넘으면 흑역사다. 확률은 화면에 그대로 보인다.',
       result: _result,
       onFinished: () => widget.done(_result!),
       // 두 버튼은 이 게임의 전부다. 스크롤과 무관하게 항상 같은 자리에 둔다.
@@ -93,8 +95,8 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
           const SizedBox(width: AppSpace.md),
           Expanded(
             child: OutlinedButton(
-              onPressed: _result == null ? _drink : null,
-              child: const Text('한 잔 더'),
+              onPressed: _result == null ? _joke : null,
+              child: const Text('한 번 더'),
             ),
           ),
         ],
@@ -103,11 +105,11 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
         padding: AppInsets.screenX,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 잔은 다섯 개가 한 묶음이다. 아이콘 반복을 스크린리더가 다섯 번
+          // 말풍선은 다섯 개가 한 묶음이다. 아이콘 반복을 스크린리더가 다섯 번
           // 읽지 않도록 묶어서 한 줄로 요약한다.
           Semantics(
             container: true,
-            label: '$_glasses잔',
+            label: '드립 $_jokes번',
             child: ExcludeSemantics(
               child: Wrap(
                 spacing: AppSpace.sm,
@@ -115,19 +117,19 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                 alignment: WrapAlignment.center,
                 children: [
                   for (var i = 0; i < 5; i++)
-                    // 선을 넘은 잔은 모양(금지 잔)과 위험색이 함께 바뀐다.
-                    i == _glasses && busted
+                    // 선을 넘은 드립은 모양(금지 말풍선)과 위험색이 함께 바뀐다.
+                    i == _jokes && busted
                         ? Icon(
-                            Icons.no_drinks_outlined,
+                            Icons.comments_disabled_outlined,
                             size: AppSpace.xxxl,
                             color: t.danger,
                           )
                         : Icon(
-                            i < _glasses
-                                ? Icons.local_bar
-                                : Icons.local_bar_outlined,
+                            i < _jokes
+                                ? Icons.chat_bubble
+                                : Icons.chat_bubble_outline,
                             size: AppSpace.xxxl,
-                            color: i < _glasses ? scheme.primary : t.gaugeTrack,
+                            color: i < _jokes ? scheme.primary : t.gaugeTrack,
                           ),
                 ],
               ),
@@ -135,7 +137,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
           ),
           const SizedBox(height: AppSpace.xxl),
           Text(
-            '$_glasses잔',
+            '$_jokes번',
             textAlign: TextAlign.center,
             style: t.numericLarge,
           ),
@@ -148,7 +150,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
             ),
           ),
           const SizedBox(height: AppSpace.xl),
-          // 다음 잔의 위험. 숫자 + 막대 + (위험하면) 아이콘으로 함께 말한다.
+          // 다음 드립의 위험. 숫자 + 막대 + (위험하면) 아이콘으로 함께 말한다.
           AppCard(
             tone: risky ? AppTone.warning : AppTone.neutral,
             padding: AppInsets.cardTight,
@@ -160,14 +162,14 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                     Icon(
                       risky
                           ? Icons.warning_amber_rounded
-                          : Icons.local_bar_outlined,
+                          : Icons.chat_bubble_outline,
                       size: AppSpace.xl,
                       color: risky ? t.warning : scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpace.sm),
                     Expanded(
                       child: Text(
-                        '다음 잔 흑역사 확률 $bust%',
+                        '다음 드립 흑역사 확률 $bust%',
                         style: t.numericMedium.copyWith(
                           color: risky
                               ? t.onWarningContainer
@@ -180,7 +182,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                 const SizedBox(height: AppSpace.sm),
                 AppProgressBar(
                   value: bust / 100,
-                  semanticLabel: '다음 잔 흑역사 확률',
+                  semanticLabel: '다음 드립 흑역사 확률',
                   fill: risky ? t.warning : scheme.primary,
                 ),
               ],

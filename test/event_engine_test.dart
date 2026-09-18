@@ -18,6 +18,7 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
           File('assets/story/$f').readAsStringSync(),
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
+      signals: File('assets/story/signals.json').existsSync() ? File('assets/story/signals.json').readAsStringSync() : null,
       knownMinigames: minigameIds,
       requireEndingHints: true,
     );
@@ -349,7 +350,8 @@ void main() {
     });
 
     test('크리티컬이면 호감 상승이 2배', () {
-      final s = fresh();
+      // 초반 가속(config.earlyAffection) 기간이 끝난 날에서 크리티컬만 본다.
+      final s = fresh()..day = 11;
       s.stats[Stat.sense] = 100; // 크리티컬 10%
       final ev = bundle.eventById['seoyeon_r01']!;
       // rng: 첫 nextInt(100)는 chance 없으므로 건너뜀 → crit 판정에 쓰임. 0 을 주는 시드 탐색.

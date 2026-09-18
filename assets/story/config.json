@@ -3,6 +3,14 @@
  "chapterLength": 20,
  "maxHearts": 5,
  "heartRegenMinutes": 15,
+ "earlyAffection": {
+  "curve": [
+   2,
+   2,
+   1.5
+  ],
+  "maxTotal": 3
+ },
  "initialStats": {
   "charm": 35,
   "talk": 20,

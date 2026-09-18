@@ -10,6 +10,9 @@ import 'widgets.dart';
 /// 규격: docs/DESIGN_SYSTEM.md §2.4.
 /// 주인공은 오늘 바뀐 수치다. 절대값은 막대에 남기고 변화량을 색 + 부호 +
 /// 화살표 3중으로 앞세운다. 마지막은 클리프행어 — 내일을 궁금하게 만드는 줄.
+///
+/// 단, 오늘 누군가와 호감 구간을 넘었으면 그 "관계 변화" 카드(서사 신호)가 맨 위에
+/// 먼저 뜬다. 숫자보다 이야기로 가까워진 걸 먼저 느끼게 하는 자리다(최대 2장).
 class SummaryScreen extends StatelessWidget {
   final GameController c;
   const SummaryScreen({super.key, required this.c});
@@ -20,6 +23,7 @@ class SummaryScreen extends StatelessWidget {
     final d = c.dayDelta;
     final hasRelation = d.affection.isNotEmpty || d.trust.isNotEmpty;
     final cliffhanger = c.cliffhanger;
+    final shifts = c.todayShifts.take(GameController.maxShiftCards).toList();
 
     // 관계 변화 줄. 라벨('서연 호감')과 변화량('+4')을 나눠 변화량을 앞세운다.
     final relations = <_RelationDelta>[
@@ -50,6 +54,22 @@ class SummaryScreen extends StatelessWidget {
           AppSpace.xxl,
         ),
         children: [
+          // 0. 관계 변화 카드. 오늘 구간을 넘은 사람(오른 쪽 먼저). 없으면 자리도 없다.
+          for (var i = 0; i < shifts.length; i++) ...[
+            _Reveal(
+              index: i,
+              child: RelationShiftCard(
+                name: c.characterName(shifts[i].id),
+                text: shifts[i].text,
+                up: shifts[i].up,
+                accent: context.tokens.accentFor(shifts[i].id),
+              ),
+            ),
+            const SizedBox(height: AppSpace.listGap),
+          ],
+          if (shifts.isNotEmpty)
+            const SizedBox(height: AppSpace.sectionGap - AppSpace.listGap),
+
           // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
           const SectionHeader(title: '오늘의 변화'),
           AppCard(

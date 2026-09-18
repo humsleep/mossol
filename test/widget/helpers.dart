@@ -25,6 +25,7 @@ StoryBundle testBundle() {
         File('assets/story/$f').readAsStringSync(),
     ],
     endings: File('assets/story/endings.json').readAsStringSync(),
+    signals: File('assets/story/signals.json').existsSync() ? File('assets/story/signals.json').readAsStringSync() : null,
     knownMinigames: minigameIds,
   );
 }

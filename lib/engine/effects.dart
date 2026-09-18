@@ -55,13 +55,21 @@ String? topCharacterOf(GameState s) {
   return best;
 }
 
+/// 오르는 호감 [v] 에 배율 [m] 을 곱해 올림한다. 1.5배면 +1 → +2, +3 → +5.
+/// 부동소수 오차(2 × 1.5 = 3.0000001)로 한 칸 더 올라가지 않게 아주 작은 값을 뺀다.
+int scaleGain(int v, double m) {
+  if (v <= 0 || m <= 1) return v;
+  return max(v, (v * m - 1e-9).ceil());
+}
+
 /// [effects] 를 [s] 에 적용하고 실제 변화량을 돌려준다.
-/// [affectionMultiplier] 는 크리티컬 성공 시 2.
+/// [affectionMultiplier] 는 **오르는 호감에만** 곱한다(올림). 크리티컬 2배와
+/// 초반 가속(`EarlyAffection`)을 곱한 값이 들어온다. 감소·신뢰는 그대로.
 AppliedDelta applyEffects(
   GameState s,
   Effects effects, {
   String? self,
-  int affectionMultiplier = 1,
+  double affectionMultiplier = 1,
 }) {
   final d = AppliedDelta();
 
@@ -82,7 +90,7 @@ AppliedDelta applyEffects(
       if (id == null) return;
       final r = s.rel(id);
       final before = isAffection ? r.affection : r.trust;
-      final amount = isAffection && v > 0 ? v * affectionMultiplier : v;
+      final amount = isAffection ? scaleGain(v, affectionMultiplier) : v;
       final after = max(0, min(100, before + amount));
       if (isAffection) {
         r.affection = after;

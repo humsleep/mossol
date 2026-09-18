@@ -12,6 +12,7 @@ import 'engine/save_service.dart';
 import 'engine/story_repository.dart';
 
 export 'engine/attendance.dart' show CheckInResult, Attendance;
+export 'engine/signals.dart' show RelationShift;
 
 enum Phase { home, action, event, summary, ending }
 
@@ -34,6 +35,10 @@ class SaveSummary {
   final String? topCharacterId;
   final int topAffection;
 
+  /// 최애의 서사 신호 한 줄(signals.json). 호감 0 이거나 데이터가 없으면 null.
+  /// 같은 세이브·같은 날이면 몇 번을 그려도 같은 문장이다.
+  final String? topSignal;
+
   /// 캐릭터 id → 호감. [affectionOf] 로 읽는다.
   final Map<String, int> affection;
 
@@ -46,14 +51,16 @@ class SaveSummary {
     required this.hearts,
     required this.topCharacterId,
     required this.topAffection,
+    this.topSignal,
     required this.affection,
   });
 
   factory SaveSummary.fromState(
     GameState s,
     GameConfig config,
-    List<CharacterDef> characters,
-  ) {
+    List<CharacterDef> characters, {
+    SignalBook signals = SignalBook.empty,
+  }) {
     String? best;
     var bestAff = 0;
     final aff = <String, int>{};
@@ -74,6 +81,9 @@ class SaveSummary {
       hearts: s.hearts,
       topCharacterId: best,
       topAffection: bestAff,
+      topSignal: best == null
+          ? null
+          : signals.signalFor(best, bestAff, seed: s.seed, day: s.day),
       affection: Map.unmodifiable(aff),
     );
   }
@@ -141,6 +151,46 @@ class GameController extends ChangeNotifier {
 
   /// 하루 동안 쌓인 변화. 정산 화면에서 보여 준다.
   final AppliedDelta dayDelta = AppliedDelta();
+
+  /// 오늘 호감 구간을 넘은 캐릭터들(정산의 "관계 변화" 카드).
+  ///
+  /// 하루 시작 때 호감은 `지금 - dayDelta.affection` 으로 되짚는다. [dayDelta] 는
+  /// 실제 적용된 변화량만 쌓고 되돌리기 때 함께 복원되므로 따로 스냅샷을 두지 않는다.
+  /// 오른 쪽이 먼저(새 구간이 높은 순, 같으면 많이 오른 순), 내려간 쪽이 뒤.
+  /// 신호 데이터가 없으면 빈 목록. 화면은 앞에서 [maxShiftCards] 장만 쓴다.
+  List<RelationShift> get todayShifts {
+    final s = state;
+    if (s == null || bundle.signals.isEmpty) return const [];
+    final out = <RelationShift>[];
+    for (final ch in bundle.characters) {
+      final now = s.affectionOf(ch.id);
+      final before = now - (dayDelta.affection[ch.id] ?? 0);
+      final shift = bundle.signals.shiftFor(
+        ch.id,
+        before,
+        now,
+        seed: s.seed,
+        day: s.day,
+      );
+      // 0 → 첫 구간은 "처음 알게 됨" 이라 카드를 띄우지 않는다. 1일차에 매번 두 장이
+      // 뜨면 진짜 "가까워졌다" 의 무게가 떨어진다. 한 번에 두 구간 이상 뛰면 보여 준다.
+      if (shift == null || (before <= 0 && shift.toBand == 0)) continue;
+      out.add(shift);
+    }
+    out.sort((a, b) {
+      if (a.up != b.up) return a.up ? -1 : 1;
+      if (a.up) {
+        final band = b.toBand - a.toBand;
+        if (band != 0) return band;
+        return (b.to - b.from) - (a.to - a.from);
+      }
+      return (a.to - a.from) - (b.to - b.from);
+    });
+    return out;
+  }
+
+  /// 정산에 띄우는 관계 변화 카드 최대 수.
+  static const maxShiftCards = 2;
   String? cliffhanger;
 
   /// 되돌리기용 스냅샷. 선택 직전 상태와 그 시점의 하루 합계.
@@ -217,7 +267,12 @@ class GameController extends ChangeNotifier {
     final s = hasSave ? (state ?? _peek) : null;
     saveSummary = s == null
         ? null
-        : SaveSummary.fromState(s, config, bundle.characters);
+        : SaveSummary.fromState(
+            s,
+            config,
+            bundle.characters,
+            signals: bundle.signals,
+          );
   }
 
   /// 설정의 "저장 데이터 초기화". 회차·앨범·메타를 전부 지우고 첫 실행 상태로 돌린다.

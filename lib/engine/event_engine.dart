@@ -204,6 +204,18 @@ class EventEngine {
     return s.onFire ? base * 2 : base;
   }
 
+  /// 크리티컬이 호감에 곱하는 배율.
+  static const critFactor = 2.0;
+
+  /// 오늘 오르는 호감에 곱할 배율. 초반 가속(config.earlyAffection) × 크리티컬,
+  /// 상한은 `EarlyAffection.maxTotal`. 가속 기간이 끝나면 1(크리티컬이면 2).
+  double affectionMultiplier(GameState s, {bool critical = false}) =>
+      bundle.config.earlyAffection.combined(
+        s.day,
+        critical: critical,
+        critFactor: critFactor,
+      );
+
   /// 확률 판정 보정(%p). 물오름 상태면 +20.
   int chanceBonus(GameState s) => s.onFire ? 20 : 0;
 
@@ -238,7 +250,13 @@ class EventEngine {
         ? !forcedSuccess
         : chance != null && r.nextInt(100) >= (chance + chanceBonus(s)).clamp(0, 100);
     if (failed) {
-      final d = applyEffects(s, c.fail, self: self);
+      // 실패에도 오르는 호감(위로받는 선택 등)이 있으면 초반 가속만 건다.
+      final d = applyEffects(
+        s,
+        c.fail,
+        self: self,
+        affectionMultiplier: affectionMultiplier(s),
+      );
       final had = s.combo;
       s.combo = 0;
       return ChoiceOutcome(
@@ -254,7 +272,12 @@ class EventEngine {
     // 딴 것이므로 그대로 인정한다.
     final canCrit = c.effects.affection.values.any((v) => v > 0);
     final crit = forcedCritical ?? (canCrit && r.nextInt(100) < critChance(s));
-    final d = applyEffects(s, c.effects, self: self, affectionMultiplier: crit ? 2 : 1);
+    final d = applyEffects(
+      s,
+      c.effects,
+      self: self,
+      affectionMultiplier: affectionMultiplier(s, critical: crit),
+    );
     final wasOnFire = s.onFire;
     if (_isGoodChoice(d)) {
       s.combo++;

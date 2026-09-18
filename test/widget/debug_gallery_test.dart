@@ -4,6 +4,7 @@ import 'package:mossol/debug/debug_gallery.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 import 'package:mossol/ui/ending_screen.dart';
+import 'package:mossol/ui/widgets.dart';
 
 import 'helpers.dart';
 
@@ -23,6 +24,25 @@ void main() {
     for (final t in ['해피', '굿', '솔로', '배드', '히든']) {
       expect(find.textContaining('$t 엔딩'), findsOneWidget);
     }
+  });
+
+  testWidgets('서사 신호 목록: 캐릭터별로 펼치면 구간 카드와 하강 카드가 뜬다', (tester) async {
+    tester.view.physicalSize = const Size(400, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bundle = testBundle();
+    await tester.pumpWidget(DebugGalleryApp(bundle: bundle));
+    await tester.pumpAndSettle();
+    final first = bundle.characters.first;
+    final title = find.text('${first.name} 신호');
+    await tester.dragUntilVisible(title, find.byType(ListView), const Offset(0, -300));
+    await tester.tap(title);
+    await tester.pumpAndSettle();
+    final sig = bundle.signals.byCharacter[first.id]!;
+    expect(find.byType(RelationShiftCard), findsNWidgets(sig.bands.length + 1));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('엔딩을 고르면 EndingScreen 이 뜨고 "홈으로" 로 돌아온다', (tester) async {

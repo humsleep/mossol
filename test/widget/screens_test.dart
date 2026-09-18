@@ -6,6 +6,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/album_screen.dart';
 import 'package:mossol/ui/ending_screen.dart';
+import 'package:mossol/ui/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers.dart';
@@ -188,6 +189,63 @@ void main() {
   });
 
   group('정산 화면', () {
+    testWidgets('구간을 넘어 오르면 관계 변화 카드(강조색·신호·가까워졌다)가 맨 위에 뜬다', (tester) async {
+      // 예은 7 → 12: 1~9 구간에서 10~19 구간으로.
+      c.state!.rel('yeeun').affection = 12;
+      c.dayDelta.affection['yeeun'] = 5;
+      c.phase = Phase.summary;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pumpAndSettle();
+      final shift = c.todayShifts.single;
+      expect(find.byType(RelationShiftCard), findsOneWidget);
+      expect(find.text(shift.text), findsOneWidget);
+      expect(find.text('가까워졌다'), findsOneWidget);
+      expect(find.text('예은'), findsOneWidget);
+      final card = tester.widget<RelationShiftCard>(find.byType(RelationShiftCard));
+      expect(card.up, isTrue);
+      expect(card.accent, isNotNull);
+      // 카드가 '오늘의 변화' 보다 위.
+      expect(
+        tester.getTopLeft(find.byType(RelationShiftCard)).dy,
+        lessThan(tester.getTopLeft(find.text('오늘의 변화')).dy),
+      );
+      // 숫자 줄도 그대로 있다.
+      expect(find.text('예은 호감'), findsOneWidget);
+    });
+
+    testWidgets('여러 명이면 오른 사람 먼저 최대 2장, 내려간 사람은 조용한 톤', (tester) async {
+      final s = c.state!;
+      s.rel('yeeun').affection = 12;
+      c.dayDelta.affection['yeeun'] = 5;
+      s.rel('haneul').affection = 22;
+      c.dayDelta.affection['haneul'] = 4;
+      s.rel('seoyeon').affection = 9;
+      c.dayDelta.affection['seoyeon'] = -3;
+      c.phase = Phase.summary;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pumpAndSettle();
+      expect(c.todayShifts.length, 3);
+      expect(find.byType(RelationShiftCard), findsNWidgets(2));
+      expect(find.text('가까워졌다'), findsNWidgets(2));
+      expect(find.text('조금 멀어졌다'), findsNothing);
+
+      // 내려간 사람만 있으면 하강 카드 한 장.
+      s.rel('yeeun').affection = 7;
+      c.dayDelta.affection.remove('yeeun');
+      s.rel('haneul').affection = 18;
+      c.dayDelta.affection.remove('haneul');
+      c.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.byType(RelationShiftCard), findsOneWidget);
+      expect(find.text('조금 멀어졌다'), findsOneWidget);
+      expect(
+        c.bundle.signals.byCharacter['seoyeon']!.down,
+        contains(c.todayShifts.single.text),
+      );
+      expect(tester.widget<RelationShiftCard>(find.byType(RelationShiftCard)).up, isFalse);
+    });
+
+
     testWidgets('변화량과 클리프행어를 보여 주고 다음 날로 넘어간다', (tester) async {
       c.dayDelta.stats[Stat.charm] = 3;
       c.dayDelta.affection['seoyeon'] = 4;

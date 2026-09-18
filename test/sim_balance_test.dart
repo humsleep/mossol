@@ -2,37 +2,57 @@
 // ignore_for_file: avoid_print
 // 밸런스 시뮬레이션. `flutter test test/sim_balance_test.dart` 로 실행.
 // 결과는 콘솔과 tool/sim_out/ 아래 파일로 남긴다. 소스는 건드리지 않는다.
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/ending_resolver.dart';
+import 'package:mossol/engine/effects.dart';
 import 'package:mossol/engine/event_engine.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 
-const kSeeds = 200;
+const kSeeds = int.fromEnvironment('SEEDS', defaultValue: 200);
 const kMinigameSuccess = int.fromEnvironment("MG", defaultValue: 60) / 100;
 
+/// 스토리 데이터 위치. 전후 비교 때 같은 스냅샷을 쓰려고 바꿀 수 있게 둔다.
+const kStoryDir = String.fromEnvironment('STORY_DIR', defaultValue: 'assets/story');
+
+/// true 면 config 의 earlyAffection(초반 호감 가속)을 빼고 돌린다. 전후 비교용.
+const kNoEarly = bool.fromEnvironment('NO_EARLY');
+
+String _config() {
+  final raw = File('$kStoryDir/config.json').readAsStringSync();
+  if (!kNoEarly) return raw;
+  final j = jsonDecode(raw) as Map<String, dynamic>..remove('earlyAffection');
+  return jsonEncode(j);
+}
+
 StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
-      config: File('assets/story/config.json').readAsStringSync(),
-      characters: File('assets/story/characters.json').readAsStringSync(),
+      config: _config(),
+      characters: File('$kStoryDir/characters.json').readAsStringSync(),
       events: [
-        for (final f in StoryBundle.eventFiles) File('assets/story/$f').readAsStringSync(),
+        for (final f in StoryBundle.eventFiles) File('$kStoryDir/$f').readAsStringSync(),
       ],
-      endings: File('assets/story/endings.json').readAsStringSync(),
+      endings: File('$kStoryDir/endings.json').readAsStringSync(),
+      signals: File('$kStoryDir/signals.json').existsSync() ? File('$kStoryDir/signals.json').readAsStringSync() : null,
       knownMinigames: minigameIds,
       requireEndingHints: true,
     );
 
 // ---------- 전략 ----------
 
+/// 선택 직전의 호감 1위. 효과 키 `@top` 을 봇이 실제 대상으로 읽게 한다.
+/// 이게 없으면 `@top` 선택지를 가치 0으로 보고 엉뚱한 선택을 한다.
+String? simTop;
+
 double sumMap(Map<String, int> m, {String? only, String? self}) {
   var t = 0.0;
   m.forEach((k, v) {
-    final id = k == '*' ? self : k;
+    final id = k == '*' ? self : (k == topKey ? simTop : k);
     if (id == null) return;
     if (only == null || id == only) t += v;
   });
@@ -494,6 +514,10 @@ class RunResult {
   final List<int> lockSeenByCh = List.filled(5, 0);
   final List<int> lockOpenByCh = List.filled(5, 0);
   final Map<int, Map<String, int>> statAt = {};
+
+  /// 그날 아침(전날 마감 뒤) 최고 호감과 집중 대상 호감. 키는 "며칠째 끝" (3, 10, 20).
+  final Map<int, int> topAffAfter = {};
+  final Map<int, int> targetAffAfter = {};
   double estSeconds = 0;
   int dailyNoCandFrom2 = 0;
   RunResult(this.strategy, this.seed, this.target);
@@ -515,6 +539,10 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1}) {
     // 아침 행동
     engine.applyAction(s, strat.action(s, b.config.actions, r, b));
 
+    if (const [4, 11, 21].contains(s.day)) {
+      res.topAffAfter[s.day - 1] = s.relations.values.fold(0, (a, x) => max(a, x.affection));
+      if (res.target != null) res.targetAffAfter[s.day - 1] = s.affectionOf(res.target!);
+    }
     final dailyCandList = engine.candidates(s, EventLayer.daily);
     final dailyCand = dailyCandList.length;
     if (dailyCand == 0 && s.day >= 2) {
@@ -575,6 +603,7 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1}) {
         }
       }
       final open = views.where((v) => !v.locked).toList();
+      simTop = topCharacterOf(s);
       if (open.isEmpty) {
         res.stuckEvents++;
         s.seen.add(ev.id);
@@ -763,6 +792,12 @@ void main() {
       final tr70 = rs.where((r) => r.trust.values.any((v) => v >= 70)).length;
       final both = rs.where((r) => chars.any((c) => r.aff[c]! >= 80 && r.trust[c]! >= 70)).length;
       final sinc50 = rs.where((r) => r.stats[Stat.sincerity]! >= 50).length;
+      for (final d in [3, 10, 20]) {
+        final top = Dist(rs.where((r) => r.topAffAfter[d] != null).map((r) => r.topAffAfter[d]!));
+        final tgt = rs.where((r) => r.targetAffAfter[d] != null).map<num>((r) => r.targetAffAfter[d]!);
+        p('    [early] D$d 마감 최고 호감 ${top.summary}'
+            '${tgt.isEmpty ? '' : ' | 대상 호감 ${Dist(tgt).summary}'} | 15~25 ${pct(top.xs.where((x) => x >= 15 && x <= 25).length, top.xs.length)}');
+      }
       p('    누군가 호감≥80: ${pct(aff80, n)} · 신뢰≥70: ${pct(tr70, n)} · 같은 사람 둘 다: ${pct(both, n)} · 진정성≥50: ${pct(sinc50, n)}');
       // (d) 스탯
       p('[d] 최종 스탯');

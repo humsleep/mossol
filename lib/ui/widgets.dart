@@ -193,8 +193,9 @@ class StatBars extends StatelessWidget {
   static bool _isGood(String key, int d) => key == Stat.stress ? d < 0 : d > 0;
 
   TextStyle? _labelStyle(BuildContext context) =>
-      (compact ? context.text.labelSmall : context.text.labelMedium)
-          ?.copyWith(color: context.scheme.onSurface);
+      (compact ? context.text.labelSmall : context.text.labelMedium)?.copyWith(
+        color: context.scheme.onSurface,
+      );
 
   /// 가장 긴 라벨('스트레스')이 잘리지 않는 폭. 글자 배율까지 반영해 실제로 잰다.
   double _labelWidth(BuildContext context, List<String> show) {
@@ -523,9 +524,7 @@ class StatTile extends StatelessWidget {
               Icon(icon, size: 18, color: accent ?? scheme.onSurfaceVariant),
               const SizedBox(width: AppSpace.sm),
             ],
-            Expanded(
-              child: Text(label, style: context.text.bodyLarge),
-            ),
+            Expanded(child: Text(label, style: context.text.bodyLarge)),
             if (value != null) ...[
               const SizedBox(width: AppSpace.sm),
               Text(
@@ -981,10 +980,7 @@ class ChatBubble extends StatelessWidget {
                 padding: AppInsets.bubble,
                 decoration: BoxDecoration(
                   color: me ? t.bubbleMine : t.bubbleTheirs,
-                  borderRadius: AppRadius.bubble(
-                    mine: me,
-                    tail: isLastOfGroup,
-                  ),
+                  borderRadius: AppRadius.bubble(mine: me, tail: isLastOfGroup),
                   // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
                   border: me
                       ? null
@@ -1135,20 +1131,14 @@ class AppCard extends StatelessWidget {
     Widget body = Padding(
       padding: accentStripe == null
           ? pad
-          : pad.add(
-              const EdgeInsetsDirectional.only(start: AppSpace.xs),
-            ),
+          : pad.add(const EdgeInsetsDirectional.only(start: AppSpace.xs)),
       child: child,
     );
 
     if (onTap != null) {
       body = ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppRadius.rLg,
-          child: body,
-        ),
+        child: InkWell(onTap: onTap, borderRadius: AppRadius.rLg, child: body),
       );
     }
 
@@ -1171,7 +1161,9 @@ class AppCard extends StatelessWidget {
         color: tn.bg,
         borderRadius: AppRadius.rLg,
         border: Border.all(
-          color: tone == AppTone.neutral ? context.scheme.outlineVariant : tn.line,
+          color: tone == AppTone.neutral
+              ? context.scheme.outlineVariant
+              : tn.line,
           width: AppBorderWidth.hairline,
         ),
         boxShadow: raised
@@ -1303,10 +1295,7 @@ class AppListRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (tail != null) ...[
-                const SizedBox(width: AppSpace.sm),
-                tail,
-              ],
+              if (tail != null) ...[const SizedBox(width: AppSpace.sm), tail],
             ],
           ),
         ),
@@ -1361,10 +1350,7 @@ class BottomPanel extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            padding: AppInsets.panel,
-            child: child,
-          ),
+          child: SingleChildScrollView(padding: AppInsets.panel, child: child),
         ),
       ),
     );
@@ -1490,10 +1476,7 @@ class ResultBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: tn.bg,
         borderRadius: large ? AppRadius.rLg : AppRadius.rSm,
-        border: Border.all(
-          color: tn.line,
-          width: AppBorderWidth.hairline,
-        ),
+        border: Border.all(color: tn.line, width: AppBorderWidth.hairline),
       ),
       child: large ? Center(child: body) : body,
     );
@@ -1563,11 +1546,7 @@ class CharacterChip extends StatelessWidget {
       type: MaterialType.transparency,
       borderRadius: AppRadius.rPill,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.rPill,
-        child: body,
-      ),
+      child: InkWell(onTap: onTap, borderRadius: AppRadius.rPill, child: body),
     );
   }
 }
@@ -1750,12 +1729,11 @@ class ChoiceButton extends StatelessWidget {
 Future<T?> showAppDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,
-}) =>
-    showDialog<T>(
-      context: context,
-      barrierColor: context.scrimColor,
-      builder: builder,
-    );
+}) => showDialog<T>(
+  context: context,
+  barrierColor: context.scrimColor,
+  builder: builder,
+);
 
 // ---------------------------------------------------------------------------
 // 9. 홈 부품 — 아바타 · 사람들 · 이어하기 · 출석 · 엔딩 점
@@ -1786,12 +1764,13 @@ class CharacterAvatar extends StatelessWidget {
     final scheme = context.scheme;
     final a = accent ?? t.neutralAccent;
     final initial = name.isEmpty ? '' : name.characters.first;
-    final style = (size <= 32
-            ? context.text.labelMedium
-            : size >= 56
-            ? context.text.titleLarge
-            : context.text.labelLarge)
-        ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
+    final style =
+        (size <= 32
+                ? context.text.labelMedium
+                : size >= 56
+                ? context.text.titleLarge
+                : context.text.labelLarge)
+            ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
 
     return Semantics(
       label: mystery ? '아직 만나지 않은 사람' : name,
@@ -1921,6 +1900,8 @@ class _CastItem extends StatelessWidget {
 /// 홈 이어하기 카드. 회차·진행·어젯밤 예고·가장 가까운 사람(HOME_REDESIGN §1.3 B-2).
 ///
 /// 예고는 `'어젯밤: …'` 단일 Text, 최고 호감은 `'서연 ♥42'` 단일 Text 로 유지한다(테스트 고정).
+/// [topSignal] 이 있으면 마지막 줄의 주인공은 숫자가 아니라 서사 신호 한 줄이고,
+/// `'서연 ♥42'` 는 그 아래 작은 보조 줄로 내려간다(DESIGN_SYSTEM §3.2 서사 신호).
 class ContinueCard extends StatelessWidget {
   final int run;
   final int chapter;
@@ -1935,6 +1916,9 @@ class ContinueCard extends StatelessWidget {
   final int topAffection;
   final CharacterAccent? topAccent;
 
+  /// 최애의 서사 신호 한 줄. null 이면 예전처럼 `'서연 ♥42'` + '가장 가까운 사람'.
+  final String? topSignal;
+
   /// 요약을 아직 못 읽은 첫 프레임인지.
   final bool _placeholder;
 
@@ -1948,19 +1932,21 @@ class ContinueCard extends StatelessWidget {
     this.topName,
     this.topAffection = 0,
     this.topAccent,
+    this.topSignal,
   }) : _placeholder = false;
 
   /// 세이브 요약을 아직 못 읽은 첫 프레임용.
   const ContinueCard.placeholder({super.key})
-      : run = 0,
-        chapter = 0,
-        day = 0,
-        totalDays = 100,
-        cliffhanger = null,
-        topName = null,
-        topAffection = 0,
-        topAccent = null,
-        _placeholder = true;
+    : run = 0,
+      chapter = 0,
+      day = 0,
+      totalDays = 100,
+      cliffhanger = null,
+      topName = null,
+      topAffection = 0,
+      topAccent = null,
+      topSignal = null,
+      _placeholder = true;
 
   @override
   Widget build(BuildContext context) {
@@ -1972,6 +1958,11 @@ class ContinueCard extends StatelessWidget {
     final preview = _placeholder
         ? '어젯밤: 불러오는 중…'
         : '어젯밤: ${cliffhanger ?? '아직 아무 일도 없었다. 오늘부터다.'}';
+    // 좁은 화면 + 큰 글꼴에서 신호 줄(2줄)이 붙으면 예고를 1줄로 줄여 높이 예산을 지킨다.
+    final tight =
+        topSignal != null &&
+        MediaQuery.sizeOf(context).width < 360 &&
+        MediaQuery.textScalerOf(context).scale(10) > 11.5;
 
     return AppCard(
       accentStripe: scheme.tertiary,
@@ -2016,7 +2007,7 @@ class ContinueCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   preview,
-                  maxLines: 2,
+                  maxLines: tight ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodyMedium,
                 ),
@@ -2044,6 +2035,13 @@ class ContinueCard extends StatelessWidget {
                   ),
                 ],
               )
+            else if (topSignal != null)
+              _SignalLine(
+                name: topName!,
+                affection: topAffection,
+                accent: topAccent,
+                signal: topSignal!,
+              )
             else
               Row(
                 children: [
@@ -2065,6 +2063,167 @@ class ContinueCard extends StatelessWidget {
               ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// 이어하기 카드의 마지막 줄: 최애의 서사 신호가 주인공, 하트 숫자는 작은 보조.
+///
+/// 아바타(32) 옆에 한 덩어리 `Text.rich`: 신호 문장 `bodyMedium`(onSurface) 뒤에
+/// `'서연 ♥42'` 를 `labelSmall`(onSurfaceVariant) 꼬리로 붙이고 최대 2줄. 꼬리를 별도 줄로
+/// 두지 않는 건 320pt · 1.3배 · 배너 높이 예산(HOME_REDESIGN §1.5) 때문이다.
+class _SignalLine extends StatelessWidget {
+  final String name;
+  final int affection;
+  final CharacterAccent? accent;
+  final String signal;
+
+  const _SignalLine({
+    required this.name,
+    required this.affection,
+    required this.accent,
+    required this.signal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CharacterAvatar(name: name, accent: accent, size: 32),
+        const SizedBox(width: AppSpace.sm),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: signal,
+                  style: context.text.bodyMedium?.copyWith(
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const TextSpan(text: '  '),
+                // 이름과 호감은 한 덩어리(테스트 고정: '서연 ♥42').
+                TextSpan(
+                  text: '$name ♥$affection',
+                  style: context.text.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 하루 정산의 "관계 변화" 카드. 오늘 호감 구간을 넘은 캐릭터 한 명.
+///
+/// 상승([up]): 캐릭터 강조색 좌측 띠 + 아바타 + 이름 + `'가까워졌다'` 배지(강조색 container
+/// 면, 하트 아이콘) + 서사 신호 `bodyLarge`. 정산의 도파민 순간이라 화면 맨 위에 둔다.
+/// 하강: 띠 없음, 배지는 중립 면 `'조금 멀어졌다'`(아래 화살표), 문장은 `bodyMedium`
+/// onSurfaceVariant. 조용한 톤으로만 알린다. 색만으로 방향을 전하지 않도록 배지 낱말과
+/// 아이콘이 항상 함께 간다.
+class RelationShiftCard extends StatelessWidget {
+  final String name;
+  final String text;
+  final bool up;
+  final CharacterAccent? accent;
+
+  const RelationShiftCard({
+    super.key,
+    required this.name,
+    required this.text,
+    required this.up,
+    this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final a = accent ?? t.neutralAccent;
+    final badgeBg = up ? a.container : scheme.surfaceContainerHigh;
+    final badgeFg = up ? a.onContainer : scheme.onSurfaceVariant;
+    final label = up ? '가까워졌다' : '조금 멀어졌다';
+
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: badgeBg,
+        borderRadius: AppRadius.rPill,
+        border: Border.all(
+          color: up ? a.base : scheme.outlineVariant,
+          width: AppBorderWidth.hairline,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            up ? Icons.favorite : Icons.south_east,
+            size: 14,
+            color: badgeFg,
+          ),
+          const SizedBox(width: AppSpace.xs),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: t.badgeText.copyWith(color: badgeFg),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return MergeSemantics(
+      child: AppCard(
+        accentStripe: up ? a.base : null,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CharacterAvatar(name: name, accent: a, size: 40),
+            const SizedBox(width: AppSpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: AppSpace.sm,
+                    runSpacing: AppSpace.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(name, style: context.text.titleSmall),
+                      badge,
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.xs),
+                  Text(
+                    text,
+                    style: up
+                        ? context.text.bodyLarge?.copyWith(
+                            color: scheme.onSurface,
+                          )
+                        : context.text.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

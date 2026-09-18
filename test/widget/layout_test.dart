@@ -13,6 +13,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/album_screen.dart';
+import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/widgets.dart';
@@ -96,6 +97,10 @@ void main() {
         await tester.pump();
         expect(find.textContaining('어젯밤:'), findsOneWidget);
         expect(find.textContaining('서연 ♥42'), findsOneWidget);
+        // 홈 신호 줄: 최애의 서사 신호가 첫 화면 안에 넘치지 않고 보인다.
+        final signal = c.saveSummary!.topSignal!;
+        expect(find.textContaining(signal), findsOneWidget);
+        expect(tester.getRect(find.textContaining(signal)).bottom, lessThanOrEqualTo(568));
         expect(find.text('받기'), findsOneWidget);
         // 배너 없는 조건. 예산표(HOME_REDESIGN §1.5)는 배너 포함 466 이라 더 여유롭다.
         final primary = tester.getRect(find.widgetWithText(FilledButton, '이어하기'));
@@ -224,6 +229,82 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('다음 날로'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      });
+
+      testWidgets('정산 화면: 관계 변화 카드 2장(상승) · 하강 카드가 넘치지 않는다', (tester) async {
+        apply(tester, env);
+        final s = c.state!;
+        // 가장 긴 이름·신호 조합이 나올 수 있게 오른 사람 둘, 내려간 사람 하나.
+        s.rel('seoyeon').affection = 90;
+        c.dayDelta.affection['seoyeon'] = 5;
+        s.rel('yeeun').affection = 12;
+        c.dayDelta.affection['yeeun'] = 5;
+        s.rel('haneul').affection = 9;
+        c.dayDelta.affection['haneul'] = -3;
+        c.cliffhanger = '내일은 뭔가 다르다. 서연의 프로필 사진이 바뀌었다는 알림이 왔다.';
+        c.phase = Phase.summary;
+        await tester.pumpWidget(fullApp(c));
+        await tester.pumpAndSettle();
+        expect(find.byType(RelationShiftCard), findsNWidgets(2));
+        expect(find.text('가까워졌다'), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(find.text('다음 날로'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        // 하강만 있는 날: 조용한 카드 한 장.
+        await tester.pumpWidget(const SizedBox());
+        for (final id in ['seoyeon', 'yeeun']) {
+          c.dayDelta.affection.remove(id);
+        }
+        await tester.pumpWidget(fullApp(c));
+        await tester.pumpAndSettle();
+        expect(find.text('조금 멀어졌다'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      });
+
+      testWidgets('RelationShiftCard · ContinueCard: 40자 신호도 넘치지 않는다', (tester) async {
+        apply(tester, env);
+        final long = '가나다라마바사아자차' * 4;
+        await tester.pumpWidget(
+          wrapApp(
+            Scaffold(
+              body: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  ContinueCard(
+                    run: 12,
+                    chapter: 5,
+                    day: 100,
+                    totalDays: 100,
+                    cliffhanger: long,
+                    topName: '서연',
+                    topAffection: 100,
+                    topSignal: long,
+                  ),
+                  for (final id in c.bundle.characters.map((x) => x.id))
+                    Builder(
+                      builder: (context) => RelationShiftCard(
+                        name: c.characterName(id),
+                        text: long,
+                        up: id != 'doyun',
+                        accent: context.tokens.accentFor(id),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            mode: modeOf(env),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('서연 ♥100'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
 

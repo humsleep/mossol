@@ -31,6 +31,7 @@ StoryBundle loadRealBundle() => StoryBundle.fromJsonStrings(
           File('assets/story/$f').readAsStringSync(),
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
+      signals: File('assets/story/signals.json').existsSync() ? File('assets/story/signals.json').readAsStringSync() : null,
       knownMinigames: minigameIds,
       requireEndingHints: true,
     );
@@ -1344,8 +1345,8 @@ void main() {
     });
 
     test('실제 데이터의 lint 결과 (알려진 것만)', () {
-      // m05 는 character 가 없어서 trust {*: 0} 이 버려진다. 값이 0 이라 실해는 없음.
-      expect(real.lint(), ['m05.choices[0].effects: character 없이 * 사용 (효과가 버려짐)']);
+      // 원본 정리(2026-09-19)로 알려진 경고가 모두 사라졌다. 새로 생기면 여기서 잡힌다.
+      expect(real.lint(), isEmpty);
     });
 
     test('아예 깨진 JSON 은 FormatException', () {

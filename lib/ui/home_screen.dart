@@ -148,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 cliffhanger: summary.lastCliffhanger,
                 topName: c.characterOf(summary.topCharacterId)?.name,
                 topAffection: summary.topAffection,
+                topSignal: summary.topSignal,
                 topAccent: summary.topCharacterId == null
                     ? null
                     : context.tokens.accentFor(summary.topCharacterId),

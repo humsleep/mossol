@@ -4,13 +4,19 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'effects.dart';
 import 'models.dart';
+import 'signals.dart';
 
-/// 스토리 데이터 묶음. JSON 4개 파일에서 만들어진다.
+export 'signals.dart' show SignalBook, RelationShift;
+
+/// 스토리 데이터 묶음. JSON 4개 파일(+ 선택 signals.json)에서 만들어진다.
 class StoryBundle {
   final GameConfig config;
   final List<CharacterDef> characters;
   final List<StoryEvent> events;
   final List<Ending> endings;
+
+  /// 서사 신호(선택). 파일이 없거나 비면 [SignalBook.empty].
+  final SignalBook signals;
   late final Map<String, StoryEvent> eventById = {for (final e in events) e.id: e};
   late final Map<String, CharacterDef> characterById = {for (final c in characters) c.id: c};
 
@@ -25,7 +31,11 @@ class StoryBundle {
     required this.characters,
     required this.events,
     required this.endings,
+    this.signals = SignalBook.empty,
   });
+
+  /// 선택 데이터. 없어도 앱이 돈다.
+  static const signalsFile = 'signals.json';
 
   /// 이벤트는 레이어별로 파일이 나뉘어 있다. 파일을 추가하면 여기에만 이름을 넣으면 된다.
   static const eventFiles = [
@@ -41,6 +51,7 @@ class StoryBundle {
     required String characters,
     required List<String> events,
     required String endings,
+    String? signals,
     Set<String>? knownMinigames,
     bool requireEndingHints = false,
   }) {
@@ -57,6 +68,7 @@ class StoryBundle {
       endings: (jsonDecode(endings) as List)
           .map((e) => Ending.fromJson(e as Map<String, dynamic>))
           .toList(),
+      signals: SignalBook.fromJsonString(signals),
     );
     bundle.validate(knownMinigames: knownMinigames, requireEndingHints: requireEndingHints);
     return bundle;
@@ -72,11 +84,19 @@ class StoryBundle {
     final events = await Future.wait(
       eventFiles.map((f) => rootBundle.loadString('$dir/$f')),
     );
+    // 서사 신호는 선택. 파일이 번들에 없으면 신호 없이 숫자만 보여 준다.
+    String? signals;
+    try {
+      signals = await rootBundle.loadString('$dir/$signalsFile');
+    } catch (_) {
+      signals = null;
+    }
     return StoryBundle.fromJsonStrings(
       config: config,
       characters: characters,
       events: events,
       endings: endings,
+      signals: signals,
       knownMinigames: knownMinigames,
       // 출시 데이터는 엔딩마다 사람이 쓴 힌트가 있어야 한다(홈·앨범의 "아직 못 본 엔딩").
       requireEndingHints: true,
@@ -101,6 +121,13 @@ class StoryBundle {
       if (!charIds.add(c.id)) throw StateError('캐릭터 id 중복: ${c.id}');
     }
     _checkStatKeys(config.initialStats.keys, 'config.initialStats');
+    final early = config.earlyAffection;
+    for (var i = 0; i < early.curve.length; i++) {
+      final m = early.curve[i];
+      if (m < 1 || m > 4) throw StateError('earlyAffection.curve[$i] 범위 밖(1~4): $m');
+    }
+    if (early.maxTotal < 2) throw StateError('earlyAffection.maxTotal 은 크리티컬(2) 이상: ${early.maxTotal}');
+    signals.validate(charIds);
     for (final a in config.actions) {
       _checkStatKeys(a.effects.stats.keys, 'action ${a.id}');
     }

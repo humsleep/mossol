@@ -296,7 +296,9 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ### 2.4 하루 정산 (`summary_screen.dart`)
 - **주인공**: 오늘 바뀐 수치. 변화량이 가장 크게 읽혀야 한다.
 - **배경**: 절대 수치, 하단 메타("흑역사 N개").
-- 구성: AppBar(`D+N 정산`) → `StatBars(delta:)` → `sectionGap` →
+- **관계 변화 카드**: 오늘 누군가와 호감 구간을 넘었으면(`GameController.todayShifts`) 맨 위에
+  `RelationShiftCard` 최대 2장(사이 `listGap`, 뒤 `sectionGap`). 숫자보다 먼저 보이는 도파민 자리다(§3.2).
+- 구성: AppBar(`D+N 정산`) → [관계 변화 카드] → `StatBars(delta:)` → `sectionGap` →
   `SectionHeader('관계 변화')` + `StatTile` 목록 → 클리프행어 카드 → `xxl`
   → 1차 버튼(`다음 날로` / `엔딩 보기`) → `sm` → 메타 한 줄.
 - 관계 변화는 문장 나열 대신 `StatTile`(라벨 / 값 / 부호+변화량) 로 정렬한다.
@@ -840,6 +842,9 @@ class ContinueCard extends StatelessWidget {
   final int topAffection;
   final CharacterAccent? topAccent;
 
+  /// 최애의 서사 신호(signals.json). null 이면 예전 `'서연 ♥42'` + '가장 가까운 사람'.
+  final String? topSignal;
+
   const ContinueCard({
     super.key,
     required this.run,
@@ -850,6 +855,7 @@ class ContinueCard extends StatelessWidget {
     this.topName,
     this.topAffection = 0,
     this.topAccent,
+    this.topSignal,
   });
 
   /// 세이브 요약을 아직 못 읽은 첫 프레임용.
@@ -858,6 +864,30 @@ class ContinueCard extends StatelessWidget {
         cliffhanger = null, topName = null, topAffection = 0, topAccent = null;
 }
 
+/// 하루 정산의 "관계 변화" 카드. 오늘 호감 구간을 넘은 캐릭터 한 명.
+class RelationShiftCard extends StatelessWidget {
+  final String name;
+  final String text;   // 서사 신호 한 줄
+  final bool up;       // 구간 상승이면 true, 하강이면 false
+  final CharacterAccent? accent;
+}
+```
+
+**서사 신호 (`ContinueCard.topSignal`, `RelationShiftCard`).** 숫자 대신 이야기로 관계 진전을
+보여 주는 두 자리다. 문장은 `assets/story/signals.json`(캐릭터 × 호감 구간 × 3문장, 하강 2~3문장,
+40자 이내)에서 `seed ^ day ^ 캐릭터 해시` 로 결정적으로 고른다. ① 홈 이어하기 카드: 최애가 있으면
+마지막 줄은 `CharacterAvatar(32)` + 한 덩어리 `Text.rich` — 신호 `bodyMedium`(onSurface) 뒤에
+`'서연 ♥42'` 를 `labelSmall`(onSurfaceVariant) 꼬리로, 최대 2줄 ellipsis. 너비 360 미만·글자 1.15배
+초과에서는 예고를 1줄로 줄여 §1.5 높이 예산(1차 버튼 하단 변화 없음)을 지킨다. 신호가 없으면 예전
+줄 그대로. ② 정산 `RelationShiftCard`: `AppCard` 안 `Row(CharacterAvatar 40, md, Expanded(Column(
+Wrap(이름 titleSmall, 배지), xs, 문장)))`. 상승은 캐릭터 `accent.base` 좌측 3px 띠 + 배지(`accent.container`
+면, `accent.onContainer` 글자, `accent.base` 헤어라인, `Icons.favorite` 14 + `'가까워졌다'` `badgeText`,
+pill) + 문장 `bodyLarge`(onSurface). 하강은 띠 없음 + 중립 배지(`surfaceContainerHigh` /
+`onSurfaceVariant` / `outlineVariant`, `Icons.south_east` + `'조금 멀어졌다'`) + 문장 `bodyMedium`
+onSurfaceVariant. 그림자는 `AppCard` 기본 한 겹뿐, 노란색 없음, 방향은 색 + 낱말 + 아이콘 3중.
+탭 대상이 아니므로 44pt 규칙 대상 밖. 정산 화면 맨 위(오늘의 변화 위)에 오른 사람 먼저 최대 2장.
+
+```dart
 /// 출석 보상 줄의 상태.
 enum RewardStripState { unclaimed, unclaimedBonus, claimed }
 
@@ -933,6 +963,8 @@ final AppTone tone;   // 기본 AppTone.neutral
 | 미니게임 결과 | `'크리티컬!'` / `'성공'` / `'실패'` 정확히 |
 | 결과 패널 | `'크리티컬! 호감 2배'`, `'실패…'`, `'물올랐다!'`, `'성공'`, `'계속'` |
 | 정산 | AppBar `'D+1 정산'`, `'오늘의 변화'`, `'서연 호감'` + `'+4'`, 스탯 변화 `'+3'` |
+| 관계 변화 카드 | 상승 배지 `'가까워졌다'`, 하강 배지 `'조금 멀어졌다'`, 신호 문장은 단일 Text |
+| 홈 신호 줄 | 신호 문장과 `'서연 ♥42'` 가 한 `Text.rich` 안(`textContaining` 으로 찾는다). 신호가 없을 때만 `'가장 가까운 사람'` |
 | 행동 화면 AppBar | `'D+1  ·  1장'` (공백 2개 + 중점) |
 | 룰렛 | `'오늘의 운'`, `'돌리기'`, `'시작'`, `'한 번 더 (광고)'` / 재도전권이 있으면 대신 `'재도전권 사용 (N장)'` |
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |

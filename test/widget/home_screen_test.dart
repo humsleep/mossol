@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/app_meta.dart';
 import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/ui/album_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
@@ -111,7 +112,10 @@ void main() {
       expect(find.text('D+37 / 100'), findsOneWidget);
       expect(find.textContaining('어젯밤: 내일 서연이'), findsOneWidget);
       expect(find.textContaining('서연 ♥42'), findsOneWidget);
-      expect(find.text('가장 가까운 사람'), findsOneWidget);
+      // 숫자 대신 서사 신호가 주인공. '가장 가까운 사람' 꼬리표는 신호가 대신한다.
+      expect(s.topSignal, isNotNull);
+      expect(find.textContaining(s.topSignal!), findsOneWidget);
+      expect(find.text('가장 가까운 사람'), findsNothing);
 
       expect(find.widgetWithText(FilledButton, '이어하기'), findsOneWidget);
       expect(find.widgetWithText(TextButton, '새 게임'), findsOneWidget);
@@ -163,6 +167,43 @@ void main() {
       expect(find.byType(HeartsRow), findsNothing);
       expect(find.text('이어하기'), findsOneWidget);
       expect(find.text('새 게임'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('최애 신호: 같은 날 다시 그려도 같은 문장, 하트는 작은 보조 꼬리', (tester) async {
+      await showHome(tester);
+      final signal = c.saveSummary!.topSignal!;
+      final line = find.textContaining(signal);
+      expect(line, findsOneWidget);
+      // 신호와 '서연 ♥42' 는 한 덩어리 Text.rich. 신호가 주인공이라 글자가 더 크다.
+      final spans = (tester.widget<Text>(line).textSpan! as TextSpan).children!.cast<TextSpan>();
+      final sig = spans.firstWhere((x) => x.text == signal);
+      final heart = spans.firstWhere((x) => x.text == '서연 ♥42');
+      expect(sig.style!.fontSize!, greaterThan(heart.style!.fontSize!));
+      c.goHome();
+      await tester.pump();
+      expect(find.textContaining(signal), findsOneWidget);
+      expect(c.saveSummary!.topSignal, signal);
+      await unmount(tester);
+    });
+
+    testWidgets('signals.json 이 없으면 예전처럼 숫자 + 가장 가까운 사람', (tester) async {
+      final b = c.bundle;
+      final bare = GameController(
+        bundle: StoryBundle(
+          config: b.config,
+          characters: b.characters,
+          events: b.events,
+          endings: b.endings,
+        ),
+        save: SaveService(),
+      );
+      await bare.init();
+      expect(bare.saveSummary!.topSignal, isNull);
+      await tester.pumpWidget(fullApp(bare));
+      await tester.pump();
+      expect(find.text('서연 ♥42'), findsOneWidget);
+      expect(find.text('가장 가까운 사람'), findsOneWidget);
       await unmount(tester);
     });
 

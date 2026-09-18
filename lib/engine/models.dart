@@ -433,6 +433,69 @@ class DayAction {
   );
 }
 
+/// 초반 호감 가속. 첫 며칠은 호감이 **오르는** 효과를 크게 줘서 "붙는 맛" 을
+/// 먼저 보여 준다. 감소 효과·신뢰에는 적용하지 않는다(`applyEffects`).
+///
+/// config.json 예:
+/// `"earlyAffection": {"curve": [2, 2, 2, 1.5, 1.5], "maxTotal": 3}` — curve[i] 는 i+1일차 배율.
+/// 또는 간단히 `{"untilDay": 10, "multiplier": 1.5}` (1~10일차 1.5배).
+/// 곡선 밖(그 뒤 날짜)은 1배. 배율을 곱한 결과는 올림한다(+1 이 +2 가 되는 체감).
+class EarlyAffection {
+  /// curve[i] = (i+1)일차 배율. 1 보다 작은 값은 1 로 본다.
+  final List<double> curve;
+
+  /// 크리티컬(2배)과 곱했을 때의 상한. 1일차 크리티컬이 4배로 폭주하지 않게.
+  final double maxTotal;
+
+  const EarlyAffection({this.curve = const [], this.maxTotal = 3});
+
+  static const none = EarlyAffection();
+
+  bool get isEmpty => curve.every((m) => m <= 1);
+
+  /// 마지막으로 가속이 걸리는 날. 가속이 없으면 0.
+  int get lastDay {
+    for (var i = curve.length - 1; i >= 0; i--) {
+      if (curve[i] > 1) return i + 1;
+    }
+    return 0;
+  }
+
+  /// [day] 일차의 초반 배율. 곡선 밖이면 1.
+  double multiplierFor(int day) {
+    if (day < 1 || day > curve.length) return 1;
+    final m = curve[day - 1];
+    return m < 1 ? 1 : m;
+  }
+
+  /// 초반 배율 × (크리티컬이면 [critFactor]) 를 상한 [maxTotal] 로 자른다.
+  /// 상한은 크리티컬 배율보다 작아지지 않는다(크리티컬이 초반에 손해가 되면 안 된다).
+  double combined(int day, {bool critical = false, double critFactor = 2}) {
+    final base = multiplierFor(day);
+    final raw = base * (critical ? critFactor : 1);
+    final cap = maxTotal < critFactor ? critFactor : maxTotal;
+    return raw > cap ? (base > cap ? base : cap) : raw;
+  }
+
+  factory EarlyAffection.fromJson(Object? j) {
+    if (j is! Map) return none;
+    final cap = ((j['maxTotal'] as num?) ?? 3).toDouble();
+    final curve = j['curve'];
+    if (curve is List) {
+      return EarlyAffection(
+        curve: [for (final v in curve) (v as num).toDouble()],
+        maxTotal: cap,
+      );
+    }
+    final until = ((j['untilDay'] as num?) ?? 0).toInt();
+    final m = ((j['multiplier'] as num?) ?? 1).toDouble();
+    return EarlyAffection(
+      curve: List.filled(until < 0 ? 0 : until, m),
+      maxTotal: cap,
+    );
+  }
+}
+
 class GameConfig {
   final int totalDays;
   final int chapterLength;
@@ -441,6 +504,9 @@ class GameConfig {
   final Map<String, int> initialStats;
   final List<DayAction> actions;
 
+  /// 초반 호감 가속. 없으면 [EarlyAffection.none] (항상 1배).
+  final EarlyAffection earlyAffection;
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -448,6 +514,7 @@ class GameConfig {
     this.heartRegenMinutes = 30,
     this.initialStats = const {},
     this.actions = const [],
+    this.earlyAffection = EarlyAffection.none,
   });
 
   factory GameConfig.fromJson(Map<String, dynamic> j) => GameConfig(
@@ -459,6 +526,7 @@ class GameConfig {
     actions: ((j['actions'] as List?) ?? const [])
         .map((e) => DayAction.fromJson(e as Map<String, dynamic>))
         .toList(),
+    earlyAffection: EarlyAffection.fromJson(j['earlyAffection']),
   );
 }
 

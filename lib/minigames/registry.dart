@@ -16,6 +16,7 @@ void registerMinigames() {
     'delete_fast': (ctx, done) => DeleteFastGame(ctx: ctx, done: done),
     'nerve_gauge': (ctx, done) => NerveGaugeGame(ctx: ctx, done: done),
     'group_chat': (ctx, done) => GroupChatGame(ctx: ctx, done: done),
+    // 선 지키기(드립 한 번 더). id 는 세이브·데이터 호환 때문에 drink_limit 그대로.
     'drink_limit': (ctx, done) => DrinkLimitGame(ctx: ctx, done: done),
     'outfit': (ctx, done) => OutfitGame(ctx: ctx, done: done),
     'profile_swipe': (ctx, done) => ProfileSwipeGame(ctx: ctx, done: done),

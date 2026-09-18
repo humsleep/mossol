@@ -627,7 +627,8 @@ class _ResultPanel extends StatelessWidget {
         ? t.onDangerContainer
         : scheme.onSurface;
     final headline = o.critical
-        ? (o.delta.affection.values.any((v) => v > 0) ? '크리티컬! 호감 2배' : '크리티컬!')
+        // 초반에는 초반 가속과 겹쳐 2배가 넘으므로 배수를 적지 않는다. 실제 수치는 아래 칩에 있다.
+        ? (o.delta.affection.values.any((v) => v > 0) ? '크리티컬! 호감 폭발' : '크리티컬!')
         : !o.success
         ? '실패…'
         : o.comboStarted

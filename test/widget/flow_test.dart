@@ -60,6 +60,13 @@ void main() {
     await playDay(tester);
     expect(find.text('D+1 정산'), findsOneWidget);
 
+    // 첫날은 대개 누군가와 첫 구간에 들어서서 관계 변화 카드가 위에 뜬다. 버튼까지 내린다.
+    await tester.dragUntilVisible(
+      find.text('다음 날로'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('다음 날로'));
     await tester.pump();
     expect(c.phase, Phase.action);
