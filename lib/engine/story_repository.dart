@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'effects.dart';
 import 'models.dart';
 
 /// 스토리 데이터 묶음. JSON 4개 파일에서 만들어진다.
@@ -189,8 +190,9 @@ class StoryBundle {
 
   void _checkEffects(Effects e, String where) {
     _checkStatKeys(e.stats.keys, where);
-    _checkCharKeys(e.affection.keys, '$where.affection');
-    _checkCharKeys(e.trust.keys, '$where.trust');
+    // `@top`(지금 가장 가까운 사람)은 효과에서만 쓸 수 있다.
+    _checkCharKeys(e.affection.keys.where((k) => k != topKey), '$where.affection');
+    _checkCharKeys(e.trust.keys.where((k) => k != topKey), '$where.trust');
   }
 
   /// 치명적이지는 않지만 의도와 다를 가능성이 큰 데이터. 출시 전 점검용.

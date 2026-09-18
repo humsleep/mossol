@@ -1455,4 +1455,30 @@ void main() {
       expect(cold.delta.affection['a'], -5);
     }
   });
+
+  test('@top 은 지금 호감이 가장 높은 한 사람에게만 적용된다', () {
+    final b = StoryBundle.fromJsonStrings(
+      config: '{"totalDays":100,"initialStats":{"charm":10},"actions":[]}',
+      characters: '[{"id":"a","name":"A","role":"r"},{"id":"b","name":"B","role":"r"}]',
+      events: [
+        '[{"id":"e","layer":"daily","title":"t","lines":[],"choices":['
+            '{"text":"x","effects":{"affection":{"@top":4},"trust":{"@top":-2}}}]}]',
+      ],
+      endings: '[{"id":"z","name":"z","tier":"bad","priority":1,"default":true}]',
+    );
+    final eng = EventEngine(b);
+    final ev = b.eventById['e']!;
+    final s = GameState.fresh(b.config, b.characters, seed: 1);
+
+    // 아무와도 가깝지 않으면 아무에게도.
+    var out = eng.applyChoice(s, ev, ev.choices[0], forcedCritical: false);
+    expect(out.delta.affection, isEmpty);
+
+    s.rel('b').affection = 10;
+    s.rel('b').trust = 10;
+    out = eng.applyChoice(s, ev, ev.choices[0], forcedCritical: false);
+    expect(out.delta.affection, {'b': 4});
+    expect(out.delta.trust, {'b': -2});
+    expect(s.affectionOf('a'), 0);
+  });
 }

@@ -11,7 +11,11 @@ class AppliedDelta {
   String? album;
 
   bool get isEmpty =>
-      stats.isEmpty && affection.isEmpty && trust.isEmpty && flags.isEmpty && album == null;
+      stats.isEmpty &&
+      affection.isEmpty &&
+      trust.isEmpty &&
+      flags.isEmpty &&
+      album == null;
 
   AppliedDelta copy() => AppliedDelta()..merge(this);
 
@@ -30,6 +34,25 @@ class AppliedDelta {
     flags.addAll(o.flags);
     album ??= o.album;
   }
+}
+
+/// 효과 키 `@top`: 지금 호감이 가장 높은 사람. 캐릭터가 정해지지 않은 일상
+/// 이벤트에서 "그 사람" 한 명에게만 효과를 줄 때 쓴다. 다섯 명 모두를 적으면
+/// 한 사람에게 한 행동이 모두에게 똑같이 번지는 문제가 생긴다.
+const topKey = '@top';
+
+/// 호감이 가장 높은 캐릭터 id. 동점이면 먼저 만난(관계 목록 앞) 쪽.
+/// 아무와도 호감이 없으면 null 이고, 그때 `@top` 효과는 적용되지 않는다.
+String? topCharacterOf(GameState s) {
+  String? best;
+  var bestAff = 0;
+  s.relations.forEach((id, r) {
+    if (r.affection > bestAff) {
+      bestAff = r.affection;
+      best = id;
+    }
+  });
+  return best;
 }
 
 /// [effects] 를 [s] 에 적용하고 실제 변화량을 돌려준다.
@@ -51,7 +74,11 @@ AppliedDelta applyEffects(
 
   void bump(Map<String, int> src, Map<String, int> out, bool isAffection) {
     src.forEach((k, v) {
-      final id = k == '*' ? self : k;
+      final id = switch (k) {
+        '*' => self,
+        topKey => topCharacterOf(s),
+        _ => k,
+      };
       if (id == null) return;
       final r = s.rel(id);
       final before = isAffection ? r.affection : r.trust;
