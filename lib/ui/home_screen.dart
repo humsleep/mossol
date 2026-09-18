@@ -38,11 +38,29 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 하트 타이머. 1초마다 남은 시간을 다시 그리고 찬 하트를 반영한다.
   Timer? _timer;
 
+  /// 어느 메타·어느 날짜에 대해 출석을 처리했는지. 설정의 저장 초기화는 메타 객체를
+  /// 새로 만들고, 홈을 켜 둔 채 자정을 넘기면 날짜가 바뀐다 — 둘 다 "홈에 새로
+  /// 들어온 것" 과 같으므로 출석을 다시 돈다. 시계가 과거로 가는 경우는 키가 그대로라
+  /// 매초 다시 부르지 않는다.
+  String? _entryKey;
+
+  String get _currentEntryKey =>
+      '${identityHashCode(c.meta)}|'
+      '${Attendance.dateKey(DateTime.fromMillisecondsSinceEpoch(c.nowMs()))}';
+
   @override
   void initState() {
     super.initState();
-    _wasCheckedIn = c.checkedInToday;
+    _beginCheckIn();
     _timer = Timer.periodic(const Duration(seconds: 1), _tick);
+  }
+
+  /// 홈 진입(또는 그와 같은 상황)의 출석 처리 시작. 줄 상태를 초기화하고 컨트롤러에 묻는다.
+  void _beginCheckIn() {
+    _entryKey = _currentEntryKey;
+    _checkIn = null;
+    _claimed = false;
+    _wasCheckedIn = c.checkedInToday;
     unawaited(_checkInOnEntry());
   }
 
@@ -55,13 +73,20 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 홈 진입 = 출석. 오늘 첫 출석이면 보상은 컨트롤러가 바로 얹고, 줄은 `받기` 를
   /// 누를 때까지 미수령 모습으로 남아 "오늘 받은 것" 을 알린다.
   Future<void> _checkInOnEntry() async {
+    final key = _entryKey;
     final r = await c.checkInToday();
-    if (!mounted) return;
+    // 답을 기다리는 사이 초기화가 일어났으면 이 답은 지난 메타의 것이다.
+    if (!mounted || key != _entryKey) return;
     setState(() => _checkIn = r);
   }
 
   void _tick(Timer _) {
-    if (!mounted || !c.hasSave || c.saveSummary == null || c.heartsFull) return;
+    if (!mounted) return;
+    if (c.meta != null && _entryKey != _currentEntryKey) {
+      // 저장 초기화(새 메타) 또는 자정 통과. 수령 상태로 굳은 줄을 풀고 다시 출석한다.
+      setState(_beginCheckIn);
+    }
+    if (!c.hasSave || c.saveSummary == null || c.heartsFull) return;
     unawaited(c.refreshHearts());
     setState(() {});
   }

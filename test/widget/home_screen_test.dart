@@ -203,6 +203,29 @@ void main() {
       await unmount(tester);
     });
 
+    testWidgets('저장 초기화 뒤에는 첫 실행처럼 다시 미수령 줄이 된다 (회귀)', (tester) async {
+      // 실기기: 설정 → 저장 데이터 초기화 뒤 홈이 '오늘 출석 완료 · 연속 0일째' 로 굳어 있었다.
+      await c.newGame(seed: 1);
+      c.goHome();
+      await showHome(tester);
+      await tester.tap(find.text('받기'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('오늘 출석 완료'), findsOneWidget);
+
+      await c.resetAllData();
+      expect(c.checkedInToday, isFalse);
+      // 홈이 켜진 채라 다음 틱에서 새 메타를 알아채고 출석을 다시 돈다.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(find.text('출석 보상 하트 +1'), findsOneWidget);
+      expect(find.text('받기'), findsOneWidget);
+      expect(find.text('연속 1일째'), findsOneWidget);
+      expect(find.textContaining('연속 0일째'), findsNothing);
+      expect(c.checkedInToday, isTrue);
+      expect(c.pendingHearts, 1, reason: '세이브가 없으니 보류함에 다시 쌓인다');
+      await unmount(tester);
+    });
+
     testWidgets('세이브가 있으면 수령 부제가 연속 일수', (tester) async {
       await c.newGame(seed: 1);
       c.goHome();
@@ -365,13 +388,18 @@ void main() {
       expect(c.hasSave, isFalse);
       expect(c.saveSummary, isNull);
       expect(c.endingAlbum, isEmpty);
-      expect(c.streakDays, 0);
-      expect(c.pendingHearts, 0);
       expect(await c.save.exists(), isFalse);
       expect(await c.save.loadEndings(), isEmpty);
       expect(find.widgetWithText(FilledButton, '새 게임'), findsOneWidget);
       expect(find.text('이어하기'), findsNothing);
       expect(find.textContaining('앨범  0 /'), findsOneWidget);
+      // 첫 실행과 같아야 하므로 출석도 다시 돈다: 새 메타에 오늘 출석 1일째, 보류 하트 1.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(c.streakDays, 1);
+      expect(c.pendingHearts, 1);
+      expect(find.text('출석 보상 하트 +1'), findsOneWidget);
+      expect(find.textContaining('연속 0일째'), findsNothing);
       await unmount(tester);
     });
 

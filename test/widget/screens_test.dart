@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/album_screen.dart';
 import 'package:mossol/ui/ending_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers.dart';
 
@@ -60,6 +62,37 @@ void main() {
       await tester.pumpWidget(wrapApp(ActionScreen(c: c)));
       await tester.pumpAndSettle();
       expect(find.text('오늘의 운'), findsNothing);
+    });
+
+    testWidgets('하트 타이머가 1초마다 줄고 차면 하트가 는다 (회귀)', (tester) async {
+      // 실기기: 행동 화면의 '다음 하트 12:48' 이 3분 넘게 그대로였다(타이머 없음).
+      var now = DateTime(2026, 9, 18, 12).millisecondsSinceEpoch;
+      SharedPreferences.setMockInitialValues({});
+      final tc = GameController(
+        bundle: testBundle(),
+        save: SaveService(),
+        clock: () => now,
+      );
+      await tc.init();
+      await tc.newGame(seed: 3);
+      tc.state!
+        ..hearts = 2
+        ..lastHeartMs = now
+        ..rouletteDay = tc.state!.day; // 룰렛 시트가 뜨지 않게 오늘 몫을 이미 돌린 것으로.
+      await tester.pumpWidget(wrapApp(ActionScreen(c: tc)));
+      await tester.pump();
+      expect(find.text('다음 하트 15:00'), findsOneWidget);
+
+      now += 1000;
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('다음 하트 14:59'), findsOneWidget);
+
+      now += 899 * 1000;
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(tc.hearts, 3);
+      expect(find.text('다음 하트 15:00'), findsOneWidget, reason: '다음 하트를 다시 센다');
+      await tester.pumpWidget(Container());
     });
 
     testWidgets('콤보와 클리프행어, 관계 칩이 표시된다', (tester) async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
@@ -28,11 +30,29 @@ class _ActionScreenState extends State<ActionScreen> {
   /// 그때 시트를 또 띄우면 두 장이 겹치므로 열려 있는 동안은 막는다.
   bool _sheetOpen = false;
 
+  /// 하트 타이머. 홈과 같은 1초 틱 — 없으면 `다음 하트 12:48` 이 화면에 머무는 동안
+  /// 한 번도 안 바뀐다(실기기에서 3분 넘게 같은 값이 보였다).
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), _tick);
     // 하루의 첫 화면에서 룰렛을 먼저 돌린다.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRoulette());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  /// 찬 하트를 반영하고 남은 시간을 다시 그린다. 만땅이면 그릴 것이 없다.
+  void _tick(Timer _) {
+    if (!mounted || c.state == null || c.heartsFull) return;
+    unawaited(c.refreshHearts());
+    setState(() {});
   }
 
   @override
