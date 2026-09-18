@@ -151,8 +151,8 @@ class _ActionScreenState extends State<ActionScreen> {
   Future<void> _start(BuildContext context, DayAction action) async {
     final ok = await c.startDay(action);
     if (ok || !context.mounted) return;
-    final watch = await showDialog<bool>(
-      context: context,
+    final watch = await showAppDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         title: const Text('하트가 없어요'),
         content: Text(

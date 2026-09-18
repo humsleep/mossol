@@ -50,11 +50,21 @@ class EventEngine {
   /// 후보가 없으면 채우지 못할 수도 있다.
   final int minEventsPerDay;
 
+  /// 오프닝(1~[openingDays]일차)에는 하루를 이만큼 채운다.
+  /// 첫 세션이 첫인상이라 평소보다 하나 더 보여 준다.
+  final int openingMinEventsPerDay;
+  final int openingDays;
+
   EventEngine(
     this.bundle, {
     this.hiddenChancePercent = 30,
     this.minEventsPerDay = 3,
+    this.openingMinEventsPerDay = 4,
+    this.openingDays = 3,
   });
+
+  /// 오프닝 구간인지. 하루 분량과 루트 선택 규칙이 달라진다.
+  bool isOpening(GameState s) => s.day <= openingDays;
 
   /// 같은 상태·같은 날·같은 용도면 항상 같은 난수. 데일리 시나리오와 테스트용.
   ///
@@ -132,18 +142,24 @@ class EventEngine {
 
     // 하루가 너무 짧으면 하트 하나를 쓴 보람이 없다.
     // 이미 꽉 찬 날은 그대로 두고, 한산한 날에만 일상을 하나 더 얹어
-    // 하루 분량을 고르게 맞춘다.
-    if (plan.length < minEventsPerDay) {
+    // 하루 분량을 고르게 맞춘다. 오프닝에는 목표치까지 채운다.
+    final opening = isOpening(s);
+    final target = opening ? openingMinEventsPerDay : minEventsPerDay;
+    final maxFill = opening ? target : 1;
+    for (var i = 0; i < maxFill && plan.length < target; i++) {
       final more = candidates(
         s,
         EventLayer.daily,
       ).where((e) => !planned.contains(e.id)).toList();
-      add(_weightedPick(more, rng(s, 'daily-2')));
+      final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'));
+      if (pick == null) break;
+      add(pick);
     }
     return plan;
   }
 
   /// 호감도가 가장 높은 캐릭터를 우선하되, 후보가 있는 캐릭터 중에서 고른다.
+  /// 오프닝(1~[openingDays]일차)에는 호감을 보지 않고 균등하게 고른다.
   StoryEvent? _pickRoute(GameState s) {
     final routes = candidates(s, EventLayer.route);
     if (routes.isEmpty) return null;
@@ -157,6 +173,12 @@ class EventEngine {
         final diff = s.affectionOf(b) - s.affectionOf(a);
         return diff != 0 ? diff : a.compareTo(b);
       });
+    // 오프닝에는 호감이 아직 의미가 없다. 첫날 동전 던지기 결과가 며칠씩
+    // 같은 캐릭터를 밀어주지 않도록 후보가 있는 캐릭터 중 균등 무작위.
+    if (isOpening(s)) {
+      final chosen = chars[r.nextInt(chars.length)];
+      return _weightedPick(byChar[chosen]!, r);
+    }
     // 최상위와 호감도가 같은 캐릭터들 사이에서는 무작위.
     final top = s.affectionOf(chars.first);
     final tied = chars.where((c) => s.affectionOf(c) == top).toList();

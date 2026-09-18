@@ -15,6 +15,72 @@ export 'engine/attendance.dart' show CheckInResult, Attendance;
 
 enum Phase { home, action, event, summary, ending }
 
+/// 홈이 세이브를 복원하지 않고도 그릴 수 있게 세이브 파일에서 뽑은 요약.
+/// 규격은 docs/HOME_REDESIGN.md §0.2. [GameController.saveSummary] 로 읽는다.
+@immutable
+class SaveSummary {
+  final int run;
+  final int day;
+  final int totalDays;
+  final int chapter;
+
+  /// 어젯밤 예고. 첫날(아직 하루를 안 넘긴 세이브)이면 null.
+  final String? lastCliffhanger;
+
+  /// 지금 시각 기준으로 회복까지 반영한 하트.
+  final int hearts;
+
+  /// 호감 최고 캐릭터. 전원 0 이면 null. 동점이면 characters.json 순서.
+  final String? topCharacterId;
+  final int topAffection;
+
+  /// 캐릭터 id → 호감. [affectionOf] 로 읽는다.
+  final Map<String, int> affection;
+
+  const SaveSummary({
+    required this.run,
+    required this.day,
+    required this.totalDays,
+    required this.chapter,
+    required this.lastCliffhanger,
+    required this.hearts,
+    required this.topCharacterId,
+    required this.topAffection,
+    required this.affection,
+  });
+
+  factory SaveSummary.fromState(
+    GameState s,
+    GameConfig config,
+    List<CharacterDef> characters,
+  ) {
+    String? best;
+    var bestAff = 0;
+    final aff = <String, int>{};
+    for (final c in characters) {
+      final a = s.affectionOf(c.id);
+      aff[c.id] = a;
+      if (a > bestAff) {
+        bestAff = a;
+        best = c.id;
+      }
+    }
+    return SaveSummary(
+      run: s.run,
+      day: s.day,
+      totalDays: config.totalDays,
+      chapter: s.chapter(config),
+      lastCliffhanger: s.lastCliffhanger,
+      hearts: s.hearts,
+      topCharacterId: best,
+      topAffection: bestAff,
+      affection: Map.unmodifiable(aff),
+    );
+  }
+
+  int affectionOf(String id) => affection[id] ?? 0;
+}
+
 /// 화면 흐름과 게임 상태를 잇는 컨트롤러. 광고 호출은 화면에서 하고,
 /// 여기서는 보상 적용(하트 충전, 되돌리기, 힌트)만 담당한다.
 class GameController extends ChangeNotifier {
@@ -39,6 +105,14 @@ class GameController extends ChangeNotifier {
   GameState? state;
   bool hasSave = false;
   List<String> endingAlbum = [];
+
+  /// 홈이 읽는 세이브 요약. 세이브가 없으면 null. [init] 에서 파일만 읽어 채우고,
+  /// [goHome] 과 홈에서 일어나는 저장(출석·하트) 뒤에 다시 만든다.
+  /// [state] 는 여전히 [continueGame] 때 복원한다 — 홈에서 `state == null` 인 의미는 그대로.
+  SaveSummary? saveSummary;
+
+  /// [init] 에서 읽어 둔 세이브. [state] 로 승격하지 않고 요약과 하트 회복 계산에만 쓴다.
+  GameState? _peek;
 
   /// 회차를 넘어 유지되는 기록. [init] 에서 읽는다. 그 전에는 null.
   PlayerMeta? meta;
@@ -122,6 +196,37 @@ class GameController extends ChangeNotifier {
       await metaService.save(m);
     }
     meta = m;
+    // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
+    _peek = hasSave ? await save.load() : null;
+    if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
+    _syncSummary();
+    notifyListeners();
+  }
+
+  /// [saveSummary] 를 지금 상태로 다시 만든다. 세이브가 없으면 null.
+  void _syncSummary() {
+    final s = hasSave ? (state ?? _peek) : null;
+    saveSummary = s == null
+        ? null
+        : SaveSummary.fromState(s, config, bundle.characters);
+  }
+
+  /// 설정의 "저장 데이터 초기화". 회차·앨범·메타를 전부 지우고 첫 실행 상태로 돌린다.
+  Future<void> resetAllData() async {
+    await save.clear();
+    await save.clearEndings();
+    await metaService.clear();
+    final m = PlayerMeta(firstLaunchMs: nowMs());
+    await metaService.save(m);
+    meta = m;
+    state = null;
+    _peek = null;
+    hasSave = false;
+    endingAlbum = [];
+    ending = null;
+    runBonus = const {};
+    _resetDay();
+    _syncSummary();
     notifyListeners();
   }
 
@@ -137,7 +242,10 @@ class GameController extends ChangeNotifier {
     if (m == null) return null;
     final r = Attendance.checkIn(m, _now);
     if (!r.first) return r;
-    final s = state;
+    // 엔딩 직후처럼 state 는 남았지만 세이브가 지워진 경우에 저장하면 끝난 회차가
+    // 되살아난다. 세이브가 살아 있을 때만 바로 얹는다. 상태 복원 전(홈 첫 프레임)은
+    // 보류함에 넣고 continueGame 이 얹는다.
+    final s = hasSave ? state : null;
     var granted = 0;
     if (s != null) {
       granted = Attendance.grantHearts(s, r.heartsGranted, config.maxHearts);
@@ -146,6 +254,7 @@ class GameController extends ChangeNotifier {
     // 세이브가 없거나 상한에 걸려 못 얹은 몫은 보관해 뒀다가 다음에 얹는다.
     _bankHearts(m, r.heartsGranted - granted);
     await metaService.save(m);
+    _syncSummary();
     notifyListeners();
     return r;
   }
@@ -277,6 +386,8 @@ class GameController extends ChangeNotifier {
     await _applyPendingHearts(s);
     await save.save(s);
     hasSave = true;
+    _peek = null;
+    _syncSummary();
     notifyListeners();
   }
 
@@ -284,6 +395,7 @@ class GameController extends ChangeNotifier {
     final s = await save.load();
     if (s == null) return false;
     state = s;
+    _peek = null;
     runBonus = const {};
     _regenHearts();
     _resetDay();
@@ -292,12 +404,14 @@ class GameController extends ChangeNotifier {
       await _applyPendingHearts(s);
       await save.save(s);
     }
+    _syncSummary();
     notifyListeners();
     return true;
   }
 
   void goHome() {
     phase = Phase.home;
+    _syncSummary();
     notifyListeners();
   }
 
@@ -314,10 +428,22 @@ class GameController extends ChangeNotifier {
   /// 하나라도 찼으면 저장한다. 찬 개수를 돌려준다.
   Future<int> refreshHearts() async {
     final s = state;
-    if (s == null) return 0;
+    if (s == null) {
+      // 홈 첫 프레임처럼 상태 복원 전이면 요약 쪽 하트만 따라가게 한다.
+      // 저장은 안 한다 — continueGame 이 같은 시계로 다시 계산한다.
+      final p = _peek;
+      if (p == null) return 0;
+      final gained = engine.regenHearts(p, nowMs: nowMs());
+      if (gained > 0) {
+        _syncSummary();
+        notifyListeners();
+      }
+      return gained;
+    }
     final gained = engine.regenHearts(s, nowMs: nowMs());
     if (gained > 0) {
       await save.save(s);
+      _syncSummary();
       notifyListeners();
     }
     return gained;
@@ -332,13 +458,16 @@ class GameController extends ChangeNotifier {
   /// 다음 하트까지 남은 초 (올림). 세이브가 없거나 최대치 이상이면 0.
   /// 0 인데 하트가 안 찼다면 [refreshHearts] 를 부르면 된다.
   int get secondsToNextHeart {
-    final s = state;
+    final s = state ?? _peek;
     if (s == null || s.hearts >= config.maxHearts) return 0;
     final ms = s.lastHeartMs + engine.heartPeriodMs - nowMs();
     return ms <= 0 ? 0 : (ms + 999) ~/ 1000;
   }
 
-  bool get heartsFull => state != null && state!.hearts >= config.maxHearts;
+  bool get heartsFull {
+    final s = state ?? _peek;
+    return s != null && s.hearts >= config.maxHearts;
+  }
 
   /// 하루 단위로 쌓이는 것들을 비운다. 새 날이 시작되기 직전(마감 직후)에 부른다.
   /// 룰렛은 아침 행동보다 먼저 돌므로 startDay 에서 비우면 룰렛 결과가 정산에서 빠진다.
@@ -360,9 +489,11 @@ class GameController extends ChangeNotifier {
 
   /// 리워드 광고 보상: 하트 1개.
   Future<void> grantHeart() async {
-    final s = state!;
+    // 홈(상태 복원 전)에서도 광고 하트를 받을 수 있어야 한다.
+    final s = (state ?? _peek)!;
     s.hearts = min(config.maxHearts, s.hearts + 1);
     await save.save(s);
+    _syncSummary();
     notifyListeners();
   }
 
@@ -548,6 +679,8 @@ class GameController extends ChangeNotifier {
     endingAlbum = await save.loadEndings();
     await save.clear();
     hasSave = false;
+    _peek = null;
+    _syncSummary();
     phase = Phase.ending;
     notifyListeners();
   }

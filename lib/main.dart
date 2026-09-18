@@ -1,7 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
+import 'package:flutter/foundation.dart'
+    show LicenseEntryWithLineBreaks, LicenseRegistry, kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'ads/ad_manager.dart';
 import 'debug/debug_gallery.dart';
@@ -20,6 +22,7 @@ import 'ui/summary_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
+  registerPretendardLicense();
   registerMinigames();
   try {
     final bundle = await StoryBundle.loadFromAssets(knownMinigames: minigameIds);
@@ -38,6 +41,17 @@ Future<void> main() async {
     debugPrint('시작 실패: $e\n$stack');
     runApp(StartupFailureApp(reason: '$e'));
   }
+}
+
+/// Pretendard(OFL 1.1) 전문을 라이선스 페이지에 올린다. runApp 전에 한 번.
+/// 설정 → 오픈소스 라이선스에서 다른 패키지와 나란히 보인다(HOME_REDESIGN §2.4).
+void registerPretendardLicense() {
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString(
+      'assets/fonts/Pretendard-LICENSE.txt',
+    );
+    yield LicenseEntryWithLineBreaks(const ['Pretendard'], text);
+  });
 }
 
 /// 처리되지 않은 오류가 조용히 사라지지 않게 한다.

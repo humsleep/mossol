@@ -219,13 +219,34 @@ class StatBars extends StatelessWidget {
     );
   }
 
+  /// 기본 순서. 돈은 잔고라 막대 다섯 줄 아래로 내린다(HOME_REDESIGN §4.2).
+  /// `Stat.visible` 은 엔진 소속이라 그대로 두고 여기서만 순서를 바꾼다.
+  static const _defaultOrder = [
+    Stat.charm,
+    Stat.talk,
+    Stat.esteem,
+    Stat.sense,
+    Stat.stress,
+    Stat.money,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final show = keys ?? Stat.visible;
+    final show = keys ?? _defaultOrder;
     final labelW = _labelWidth(context, show);
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [for (final k in show) _row(context, k, labelW)],
+      children: [
+        for (var i = 0; i < show.length; i++) ...[
+          // 막대 다섯 줄과 "잔고 한 줄" 은 다른 종류다. 돈 위에만 구분선.
+          if (show[i] == Stat.money && i > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpace.xs),
+              child: Divider(),
+            ),
+          _row(context, show[i], labelW),
+        ],
+      ],
     );
   }
 
@@ -236,6 +257,8 @@ class StatBars extends StatelessWidget {
 
     // 값('42')과 변화량('+3')이 나란히 들어갈 폭. 1.3배 글꼴까지 배율을 곱한다.
     final valueW = scaler.scale(compact ? 40.0 : 88.0).clamp(36.0, 160.0);
+
+    if (k == Stat.money) return _moneyRow(context, labelW, valueW);
 
     final value = state.stat(k);
     final max = Stat.maxOf(k);
@@ -334,6 +357,100 @@ class StatBars extends StatelessWidget {
                       maxLines: 1,
                       textAlign: TextAlign.right,
                       style: t.numericSmall.copyWith(
+                        color: hasDelta
+                            ? scheme.onSurfaceVariant
+                            : scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 돈은 막대를 그리지 않는다. 능력치가 아니라 잔고라 상한(9999)이 목표가 아니고,
+/// 막대는 초반엔 빈 채, 후반엔 의미 없는 길이로 보인다. 숫자 하나가 정확하다(§4.1).
+extension _MoneyRow on StatBars {
+  Widget _moneyRow(BuildContext context, double labelW, double valueW) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final value = state.stat(Stat.money);
+    final d = delta?[Stat.money];
+    final hasDelta = d != null && d != 0;
+    final good = hasDelta && d > 0;
+    final label = Stat.label(Stat.money);
+
+    return Semantics(
+      container: true,
+      label: '$label $value',
+      value: hasDelta ? signed(d) : null,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: compact ? AppSpace.xxs : AppSpace.xs,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: labelW,
+                child: Row(
+                  children: [
+                    Icon(
+                      _statIcon(Stat.money),
+                      size: compact ? 14 : 16,
+                      color: t.statColor(Stat.money),
+                    ),
+                    const SizedBox(width: AppSpace.xs),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _labelStyle(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              // 막대 자리는 비운다. 트랙도 그리지 않는다.
+              const Expanded(child: SizedBox()),
+              const SizedBox(width: AppSpace.sm),
+              SizedBox(
+                width: valueW,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (hasDelta) ...[
+                      Icon(
+                        d > 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 13,
+                        color: t.deltaColor(good: good),
+                      ),
+                      const SizedBox(width: AppSpace.xxs),
+                      Flexible(
+                        child: Text(
+                          signed(d),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.numericMedium.copyWith(
+                            color: t.deltaColor(good: good),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.sm),
+                    ],
+                    // 막대가 없는 만큼 숫자가 정보의 전부라 한 단 크게(numericMedium).
+                    Text(
+                      '$value',
+                      maxLines: 1,
+                      textAlign: TextAlign.right,
+                      style: t.numericMedium.copyWith(
                         color: hasDelta
                             ? scheme.onSurfaceVariant
                             : scheme.onSurface,
@@ -1087,6 +1204,10 @@ class AppListRow extends StatelessWidget {
   /// 잠긴 항목. 글자색을 내리고 자물쇠를 함께 보여 주며 onTap 을 무시한다.
   final bool locked;
 
+  /// danger 면 제목·leading 아이콘 색을 tokens.danger 로. 배경은 바꾸지 않는다.
+  /// neutral | danger 만 지원, 나머지는 neutral 로 취급. [locked] 가 우선.
+  final AppTone tone;
+
   const AppListRow({
     super.key,
     required this.title,
@@ -1096,13 +1217,19 @@ class AppListRow extends StatelessWidget {
     this.onTap,
     this.showChevron = true,
     this.locked = false,
+    this.tone = AppTone.neutral,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
     final scheme = context.scheme;
-    final fg = locked ? t.lockedForeground : scheme.onSurface;
+    final danger = !locked && tone == AppTone.danger;
+    final fg = locked
+        ? t.lockedForeground
+        : danger
+        ? t.danger
+        : scheme.onSurface;
 
     Widget? tail = trailing;
     if (tail == null && locked) {
@@ -1134,7 +1261,17 @@ class AppListRow extends StatelessWidget {
           child: Row(
             children: [
               if (leading != null) ...[
-                leading!,
+                // leading 아이콘은 제목과 같은 색을 따른다(danger 면 위험색).
+                IconTheme.merge(
+                  data: IconThemeData(
+                    color: locked
+                        ? t.lockedForeground
+                        : danger
+                        ? t.danger
+                        : scheme.onSurfaceVariant,
+                  ),
+                  child: leading!,
+                ),
                 const SizedBox(width: AppSpace.md),
               ],
               Expanded(
@@ -1595,6 +1732,544 @@ class ChoiceButton extends StatelessWidget {
                         : tn.fg,
                   ),
                 ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 8. 다이얼로그 헬퍼
+// ---------------------------------------------------------------------------
+
+/// 홈·행동·설정의 `showDialog` 를 대신한다. 스크림 불투명도를 시트와 맞춘다(§3.4).
+/// `barrierDismissible` 등 다른 인자가 필요해지면 그때 추가한다.
+Future<T?> showAppDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+}) =>
+    showDialog<T>(
+      context: context,
+      barrierColor: context.scrimColor,
+      builder: builder,
+    );
+
+// ---------------------------------------------------------------------------
+// 9. 홈 부품 — 아바타 · 사람들 · 이어하기 · 출석 · 엔딩 점
+// ---------------------------------------------------------------------------
+
+/// 캐릭터 이니셜 원형. 실제 사진 대신 강조색 + 이름 첫 글자(§4.3).
+///
+/// [mystery] 는 히든 미해금. 글자 대신 사람 실루엣, 배경은 중립 표면.
+class CharacterAvatar extends StatelessWidget {
+  final String name;
+  final CharacterAccent? accent;
+
+  /// 32 · 40 · 56 만 쓴다.
+  final double size;
+  final bool mystery;
+
+  const CharacterAvatar({
+    super.key,
+    required this.name,
+    this.accent,
+    this.size = 40,
+    this.mystery = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final a = accent ?? t.neutralAccent;
+    final initial = name.isEmpty ? '' : name.characters.first;
+    final style = (size <= 32
+            ? context.text.labelMedium
+            : size >= 56
+            ? context.text.titleLarge
+            : context.text.labelLarge)
+        ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
+
+    return Semantics(
+      label: mystery ? '아직 만나지 않은 사람' : name,
+      child: ExcludeSemantics(
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: mystery ? scheme.surfaceContainerHigh : a.container,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: mystery ? scheme.outlineVariant : a.base,
+              width: AppBorderWidth.hairline,
+            ),
+          ),
+          child: mystery
+              ? Icon(
+                  Icons.person_outline,
+                  size: size * 0.5,
+                  color: t.lockedForeground,
+                )
+              : Text(initial, style: style),
+        ),
+      ),
+    );
+  }
+}
+
+/// [CastStrip] 한 칸의 데이터.
+class CastEntry {
+  final String id;
+  final String name;
+
+  /// null 이면 ♥ 줄을 그리지 않는다(세이브 없음).
+  final int? affection;
+  final bool mystery;
+
+  const CastEntry({
+    required this.id,
+    required this.name,
+    this.affection,
+    this.mystery = false,
+  });
+}
+
+/// 캐릭터 가로 한 줄(홈). 정렬은 호출부가 끝내서 넘긴다. 항목 폭 56, 사이 md.
+///
+/// 6개뿐이라 `ListView.builder` 대신 가로 `SingleChildScrollView` + `Row`.
+/// 고정 높이가 필요 없어 글자를 키워도 줄이 늘어난다.
+class CastStrip extends StatelessWidget {
+  final List<CastEntry> entries;
+
+  const CastStrip({super.key, required this.entries});
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    clipBehavior: Clip.none,
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpace.md),
+          _CastItem(entry: entries[i]),
+        ],
+      ],
+    ),
+  );
+}
+
+class _CastItem extends StatelessWidget {
+  final CastEntry entry;
+  const _CastItem({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final e = entry;
+    // '???' 는 4.5:1 을 지키려 onSurfaceVariant. 잠김은 실루엣 아바타가 먼저 말한다.
+    final nameColor = e.mystery ? scheme.onSurfaceVariant : scheme.onSurface;
+
+    return Semantics(
+      label: e.mystery
+          ? '아직 만나지 않은 사람'
+          : e.affection == null
+          ? e.name
+          : '${e.name} 호감 ${e.affection}',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: 56,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CharacterAvatar(
+                name: e.name,
+                accent: e.mystery ? null : t.accentFor(e.id),
+                mystery: e.mystery,
+              ),
+              const SizedBox(height: AppSpace.xs),
+              Text(
+                e.mystery ? '???' : e.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: context.text.labelSmall?.copyWith(color: nameColor),
+              ),
+              if (!e.mystery && e.affection != null) ...[
+                const SizedBox(height: AppSpace.xxs),
+                // 이름과 별개 Text(테스트 고정).
+                Text(
+                  '♥${e.affection}',
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: t.numericSmall,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 홈 이어하기 카드. 회차·진행·어젯밤 예고·가장 가까운 사람(HOME_REDESIGN §1.3 B-2).
+///
+/// 예고는 `'어젯밤: …'` 단일 Text, 최고 호감은 `'서연 ♥42'` 단일 Text 로 유지한다(테스트 고정).
+class ContinueCard extends StatelessWidget {
+  final int run;
+  final int chapter;
+  final int day;
+  final int totalDays;
+
+  /// null 이면 '아직 아무 일도 없었다. 오늘부터다.' 라벨 '어젯밤:' 은 항상 붙는다.
+  final String? cliffhanger;
+
+  /// null 이면 '아직 아무와도 가까워지지 않았다'.
+  final String? topName;
+  final int topAffection;
+  final CharacterAccent? topAccent;
+
+  /// 요약을 아직 못 읽은 첫 프레임인지.
+  final bool _placeholder;
+
+  const ContinueCard({
+    super.key,
+    required this.run,
+    required this.chapter,
+    required this.day,
+    required this.totalDays,
+    this.cliffhanger,
+    this.topName,
+    this.topAffection = 0,
+    this.topAccent,
+  }) : _placeholder = false;
+
+  /// 세이브 요약을 아직 못 읽은 첫 프레임용.
+  const ContinueCard.placeholder({super.key})
+      : run = 0,
+        chapter = 0,
+        day = 0,
+        totalDays = 100,
+        cliffhanger = null,
+        topName = null,
+        topAffection = 0,
+        topAccent = null,
+        _placeholder = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final ratio = totalDays <= 0
+        ? 0.0
+        : (day / totalDays).clamp(0.0, 1.0).toDouble();
+    final preview = _placeholder
+        ? '어젯밤: 불러오는 중…'
+        : '어젯밤: ${cliffhanger ?? '아직 아무 일도 없었다. 오늘부터다.'}';
+
+    return AppCard(
+      accentStripe: scheme.tertiary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _placeholder ? '저장된 회차' : '$run회차 · $chapter장',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium,
+                ),
+              ),
+              if (!_placeholder) ...[
+                const SizedBox(width: AppSpace.sm),
+                Text('D+$day / $totalDays', style: t.numericMedium),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpace.sm),
+          AppProgressBar(
+            value: ratio,
+            height: AppSpace.xs + 2,
+            semanticLabel: '진행도 $day일 / $totalDays일',
+          ),
+          const SizedBox(height: AppSpace.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpace.xxs),
+                child: Icon(
+                  Icons.bedtime_outlined,
+                  size: 18,
+                  color: scheme.tertiary,
+                ),
+              ),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: Text(
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          if (!_placeholder) ...[
+            const SizedBox(height: AppSpace.md),
+            if (topName == null)
+              Row(
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(
+                    child: Text(
+                      '아직 아무와도 가까워지지 않았다',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  CharacterAvatar(name: topName!, accent: topAccent, size: 32),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(
+                    child: Text(
+                      '$topName ♥$topAffection',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelMedium?.copyWith(
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.sm),
+                  Text('가장 가까운 사람', style: context.text.labelSmall),
+                ],
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 출석 보상 줄의 상태.
+enum RewardStripState { unclaimed, unclaimedBonus, claimed }
+
+/// 홈 출석 보상 줄. 미수령이면 primaryContainer + '받기', 수령이면 중립 + 체크.
+///
+/// 탭 대상은 `받기` 버튼뿐이다. 줄 전체를 누르게 하면 "뭘 눌렀는지" 가 불분명해진다.
+class RewardStrip extends StatelessWidget {
+  final RewardStripState state;
+  final int streakDays;
+
+  /// unclaimedBonus 에서 부제에 붙는 보너스 문구. 예: '룰렛 재도전권 +1'.
+  final String? bonusLabel;
+
+  /// 세이브 없이 받아 둔 하트. 0 보다 크면 수령 상태 부제가 바뀐다.
+  final int pendingHearts;
+
+  /// unclaimed / unclaimedBonus 에서 필수.
+  final Future<void> Function()? onClaim;
+
+  const RewardStrip({
+    super.key,
+    required this.state,
+    required this.streakDays,
+    this.bonusLabel,
+    this.pendingHearts = 0,
+    this.onClaim,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final claimed = state == RewardStripState.claimed;
+    final bonus = state == RewardStripState.unclaimedBonus;
+
+    final String title;
+    final String subtitle;
+    final IconData icon;
+    if (claimed) {
+      icon = Icons.check_circle;
+      title = '오늘 출석 완료';
+      subtitle = pendingHearts > 0
+          ? '하트 +$pendingHearts 은 새 게임을 시작하면 들어온다'
+          : '연속 $streakDays일째 · 내일 또 +1';
+    } else if (bonus) {
+      icon = Icons.redeem;
+      title = '연속 $streakDays일 보너스';
+      subtitle = bonusLabel == null ? '하트 +1' : '하트 +1 · $bonusLabel';
+    } else {
+      icon = Icons.card_giftcard;
+      title = '출석 보상 하트 +1';
+      subtitle = streakDays <= 0 ? '오늘부터 출석' : '연속 $streakDays일째';
+    }
+
+    final fg = claimed ? scheme.onSurface : scheme.onPrimaryContainer;
+    final sub = claimed ? scheme.onSurfaceVariant : scheme.onPrimaryContainer;
+
+    return AnimatedContainer(
+      duration: AppMotion.base(context),
+      curve: AppMotion.curve(context),
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: AppInsets.cardTight,
+      decoration: BoxDecoration(
+        color: claimed ? scheme.surfaceContainerLow : scheme.primaryContainer,
+        borderRadius: AppRadius.rMd,
+        border: Border.all(
+          color: claimed ? scheme.outlineVariant : scheme.primary,
+          width: AppBorderWidth.hairline,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: claimed ? t.success : fg),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.titleSmall?.copyWith(color: fg),
+                ),
+                const SizedBox(height: AppSpace.xxs),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(color: sub),
+                ),
+              ],
+            ),
+          ),
+          if (!claimed) ...[
+            const SizedBox(width: AppSpace.md),
+            FilledButton(
+              onPressed: onClaim == null ? null : () => onClaim!(),
+              // DS §5.7 예외 ①: 카드 안 보조 버튼이라 최소 높이 44.
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(64, AppSpace.minTouch),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.lg,
+                  vertical: AppSpace.sm,
+                ),
+              ),
+              child: const Text('받기'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 엔딩 등급별 획득 점. 순서 happy → good → solo → bad → hidden 고정.
+///
+/// 점은 색만으로 말하지 않는다 — 우측에 `n/m` 숫자를 항상 함께 둔다.
+class EndingTierDots extends StatelessWidget {
+  /// tier → (획득, 전체).
+  final Map<String, (int, int)> counts;
+
+  const EndingTierDots({super.key, required this.counts});
+
+  static const _order = ['happy', 'good', 'solo', 'bad', 'hidden'];
+
+  /// 앨범 `_tier` 와 같은 낱말.
+  static String labelOf(String tier) => switch (tier) {
+    'happy' => '해피',
+    'good' => '굿',
+    'solo' => '솔로',
+    'bad' => '배드',
+    'hidden' => '히든',
+    _ => tier,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final rows = [
+      for (final tier in _order)
+        if (counts.containsKey(tier)) (tier, counts[tier]!),
+    ];
+    final summary = rows
+        .map((r) => '${labelOf(r.$1)} 엔딩 ${r.$2.$2}개 중 ${r.$2.$1}개')
+        .join(', ');
+
+    return Semantics(
+      label: summary,
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0) const SizedBox(height: AppSpace.xs),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    child: Text(
+                      labelOf(rows[i].$1),
+                      maxLines: 1,
+                      style: context.text.labelSmall,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(
+                    child: Wrap(
+                      spacing: AppSpace.xs,
+                      runSpacing: AppSpace.xs,
+                      children: [
+                        for (var d = 0; d < rows[i].$2.$2; d++)
+                          Container(
+                            width: AppSpace.sm,
+                            height: AppSpace.sm,
+                            decoration: BoxDecoration(
+                              color: d < rows[i].$2.$1
+                                  ? scheme.primary
+                                  : t.gaugeTrack,
+                              shape: BoxShape.circle,
+                              border: d < rows[i].$2.$1
+                                  ? null
+                                  : Border.all(
+                                      color: scheme.outlineVariant,
+                                      width: AppBorderWidth.hairline,
+                                    ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.sm),
+                  Text(
+                    '${rows[i].$2.$1}/${rows[i].$2.$2}',
+                    style: t.numericSmall,
+                  ),
+                ],
               ),
             ],
           ],

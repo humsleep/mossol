@@ -22,11 +22,11 @@
 
 | 항목 | 수 |
 |---|---|
-| 이벤트 | 256 (메인 40 · 루트 94 · 일상 92 · 위기 16 · 히든 14) |
-| 엔딩 | 30 |
-| 미니게임 | 12 (이벤트 선택지 110곳에 배치) |
+| 이벤트 | 262 (메인 40 · 루트 94 · 일상 98 · 위기 16 · 히든 14) |
+| 엔딩 | 30 (전부 사람이 쓴 한 줄 `hint` 포함 · 검증기가 누락을 잡는다) |
+| 미니게임 | 12 (이벤트 선택지 113곳에 배치) |
 | 캐릭터 | 6 + 조연 3 |
-| 테스트 | 192 (`flutter test` 기준 · 오프닝 12 포함) |
+| 테스트 | 198 (`flutter test` 기준 · 오프닝·후속 17 포함) |
 
 ## 구조
 
@@ -37,9 +37,9 @@ assets/story/            스토리 데이터 (코드 수정 없이 콘텐츠 추
   events_main.json       메인 40 (1~100일 고정 배치, 5개 장)
   events_route_a.json    서연·하늘·지우 루트 47 (서연·하늘 r00 첫 접촉 포함)
   events_route_b.json    민재·예은·도윤 루트 47 (민재·예은 r00 첫 접촉 포함)
-  events_daily.json      일상 랜덤 92 (12개 상황 카테고리 + 오프닝 d_open_* 12)
+  events_daily.json      일상 랜덤 98 (12개 상황 카테고리 + 오프닝 d_open_* 12 + 후속 d_fu_* 3 + 내기 정산 d_bet_settle* 3)
   events_special.json    위기 16 + 히든 14
-  endings.json           엔딩 30개와 조건
+  endings.json           엔딩 30개와 조건, 앨범용 한 줄 힌트(`hint`)
 assets/icon/app_icon.png 아이콘 원본 1024px
 
 lib/engine/              순수 Dart 게임 로직 (UI·광고 의존 없음, 단위 테스트 대상)
@@ -136,7 +136,9 @@ flutter run -d "iPhone 17" --dart-define=MOSSOL_DEBUG_GALLERY=true
 - 하루 평균 이벤트 2.8개, 회차 60~74분
 - 한 캐릭터에 집중해야 호감 80을 넘도록 루트 이벤트에 상호배타 조건이 걸려 있다
 - `test/deadlock_test.dart` 가 그 조건 때문에 루트가 전부 닫히는 구간이 없는지 검사한다
-- 1~3일차 오프닝: `d_open_*` 일상 10개(day [1,3], once)와 `*_r00` 루트 첫 접촉 4개(호감 0~15)로 1·2일차가 메인+일상+루트 3개 이상이 되게 한다. `test/opening_test.dart` 가 시드 20개로 이를 고정하고, 4일차 이후 후보에 새지 않는지 검사한다
+- 1~3일차 오프닝: `d_open_*` 일상 10개(day [1,3], once)와 `*_r00` 루트 첫 접촉 4개(호감 0~15, 보상 호감 0~1)로 첫 세션을 채운다. 엔진은 오프닝(`openingDays`=3)에 한해 하루를 4개(`openingMinEventsPerDay`)까지 일상으로 채우고, 루트 캐릭터를 호감과 무관하게 균등 무작위로 고른다(첫날 동전 던지기가 루트를 정하지 않도록). 4일차부터는 원래 규칙(3개 목표, 최고 호감 우선). `test/opening_test.dart` 가 시드 20개로 이를 고정하고, 4일차 이후 후보에 새지 않는지 검사한다
+- 오프닝의 실은 후반에 되돌아온다: 태현의 치킨 내기는 `bet_accepted`(어느 갈래든) + `bet_doubled`/`bet_public` 에 따라 90~100일차에 `d_bet_settle` / `d_bet_settle_double` / `d_bet_settle_public` 중 하나(상호배타, weight 40)로 정산된다. `stranger_laugh`(잘못 온 번호) → `d_fu_stranger`, `app_installed`(앱 매칭) → `d_fu_locked`(자물쇠 계정), `lurker`(단톡 눈팅) → `d_fu_lurker` 가 4~20일차에 잇는다
+- `require.flags` 는 쓰지 않는다. 잠긴 선택지의 문구(`Requirement.describe`)가 플래그를 설명하지 못해 빈 사유로 잠기기 때문에, 플래그 분기는 `trigger.flags`/`notFlags` 로 이벤트를 나눠서 한다
 
 ## 하트 경제와 리텐션
 
@@ -177,6 +179,14 @@ flutter run -d "iPhone 17" --dart-define=MOSSOL_DEBUG_GALLERY=true
 - 회차 간 보너스: 앨범의 엔딩 1개당 새 회차 초기 매력·화술·자존감 +1, 각 +5 까지.
   루트 잠금은 대부분 60~80 이상이라 +5 로 열리는 문은 없다.
 - 메타 기록: 연속·최고 연속·누적 출석·누적 회차·최고 도달 일차·첫 실행 시각.
+
+## 미사용 플래그
+
+이벤트가 `setFlags` 로 세우지만 아직 어떤 trigger·require·엔딩도 읽지 않는 플래그. 후속 이벤트를 붙일 때 여기서 고른다. (엔진이 직접 읽는 `burnout`·`hardcore`·`album_10`·`album_20`·`chose_loop` 는 제외.)
+
+`album_hunter`, `asked_taehyun`, `backtrack`, `chose_one`, `claimed_yeeun`, `contented`, `demanded_setup`, `doubt_taehyun`, `drunk_confess_ok`, `fake_e`, `fake_profile`, `fast_hands`, `focused`, `greedy`, `haneul_next_date`, `legend_path`, `lied_mosol`, `lied_to_mom`, `minjae_meet`, `minjae_meet_asked`, `mystery_pfp`, `night_drill`, `pact`, `pact_passive`, `pickup_confessed`, `played_games`, `prepared_date`, `progress_photo`, `refused_mom`, `rulebook`, `saver_1`, `saver_2`, `self_complete`, `self_focus`, `small_lie`, `stranger_saved`, `they_dm_first`, `unprepared_date`, `yeeun_avoid_2`, `yeeun_avoid_3`
+
+오프닝에서 나온 것 중 `night_drill`(새벽 답장 훈련 합격)과 `stranger_saved`(모르는 번호 저장)는 의도적으로 남겨 뒀다. 다음 콘텐츠 배치에서 서연·하늘 루트의 새벽 톡 이벤트와 잇는다.
 
 ## 도파민 설계
 

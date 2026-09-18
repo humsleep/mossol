@@ -14,6 +14,7 @@ import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/album_screen.dart';
 import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
 import 'helpers.dart';
@@ -69,6 +70,8 @@ void main() {
         await tester.pump();
         final start = tester.getRect(find.text('새 게임'));
         expect(start.bottom, lessThanOrEqualTo(568), reason: '스크롤 없이 시작 버튼이 보여야 한다');
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
 
         c.hasSave = true;
         c.notifyListeners();
@@ -76,6 +79,64 @@ void main() {
         expect(find.text('이어하기'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      testWidgets('홈 v2: 세이브 있음(예고·최고 호감·하트 부족)에서 1차 버튼이 첫 화면 안에 있다', (tester) async {
+        apply(tester, env);
+        c.state!
+          ..day = 37
+          ..hearts = 2
+          ..lastHeartMs = DateTime.now().millisecondsSinceEpoch
+          ..lastCliffhanger = '내일 서연이 먼저 연락한다고 했는데 아직 아무 말이 없다. 밤새 폰만 봤다.';
+        c.state!.rel('seoyeon').affection = 42;
+        await c.save.save(c.state!);
+        c.goHome();
+        await tester.pumpWidget(fullApp(c));
+        await tester.pump();
+        expect(find.textContaining('어젯밤:'), findsOneWidget);
+        expect(find.textContaining('서연 ♥42'), findsOneWidget);
+        expect(find.text('받기'), findsOneWidget);
+        // 배너 없는 조건. 예산표(HOME_REDESIGN §1.5)는 배너 포함 466 이라 더 여유롭다.
+        final primary = tester.getRect(find.widgetWithText(FilledButton, '이어하기'));
+        expect(primary.bottom, lessThanOrEqualTo(568), reason: '1차 버튼이 첫 화면 안에 있어야 한다');
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        // 출석 수령 뒤·스크롤 끝(앨범 카드)까지 넘침 없이.
+        await tester.tap(find.text('받기'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.drag(find.byType(ListView), const Offset(0, -2000));
+        await tester.pump();
+        expect(find.textContaining('앨범  '), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      testWidgets('설정 화면이 넘치지 않고 탭 타깃·대비를 지킨다', (tester) async {
+        apply(tester, env);
+        await tester.pumpWidget(wrapApp(SettingsScreen(c: c), mode: modeOf(env)));
+        await tester.pump();
+        expect(find.text('개인정보처리방침'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await tester.drag(find.byType(ListView), const Offset(0, -2000));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(find.text('저장 데이터 초기화'), findsOneWidget);
+        expect(find.text('앱 버전'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        // 초기화 확인 다이얼로그(다크 표면 + 위험색 버튼)도 대비를 지킨다.
+        await tester.tap(find.text('저장 데이터 초기화'));
+        await tester.pumpAndSettle();
+        expect(find.text('저장 데이터를 지울까요?'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await tester.tap(find.text('취소'));
+        await tester.pumpAndSettle();
+        await teardownScreen(tester);
       });
 
       testWidgets('행동 화면 + 룰렛 시트(전·후)', (tester) async {

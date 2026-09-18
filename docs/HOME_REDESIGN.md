@@ -59,6 +59,19 @@ DS 토큰 표에서만 가져온다. 둘 다에 없는 값이 필요하면 구�
 > `save.load()` 를 한 번 더 읽어 요약을 만들거나, `state` 를 미리 복원하는 것 중 하나를 해야 한다.
 > 요약이 아직 null 인 프레임(앱 첫 프레임)은 §1.4 "요약 대기" 변형으로 그린다.
 
+#### 0.2.1 구현 결과 (2026-09-18 프런트엔드) — 실제 이름은 이쪽이 맞다
+
+| 표의 이름 | 실제 (`lib/game_controller.dart`) | 비고 |
+|---|---|---|
+| `summary` | `GameController.saveSummary` (`SaveSummary?`) | `init()` 이 세이브 파일만 읽어(`_peek`) 만든다. `state` 는 복원하지 않는다(홈에서 `state == null` 의미 유지). `goHome()`, `newGame()`, `continueGame()`, `checkInToday()`, `grantHeart()`, `refreshHearts()`(찬 경우), `_finish()`, `resetAllData()` 뒤에 다시 만든다 |
+| `summary.affectionOf(id)` | 그대로. `affection` 맵도 공개 | |
+| `hearts` | `saveSummary.hearts` | 홈은 컨트롤러의 `hearts`(state 기준) 대신 요약의 하트를 읽는다. 상태 복원 전에도 회복이 반영된다 |
+| `nextHeartIn` | `Duration(seconds: c.secondsToNextHeart)` | `secondsToNextHeart`·`heartsFull`·`refreshHearts()`·`grantHeart()` 는 `state` 가 없으면 `_peek` 로 계산한다 |
+| `meta.streakDays` / `checkedInToday` / `pendingHearts` / `rerollTickets` | `c.streakDays`, `c.checkedInToday`, `c.pendingHearts`, `c.rerollTickets` | |
+| `claimCheckIn()` | **`checkInToday()`** — 홈 `initState` 에서 부른다 | 리텐션 엔지니어 API 는 "홈 진입 = 출석" 이라 보상을 즉시 얹는다. `받기` 는 §1.3 D 의 수령 확인 동작만 한다(아래 D 표 주석) |
+| `endingHint(Ending)` | `endingHintFor(e, c)` (`lib/ui/album_screen.dart` 최상위 함수) | `Ending.hint`(작가 문장)가 있으면 그것을, 없으면 기계 문장 |
+| — | `GameController.resetAllData()` | §2.5 초기화. `SaveService.clear()` + `clearEndings()` + `MetaService.clear()` 후 메타 새로 저장, `state = null` |
+
 ---
 
 ## 1. 홈 화면 v2 (`lib/ui/home_screen.dart`)
@@ -191,7 +204,8 @@ Row
 
 - `HeartsRow` 는 `Expanded` 안에서 타이머 텍스트가 `Flexible + ellipsis` 로 줄어들므로 320 폭에서
   한 줄을 유지한다. **Wrap 을 쓰지 않는다**(두 줄이 되면 §1.5 예산이 깨진다).
-- 버튼 문구 `'광고로 +1'` 은 홈 전용 짧은 문구다. `Semantics(label: '광고 보고 하트 받기')` 를 붙인다.
+- 버튼 문구 `'광고로 +1'` 은 홈 전용 짧은 문구다. `Semantics(label: '광고 보고 하트 받기')` 를 붙인다
+  (구현은 `Text(semanticsLabel:)` — 버튼 노드 하나에 라벨만 바뀌어 스크린리더가 두 번 읽지 않는다).
   행동 화면 다이얼로그의 `'광고 보고 하트 받기'` 문구는 그대로 둔다(§4.1 고정).
 - 하트 만땅: 버튼 없음, `HeartsRow` 가 타이머를 스스로 숨긴다. 줄 높이 44 유지.
 - 아래 간격: `md` 12.
@@ -206,8 +220,17 @@ Row
 | 수령 완료 · 세이브 없음 · pendingHearts>0 | 동일 | 동일 | `오늘 출석 완료` | `하트 +{pendingHearts} 은 새 게임을 시작하면 들어온다` | 없음 |
 
 - 높이: `ConstrainedBox(minHeight: 56)`. 패딩 `AppInsets.cardTight`(16/12). 모서리 `AppRadius.rMd`.
+  글자 1.3배에서는 제목 26 + 부제 24 + 패딩 24 ≈ **74** 로 늘어난다(56 은 하한). §1.5 예산에 +18.
 - `받기` 탭 → `claimCheckIn()` → 성공 시 `AppMotion.base` 동안 배경이 `primaryContainer` →
   `surfaceContainerLow` 로 `AnimatedContainer` 전환, 아이콘 교체. 실패(이미 수령) → 그냥 수령 상태로.
+- **구현(2026-09-18)**: 출석은 홈 `initState` 의 `checkInToday()` 가 처리하고 보상(하트·재도전권)은
+  그 자리에서 컨트롤러가 얹는다. 결과 `first == true` 면 줄을 미수령 모습(`extra` 가 있으면
+  `unclaimedBonus`)으로 그리고, `받기` 는 화면 상태만 수령으로 넘긴다(위 전환 연출 그대로).
+  `first == false`(오늘 이미 출석) 또는 같은 날 재진입이면 처음부터 수령 상태. 답이 오기 전 첫 프레임은
+  진입 직전의 `checkedInToday` 로 정한다(깜빡임 방지). 따라서 부제의 `{streakDays}` 는 오늘을 포함한
+  값이라 첫날은 `연속 1일째` 이고, `오늘부터 출석` 은 컴포넌트가 streak 0 을 받을 때만 나온다.
+- 보너스 문구(`bonusLabel`): 3일(7n+3) `보너스 하트 +1`, 7일(7n) `보너스 하트 +2 · 룰렛 재도전권 +1`
+  (`Attendance.streak3Bonus` / `streak7Bonus` 에서 계산). 부제는 `하트 +1 · {bonusLabel}`, `maxLines: 2`.
 - 하트가 만땅인데 미수령: **그래도 받을 수 있다**. 초과분 처리는 리텐션 엔지니어 규칙
   (`pendingHearts` 또는 버림)을 따르고 UI 는 관여하지 않는다. 부제에 `(하트가 가득하면 다음 회복 때 반영)` 같은
   설명을 **붙이지 않는다** — 설명이 길어지면 줄이 두 줄이 된다.
@@ -244,7 +267,9 @@ Row
 - 정렬: 세이브 있음 → 호감 내림차순, 동점은 `bundle.characters` 순. 세이브 없음 → `bundle.characters` 순.
 - 히든(도윤): `affectionOf('doyun') > 0` 이면 보통 항목, 아니면 **항상 맨 뒤**에 `mystery` 항목
   (이름 `'???'`, 아바타는 사람 실루엣 아이콘, 수치 없음). 세이브 없음에서도 `???` 로 보여 "여섯 번째가
-  있다" 를 알린다.
+  있다" 를 알린다. 구현은 `CharacterDef.hidden` 으로 판정한다(id 하드코딩 없음).
+- `'???'` 글자색은 **`onSurfaceVariant`** — `lockedForeground`(`#8C7A7F`)는 라이트 바탕에서 3.9:1 이라
+  `textContrastGuideline` 을 못 넘는다. 앨범 `_EndingCard` 와 같은 규칙(잠김은 실루엣 아바타가 먼저 말한다).
 - 항목 구성(세로): `CharacterAvatar(size 40)` → `xs` 4 → 이름 `labelSmall`(onSurface, maxLines 1) →
   `xxs` 2 → `♥N`(`tokens.numericSmall`) — 세이브 없음이면 이 줄 없음. `'♥N'` 은 이름과 **별개 Text**.
 - 탭: v2 에서는 없음(`onTap: null`). 프로필 화면이 생기면 붙인다.
@@ -307,7 +332,8 @@ AppCard(onTap:)
 | 배너 | 67 | 67 |
 | 합계 | 533 ≤ 568 ✓ | 534 ≤ 568 ✓ |
 
-여유 34. `새 게임` 2차 버튼(8 + 44)은 세이브 있음에서 화면 밖(577)으로 밀려도 된다 — 요구는
+여유 34. 출석 줄이 1.3배에서 74 로 늘면(§D) 세이브 있음 484 / 없음 485 — 여전히 배너 포함 ≤ 568.
+`새 게임` 2차 버튼(8 + 44)은 세이브 있음에서 화면 밖(577)으로 밀려도 된다 — 요구는
 1차 버튼까지다. **예고 `maxLines: 2`, 헤드라인 `maxLines: 2`, `_Step` `maxLines: 1` 을 빼면 이 표가
 깨진다.** 위젯 테스트 `layout_test.dart` 의 "홈: … 시작 버튼이 첫 화면에 보인다" 는 배너 없는 조건이라
 더 여유롭다.
@@ -445,6 +471,10 @@ AlertDialog(
 - 확인 후: `SaveService.clear()`, 엔딩 앨범 키 삭제, `MetaService` 초기화(리텐션 엔지니어의 `reset()`),
   `c.hasSave = false`, `c.endingAlbum = []`, `notifyListeners()`. 그리고 `Navigator.pop` 으로 홈 복귀 후
   `SnackBar(content: Text('저장 데이터를 지웠어요'))`.
+- **구현(2026-09-18)**: 위 전부를 `GameController.resetAllData()` 하나가 한다 — `SaveService.clear()` +
+  `SaveService.clearEndings()`(`mossol_endings_v1` 삭제, 키 이름은 그대로) + `MetaService.clear()` 뒤
+  `firstLaunchMs` 만 채운 새 메타 저장, `state = null`, `saveSummary = null`. 스낵바는 설정 화면이 닫히기
+  전에 잡아 둔 루트 `ScaffoldMessenger` 로 띄운다.
 - 취소·뒤로가기·바깥 탭은 전부 취소로 처리(`barrierDismissible` 기본값 유지).
 
 ---
@@ -494,6 +524,9 @@ bottomSheetTheme: BottomSheetThemeData(
 | 그림자 | 없음 | 없음 |
 
 - 룰렛 시트는 `enableDrag: false` 이므로 핸들을 계속 **안 쓴다**(DS §2.7 유지).
+- 룰렛 시트 추가(2026-09-18): `c.canUseRerollTicket`(7일 연속 출석 재도전권 보유 + 아직 안 돌림)이면
+  `'한 번 더 (광고)'` 자리에 `OutlinedButton.icon(Icons.confirmation_number_outlined, '재도전권 사용 (N장)')`
+  이 대신 온다 — 광고 없이 `useRerollTicket()`. 티켓이 없으면 기존 광고 버튼 그대로.
 - 다크 시트 위 카드: 룰렛 `_SlotCard` idle 배경이 `surfaceContainerHigh` 인데 시트도 같은 색이 되므로
   **idle 카드 배경을 `surfaceContainerHighest`(`#3A2E33`) 로 한 단 올린다**(라이트는 `#EEE0E2`). 테두리
   `outlineVariant` 는 그대로. 결과 카드(성공/위험 컨테이너)는 변경 없음.
@@ -622,7 +655,7 @@ class CastStrip extends StatelessWidget {
 - 항목: `SizedBox(width: 56)` → `Column(min)`: `CharacterAvatar(40)` / `xs` / 이름 `labelSmall`
   `onSurface` `maxLines 1` `ellipsis` `textAlign center` / (`affection != null`) `xxs` / `'♥$affection'`
   `numericSmall`. 항목 간 `md` 12.
-- mystery 항목: 이름 `'???'`, 색 `lockedForeground`, ♥ 줄 없음.
+- mystery 항목: 이름 `'???'`, 색 `onSurfaceVariant`(§1.3 F 참고 — `lockedForeground` 는 라이트에서 대비 미달), ♥ 줄 없음.
 - 항목당 `Semantics(label: '$name 호감 $affection')`, mystery 는 `'아직 만나지 않은 사람'`.
 
 ### 5.4 `ContinueCard`
@@ -726,7 +759,7 @@ Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builde
 
 ### 6.2 검수 체크리스트
 
-- [ ] 320×568 · 1.3배 · 라이트/다크에서 `이어하기`/`새 게임` 하단 ≤ 568 (배너 없음 조건은 테스트, 배너 있음은 시뮬레이터 iPhone SE 1세대로 눈 확인)
+- [x] 320×568 · 1.3배 · 라이트/다크에서 `이어하기`/`새 게임` 하단 ≤ 568 (배너 없음 조건은 `layout_test` 로 통과, 배너 있음은 시뮬레이터 iPhone SE 1세대로 눈 확인 — QA)
 - [ ] `flutter test` 전부 통과. 특히 `layout_test`(탭 타깃·대비), `screens_test`(`'앨범  1 /'`), `flow_test`(`'새 게임'` 탭 → 다이얼로그)
 - [ ] 다크 룰렛 시트: 시트가 뒤 화면과 두 단 이상 밝고, idle 카드가 시트보다 한 단 밝다
 - [ ] 다크 `새 게임` 확인 다이얼로그: 배경 `#2F2429`, 테두리 보임

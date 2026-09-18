@@ -36,6 +36,10 @@ class SaveService {
   Future<List<String>> loadEndings() async =>
       (await SharedPreferences.getInstance()).getStringList(_endingsKey) ?? [];
 
+  /// 설정의 "저장 데이터 초기화" 에서만 쓴다. 회차 세이브와 별개 키다.
+  Future<void> clearEndings() async =>
+      (await SharedPreferences.getInstance()).remove(_endingsKey);
+
   Future<void> addEnding(String id) async {
     final p = await SharedPreferences.getInstance();
     final list = p.getStringList(_endingsKey) ?? [];

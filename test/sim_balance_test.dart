@@ -24,6 +24,7 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
       knownMinigames: minigameIds,
+      requireEndingHints: true,
     );
 
 // ---------- 전략 ----------
@@ -829,7 +830,7 @@ void main() {
       final dailyIds = bundle.events.where((e) => e.layer == EventLayer.daily).map((e) => e.id);
       final neverDaily = dailyIds.where((id) => !dseen.containsKey(id)).toList();
       final rareDaily = dailyIds.where((id) => dseen.containsKey(id) && dseen[id]! < n * 0.1).toList();
-      p('[n] 일상 80개 중 한 번도 안 나온 것 ${neverDaily.length}: ${neverDaily.join(' ')} | 10% 미만 ${rareDaily.length}: ${rareDaily.join(' ')}');
+      p('[n] 일상 ${dailyIds.length}개 중 한 번도 안 나온 것 ${neverDaily.length}: ${neverDaily.join(' ')} | 10% 미만 ${rareDaily.length}: ${rareDaily.join(' ')}');
     }
 
     // 2회차 실험: focus (도윤 포함) run=2

@@ -19,6 +19,7 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
       knownMinigames: minigameIds,
+      requireEndingHints: true,
     );
 
 void main() {
@@ -39,16 +40,40 @@ void main() {
   group('데이터 로드', () {
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 6);
-      expect(bundle.events.length, 256);
+      expect(bundle.events.length, 262);
       expect(bundle.endings.length, 30);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
+    });
+
+    test('엔딩 30개 전부에 사람이 쓴 한 줄 힌트가 있고, 검증기가 누락을 잡는다', () {
+      for (final e in bundle.endings) {
+        final h = (e.hint ?? '').trim();
+        expect(h, isNotEmpty, reason: '${e.id} hint 없음');
+        expect(h.length, inInclusiveRange(8, 30), reason: '${e.id}: "$h" 는 한 줄 힌트 길이가 아니다');
+        expect(h, isNot(matches(RegExp(r'[0-9]'))), reason: '${e.id}: 수치("호감 60") 금지 → "$h"');
+        expect(h, isNot(contains('이상')), reason: '${e.id}: 기계 문장 금지 → "$h"');
+      }
+      expect(() => bundle.validate(knownMinigames: minigameIds, requireEndingHints: true), returnsNormally);
+      final broken = StoryBundle(
+        config: bundle.config,
+        characters: bundle.characters,
+        events: bundle.events,
+        endings: [
+          for (final e in bundle.endings)
+            e.id == 'forever_solo'
+                ? Ending(id: e.id, name: e.name, tier: e.tier, priority: e.priority, when: e.when, isDefault: true)
+                : e,
+        ],
+      );
+      expect(() => broken.validate(requireEndingHints: true), throwsA(isA<StateError>()));
+      expect(() => broken.validate(), returnsNormally, reason: '기본값은 합성 번들을 위해 끈다');
     });
 
     test('레이어별 분량이 기획대로다', () {
       expect(bundle.countByLayer, {
         EventLayer.main: 40,
         EventLayer.route: 94,
-        EventLayer.daily: 92,
+        EventLayer.daily: 98,
         EventLayer.crisis: 16,
         EventLayer.hidden: 14,
       });

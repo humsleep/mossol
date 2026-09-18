@@ -758,6 +758,9 @@ extension AppThemeContext on BuildContext {
   TextTheme get text => Theme.of(this).textTheme;
 
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
+
+  /// 모달(시트·다이얼로그) 뒤 스크림. 시트 테마의 modalBarrierColor 와 같은 값.
+  Color get scrimColor => scheme.scrim.withValues(alpha: isDark ? 0.62 : 0.48);
 }
 
 // ---------------------------------------------------------------------------
@@ -1248,18 +1251,32 @@ abstract final class AppTheme {
         iconTheme: IconThemeData(color: scheme.onSurfaceVariant, size: 16),
       ),
 
+      // 모달 시트. 다크에서는 바탕보다 두 단 위(surfaceContainerHigh)로 띄우고
+      // 두 테마 모두 상단 1px 테두리를 둔다(HOME_REDESIGN §3.3).
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        modalBackgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: isDark
+            ? scheme.surfaceContainerHigh
+            : scheme.surfaceContainerLow,
+        modalBackgroundColor: isDark
+            ? scheme.surfaceContainerHigh
+            : scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         shadowColor: scheme.shadow,
-        modalBarrierColor: scheme.scrim.withValues(alpha: 0.5),
+        modalBarrierColor: scheme.scrim.withValues(alpha: isDark ? 0.62 : 0.48),
         elevation: 0,
         modalElevation: 0,
+        // 기본은 핸들 없음. 닫을 수 있는 시트만 호출부에서 true.
         showDragHandle: false,
-        dragHandleColor: scheme.outlineVariant,
+        dragHandleColor: scheme.outline,
+        dragHandleSize: const Size(36, 4),
         clipBehavior: Clip.antiAlias,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.sheet,
+          side: BorderSide(
+            color: scheme.outlineVariant,
+            width: AppBorderWidth.hairline,
+          ),
+        ),
       ),
 
       snackBarTheme: SnackBarThemeData(
@@ -1295,12 +1312,21 @@ abstract final class AppTheme {
         ),
       ),
 
+      // 다이얼로그도 시트와 같은 규칙(§3.4). 스크림은 showAppDialog 가 맞춘다.
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: isDark
+            ? scheme.surfaceContainerHigh
+            : scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shadowColor: scheme.shadow,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.rLg),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.rLg,
+          side: BorderSide(
+            color: scheme.outlineVariant,
+            width: AppBorderWidth.hairline,
+          ),
+        ),
         titleTextStyle: text.titleLarge,
         contentTextStyle: text.bodyMedium,
         actionsPadding: const EdgeInsets.fromLTRB(

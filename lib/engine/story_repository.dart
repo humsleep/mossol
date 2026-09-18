@@ -41,6 +41,7 @@ class StoryBundle {
     required List<String> events,
     required String endings,
     Set<String>? knownMinigames,
+    bool requireEndingHints = false,
   }) {
     final bundle = StoryBundle(
       config: GameConfig.fromJson(jsonDecode(config) as Map<String, dynamic>),
@@ -56,7 +57,7 @@ class StoryBundle {
           .map((e) => Ending.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
-    bundle.validate(knownMinigames: knownMinigames);
+    bundle.validate(knownMinigames: knownMinigames, requireEndingHints: requireEndingHints);
     return bundle;
   }
 
@@ -76,6 +77,8 @@ class StoryBundle {
       events: events,
       endings: endings,
       knownMinigames: knownMinigames,
+      // 출시 데이터는 엔딩마다 사람이 쓴 힌트가 있어야 한다(홈·앨범의 "아직 못 본 엔딩").
+      requireEndingHints: true,
     );
   }
 
@@ -88,7 +91,9 @@ class StoryBundle {
 
   /// 데이터 오류를 출시 전에 잡기 위한 검사. 문제가 있으면 예외.
   /// [knownMinigames] 를 주면 없는 미니게임 참조도 함께 잡는다.
-  void validate({Set<String>? knownMinigames}) {
+  /// [requireEndingHints] 면 엔딩마다 비어 있지 않은 `hint` 가 있어야 한다.
+  /// 테스트용 합성 번들은 힌트를 생략하므로 기본은 끈다.
+  void validate({Set<String>? knownMinigames, bool requireEndingHints = false}) {
     final ids = <String>{};
     final charIds = <String>{};
     for (final c in characters) {
@@ -142,6 +147,9 @@ class StoryBundle {
         throw StateError('엔딩이 없는 캐릭터 참조: ${e.id} -> ${e.character}');
       }
       _checkTrigger(e.when, 'ending ${e.id}');
+      if (requireEndingHints && (e.hint ?? '').trim().isEmpty) {
+        throw StateError('엔딩 hint 없음: ${e.id}');
+      }
     }
     if (!endings.any((e) => e.isDefault)) throw StateError('default 엔딩이 없음');
 

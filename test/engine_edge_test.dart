@@ -32,6 +32,7 @@ StoryBundle loadRealBundle() => StoryBundle.fromJsonStrings(
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
       knownMinigames: minigameIds,
+      requireEndingHints: true,
     );
 
 const _miniConfig = {

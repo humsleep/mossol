@@ -1,143 +1,223 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
+import 'settings_screen.dart';
 import 'widgets.dart';
 
-/// 첫 화면. 규격은 docs/DESIGN_SYSTEM.md §2.1.
+/// 첫 화면 v2. 규격은 docs/HOME_REDESIGN.md §1 (요약은 DESIGN_SYSTEM §2.1).
 ///
-/// 위계는 하나뿐이다: 타이틀 → 1차 버튼. 나머지(부제, 진행 상태, 앨범,
-/// 개인정보 설정)는 순서대로 뒤로 물러난다. 장식은 로즈 방사 그라데이션
-/// 한 겹만 허용된다(규격 §2.1).
-class HomeScreen extends StatelessWidget {
+/// 블록은 위에서 아래로 A 헤더 → B 히어로 카드 → C 자원 줄(세이브 있음만) → D 출석 줄
+/// → E 1차 버튼 → F 사람들 → G 앨범. 1차 버튼은 여전히 하나(`이어하기` 또는 `새 게임`)이고
+/// 나머지는 전부 한 단 이상 뒤로 물러난다. 배경은 `surface` 단색 — 상단 40% 여백과
+/// 로즈 그라데이션은 실기기에서 휑함으로 읽혀 폐지했다.
+class HomeScreen extends StatefulWidget {
   final GameController c;
   const HomeScreen({super.key, required this.c});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  GameController get c => widget.c;
+
+  /// 홈 진입 때의 출석 결과. null 이면 아직 답이 안 온 첫 프레임.
+  CheckInResult? _checkIn;
+
+  /// 출석 처리 전에 이미 오늘 출석했었는지. 답이 오기 전 프레임의 줄 상태에 쓴다.
+  bool _wasCheckedIn = false;
+
+  /// `받기` 를 눌러 보상 줄을 수령 상태로 넘겼는지.
+  bool _claimed = false;
+
+  /// 하트 타이머. 1초마다 남은 시간을 다시 그리고 찬 하트를 반영한다.
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasCheckedIn = c.checkedInToday;
+    _timer = Timer.periodic(const Duration(seconds: 1), _tick);
+    unawaited(_checkInOnEntry());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  /// 홈 진입 = 출석. 오늘 첫 출석이면 보상은 컨트롤러가 바로 얹고, 줄은 `받기` 를
+  /// 누를 때까지 미수령 모습으로 남아 "오늘 받은 것" 을 알린다.
+  Future<void> _checkInOnEntry() async {
+    final r = await c.checkInToday();
+    if (!mounted) return;
+    setState(() => _checkIn = r);
+  }
+
+  void _tick(Timer _) {
+    if (!mounted || !c.hasSave || c.saveSummary == null || c.heartsFull) return;
+    unawaited(c.refreshHearts());
+    setState(() {});
+  }
+
+  RewardStripState get _stripState {
+    final r = _checkIn;
+    final first = r == null ? !_wasCheckedIn : r.first;
+    if (!first || _claimed) return RewardStripState.claimed;
+    return r?.extra == null
+        ? RewardStripState.unclaimed
+        : RewardStripState.unclaimedBonus;
+  }
+
+  /// 연속 출석 보너스 문구. 3일은 하트가 하나 더, 7일은 둘 더 + 재도전권.
+  String? get _bonusLabel => switch (_checkIn?.extra) {
+    Attendance.extraStreak3 => '보너스 하트 +${Attendance.streak3Bonus}',
+    Attendance.extraStreak7 =>
+      '보너스 하트 +${Attendance.streak7Bonus} · 룰렛 재도전권 +1',
+    _ => null,
+  };
+
+  Future<void> _claim() async {
+    if (!mounted) return;
+    setState(() => _claimed = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final hasSave = c.hasSave;
+    final summary = hasSave ? c.saveSummary : null;
+    final scheme = context.scheme;
+
     return Scaffold(
-      body: Stack(
-        children: [
-          const Positioned.fill(child: _RoseGlow()),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, box) => SingleChildScrollView(
-                padding: AppInsets.screen,
-                child: ConstrainedBox(
-                  // 내용이 짧으면 화면을 채우고, 길어지면(큰 글꼴) 스크롤한다.
-                  constraints: BoxConstraints(
-                    minHeight: box.maxHeight - AppInsets.screen.vertical,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: _topSpace(context, box.maxHeight)),
-                      const _Title(),
-                      const SizedBox(height: AppSpace.huge),
-                      _Start(c: c),
-                      const SizedBox(height: AppSpace.xxl),
-                      _Back(c: c),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      backgroundColor: scheme.surface,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.screenX,
+            AppSpace.screenY,
+            AppSpace.screenX,
+            AppSpace.xxl,
           ),
-        ],
+          children: [
+            // A. 헤더
+            _Header(onSettings: () => _openSettings(context)),
+            const SizedBox(height: AppSpace.md),
+
+            // B. 히어로 카드
+            if (!hasSave)
+              const _IntroCard()
+            else if (summary == null)
+              const ContinueCard.placeholder()
+            else
+              ContinueCard(
+                run: summary.run,
+                chapter: summary.chapter,
+                day: summary.day,
+                totalDays: summary.totalDays,
+                cliffhanger: summary.lastCliffhanger,
+                topName: c.characterOf(summary.topCharacterId)?.name,
+                topAffection: summary.topAffection,
+                topAccent: summary.topCharacterId == null
+                    ? null
+                    : context.tokens.accentFor(summary.topCharacterId),
+              ),
+            const SizedBox(height: AppSpace.lg),
+
+            // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
+            if (summary != null) ...[
+              _ResourceRow(c: c, hearts: summary.hearts),
+              const SizedBox(height: AppSpace.md),
+            ],
+
+            // D. 출석 줄
+            RewardStrip(
+              state: _stripState,
+              streakDays: c.streakDays,
+              bonusLabel: _bonusLabel,
+              pendingHearts: hasSave ? 0 : c.pendingHearts,
+              onClaim: _claim,
+            ),
+            const SizedBox(height: AppSpace.md),
+
+            // E. 1차 버튼 묶음
+            if (hasSave) ...[
+              FilledButton(
+                onPressed: () => c.continueGame(),
+                child: const Text('이어하기'),
+              ),
+              const SizedBox(height: AppSpace.sm),
+              TextButton(
+                onPressed: () => _confirmNewGame(context),
+                // DS §5.7 예외 ②: 2차 버튼을 1차와 다른 무게로.
+                style: TextButton.styleFrom(
+                  foregroundColor: scheme.onSurfaceVariant,
+                ),
+                child: const Text('새 게임'),
+              ),
+            ] else
+              FilledButton(
+                onPressed: () => c.newGame(),
+                child: const Text('새 게임'),
+              ),
+            const SizedBox(height: AppSpace.sectionGap),
+
+            // F. 사람들
+            SectionHeader(
+              title: summary != null ? '사람들' : '등장인물',
+              trailing: summary != null
+                  ? Text('호감 순', style: context.text.labelMedium)
+                  : null,
+            ),
+            CastStrip(entries: _castEntries(summary)),
+            const SizedBox(height: AppSpace.sectionGap),
+
+            // G. 앨범
+            _AlbumCard(c: c, onTap: () => _openAlbum(context)),
+          ],
+        ),
       ),
       bottomNavigationBar: const BannerSlot(),
     );
   }
 
-  /// 타이틀 위 여백. 규격은 화면의 40% 지만, 글자가 커지면 그만큼 양보한다.
-  /// 작은 화면(320×568) + 1.3배에서 첫 화면이 스크롤로 밀리지 않게 하기 위해서다.
-  static double _topSpace(BuildContext context, double height) {
-    final scale = MediaQuery.textScalerOf(context).scale(1);
-    final factor = 0.40 - ((scale - 1).clamp(0.0, 0.6) * 0.35);
-    return (height * factor).clamp(AppSpace.xxl, double.infinity);
-  }
-}
-
-/// 배경 한 겹. 위에서 아래로 퍼지는 로즈 빛. 라이트에서는 종이에 번진 잉크,
-/// 다크에서는 불 끈 방의 조명처럼 보인다.
-class _RoseGlow extends StatelessWidget {
-  const _RoseGlow();
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = context.scheme.primary;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment.topCenter,
-          radius: 1.1,
-          colors: [
-            primary.withValues(alpha: 0.06),
-            primary.withValues(alpha: 0),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 타이틀 블록. 화면의 주인공이다.
-class _Title extends StatelessWidget {
-  const _Title();
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('모쏠 키우기', style: context.text.displaySmall),
-      const SizedBox(height: AppSpace.sm),
-      Text(
-        '100일 안에 연애 고수가 되기까지',
-        style: context.text.bodyLarge?.copyWith(
-          color: context.scheme.onSurfaceVariant,
-        ),
-      ),
-    ],
-  );
-}
-
-/// 시작 묶음. 세이브가 있으면 `이어하기` 가 1차, `새 게임` 이 2차다.
-/// 세이브가 없으면 빈자리를 남기지 않고 `새 게임` 이 1차 자리로 올라온다.
-class _Start extends StatelessWidget {
-  final GameController c;
-  const _Start({required this.c});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!c.hasSave) {
-      return FilledButton(
-        onPressed: () => c.newGame(),
-        child: const Text('새 게임'),
-      );
+  /// 호감 내림차순(동점은 characters.json 순). 히든은 호감이 생기기 전까지 맨 뒤 `???`.
+  List<CastEntry> _castEntries(SaveSummary? summary) {
+    final chars = c.bundle.characters;
+    final known = <CastEntry>[];
+    final mystery = <CastEntry>[];
+    for (final ch in chars) {
+      final aff = summary?.affectionOf(ch.id);
+      if (ch.hidden && (aff ?? 0) <= 0) {
+        mystery.add(CastEntry(id: ch.id, name: ch.name, mystery: true));
+      } else {
+        known.add(CastEntry(id: ch.id, name: ch.name, affection: aff));
+      }
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Progress(c: c),
-        FilledButton(
-          onPressed: () => c.continueGame(),
-          child: const Text('이어하기'),
-        ),
-        const SizedBox(height: AppSpace.md),
-        OutlinedButton(
-          onPressed: () => _confirmNewGame(context),
-          child: const Text('새 게임'),
-        ),
-      ],
-    );
+    if (summary != null) {
+      // 안정 정렬이라 동점은 원래 순서를 지킨다.
+      known.sort((a, b) => (b.affection ?? 0).compareTo(a.affection ?? 0));
+    }
+    return [...known, ...mystery];
   }
+
+  void _openSettings(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => SettingsScreen(c: c)),
+  );
+
+  void _openAlbum(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => AlbumScreen(c: c)),
+  );
 
   /// 진행 중인 회차를 지우기 전에 한 번 묻는다. 문구·동작은 그대로 둔다.
   Future<void> _confirmNewGame(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showAppDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         title: const Text('새 게임'),
         content: const Text('진행 중인 회차가 지워집니다. 시작할까요?'),
@@ -158,78 +238,220 @@ class _Start extends StatelessWidget {
   }
 }
 
-/// 이어할 회차가 어디까지 왔는지. `이어하기` 바로 위에서 그 버튼의 맥락이 된다.
-/// 복원 전(앱을 새로 켠 직후)에는 상태가 없으므로 아무것도 그리지 않는다.
-class _Progress extends StatelessWidget {
-  final GameController c;
-  const _Progress({required this.c});
+/// A. 헤더 줄. 높이 44 고정 — 워드마크는 titleLarge 라 1.3배에서도 44 안에 든다.
+/// 워드마크는 onSurface. 로즈로 물들이지 않는다(primary 는 버튼 몫).
+class _Header extends StatelessWidget {
+  final VoidCallback onSettings;
+  const _Header({required this.onSettings});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: AppSpace.minTouch,
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            '모쏠 키우기',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.titleLarge,
+          ),
+        ),
+        IconButton(
+          onPressed: onSettings,
+          tooltip: '설정',
+          icon: const Icon(Icons.settings_outlined),
+        ),
+      ],
+    ),
+  );
+}
+
+/// B-1. 소개 카드(세이브 없음). 화면에서 primaryContainer 를 쓰는 유일한 면.
+/// 3초 안에 "아침에 고르고, 밤에 톡 하고, 100일 뒤 엔딩" 이 읽혀야 한다.
+class _IntroCard extends StatelessWidget {
+  const _IntroCard();
 
   @override
   Widget build(BuildContext context) {
-    final s = c.state;
-    if (s == null) return const SizedBox.shrink();
-
-    final total = c.config.totalDays;
-    final ratio = total <= 0 ? 0.0 : (s.day / total).clamp(0.0, 1.0).toDouble();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.md),
+    final fg = context.scheme.onPrimaryContainer;
+    return AppCard(
+      tone: AppTone.brand,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('100일 프로젝트', style: context.text.labelSmall?.copyWith(color: fg)),
+          const SizedBox(height: AppSpace.xs),
           Text(
-            'D+${s.day}',
-            style: context.tokens.numericMedium,
+            '100일 뒤, 이 남자는 달라져 있을까',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.headlineMedium?.copyWith(color: fg),
           ),
+          const SizedBox(height: AppSpace.md),
+          const _Step(Icons.wb_twilight, '아침: 오늘 할 일 하나 고르기'),
           const SizedBox(height: AppSpace.sm),
-          AppProgressBar(
-            value: ratio,
-            semanticLabel: '진행도 ${s.day}일 / $total일',
-            height: AppSpace.xs + 2,
-          ),
+          const _Step(Icons.chat_bubble_outline, '밤: 메신저로 대화하기'),
+          const SizedBox(height: AppSpace.sm),
+          const _Step(Icons.auto_stories_outlined, '100일: 엔딩 30개 중 하나'),
         ],
       ),
     );
   }
 }
 
-/// 배경 묶음. 앨범이 먼저, 개인정보 설정이 가장 뒤다.
-class _Back extends StatelessWidget {
-  final GameController c;
-  const _Back({required this.c});
+class _Step extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Step(this.icon, this.text);
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return Column(
+    final fg = context.scheme.onPrimaryContainer;
+    return Row(
       children: [
-        TextButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => AlbumScreen(c: c)),
+        Icon(icon, size: 18, color: fg),
+        const SizedBox(width: AppSpace.sm),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodyMedium?.copyWith(color: fg),
           ),
-          icon: const Icon(Icons.photo_album_outlined, size: 18),
-          // 한 덩어리 Text 를 유지한다(테스트가 '앨범  N /' 로 찾는다).
-          label: Text(
-            '앨범  ${c.endingAlbum.length} / ${c.bundle.endings.length}',
-            style: context.tokens.numericSmall.copyWith(color: scheme.primary),
-          ),
-        ),
-        const SizedBox(height: AppSpace.xs),
-        FutureBuilder<bool>(
-          future: AdManager.instance.privacyOptionsRequired,
-          builder: (context, snap) => snap.data == true
-              ? TextButton(
-                  onPressed: AdManager.instance.showPrivacyOptions,
-                  child: Text(
-                    '개인정보 설정',
-                    style: context.text.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
         ),
       ],
+    );
+  }
+}
+
+/// C. 자원 줄. 하트는 "지금 이어할 수 있나" 의 답이지 화면의 주인공이 아니다.
+/// 한 줄 고정 — Wrap 을 쓰면 두 줄이 되어 높이 예산이 깨진다(§1.5).
+class _ResourceRow extends StatelessWidget {
+  final GameController c;
+  final int hearts;
+  const _ResourceRow({required this.c, required this.hearts});
+
+  @override
+  Widget build(BuildContext context) {
+    final max = c.config.maxHearts;
+    final canWatch = hearts < max && AdManager.instance.supported;
+    return Row(
+      children: [
+        Expanded(
+          child: HeartsRow(
+            hearts: hearts,
+            max: max,
+            nextIn: Duration(seconds: c.secondsToNextHeart),
+          ),
+        ),
+        if (canWatch) ...[
+          const SizedBox(width: AppSpace.sm),
+          TextButton.icon(
+            onPressed: () => _watchAd(context),
+            icon: const Icon(Icons.play_circle_outline, size: 18),
+            // 홈 전용 짧은 문구. 스크린리더에는 행동 화면과 같은 문장을 읽힌다.
+            label: const Text('광고로 +1', semanticsLabel: '광고 보고 하트 받기'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _watchAd(BuildContext context) async {
+    final earned = await AdManager.instance.showRewarded();
+    if (earned) {
+      await c.grantHeart();
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'),
+        ),
+      );
+    }
+  }
+}
+
+/// G. 앨범 카드. 엔딩 컬렉션만 — 흑역사 수는 앨범 안에서 본다.
+class _AlbumCard extends StatelessWidget {
+  final GameController c;
+  final VoidCallback onTap;
+  const _AlbumCard({required this.c, required this.onTap});
+
+  /// endings.json 순서로 훑어 미획득이면서 배드·히든이 아닌 첫 엔딩의 힌트.
+  /// 해피·굿·솔로를 다 봤으면 남은 것을, 30개를 다 봤으면 그 사실을 말한다.
+  String _hintLine() {
+    final got = c.endingAlbum.toSet();
+    final all = c.bundle.endings;
+    if (all.isNotEmpty && got.length >= all.length) return '모든 엔딩을 봤다';
+    for (final e in all) {
+      if (got.contains(e.id) || e.tier == 'bad' || e.tier == 'hidden') continue;
+      return '다음 엔딩 힌트 · ${endingHintFor(e, c)}';
+    }
+    return '남은 건 배드 엔딩과 히든뿐이다';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final totals = c.endingTotalsByTier;
+    final counts = c.endingCountsByTier;
+    return AppCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.photo_album_outlined,
+                size: 20,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
+                // 공백 두 개, 단일 Text(테스트 고정).
+                child: Text(
+                  '앨범  ${c.endingAlbum.length} / ${c.bundle.endings.length}',
+                  maxLines: 1,
+                  style: t.numericMedium,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+          EndingTierDots(
+            counts: {
+              for (final e in totals.entries) e.key: (counts[e.key] ?? 0, e.value),
+            },
+          ),
+          const SizedBox(height: AppSpace.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpace.xxs),
+                child: Icon(Icons.lightbulb_outline, size: 16, color: t.info),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
+                child: Text(
+                  _hintLine(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

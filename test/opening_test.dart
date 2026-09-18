@@ -23,6 +23,7 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
       knownMinigames: minigameIds,
+      requireEndingHints: true,
     );
 
 /// 1~3일차에 단독으로 뽑히는 오프닝 일상 이벤트.
@@ -46,6 +47,14 @@ const openingChained = ['d_open_bet_2', 'd_open_wrong_number_2'];
 const openingRoute = ['seoyeon_r00', 'haneul_r00', 'minjae_r00', 'yeeun_r00'];
 
 const openingAll = [...openingDaily, ...openingChained, ...openingRoute];
+
+/// 오프닝이 남긴 실을 잇는 후속: 내기 정산(90일~) 3변형과 플래그 후속(4~20일).
+const betSettle = ['d_bet_settle', 'd_bet_settle_double', 'd_bet_settle_public'];
+const followUps = {
+  'd_fu_stranger': 'stranger_laugh',
+  'd_fu_locked': 'app_installed',
+  'd_fu_lurker': 'lurker',
+};
 
 const seeds = 20;
 
@@ -187,7 +196,7 @@ void main() {
   });
 
   group('1~3일차 계획', () {
-    test('시드 $seeds개: 1일차·2일차 planDay 가 3개 이상, 3일차도 3개 이상', () {
+    test('시드 $seeds개: 1~3일차 planDay 가 4개 이상(오프닝 분량), 4일차는 평소 규칙', () {
       final minPer = <int, int>{1: 99, 2: 99, 3: 99};
       final sumPer = <int, int>{1: 0, 2: 0, 3: 0};
       final minCand = <int, int>{1: 99, 2: 99, 3: 99};
@@ -200,8 +209,11 @@ void main() {
               engine.candidates(s, EventLayer.route).length +
               engine.candidates(s, EventLayer.main).length;
           final plan = engine.planDay(s);
-          expect(plan.length, greaterThanOrEqualTo(3),
+          expect(plan.length, greaterThanOrEqualTo(engine.openingMinEventsPerDay),
               reason: '시드 $seed $day일차 계획이 ${plan.map((e) => e.id)}');
+          expect(plan.where((e) => e.layer == EventLayer.daily).length,
+              greaterThanOrEqualTo(day <= 2 ? 2 : 3),
+              reason: '시드 $seed $day일차: 일상이 목표치까지 채워져야 한다');
           if (day <= 2) {
             expect(plan.first.id, 'm0$day', reason: '메인이 먼저');
             expect(plan.any((e) => e.layer == EventLayer.route), isTrue,
@@ -220,6 +232,36 @@ void main() {
       for (final day in [1, 2, 3]) {
         print('[오프닝] $day일차 계획 min ${minPer[day]} avg ${(sumPer[day]! / seeds).toStringAsFixed(2)}'
             ' · 후보(main+daily+route) min ${minCand[day]} avg ${(sumCand[day]! / seeds).toStringAsFixed(1)}');
+      }
+      // 4일차부터는 평소 규칙(3개 목표, 보정은 하나만).
+      final s4 = fresh(1)..day = 4;
+      final plan4 = engine.planDay(s4);
+      expect(plan4.length, inInclusiveRange(1, 3), reason: '4일차 ${plan4.map((e) => e.id)}');
+    });
+
+    test('오프닝 루트 픽은 호감과 무관하게 균등하다(첫날 동전 던지기가 루트를 정하지 않는다)', () {
+      // 1일차에 서연에게만 호감을 줘도, 2일차 루트가 서연으로 쏠리지 않아야 한다.
+      final picked = <String, int>{};
+      for (var seed = 1; seed <= 60; seed++) {
+        final s = fresh(seed)..day = 2;
+        s.rel('seoyeon').affection = 15; // r00 구간 안에서 최고 호감
+        final route = engine.planDay(s).firstWhere((e) => e.layer == EventLayer.route);
+        picked[route.character!] = (picked[route.character!] ?? 0) + 1;
+      }
+      expect(picked.keys.length, 4, reason: '네 캐릭터 모두 나와야 한다: $picked');
+      expect(picked['seoyeon']!, lessThan(40), reason: '최고 호감 쏠림: $picked');
+      // 4일차부터는 원래 규칙: 최고 호감 캐릭터 우선.
+      final s = fresh(7)..day = 4;
+      s.rel('haneul').affection = 15;
+      final route = engine.planDay(s).firstWhere((e) => e.layer == EventLayer.route);
+      expect(route.character, 'haneul');
+    });
+
+    test('r00 보상 호감은 0~1: 첫 접촉이 루트를 결정하지 않는다', () {
+      for (final id in openingRoute) {
+        for (final c in bundle.eventById[id]!.choices) {
+          expect(c.effects.affection['*'] ?? 0, lessThanOrEqualTo(1), reason: '$id ${c.text}');
+        }
       }
     });
 
@@ -256,9 +298,64 @@ void main() {
         expect(c.phase, Phase.event);
         expect(c.current!.id, 'm01');
         // current 하나 + 남은 큐.
-        expect(1 + c.queuedEventIds.length, greaterThanOrEqualTo(3),
+        expect(1 + c.queuedEventIds.length, greaterThanOrEqualTo(4),
             reason: '시드 $seed: ${c.current!.id} + ${c.queuedEventIds}');
       }
+    });
+  });
+
+  group('끊긴 실 잇기', () {
+    test('내기 정산 3변형은 서로 배타적이고, 내기를 한 회차에만 90일 이후 열린다', () {
+      final base = fresh(1)..day = 95;
+      expect(engine.candidates(base, EventLayer.daily).map((e) => e.id),
+          isNot(anyOf(betSettle.map(contains).toList())), reason: '내기 없이 정산');
+      for (final flags in [
+        ['bet_accepted'],
+        ['bet_accepted', 'bet_doubled'],
+        ['bet_accepted', 'bet_public'],
+        ['bet_accepted', 'bet_doubled', 'bet_public'],
+      ]) {
+        final s = fresh(1)..day = 95;
+        s.flags.addAll(flags);
+        final open = engine.candidates(s, EventLayer.daily).where((e) => betSettle.contains(e.id)).toList();
+        expect(open.length, 1, reason: '$flags → ${open.map((e) => e.id)}');
+        final e = open.single;
+        expect(e.trigger.day?.min, greaterThanOrEqualTo(90), reason: e.id);
+        expect(e.weight, greaterThanOrEqualTo(20), reason: '${e.id} 는 마지막 열흘 안에 잡혀야 한다');
+        expect(e.once, isTrue);
+        final early = fresh(1)..day = 89;
+        early.flags.addAll(flags);
+        expect(engine.candidates(early, EventLayer.daily).map((e) => e.id), isNot(contains(e.id)));
+      }
+      final ids = betSettle.map((id) => bundle.eventById[id]!);
+      expect(ids.where((e) => e.cliffhanger != null).length, 3);
+    });
+
+    test('d_open_bet 은 어느 갈래(실패 포함)로도 bet_accepted 를 남긴다', () {
+      final e = bundle.eventById['d_open_bet']!;
+      for (final c in e.choices) {
+        expect(c.effects.setFlags, contains('bet_accepted'), reason: c.text);
+        if (c.chance != null) expect(c.fail.setFlags, contains('bet_accepted'), reason: '${c.text} 실패');
+      }
+      expect(e.choices.first.effects.setFlags, contains('bet_doubled'));
+    });
+
+    test('오프닝 플래그 후속은 그 플래그가 있을 때만, 4~20일차에 열린다', () {
+      followUps.forEach((id, flag) {
+        final e = bundle.eventById[id]!;
+        expect(e.trigger.flags, [flag], reason: id);
+        expect(e.trigger.day?.min, 4, reason: id);
+        expect(e.trigger.day?.max, lessThanOrEqualTo(20), reason: id);
+        expect(e.once, isTrue);
+        final s = fresh(1)..day = 10;
+        expect(engine.candidates(s, EventLayer.daily).map((e) => e.id), isNot(contains(id)));
+        s.flags.add(flag);
+        expect(engine.candidates(s, EventLayer.daily).map((e) => e.id), contains(id));
+        // 플래그가 실제로 어딘가에서 세팅된다.
+        final setter = bundle.events.any((ev) => ev.choices.any(
+            (c) => c.effects.setFlags.contains(flag) || c.fail.setFlags.contains(flag)));
+        expect(setter, isTrue, reason: '$flag 를 세팅하는 이벤트가 없다');
+      });
     });
   });
 

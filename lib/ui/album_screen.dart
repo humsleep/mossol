@@ -228,7 +228,7 @@ class _EndingTab extends StatelessWidget {
               final owned = got.contains(e.id);
               return _EndingCard(
                 title: owned ? e.name : '???',
-                body: owned ? e.epilogue : _hintFor(e, c),
+                body: owned ? e.epilogue : endingHintFor(e, c),
                 tierLabel: _tier(e.tier),
                 owned: owned,
                 accent: context.tokens.accentFor(e.character),
@@ -250,8 +250,10 @@ class _EndingTab extends StatelessWidget {
     _ => '',
   };
 
-  /// 플래그 이름만으로는 무슨 조건인지 알 수 없어 사람 말로 옮긴다.
-  static const _flagHints = {
+}
+
+/// 플래그 이름만으로는 무슨 조건인지 알 수 없어 사람 말로 옮긴다.
+const _flagHints = {
     'hardcore': '하드코어 모드',
     'seoyeon_banmal': '서연에게 반말하기',
     'burnout_x3': '번아웃 3번',
@@ -263,47 +265,51 @@ class _EndingTab extends StatelessWidget {
     'learner': '준호의 비결 묻기',
   };
 
-  /// 미획득 엔딩에는 조건을 한 줄 힌트로 보여 준다.
-  /// 하한이 있으면 "N 이상", 상한만 있으면 "N 이하"로 읽기 쉽게 옮긴다.
-  String _hintFor(Ending e, GameController c) {
-    final w = e.when;
-    final parts = <String>[];
+/// 미획득 엔딩의 한 줄 힌트. 홈과 앨범이 같은 문장을 쓴다(HOME_REDESIGN §0.2).
+///
+/// 작가가 쓴 [Ending.hint] 가 있으면 그것을, 없으면 조건에서 기계 문장을 만든다.
+/// 하한이 있으면 "N 이상", 상한만 있으면 "N 이하"로 읽기 쉽게 옮긴다.
+String endingHintFor(Ending e, GameController c) {
+  final human = e.hint?.trim();
+  if (human != null && human.isNotEmpty) return human;
 
-    void rel(Map<String, Range> src, String label) {
-      for (final x in src.entries) {
-        final name = c.characterName(x.key == '*' ? e.character : x.key);
-        if (x.value.min > 0) {
-          parts.add('$name $label ${x.value.min} 이상');
-        } else if (x.value.max < 100) {
-          parts.add('$name $label ${x.value.max} 이하');
-        }
+  final w = e.when;
+  final parts = <String>[];
+
+  void rel(Map<String, Range> src, String label) {
+    for (final x in src.entries) {
+      final name = c.characterName(x.key == '*' ? e.character : x.key);
+      if (x.value.min > 0) {
+        parts.add('$name $label ${x.value.min} 이상');
+      } else if (x.value.max < 100) {
+        parts.add('$name $label ${x.value.max} 이하');
       }
     }
-
-    rel(w.trust, '신뢰');
-    rel(w.affection, '호감');
-    for (final x in w.stats.entries) {
-      parts.add(
-        x.value.min > 0
-            ? '${Stat.label(x.key)} ${x.value.min} 이상'
-            : '${Stat.label(x.key)} ${x.value.max} 이하',
-      );
-    }
-    if (w.anyAffection != null) {
-      parts.add('호감 ${w.anyAffection!.min} 이상인 사람 ${w.anyAffection!.count}명');
-    }
-    for (final f in w.flags) {
-      parts.add(_flagHints[f] ?? f);
-    }
-    if (w.run != null && w.run!.min > 1) parts.add('${w.run!.min}회차 이상');
-
-    if (parts.isEmpty) {
-      return e.isDefault ? '아무것도 이루지 못했을 때' : '조건을 찾아보자';
-    }
-    // 다 보여 주면 재미가 없다. 두 개까지만.
-    final shown = parts.take(2).join(' · ');
-    return parts.length > 2 ? '$shown 외 ${parts.length - 2}개' : shown;
   }
+
+  rel(w.trust, '신뢰');
+  rel(w.affection, '호감');
+  for (final x in w.stats.entries) {
+    parts.add(
+      x.value.min > 0
+          ? '${Stat.label(x.key)} ${x.value.min} 이상'
+          : '${Stat.label(x.key)} ${x.value.max} 이하',
+    );
+  }
+  if (w.anyAffection != null) {
+    parts.add('호감 ${w.anyAffection!.min} 이상인 사람 ${w.anyAffection!.count}명');
+  }
+  for (final f in w.flags) {
+    parts.add(_flagHints[f] ?? f);
+  }
+  if (w.run != null && w.run!.min > 1) parts.add('${w.run!.min}회차 이상');
+
+  if (parts.isEmpty) {
+    return e.isDefault ? '아무것도 이루지 못했을 때' : '조건을 찾아보자';
+  }
+  // 다 보여 주면 재미가 없다. 두 개까지만.
+  final shown = parts.take(2).join(' · ');
+  return parts.length > 2 ? '$shown 외 ${parts.length - 2}개' : shown;
 }
 
 /// 엔딩 한 장.

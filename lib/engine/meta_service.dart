@@ -88,4 +88,8 @@ class MetaService {
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(m.toJson()));
   }
+
+  /// 설정의 "저장 데이터 초기화". 출석·연속·재도전권까지 전부 지운다.
+  Future<void> clear() async =>
+      (await SharedPreferences.getInstance()).remove(_key);
 }

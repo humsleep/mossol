@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
@@ -139,7 +141,22 @@ class _RouletteSheetState extends State<RouletteSheet>
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('시작'),
               ),
-              if (widget.c.canRerollRoulette) ...[
+              if (widget.c.canUseRerollTicket) ...[
+                // 7일 연속 출석으로 받은 재도전권. 광고 없이 한 번 더.
+                const SizedBox(height: AppSpace.md),
+                OutlinedButton.icon(
+                  onPressed: _spinning
+                      ? null
+                      : () => _run(() {
+                            // 티켓 차감은 비동기지만 결과 칸은 즉시 정해진다.
+                            final done = widget.c.useRerollTicket();
+                            unawaited(done);
+                            return widget.c.rouletteSlot!;
+                          }),
+                  icon: const Icon(Icons.confirmation_number_outlined, size: 18),
+                  label: Text('재도전권 사용 (${widget.c.rerollTickets}장)'),
+                ),
+              ] else if (widget.c.canRerollRoulette) ...[
                 const SizedBox(height: AppSpace.md),
                 OutlinedButton.icon(
                   onPressed: _spinning
@@ -204,7 +221,8 @@ class _SlotCard extends StatelessWidget {
     final Color fg;
     final Color line;
     if (!result) {
-      bg = scheme.surfaceContainerHigh;
+      // 다크 시트 배경이 High 라 카드는 한 단 더 위(§2.7).
+      bg = scheme.surfaceContainerHighest;
       fg = phase == _SlotPhase.spinning
           ? scheme.onSurfaceVariant
           : scheme.onSurface;

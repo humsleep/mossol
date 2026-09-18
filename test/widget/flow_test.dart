@@ -46,7 +46,8 @@ void main() {
     await tester.tap(find.text('헬스장'));
     await tester.pump();
     expect(c.phase, Phase.event);
-    expect(c.hearts, c.config.maxHearts - 1);
+    // 홈 진입 때 첫 출석 하트(+1)가 보류됐다가 새 게임에 얹힌다. 거기서 하나를 썼다.
+    expect(c.hearts, c.config.maxHearts + Attendance.dailyHearts - 1);
     expect(find.byType(EventScreen), findsOneWidget);
 
     // 첫 이벤트는 m01. 대사가 자동으로 공개된다.
@@ -68,7 +69,7 @@ void main() {
     // D+2 의 m02 에는 미니게임 선택지(표정 읽기)가 있다.
     // 어젯밤 예고 카드가 생겨 행동 목록이 아래로 밀리므로 먼저 보이게 스크롤한다.
     final secondAction = find.text(c.config.actions[1].name);
-    await tester.ensureVisible(secondAction);
+    await tester.dragUntilVisible(secondAction, find.byType(ListView), const Offset(0, -200));
     await tester.pumpAndSettle();
     await tester.tap(secondAction);
     await tester.pump();
