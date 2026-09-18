@@ -105,6 +105,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, c.current!.choices[idx].text));
     await tester.pump();
     expect(c.lastOutcome, isNotNull);
+    await settleReplies(tester);
     expect(find.text('계속'), findsOneWidget);
     expect(find.byType(OutlinedButton), findsNothing);
     await tester.tap(find.text('계속'));
@@ -118,6 +119,7 @@ void main() {
     // 확률 60 선택지를 실패로 강제.
     c.choose(0, minigameSuccess: false);
     await tester.pump();
+    await settleReplies(tester);
     expect(find.text('실패…'), findsOneWidget);
     expect(c.canOfferUndo, isTrue);
     expect(find.text('10초 전으로 (광고)'), findsOneWidget);
@@ -149,5 +151,47 @@ void main() {
     // 리스너가 남아 있으면 setState after dispose 가 터진다.
     c.revealNext();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('선택 뒤 상대 반응이 타이핑 뒤에 한 줄씩 뜬다', (tester) async {
+    final ev = StoryEvent.fromJson({
+      'id': 't_reply',
+      'layer': 'daily',
+      'title': '반응 테스트',
+      'lines': [
+        {'who': 'them', 'text': '뭐 해?'},
+      ],
+      'choices': [
+        {
+          'text': '너 생각',
+          'reply': ['헐', {'who': 'narr', 'text': '답장이 빨라졌다.'}],
+        },
+      ],
+    });
+    c.current = ev;
+    c.revealed = ev.lines.length;
+    c.phase = Phase.event;
+    await tester.pumpWidget(wrapApp(EventScreen(c: c)));
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '너 생각'));
+    await tester.pump();
+    expect(c.lastReply.length, 2);
+    // 내 말풍선은 바로, 상대 반응은 아직.
+    expect(find.text('너 생각'), findsOneWidget);
+    expect(find.text('헐'), findsNothing);
+    expect(find.text('…'), findsOneWidget);
+    // 결과 패널은 반응이 끝난 뒤에.
+    expect(find.text('계속'), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.text('헐'), findsOneWidget);
+    expect(find.text('답장이 빨라졌다.'), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.text('답장이 빨라졌다.'), findsOneWidget);
+    expect(find.text('…'), findsNothing);
+    expect(find.text('계속'), findsOneWidget);
+    await tester.pumpWidget(Container());
   });
 }

@@ -72,6 +72,13 @@ Future<void> revealAll(WidgetTester tester, GameController c) async {
   expect(c.linesDone, isTrue, reason: '대사가 끝나지 않음: ${c.current?.id}');
 }
 
+/// 선택 뒤 상대 반응(최대 3줄, 줄당 750ms)이 다 뜨고 결과 패널이 올라올 때까지.
+Future<void> settleReplies(WidgetTester tester) async {
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 800));
+  }
+}
+
 /// 잠기지 않고 미니게임도 없는 첫 선택지.
 /// 잠기지 않고, 미니게임도 확률 판정도 없는 선택지.
 /// 결과가 항상 성공이라 테스트가 난수에 흔들리지 않는다.

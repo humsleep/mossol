@@ -249,7 +249,11 @@ class EventEngine {
         comboBroken: had >= 3,
       );
     }
-    final crit = forcedCritical ?? (r.nextInt(100) < critChance(s));
+    // 운으로 나는 크리티컬은 호감을 2배로 올리는 연출이라, 호감이 오르지 않는
+    // 선택지(차갑게 굴기 등)에서는 굴리지 않는다. 미니게임 크리티컬은 실력으로
+    // 딴 것이므로 그대로 인정한다.
+    final canCrit = c.effects.affection.values.any((v) => v > 0);
+    final crit = forcedCritical ?? (canCrit && r.nextInt(100) < critChance(s));
     final d = applyEffects(s, c.effects, self: self, affectionMultiplier: crit ? 2 : 1);
     final wasOnFire = s.onFire;
     if (_isGoodChoice(d)) {

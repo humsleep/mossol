@@ -1,4 +1,4 @@
-# fnv1a64 bb6d2710adb431da
+# fnv1a64 cc2ea6f99a1aa576
 # tool/subset_fonts.py 가 생성. 손으로 고치지 말 것.
 0020
 0021
@@ -1107,6 +1107,7 @@ B810
 B818
 B819
 B81B
+B81C
 B81D
 B824
 B825

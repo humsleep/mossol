@@ -177,6 +177,7 @@ void main() {
         await showEvent(tester, env, 'm01');
         c.choose(0, minigameSuccess: false);
         await tester.pump();
+        await settleReplies(tester);
         expect(find.text('실패…'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
@@ -186,6 +187,7 @@ void main() {
         final idx = c.choices.indexWhere((v) => !v.locked);
         c.choose(c.choices[idx].index, minigameSuccess: true, minigameCritical: true, note: '전부 맞췄다. 표정 읽기의 달인.');
         await tester.pump();
+        await settleReplies(tester);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
       });

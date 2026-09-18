@@ -210,6 +210,12 @@ class Choice {
   /// 미니게임 id. 있으면 확률 대신 실력이 성패를 가른다.
   final String? minigame;
 
+  /// 선택 뒤 상대의 반응. 성공이면 [reply], 실패면 [failReply],
+  /// 크리티컬이면 [critReply](없으면 [reply]). 대화가 한쪽 말로 끝나지 않게 한다.
+  final List<Line> reply;
+  final List<Line> failReply;
+  final List<Line> critReply;
+
   const Choice({
     required this.text,
     this.require,
@@ -219,7 +225,17 @@ class Choice {
     this.fail = Effects.none,
     this.failNext,
     this.minigame,
+    this.reply = const [],
+    this.failReply = const [],
+    this.critReply = const [],
   });
+
+  /// 이 결과에 맞는 반응 줄.
+  List<Line> replyFor({required bool success, required bool critical}) {
+    if (!success) return failReply;
+    if (critical && critReply.isNotEmpty) return critReply;
+    return reply;
+  }
 
   factory Choice.fromJson(Map<String, dynamic> j) => Choice(
     text: j['text'] as String,
@@ -232,7 +248,22 @@ class Choice {
     fail: Effects.fromJson(j['fail'] as Map<String, dynamic>?),
     failNext: j['failNext'] as String?,
     minigame: j['minigame'] as String?,
+    reply: _replyLines(j['reply']),
+    failReply: _replyLines(j['failReply']),
+    critReply: _replyLines(j['critReply']),
   );
+}
+
+/// 반응 줄. 문자열이면 상대(them)의 말 한 줄, 객체면 [Line] 그대로.
+List<Line> _replyLines(Object? j) {
+  if (j == null) return const [];
+  final list = j is List ? j : [j];
+  return [
+    for (final e in list)
+      e is String
+          ? Line(who: 'them', text: e)
+          : Line.fromJson(e as Map<String, dynamic>),
+  ];
 }
 
 class StoryEvent {

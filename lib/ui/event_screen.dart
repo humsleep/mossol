@@ -37,6 +37,11 @@ class _EventScreenState extends State<EventScreen> {
   /// 표시 전용이며 컨트롤러 상태와 무관하다.
   String? _picked;
 
+  /// 선택 뒤 상대 반응 중 지금까지 보여 준 줄 수.
+  int _replyShown = 0;
+  Timer? _replyTimer;
+  ChoiceOutcome? _replyFor;
+
   GameController get c => widget.c;
 
   @override
@@ -49,6 +54,7 @@ class _EventScreenState extends State<EventScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _replyTimer?.cancel();
     c.removeListener(_onChange);
     _scroll.dispose();
     super.dispose();
@@ -58,6 +64,7 @@ class _EventScreenState extends State<EventScreen> {
     if (!mounted) return;
     if (c.lastOutcome == null) _picked = null;
     _syncEvent();
+    _syncReply();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 프레임 사이에 화면이 내려갔을 수 있다. dispose 된 컨트롤러는 건드리지 않는다.
@@ -79,6 +86,43 @@ class _EventScreenState extends State<EventScreen> {
       _waitLeft = 0;
       _scheduleReveal();
     }
+  }
+
+  /// 선택 결과가 새로 나오면 상대 반응을 한 줄씩 타이핑하듯 보여 준다.
+  /// 동작 줄이기가 켜져 있으면 한 번에 다 보여 준다.
+  void _syncReply() {
+    final o = c.lastOutcome;
+    if (identical(o, _replyFor)) return;
+    _replyFor = o;
+    _replyTimer?.cancel();
+    _replyShown = 0;
+    final total = c.lastReply.length;
+    if (o == null || total == 0) return;
+    if (MediaQuery.of(context).disableAnimations) {
+      _replyShown = total;
+      return;
+    }
+    void step() {
+      _replyTimer = Timer(const Duration(milliseconds: 750), () {
+        if (!mounted || !identical(c.lastOutcome, o)) return;
+        setState(() => _replyShown++);
+        _scrollToEnd();
+        if (_replyShown < total) step();
+      });
+    }
+
+    step();
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: AppMotion.base(context),
+        curve: AppMotion.curve(context),
+      );
+    });
   }
 
   /// 다음 줄을 자동으로 공개. 대기 줄이면 카운트다운.
@@ -187,10 +231,12 @@ class _EventScreenState extends State<EventScreen> {
                       line: visible[i],
                       partnerName: partner,
                       accent: accent,
-                      isFirstOfGroup: i == 0 ||
+                      isFirstOfGroup:
+                          i == 0 ||
                           _speakerKey(visible[i - 1], partner) !=
                               _speakerKey(visible[i], partner),
-                      isLastOfGroup: i == visible.length - 1 ||
+                      isLastOfGroup:
+                          i == visible.length - 1 ||
                           _speakerKey(visible[i + 1], partner) !=
                               _speakerKey(visible[i], partner),
                     ),
@@ -199,9 +245,23 @@ class _EventScreenState extends State<EventScreen> {
                       line: Line(who: 'me', text: _picked!),
                       partnerName: partner,
                       accent: accent,
-                      isFirstOfGroup: visible.isEmpty ||
+                      isFirstOfGroup:
+                          visible.isEmpty ||
                           _speakerKey(visible.last, partner) != '#me',
                     ),
+                  if (c.lastOutcome != null) ...[
+                    for (final (i, l) in c.lastReply.take(_replyShown).indexed)
+                      ChatBubble(
+                        line: l,
+                        partnerName: partner,
+                        accent: accent,
+                        isFirstOfGroup:
+                            i == 0 ||
+                            _speakerKey(c.lastReply[i - 1], partner) !=
+                                _speakerKey(l, partner),
+                      ),
+                    if (_replyShown < c.lastReply.length) const _TypingBubble(),
+                  ],
                   if (waiting)
                     _WaitingBlock(
                       secondsLeft: _waitLeft,
@@ -214,8 +274,11 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
           ),
+          // 결과 패널은 상대 반응을 다 보여 준 뒤에 올린다. 대화의 끝을 먼저 읽게 한다.
           if (c.lastOutcome != null)
-            _ResultPanel(c: c)
+            _replyShown >= c.lastReply.length
+                ? _ResultPanel(c: c)
+                : const SizedBox.shrink()
           else if (c.linesDone)
             _ChoicePanel(c: c, onPicked: (text) => _picked = text),
         ],
@@ -277,20 +340,20 @@ class _EventScreenState extends State<EventScreen> {
         Padding(
           padding: const EdgeInsets.only(right: AppSpace.sm),
           child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.sm,
-              vertical: AppSpace.xs,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.sm,
+                vertical: AppSpace.xs,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHigh,
+                borderRadius: AppRadius.rPill,
+              ),
+              child: Text(
+                'D+$day',
+                style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
+              ),
             ),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHigh,
-              borderRadius: AppRadius.rPill,
-            ),
-            child: Text(
-              'D+$day',
-              style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
-            ),
-          ),
           ),
         ),
       ],
@@ -323,10 +386,7 @@ class _AvatarDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: accent.container,
         borderRadius: AppRadius.rPill,
-        border: Border.all(
-          color: accent.base,
-          width: AppBorderWidth.hairline,
-        ),
+        border: Border.all(color: accent.base, width: AppBorderWidth.hairline),
       ),
       child: Text(
         name.substring(0, 1),
@@ -567,7 +627,7 @@ class _ResultPanel extends StatelessWidget {
         ? t.onDangerContainer
         : scheme.onSurface;
     final headline = o.critical
-        ? '크리티컬! 호감 2배'
+        ? (o.delta.affection.values.any((v) => v > 0) ? '크리티컬! 호감 2배' : '크리티컬!')
         : !o.success
         ? '실패…'
         : o.comboStarted
@@ -648,10 +708,7 @@ class _ResultPanel extends StatelessWidget {
           const SizedBox(height: AppSpace.md),
           // 변화량은 색 + 부호 + 화살표 3중. 한 줄 문장 나열보다 눈에 먼저 든다.
           if (parts.isEmpty)
-            Text(
-              '변화 없음',
-              style: context.text.bodyMedium?.copyWith(color: fg),
-            )
+            Text('변화 없음', style: context.text.bodyMedium?.copyWith(color: fg))
           else
             Wrap(
               spacing: AppSpace.sm,

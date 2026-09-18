@@ -98,8 +98,8 @@ class GameController extends ChangeNotifier {
     required this.save,
     MetaService? meta,
     int Function()? clock,
-  })  : metaService = meta ?? MetaService(),
-        nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
+  }) : metaService = meta ?? MetaService(),
+       nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   Phase phase = Phase.home;
   GameState? state;
@@ -124,6 +124,15 @@ class GameController extends ChangeNotifier {
   StoryEvent? current;
   int revealed = 0;
   ChoiceOutcome? lastOutcome;
+  Choice? _lastChoice;
+
+  /// 방금 선택에 대한 상대의 반응 줄. 결과가 없으면 빈 목록.
+  List<Line> get lastReply {
+    final o = lastOutcome;
+    final ch = _lastChoice;
+    if (o == null || ch == null) return const [];
+    return ch.replyFor(success: o.success, critical: o.critical);
+  }
 
   /// 방금 끝난 미니게임의 한 줄 결과. 결과 패널에 같이 보여 준다.
   String? minigameNote;
@@ -262,13 +271,17 @@ class GameController extends ChangeNotifier {
   /// 출석 하트 보관함. 상한은 세이브의 하트 상한과 같다(최대치 두 배).
   void _bankHearts(PlayerMeta m, int n) {
     if (n <= 0) return;
-    m.pendingHearts = min(Attendance.heartCeiling(config.maxHearts), m.pendingHearts + n);
+    m.pendingHearts = min(
+      Attendance.heartCeiling(config.maxHearts),
+      m.pendingHearts + n,
+    );
   }
 
   /// 연속 출석 일수. 마지막 출석이 오늘·어제가 아니면 0.
   int get streakDays => meta == null ? 0 : Attendance.liveStreak(meta!, _now);
 
-  bool get checkedInToday => meta != null && Attendance.checkedInOn(meta!, _now);
+  bool get checkedInToday =>
+      meta != null && Attendance.checkedInOn(meta!, _now);
 
   int get bestStreak => meta?.bestStreak ?? 0;
   int get totalRuns => meta?.totalRuns ?? 0;
@@ -296,7 +309,11 @@ class GameController extends ChangeNotifier {
   Future<void> _applyPendingHearts(GameState s) async {
     final m = meta;
     if (m == null || m.pendingHearts <= 0) return;
-    m.pendingHearts -= Attendance.grantHearts(s, m.pendingHearts, config.maxHearts);
+    m.pendingHearts -= Attendance.grantHearts(
+      s,
+      m.pendingHearts,
+      config.maxHearts,
+    );
     await metaService.save(m);
   }
 
@@ -563,7 +580,12 @@ class GameController extends ChangeNotifier {
       current == null ? const [] : engine.choicesFor(state!, current!);
 
   /// [minigameSuccess] 가 오면 확률 대신 미니게임 결과로 성패가 정해진다.
-  void choose(int index, {bool? minigameSuccess, bool? minigameCritical, String? note}) {
+  void choose(
+    int index, {
+    bool? minigameSuccess,
+    bool? minigameCritical,
+    String? note,
+  }) {
     final s = state!;
     final ev = current!;
     if (index < 0 || index >= ev.choices.length) {
@@ -582,9 +604,12 @@ class GameController extends ChangeNotifier {
     );
     minigameNote = note;
     lastOutcome = outcome;
+    _lastChoice = ev.choices[index];
     dayDelta.merge(outcome.delta);
     if (ev.cliffhanger != null) cliffhanger = ev.cliffhanger;
-    final next = outcome.nextEventId == null ? null : engine.byId(outcome.nextEventId!);
+    final next = outcome.nextEventId == null
+        ? null
+        : engine.byId(outcome.nextEventId!);
     if (next != null) {
       // 오늘 계획에 이미 잡혀 있던 이벤트면 앞으로 당길 뿐 두 번 보여 주지 않는다.
       _queue.removeWhere((e) => e.id == next.id);
@@ -632,7 +657,9 @@ class GameController extends ChangeNotifier {
       ..clear()
       ..merge(dayBefore);
     final o = lastOutcome;
-    if (o?.nextEventId != null && _queue.isNotEmpty && _queue.first.id == o!.nextEventId) {
+    if (o?.nextEventId != null &&
+        _queue.isNotEmpty &&
+        _queue.first.id == o!.nextEventId) {
       _queue.removeAt(0);
     }
     lastOutcome = null;

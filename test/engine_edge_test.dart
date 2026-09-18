@@ -1429,4 +1429,30 @@ void main() {
       expect(s.lastCliffhanger, isNull);
     });
   });
+
+  test('호감이 오르지 않는 선택지는 크리티컬이 나지 않는다', () {
+    final b = StoryBundle.fromJsonStrings(
+      config: '{"totalDays":100,"initialStats":{"charm":10},"actions":[]}',
+      characters: '[{"id":"a","name":"A","role":"r"}]',
+      events: [
+        '[{"id":"e","layer":"daily","character":"a","title":"t","lines":[],"choices":['
+            '{"text":"cold","effects":{"affection":{"*":-5}}},'
+            '{"text":"warm","effects":{"affection":{"*":3}}}]}]',
+      ],
+      endings: '[{"id":"z","name":"z","tier":"bad","priority":1,"default":true}]',
+    );
+    final eng = EventEngine(b);
+    final ev = b.eventById['e']!;
+    final s = GameState.fresh(b.config, b.characters, seed: 1);
+    final warm = eng.applyChoice(s, ev, ev.choices[1], forcedCritical: true);
+    expect(warm.critical, isTrue);
+    expect(warm.delta.affection['a'], 6);
+    // 운으로는 몇 번을 굴려도 차가운 선택지에서 크리티컬이 나지 않는다.
+    for (var i = 0; i < 300; i++) {
+      s.rel('a').affection = 50;
+      final cold = eng.applyChoice(s, ev, ev.choices[0], random: Random(i));
+      expect(cold.critical, isFalse);
+      expect(cold.delta.affection['a'], -5);
+    }
+  });
 }

@@ -23,6 +23,7 @@ void main() {
         await tester.tap(find.widgetWithText(OutlinedButton, text));
         await tester.pump();
         expect(c.lastOutcome, isNotNull);
+        await settleReplies(tester);
         expect(find.text('계속'), findsOneWidget);
       }
       await tester.tap(find.text('계속'));
@@ -87,10 +88,11 @@ void main() {
     expect(find.text('크리티컬!'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
+    await settleReplies(tester);
     expect(find.byType(MinigameScaffold), findsNothing);
     expect(c.lastOutcome, isNotNull);
     expect(c.lastOutcome!.critical, isTrue);
-    expect(find.text('크리티컬! 호감 2배'), findsOneWidget);
+    expect(find.text('크리티컬!'), findsOneWidget, reason: 'm02 는 호감이 걸리지 않아 2배 문구가 없다');
     expect(find.textContaining('전부 맞췄다'), findsOneWidget);
 
     await tester.tap(find.text('계속'));
