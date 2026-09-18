@@ -2105,11 +2105,17 @@ class _SignalLine extends StatelessWidget {
                   ),
                 ),
                 const TextSpan(text: '  '),
-                // 이름과 호감은 한 덩어리(테스트 고정: '서연 ♥42').
-                TextSpan(
-                  text: '$name ♥$affection',
-                  style: context.text.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                // 이름과 호감은 한 덩어리(테스트 고정: '서연 ♥42'). 한글은 글자 사이에서도
+                // 줄이 바뀌므로 TextSpan 으로 두면 '하 / 늘 ♥3' 처럼 이름이 쪼개진다.
+                // WidgetSpan 은 통째로 다음 줄로 넘어간다.
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: Text(
+                    '$name ♥$affection',
+                    style: context.text.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],

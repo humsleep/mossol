@@ -176,9 +176,10 @@ void main() {
       final line = find.textContaining(signal);
       expect(line, findsOneWidget);
       // 신호와 '서연 ♥42' 는 한 덩어리 Text.rich. 신호가 주인공이라 글자가 더 크다.
-      final spans = (tester.widget<Text>(line).textSpan! as TextSpan).children!.cast<TextSpan>();
-      final sig = spans.firstWhere((x) => x.text == signal);
-      final heart = spans.firstWhere((x) => x.text == '서연 ♥42');
+      final spans = (tester.widget<Text>(line).textSpan! as TextSpan).children!;
+      final sig = spans.whereType<TextSpan>().firstWhere((x) => x.text == signal);
+      // 꼬리는 줄바꿈에 쪼개지지 않게 WidgetSpan 안의 Text 다.
+      final heart = tester.widget<Text>(find.text('서연 ♥42'));
       expect(sig.style!.fontSize!, greaterThan(heart.style!.fontSize!));
       c.goHome();
       await tester.pump();
