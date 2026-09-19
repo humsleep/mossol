@@ -75,6 +75,39 @@ class Preference {
   };
 }
 
+/// 온보딩 1단계 "나는?" 의 답. 기기 메타(`PlayerMeta.playerGender`)에만 저장하고
+/// 밖으로 보내지 않는다. 주인공 대사는 이 값과 무관하게 성별 중립이다.
+///
+/// 쓰임은 단 하나: 새 게임의 캐스트 소개(2단계)에서 어느 쪽을 **먼저** 보여 줄지.
+class PlayerGender {
+  static const male = 'm';
+  static const female = 'f';
+
+  /// "선택 안 할래요". 캐스트 소개에서 두 쪽을 비교해 고른다.
+  static const none = 'none';
+
+  static const values = [male, female, none];
+
+  /// 모르는 값·없는 값은 null(아직 안 물어봄).
+  static String? parse(Object? v) =>
+      v is String && values.contains(v) ? v : null;
+
+  /// 캐스트 소개의 기본 쪽. 남자 → 여성 캐릭터, 여자 → 남성 캐릭터, 그 밖은 null(비교).
+  static String? sideFor(String? gender) => switch (gender) {
+    male => Preference.female,
+    female => Preference.male,
+    _ => null,
+  };
+
+  /// 온보딩 버튼·설정 행의 표기.
+  static String label(String? gender) => switch (gender) {
+    male => '남자',
+    female => '여자',
+    none => '선택 안 함',
+    _ => '아직 안 정함',
+  };
+}
+
 /// 캐릭터 역할. 여성·남성 쪽이 역할마다 한 명씩 짝을 이룬다(docs/CAST_BIBLE.md).
 class CastRole {
   static const senior = 'senior';
@@ -518,6 +551,15 @@ class CharacterDef {
   final List<String> tags;
   final int budget;
 
+  /// 캐스트 소개의 한 줄 매력(20자 이내, [maxTagline]). 히든은 써 두되 화면에 내지 않는다.
+  final String tagline;
+
+  /// 캐스트 소개의 첫 메시지 미리보기. 없으면 [StoryBundle.firstLineOf] 가 첫 접촉
+  /// 이벤트(`<id>_r00`, `<id>_r01` …)의 첫 `them` 대사를 꺼낸다.
+  final String? firstLine;
+
+  static const maxTagline = 20;
+
   const CharacterDef({
     required this.id,
     required this.name,
@@ -531,6 +573,8 @@ class CharacterDef {
     this.humor = 'warm',
     this.tags = const [],
     this.budget = 40,
+    this.tagline = '',
+    this.firstLine,
   });
 
   factory CharacterDef.fromJson(Map<String, dynamic> j) => CharacterDef(
@@ -548,6 +592,11 @@ class CharacterDef {
     humor: (j['humor'] as String?) ?? 'warm',
     tags: _strList(j['tags']),
     budget: ((j['budget'] as num?) ?? 40).toInt(),
+    tagline: ((j['tagline'] as String?) ?? '').trim(),
+    firstLine: switch ((j['firstLine'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
   );
 
   /// [pref] 회차에 등장하는지.

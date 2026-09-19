@@ -7,6 +7,8 @@ import 'package:mossol/minigames/registry.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/ending_screen.dart';
 import 'package:mossol/ui/home_screen.dart';
+import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/summary_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
@@ -15,7 +17,8 @@ import 'helpers.dart';
 /// QA 디버그 갤러리 스모크 테스트. 미니게임·엔딩 목록이 뜨고 엔딩 화면이 실제로 열리는지.
 void main() {
   testWidgets('미니게임 12종과 엔딩 티어 5종이 나열된다', (tester) async {
-    tester.view.physicalSize = const Size(400, 2400);
+    // 목록이 길어 lazy ListView 가 끝까지 짓도록 높게 잡는다(온보딩 미리보기 4줄 포함).
+    tester.view.physicalSize = const Size(400, 3200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -54,7 +57,7 @@ void main() {
   });
 
   testWidgets('엔딩을 고르면 EndingScreen 이 뜨고 "홈으로" 로 돌아온다', (tester) async {
-    tester.view.physicalSize = const Size(400, 2400);
+    tester.view.physicalSize = const Size(400, 3200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -189,4 +192,40 @@ void main() {
     expect(tester.takeException(), isNull);
     await closePreview(tester);
   });
+
+  // ---- 새 게임 온보딩 ----
+
+  testWidgets('온보딩 1단계 → 남자 → 2단계(여성 쪽) → 시작하면 스낵바로 결과만 알린다', (tester) async {
+    await openPreview(tester, '1단계: 나는?');
+    expect(find.byType(OnboardingGenderScreen), findsOneWidget);
+    await tester.tap(find.byKey(const Key('gender-m')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PreferenceScreen), findsOneWidget);
+    expect(find.byKey(const Key('cast-seoyeon')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('cast-start')));
+    await tester.pumpAndSettle();
+    expect(find.byType(DebugGalleryScreen), findsOneWidget);
+    expect(findTextContaining('나는: 남자'), findsOneWidget);
+    expect(findTextContaining('(f)'), findsOneWidget);
+  });
+
+  for (final (label, side) in [
+    ('2단계: 캐스트 소개 · 여성 캐릭터', 'f'),
+    ('2단계: 캐스트 소개 · 남성 캐릭터', 'm'),
+    ('2단계: 캐스트 소개 · 비교(선택 안 함)', null),
+  ]) {
+    testWidgets('$label 미리보기가 뜬다', (tester) async {
+      await openPreview(tester, label);
+      expect(find.byType(PreferenceScreen), findsOneWidget);
+      if (side == null) {
+        expect(find.byType(PreferenceCard), findsNWidgets(2));
+        expect(find.byType(CastIntroCard), findsNothing);
+      } else {
+        expect(find.byKey(Key('cast-side-$side')), findsOneWidget);
+        expect(find.byType(CastIntroCard), findsNWidgets(6));
+      }
+      expect(tester.takeException(), isNull);
+      await closePreview(tester);
+    });
+  }
 }

@@ -11,7 +11,6 @@ import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/ui/album_screen.dart';
-import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -648,7 +647,7 @@ void main() {
     });
   });
 
-  group('선택 화면', () {
+  group('캐스트 소개(새 게임 2단계)', () {
     Future<GameController> ctl() async {
       SharedPreferences.setMockInitialValues({});
       final c = GameController(bundle: testBundle(), save: SaveService());
@@ -656,51 +655,148 @@ void main() {
       return c;
     }
 
-    testWidgets('두 카드 · 아바타 · 소개 · 안내', (tester) async {
+    Finder cardOf(String id) => find.byKey(Key('cast-$id'));
+
+    testWidgets('기본 쪽: 다섯 명 카드(이름 · 역할 · 매력 · 첫 메시지) + 히든 ??? 한 칸', (
+      tester,
+    ) async {
+      final bundle = testBundle();
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      String? picked;
+      await tester.pumpWidget(
+        wrapApp(
+          PreferenceScreen(
+            bundle: bundle,
+            side: Preference.female,
+            onPicked: (p) => picked = p,
+          ),
+        ),
+      );
+      expect(findText(PreferenceScreen.title), findsOneWidget);
+      expect(find.byType(CastIntroCard), findsNWidgets(6));
+      final side = bundle.characters.where((c) => c.gender == 'f');
+      for (final ch in side) {
+        if (ch.hidden) {
+          // 히든은 이름 · 역할 · 매력 · 첫 메시지를 전부 숨긴다(스포일러).
+          expect(findText(ch.name), findsNothing);
+          expect(findText(ch.tagline), findsNothing);
+          continue;
+        }
+        final card = cardOf(ch.id);
+        expect(card, findsOneWidget, reason: ch.id);
+        expect(
+          find.descendant(of: card, matching: findText(ch.name)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: findText(ch.displayTitle)),
+          findsOneWidget,
+        );
+        expect(ch.tagline, isNotEmpty, reason: '${ch.id} tagline');
+        expect(
+          find.descendant(of: card, matching: findText(ch.tagline)),
+          findsOneWidget,
+        );
+        final line = bundle.firstLineOf(ch.id);
+        expect(line, isNotNull, reason: '${ch.id} 첫 메시지');
+        expect(
+          find.descendant(of: card, matching: findText(line!)),
+          findsOneWidget,
+        );
+      }
+      expect(findText('???'), findsOneWidget);
+      expect(findText(CastIntroCard.mysteryNote), findsOneWidget);
+      // 남성 쪽은 보이지 않는다.
+      expect(cardOf('jeongwoo'), findsNothing);
+      await tester.tap(findText(PreferenceScreen.startLabel));
+      expect(picked, Preference.female);
+    });
+
+    testWidgets('반대쪽 캐릭터 만나기 → 같은 화면에서 남성 쪽, 링크는 원래대로', (tester) async {
+      String? picked;
+      await tester.pumpWidget(
+        wrapApp(
+          PreferenceScreen(
+            bundle: testBundle(),
+            side: Preference.female,
+            onPicked: (p) => picked = p,
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
+      expect(findText(PreferenceScreen.restoreLabel), findsNothing);
+      await tester.tap(findText(PreferenceScreen.flipLabel));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
+      expect(find.byKey(const Key('cast-side-f')), findsNothing);
+      expect(cardOf('jeongwoo'), findsOneWidget);
+      expect(findText('나한테만 메신저가 서툰 회장님'), findsOneWidget);
+      expect(findText(PreferenceScreen.flipLabel), findsNothing);
+      expect(findText(PreferenceScreen.restoreLabel), findsOneWidget);
+      // 보고 있는 쪽으로 시작한다.
+      await tester.tap(findText(PreferenceScreen.startLabel));
+      expect(picked, Preference.male);
+
+      await tester.tap(findText(PreferenceScreen.restoreLabel));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
+      expect(findText(PreferenceScreen.flipLabel), findsOneWidget);
+      await tester.tap(findText(PreferenceScreen.startLabel));
+      expect(picked, Preference.female);
+    });
+
+    testWidgets('비교 모드: 기본 선택 없음 · 시작 꺼짐 → 한쪽을 고르면 켜지고, 세그먼트로 오간다', (
+      tester,
+    ) async {
       final bundle = testBundle();
       String? picked;
       await tester.pumpWidget(
         wrapApp(PreferenceScreen(bundle: bundle, onPicked: (p) => picked = p)),
       );
-      expect(findText('누구를 만나고 싶나요?'), findsOneWidget);
+      FilledButton start() =>
+          tester.widget<FilledButton>(find.byKey(const Key('cast-start')));
+      expect(start().onPressed, isNull, reason: '기본 선택 없음');
+      expect(findText(PreferenceScreen.compareHint), findsOneWidget);
+      // 비교 모드에는 반대쪽 링크가 없다(세그먼트가 그 역할).
+      expect(findText(PreferenceScreen.flipLabel), findsNothing);
+      // 아직 안 골랐으면 두 쪽 요약 카드. 아바타 여섯씩(히든은 실루엣), 소개는 쪽마다 다르다.
       expect(find.byType(PreferenceCard), findsNWidgets(2));
-      expect(findText('여성 캐릭터'), findsOneWidget);
-      expect(findText('남성 캐릭터'), findsOneWidget);
-      expect(findText('나중에 새 게임에서 바꿀 수 있어요'), findsOneWidget);
-      // 여성 6 + 남성 6(각 쪽 히든 1 은 실루엣).
-      expect(
-        find.byType(CharacterAvatar),
-        findsNWidgets(bundle.characters.length),
-      );
+      expect(find.byType(CastIntroCard), findsNothing);
       expect(
         find.byWidgetPredicate((w) => w is CharacterAvatar && w.mystery),
         findsNWidgets(2),
       );
-      // 소개는 히든이 아닌 다섯 역할. 두 쪽이 같은 역할 짝이라 문구도 같다.
-      expect(
-        findText('선배 · 알바 동료 · 소개팅 상대 · 온라인 친구 · 초등 동창'),
-        findsNWidgets(2),
+      final introF = PreferenceScreen.introOf(bundle, 'f');
+      final introM = PreferenceScreen.introOf(bundle, 'm');
+      expect(introF, isNot(introM));
+      expect(findText(introF), findsOneWidget);
+      await tester.tap(find.byKey(const Key('cast-start')));
+      expect(picked, isNull, reason: '꺼진 시작은 눌리지 않는다');
+
+      // 요약 카드를 누르면 그 쪽을 펼친다(시작은 아직 아님).
+      await tester.tap(find.byKey(const Key('preference-m')));
+      await tester.pumpAndSettle();
+      expect(picked, isNull);
+      expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
+      expect(start().onPressed, isNotNull);
+
+      // 세그먼트로 반대쪽 비교.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('cast-segment')),
+          matching: findText('여성 캐릭터'),
+        ),
       );
-      await tester.tap(findText('남성 캐릭터'));
-      expect(picked, Preference.male);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
+      await tester.tap(findText(PreferenceScreen.startLabel));
+      expect(picked, Preference.female);
     });
 
-    testWidgets('홈의 새 게임 → 카드 탭 → 확인 없이 그 선호로 시작', (tester) async {
-      final c = await ctl();
-      await tester.pumpWidget(fullApp(c));
-      await tester.pump();
-      await tester.tap(findText('새 게임'));
-      await tester.pumpAndSettle();
-      expect(find.byType(PreferenceScreen), findsOneWidget);
-      await tester.tap(find.byKey(const Key('preference-f')));
-      await tester.pumpAndSettle();
-      expect(find.byType(PreferenceScreen), findsNothing);
-      expect(c.phase, Phase.action);
-      expect(c.state!.preference, Preference.female);
-      expect(findText('오늘의 운'), findsOneWidget, reason: '확인 없이 바로 첫날');
-    });
-
-    testWidgets('한쪽 캐릭터가 없으면 그 카드는 준비 중(탭 안 됨)', (tester) async {
+    testWidgets('한쪽 캐릭터가 없으면 그 쪽은 준비 중(탭 안 됨), 반대쪽 링크도 없다', (tester) async {
       final only = _bundle(
         characters: [_chars[0], _chars[1]],
         events: [_ev('fa_r', 'route', character: 'fa')],
@@ -711,55 +807,49 @@ void main() {
         wrapApp(PreferenceScreen(bundle: only, onPicked: (p) => picked = p)),
       );
       expect(findText('준비 중'), findsOneWidget);
-      await tester.tap(findText('남성 캐릭터'));
-      expect(picked, isNull);
-      await tester.tap(findText('여성 캐릭터'));
+      await tester.tap(findText('남성 캐릭터').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(CastIntroCard), findsNothing);
+      await tester.tap(find.byKey(const Key('preference-f')));
+      await tester.pumpAndSettle();
+      await tester.tap(findText(PreferenceScreen.startLabel));
       expect(picked, Preference.female);
+
+      await tester.pumpWidget(
+        wrapApp(
+          PreferenceScreen(
+            key: const Key('default-f'),
+            bundle: only,
+            side: Preference.female,
+            onPicked: (p) => picked = p,
+          ),
+        ),
+      );
+      expect(findText(PreferenceScreen.flipLabel), findsNothing);
+      // 매력 문구가 없는 데이터에서도 카드는 이름 · 역할로 그린다.
+      expect(find.byType(CastIntroCard), findsNWidgets(2));
     });
 
-    for (final dark in [false, true]) {
-      testWidgets('320×568 · 1.3배 · ${dark ? '다크' : '라이트'}: 넘치지 않고 카드가 44 이상', (
-        tester,
-      ) async {
-        useSmallScreenLargeFont(tester);
-        if (dark) useDarkMode(tester);
-        await tester.pumpWidget(
-          wrapApp(
-            PreferenceScreen(bundle: testBundle(), onPicked: (_) {}),
-            mode: dark ? ThemeMode.dark : ThemeMode.light,
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        for (final g in Preference.genders) {
-          final r = tester.getRect(find.byKey(Key('preference-$g')));
-          expect(r.height, greaterThanOrEqualTo(AppSpace.minTouch));
-          expect(r.left, greaterThanOrEqualTo(0));
-          expect(r.right, lessThanOrEqualTo(320));
-        }
-        // 두 카드가 스크롤 없이 첫 화면에 들어온다.
-        expect(
-          tester.getRect(find.byKey(const Key('preference-m'))).bottom,
-          lessThanOrEqualTo(568),
-        );
-        // 아바타 6개는 카드마다 한 줄이다(두 줄로 접히면 높이 예산을 넘는다).
-        for (final g in Preference.genders) {
-          final tops = find
-              .descendant(
-                of: find.byKey(Key('preference-$g')),
-                matching: find.byType(CharacterAvatar),
-              )
-              .evaluate()
-              .map(
-                (e) => (e.renderObject! as RenderBox)
-                    .localToGlobal(Offset.zero)
-                    .dy,
-              )
-              .toSet();
-          expect(tops, hasLength(1), reason: '$g 아바타 줄');
-        }
-      });
-    }
+    testWidgets('홈의 새 게임 → 나는? 남자 → 여성 쪽 소개 → 시작하기 → 확인 없이 그 선호로 시작', (
+      tester,
+    ) async {
+      final c = await ctl();
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await tester.tap(findText('새 게임'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('gender-m')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PreferenceScreen), findsOneWidget);
+      expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
+      await tester.tap(findText(PreferenceScreen.startLabel));
+      await tester.pumpAndSettle();
+      expect(find.byType(PreferenceScreen), findsNothing);
+      expect(c.phase, Phase.action);
+      expect(c.state!.preference, Preference.female);
+      expect(c.playerGender, PlayerGender.male);
+      expect(findText('오늘의 운'), findsOneWidget, reason: '확인 없이 바로 첫날');
+    });
   });
 
   group('홈 · 앨범 표시', () {

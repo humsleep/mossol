@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -8,7 +9,7 @@ import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
-import 'preference_screen.dart';
+import 'onboarding_gender_screen.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 
@@ -139,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // B. 히어로 카드
             if (!hasSave)
-              _IntroCard(endings: c.bundle.endings.length)
+              _IntroCard(endings: _endingsPerRun)
             else if (summary == null)
               const ContinueCard.placeholder()
             else
@@ -206,15 +207,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             const SizedBox(height: AppSpace.sectionGap),
 
-            // F. 사람들
-            SectionHeader(
-              title: summary != null ? '사람들' : '등장인물',
-              trailing: summary != null
-                  ? Text('호감 순', style: context.text.labelMedium)
-                  : null,
-            ),
-            CastStrip(entries: _castEntries(summary)),
-            const SizedBox(height: AppSpace.sectionGap),
+            // F. 사람들. 세이브가 없고 아직 쪽을 모르면(첫 실행 · 선택 안 함) 줄을 숨긴다.
+            if (summary != null || c.defaultSide != null) ...[
+              SectionHeader(
+                title: summary != null ? '사람들' : '등장인물',
+                trailing: summary != null
+                    ? Text('호감 순', style: context.text.labelMedium)
+                    : null,
+              ),
+              CastStrip(entries: _castEntries(summary)),
+              const SizedBox(height: AppSpace.sectionGap),
+            ],
 
             // G. 앨범
             _AlbumCard(c: c, onTap: () => _openAlbum(context)),
@@ -225,12 +228,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 소개 카드의 "엔딩 N개 중 하나". 한 회차가 닿을 수 있는 수(그 쪽 캐릭터 엔딩 + 공용)다.
+  /// 쪽을 모르면 두 쪽 중 큰 값(지금 데이터는 둘 다 같다).
+  int get _endingsPerRun {
+    final b = c.bundle;
+    final side = c.defaultSide;
+    if (side != null) return b.endingCountFor(side);
+    return Preference.genders.map(b.endingCountFor).fold(0, max);
+  }
+
   /// 호감 내림차순(동점은 characters.json 순). 히든은 호감이 생기기 전까지 맨 뒤 `???`.
-  /// 세이브가 있으면 그 회차 선호에 맞는 사람만, 없으면 전원(등장인물 소개).
+  /// 세이브가 있으면 그 회차 선호에 맞는 사람만, 없으면 "나는?" 답의 기본 쪽(등장인물 소개).
   List<CastEntry> _castEntries(SaveSummary? summary) {
-    final chars = summary == null
-        ? c.bundle.characters
-        : c.bundle.charactersFor(summary.preference);
+    final chars = c.bundle.charactersFor(
+      summary?.preference ?? c.defaultSide ?? Preference.all,
+    );
     final known = <CastEntry>[];
     final mystery = <CastEntry>[];
     for (final ch in chars) {
@@ -279,11 +291,18 @@ class _HomeScreenState extends State<HomeScreen> {
     await _startNewGame(context);
   }
 
-  /// 선호 선택 화면을 거쳐 새 게임. 뒤로 가면 아무것도 하지 않는다.
+  /// 온보딩("나는?", 답이 없을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
+  /// 하지 않는다. 1단계 답은 새 게임이 실제로 시작될 때 기기 메타에 저장한다.
   Future<void> _startNewGame(BuildContext context) async {
-    final pref = await PreferenceScreen.show(context, c.bundle);
-    if (pref == null) return;
-    await c.newGame(preference: pref);
+    final pick = await OnboardingGenderScreen.run(
+      context,
+      c.bundle,
+      savedGender: c.playerGender,
+    );
+    if (pick == null) return;
+    final g = pick.gender;
+    if (g != null) await c.setPlayerGender(g);
+    await c.newGame(preference: pick.preference);
   }
 }
 
@@ -432,14 +451,27 @@ class _AlbumCard extends StatelessWidget {
 
   /// endings.json 순서로 훑어 미획득이면서 배드·히든이 아닌 첫 엔딩의 힌트.
   /// 해피·굿·솔로를 다 봤으면 남은 것을, 전부 다 봤으면 그 사실을 말한다.
+  ///
+  /// 고르는 범위는 [homeHintScope]: 세이브가 있으면 그 회차 쪽 + 공용, 없으면 "나는?" 답의
+  /// 기본 쪽 + 공용, 쪽을 모르면 공용 먼저(공용을 다 봤으면 전체).
   String _hintLine() {
     final got = c.endingAlbum.toSet();
     final all = c.bundle.endings;
     if (all.isNotEmpty && got.length >= all.length) return '모든 엔딩을 봤다';
-    for (final e in all) {
-      if (got.contains(e.id) || e.tier == 'bad' || e.tier == 'hidden') continue;
-      return '다음 엔딩 힌트 · ${endingHintFor(e, c)}';
+    final scope = homeHintScope(c);
+    Ending? first(Iterable<Ending> es) {
+      for (final e in es) {
+        if (got.contains(e.id) || e.tier == 'bad' || e.tier == 'hidden') {
+          continue;
+        }
+        return e;
+      }
+      return null;
     }
+
+    final e =
+        first(all.where(scope.contains)) ?? (scope.neutral ? first(all) : null);
+    if (e != null) return '다음 엔딩 힌트 · ${endingHintFor(e, c)}';
     return '남은 건 배드 엔딩과 히든뿐이다';
   }
 
@@ -547,4 +579,21 @@ class OvernightNote extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 홈 앨범 카드의 "다음 엔딩 힌트" 가 고르는 범위.
+///
+/// - 세이브가 있으면 그 회차 선호 쪽 + 공용(예전 세이브 `all` 은 전체).
+/// - 세이브가 없고 "나는?" 답이 남자/여자면 그 기본 쪽 + 공용.
+/// - 쪽을 모르면(첫 실행 · 선택 안 함) 공용만. [neutral] 이라 공용을 다 봤으면 전체로 넓힌다.
+typedef HintScope = ({bool Function(Ending) contains, bool neutral});
+
+HintScope homeHintScope(GameController c) {
+  final b = c.bundle;
+  final pref = c.saveSummary?.preference ?? c.defaultSide;
+  if (pref == Preference.all) return (contains: (_) => true, neutral: false);
+  if (pref != null) {
+    return (contains: (e) => b.endingInPreference(e, pref), neutral: false);
+  }
+  return (contains: (e) => b.endingSide(e) == null, neutral: true);
 }

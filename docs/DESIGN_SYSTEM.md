@@ -251,7 +251,9 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   + `CastStrip` → `sectionGap` → 앨범 `AppCard(onTap)`(`'앨범  N / M'` 단일 Text + `EndingTierDots` +
   다음 엔딩 힌트).
 - 세이브가 없으면 `새 게임` 이 1차 버튼 자리에 온다. 빈자리를 남기지 않는다.
-- `새 게임` 은 곧바로 시작하지 않고 선호 선택(§2.9)을 거친다. 이어하기 카드와 사람들 줄의 선호 표기는 §2.10.
+- `새 게임` 은 곧바로 시작하지 않고 온보딩 "나는?"(§2.11, 답이 없을 때만) → 캐스트 소개(§2.9)를 거친다.
+  이어하기 카드와 사람들 줄의 선호 표기는 §2.10.
+- 세이브가 없을 때의 사람들 줄(`등장인물`)과 앨범 힌트, 소개 카드의 엔딩 수는 "나는?" 답을 따른다(§2.10).
 - **상단 여백 40% 와 로즈 방사 그라데이션은 폐지.** 배경은 `surface` 단색. 빈 공간으로 만든 여백은
   실기기에서 휑함으로 읽혔다.
 - 높이 예산: 320×568 · 글자 1.3배 · 배너 있음에서 1차 버튼 하단 ≤ 568. 이를 위해 카드 안 텍스트는
@@ -392,38 +394,67 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 선택 목록은 `MinigameOption` 만 쓴다. 게임마다 `Container` + `BoxDecoration` 을
   새로 만들지 마라.
 
-### 2.9 선호 선택 (`preference_screen.dart`)
-- **주인공**: 카드 두 장(`PreferenceCard` — 여성 캐릭터 / 남성 캐릭터).
-- **배경**: 헤드라인 `'누구를 만나고 싶나요?'`, 하단 안내 `'나중에 새 게임에서 바꿀 수 있어요'`.
-- 진입: 홈의 `새 게임`. 세이브가 있으면 기존 확인 다이얼로그(`진행 중인 회차가 지워집니다…`)를
-  먼저 거친 뒤 이 화면이 뜬다. 카드를 누르면 **확인 없이** 그 선호로 새 게임이 시작된다.
-  뒤로 가면 아무것도 바뀌지 않는다(세이브도 그대로).
-- 구성(위→아래, `ListView`, 패딩 20/4/20/24): 빈 `AppBar`(뒤로 가기만. 제목을 AppBar 에 두지
-  않는 건 홈의 `'새 게임'` 단일 Text 규칙과 겹치지 않게 하려는 것) → 헤드라인 `headlineMedium`
-  → `sectionGap` → 카드(여성) → `gap` → 카드(남성) → `lg` → `Icons.info_outline`(16,
-  `onSurfaceVariant`) + 안내 `bodySmall`.
-- 카드 순서·아바타·소개는 전부 characters.json 에서 나온다(캐스트 3+3 이든 6+6 이든 그대로).
-  아바타 줄은 characters.json 순, 히든은 맨 뒤 실루엣. 소개는 히든이 아닌 사람들의 역할 이름
-  (6+6 에서는 두 카드 모두 `선배 · 알바 동료 · 소개팅 상대 · 온라인 친구 · 초등 동창`), 최대 2줄.
-- 아바타 크기: 카드 안쪽 폭에 한 줄로 들어가면 40, 아니면 32(`PreferenceCard.avatarSizeFor`).
-  6명이면 320pt 에서 32(한 줄 6×32 + 5×8 = 232 ≤ 안쪽 폭), 375pt 이상에서 40. 32 로도 모자라면
-  `Wrap` 으로 접히지만 지금 캐스트에서는 접히지 않는다(테스트 고정: 320×568 · 1.3배에서 카드마다
-  아바타 한 줄).
-- 한쪽 캐릭터가 0명이면 그 카드는 비활성: 화살표 대신 `'준비 중'`(`labelSmall`), 제목은
-  `onSurfaceVariant`, 탭되지 않는다.
-- 색: 카드 바탕은 `AppCard` 기본(neutral). `primaryContainer`·로즈를 쓰지 않는다 — 두 선택지의
-  무게가 같아야 한다. 캐릭터 강조색은 아바타에만. 노란색 없음.
-- 높이 예산: 320×568 · 1.3배에서 두 카드가 스크롤 없이 첫 화면에 들어온다(테스트 고정, 라이트·다크).
-  6+6 에서 40 아바타가 두 줄로 접히면 남성 카드 하단이 608 로 넘쳤다. 32 한 줄로 496.
+### 2.9 캐스트 소개 — 새 게임 2단계 (`preference_screen.dart`)
+- **주인공**: 한쪽(여성 캐릭터 / 남성 캐릭터) 캐릭터 카드 목록(`CastIntroCard` × 5 + 히든 `???` 한 칸).
+  "이 사람과 톡하고 싶다" 가 들어야 하므로 카드마다 **한 줄 매력**과 **첫 메시지 말풍선**이 있다.
+- **배경**: 헤드라인 `'이 사람들을 만나게 돼요'`, 부제, 쪽 이름 + 인원(`SectionHeader`, `'5명 + ?'`),
+  하단 패널의 `시작하기` 와 `반대쪽 캐릭터 만나기`.
+- 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 다이얼로그 뒤). "나는?" 답이 없으면 §2.11 을 먼저 거치고,
+  답이 있으면 곧바로 이 화면. 기본 쪽은 남자 → 여성 캐릭터, 여자 → 남성 캐릭터, 선택 안 함 → 비교 모드.
+  뒤로 가면 1단계(거쳐 왔다면) 또는 홈. 아무것도 바뀌지 않는다(세이브·답 그대로).
+- 구성(위→아래): 빈 `AppBar`(뒤로 가기만) → `ListView`(패딩 20/4/20/24): 헤드라인 `headlineMedium` → `xs`
+  → 부제 `bodyMedium`(onSurfaceVariant; 비교 모드는 `'두 쪽을 눌러 비교해 보고 골라요'`) → `sectionGap`
+  → [비교 모드만] `SegmentedButton`(여성 캐릭터 · 남성 캐릭터, 높이 44, 기본 선택 없음) + `sectionGap`
+  → 쪽 이름 `SectionHeader` + 카드 목록(카드 사이 `sm`). 히든은 맨 뒤.
+- 하단: `BottomPanel` 안에 `시작하기` `FilledButton`(전폭, 52) → `xs` → `반대쪽 캐릭터 만나기` `TextButton`
+  (onSurfaceVariant, 2차 무게). 누르면 같은 화면에서 반대쪽 목록으로 바뀌고(`AnimatedSwitcher`,
+  `AppMotion.base`) 링크는 `'원래대로'` 로 바뀐다. 시작은 **지금 보고 있는 쪽**으로 한다. 비교 모드와 반대쪽
+  데이터가 없을 때는 링크 대신 `'나중에 새 게임에서 바꿀 수 있어요'` `bodySmall`.
+- 비교 모드(1단계 "선택 안 할래요"): 처음엔 아무 쪽도 고르지 않은 상태 — 세그먼트 아래에 두 쪽 요약
+  `PreferenceCard` 두 장(아바타 줄 + 한 줄 매력 두 개)을 보이고 `시작하기` 는 꺼져 있다. 요약 카드나 세그먼트로
+  한쪽을 고르면 그 쪽 목록이 펼쳐지고 `시작하기` 가 켜진다. 고른 세그먼트를 다시 눌러도 비우지 않는다.
+- 문구 데이터: 한 줄 매력은 characters.json `tagline`(20자 이내, 검증기가 막는다). 첫 메시지는 `firstLine`
+  이 있으면 그것, 없으면 첫 접촉 이벤트 `<id>_r00`, `<id>_r01` … 의 첫 `them` 대사
+  (`StoryBundle.firstLineOf`). 히든은 이름·역할·매력·첫 메시지를 전부 숨긴다(스포일러).
+- 색: 카드는 `AppCard` 기본(neutral), 캐릭터 강조색은 아바타(56)에만. 말풍선은 상대 말풍선 토큰 그대로
+  (`bubbleTheirs` + `bubbleBorder`) — 캐릭터 색으로 칠하지 않는다. `primaryContainer` 면 없음. 노란색 없음.
+- 한쪽 캐릭터가 0명이면 그 쪽 요약 카드는 `'준비 중'`(탭 안 됨), 펼친 목록은 `'준비 중'` 한 줄에 시작 꺼짐.
+- 높이 예산: 320×568 · 1.3배에서 `시작하기` 가 첫 화면 안(하단 고정 패널), 목록은 스크롤. 넘침 없음 ·
+  탭 타깃 44 · 대비 4.5:1 을 라이트·다크, 여성·남성·비교(전·후)에서 `layout_test` 가 고정한다.
 
 ### 2.10 선호 표기 (홈 · 앨범)
 - 홈 이어하기 카드: 회차 줄 `'1회차 · 2장'` 단일 Text 뒤에 별도 Text `' · 여성 캐릭터'`
   (`labelSmall`, `Key('continue-preference')`)를 붙인다. 좁으면 이쪽이 먼저 말줄임된다.
   선호가 없던 예전 세이브(`all`)는 붙이지 않는다.
-- 홈 사람들 줄: 세이브가 있으면 그 회차 선호 쪽 사람만. 세이브가 없으면 전원(등장인물 소개).
+- 홈 사람들 줄: 세이브가 있으면 그 회차 선호 쪽 사람만(`사람들`, 호감 순). 세이브가 없으면 "나는?" 답의
+  기본 쪽 5명 + 히든 `???`(`등장인물`). 답이 없거나(첫 실행) `선택 안 함` 이면 줄 전체(헤더 포함)를 숨긴다 —
+  12명을 섞어 보여 주면 한쪽 사람이 절반을 차지해 "내 게임이 아닌가" 로 읽히고, 소개는 한 번 더 누르면 나오는
+  캐스트 소개(§2.9)가 훨씬 잘한다.
+- 홈 앨범 카드의 다음 엔딩 힌트: 세이브가 있으면 그 회차 쪽 + 공용 엔딩에서만(예전 세이브 `all` 은 전체).
+  세이브가 없으면 "나는?" 기본 쪽 + 공용, 답이 없거나 `선택 안 함` 이면 공용에서 먼저(공용을 다 봤으면 전체).
+- 소개 카드 `'100일: 엔딩 N개 중 하나'`: N 은 **한 회차가 닿을 수 있는 수**(그 쪽 캐릭터 엔딩 18 + 공용 12 = 30,
+  `StoryBundle.endingCountFor`). 쪽을 모르면 두 쪽 중 큰 값. 앨범의 `'N / M'` 은 여전히 전체 기준(48).
 - 앨범 엔딩 탭: 진행도 블록 아래 `lg` 뒤에 `EndingFilterBar`(전체 · 여성 · 남성 · 공용). 진행도
   `'N / M'` 은 **필터와 무관하게 전체 기준**이다(테스트 고정). 캐릭터 엔딩은 캐릭터 성별,
   공용 엔딩은 `when.pref`, 둘 다 없으면 공용. 걸러서 비면 `AppEmptyState('이 분류의 엔딩이 없다')`.
+
+### 2.11 온보딩 "나는?" — 새 게임 1단계 (`onboarding_gender_screen.dart`)
+- **주인공**: 큰 선택 버튼 셋(`GenderOptionCard` — 남자 / 여자 / 선택 안 할래요). 3초 안에 답할 수 있어야 한다.
+- **배경**: 제목 `'나는?'`(`displaySmall`), 부제 `'만나게 될 사람들이 달라져요'`(`bodyLarge`, onSurfaceVariant),
+  가운데 장식(실루엣 아바타 56 + 점 세 개 입력 중 말풍선 + `'누가 먼저 말을 걸어올까요?'` `labelMedium`, 스크린리더 제외), 하단 안내
+  `Icons.lock_outline` 16 + `'이 기기에만 저장돼요. 설정에서 바꿀 수 있어요'`(`bodySmall`).
+- 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 뒤). 기기 메타 `playerGender` 가 비어 있을 때만 뜬다.
+  버튼을 누르면 확인 없이 캐스트 소개(§2.9)로 넘어가고, 거기서 뒤로 오면 이 화면이다. 답은 **새 게임이 실제로
+  시작될 때** 저장한다(중간에 나가면 아무것도 남지 않는다). 설정 `게임 › 내 성별` 에서 바꾸고, 전체 초기화에서 지운다.
+  값은 기기 밖으로 보내지 않는다. 주인공 대사·호칭은 이 값과 무관하게 성별 중립이다.
+- 구성: 빈 `AppBar` → `SafeArea(top: false)` 안 `SingleChildScrollView`(패딩 20/4/20/24) + 화면 높이를 채우는
+  `Column`: 제목 → `xs` → 부제 → `Expanded`(가운데 장식, 본문 높이 600 미만이면 장식 없이 `xxl` 여백)
+  → 버튼 셋(사이 `gap`) → `lg` → 안내. 버튼이 엄지 영역(아래쪽)에 모인다.
+- 버튼: 세 개가 같은 무게. 로즈·강조색 없음, 아이콘 `Icons.male` / `Icons.female` / `Icons.people_outline`
+  (onSurfaceVariant). 보조 문구로 결과를 미리 말한다(`'여성 캐릭터를 먼저 소개해요'` 등).
+- 높이 예산: 320×568 · 1.3배에서 버튼 셋이 스크롤 없이 첫 화면 안(테스트 고정, 라이트·다크).
+- 설정 행: `SectionHeader('게임')` 아래 `AppListRow('내 성별', trailing: 현재 값 labelMedium)`. 누르면
+  `SimpleDialog`(안내 `bodySmall` + 세 항목 `ListTile`, 현재 값에 `Icons.check` + selected). 바깥을 누르면 그대로.
 
 ---
 
@@ -1001,10 +1032,11 @@ class EndingTierDots extends StatelessWidget {
 Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builder});
 ```
 
-선호(남성향·여성향) 컴포넌트(§2.9, §2.10):
+선호(남성향·여성향)·온보딩 컴포넌트(§2.9, §2.10, §2.11):
 
 ```dart
-/// widgets.dart — 선호 선택 카드 한 장. AppCard(onTap, 최소 높이 56) 안에
+/// widgets.dart — 선호 요약 카드 한 장. 캐스트 소개 비교 모드에서 아직 한쪽을 고르지 않았을 때 두 장(§2.9).
+/// 누르면 시작이 아니라 그 쪽 목록을 펼친다. AppCard(onTap, 최소 높이 56) 안에
 /// [제목 titleMedium + 우측 chevron_right 20] → md → 아바타 Wrap(CharacterAvatar 40, 한 줄에
 /// 안 들어가면 32 — avatarSizeFor, 간격 sm, 강조색 accentFor(id), 히든은 mystery)
 /// → sm → 소개 bodySmall(onSurfaceVariant, 2줄).
@@ -1012,7 +1044,7 @@ Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builde
 /// onTap == null 이면 비활성: chevron 자리에 unavailableNote(labelSmall), 제목 onSurfaceVariant.
 class PreferenceCard extends StatelessWidget {
   final String title;            // '여성 캐릭터' / '남성 캐릭터' 단일 Text
-  final String intro;            // '선배 · 소개팅 상대 · 초등 동창'
+  final String intro;            // 한 줄 매력 두 개 ' · ' (문구가 없는 데이터는 역할 이름 목록)
   final List<CastEntry> cast;    // 아바타 줄. mystery 면 실루엣
   final VoidCallback? onTap;
   final String unavailableNote;  // 기본 '준비 중'
@@ -1028,6 +1060,37 @@ class PreferenceCard extends StatelessWidget {
 
   /// 아바타 n개가 폭 width 한 줄에 들어가는 가장 큰 크기(40, 안 되면 32).
   static double avatarSizeFor(int n, double width);
+}
+
+/// widgets.dart — 온보딩 1단계의 큰 선택 버튼(§2.11). AppCard(onTap, cardTight) 안에 최소 높이 64:
+/// [icon 24 onSurfaceVariant → md → label titleMedium(단일 Text) + xxs + hint bodySmall(2줄)
+/// → sm → chevron_right 20]. Semantics(button, label: 'label. hint') 한 덩어리.
+class GenderOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;     // '남자' / '여자' / '선택 안 할래요'
+  final String hint;      // '여성 캐릭터를 먼저 소개해요'
+  final VoidCallback onTap;
+  static const minHeight = 64.0;
+}
+
+/// widgets.dart — CastIntroCard 한 장의 데이터. 화면이 StoryBundle 에서 만든다.
+class CastIntro {
+  final String id, name;
+  final String title;       // displayTitle, 예: '동아리 선배'
+  final String tagline;     // characters.json tagline(20자 이내). 비면 줄 생략
+  final String? firstLine;  // StoryBundle.firstLineOf(id). null 이면 말풍선 생략
+  final bool mystery;       // 히든: 이름·역할·문구 전부 숨김
+}
+
+/// widgets.dart — 캐스트 소개 카드 한 장(§2.9). AppCard(neutral, 탭 없음) 안에
+/// [CharacterAvatar 56(accentFor, 히든은 mystery) → md → 본문]. 본문: Wrap(이름 titleMedium +
+/// 역할 labelMedium onSurfaceVariant) → xxs → tagline bodyMedium w600(onSurface) → sm →
+/// 첫 메시지 말풍선(bubbleTheirs + 1px bubbleBorder, AppRadius.bubble(mine: false), AppInsets.bubble,
+/// bubbleText/onBubbleTheirs, 최대 3줄, Semantics label '첫 메시지').
+/// 히든: '???' titleMedium(onSurfaceVariant) + mysteryNote bodySmall. MergeSemantics 한 덩어리.
+class CastIntroCard extends StatelessWidget {
+  final CastIntro intro;
+  static const mysteryNote = '어떤 조건을 채우면 나타나는 사람';
 }
 
 /// album_screen.dart — 엔딩 목록 필터 칩 줄. Wrap(간격 sm) + ChoiceChip(테마 chipTheme 그대로).

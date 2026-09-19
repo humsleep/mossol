@@ -13,6 +13,7 @@ import '../ui/design_system.dart';
 import '../ui/ending_screen.dart';
 import '../ui/event_screen.dart';
 import '../ui/home_screen.dart';
+import '../ui/onboarding_gender_screen.dart';
 import '../ui/preference_screen.dart';
 import '../ui/summary_screen.dart';
 import '../ui/widgets.dart';
@@ -286,15 +287,28 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     );
   }
 
-  /// 새 게임의 선호 선택 화면. 고르면 새 게임 대신 고른 값을 알려 주고 돌아온다.
-  Future<void> _openPreference() async {
-    final pref = await PreferenceScreen.show(context, bundle);
+  /// 새 게임 1단계("나는?")부터 2단계(캐스트 소개)까지. 끝까지 고르면 새 게임 대신
+  /// 고른 값을 알려 주고 돌아온다. 기기 메타는 건드리지 않는다.
+  Future<void> _openOnboarding() async {
+    final pick = await OnboardingGenderScreen.run(context, bundle);
+    if (!mounted || pick == null) return;
+    _toast(
+      '나는: ${PlayerGender.label(pick.gender)} · '
+      '고른 쪽: ${Preference.label(pick.preference)} (${pick.preference})',
+    );
+  }
+
+  /// 새 게임 2단계만. [side] 가 null 이면 "선택 안 할래요" 의 비교 모드.
+  Future<void> _openCast(String? side) async {
+    final pref = await PreferenceScreen.show(context, bundle, side: side);
     if (!mounted || pref == null) return;
+    _toast('고른 쪽: ${Preference.label(pref)} ($pref)');
+  }
+
+  void _toast(String text) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('고른 선호: ${Preference.label(pref)} ($pref)')),
-      );
+      ..showSnackBar(SnackBar(content: Text(text)));
   }
 
   void _warnShort(int want, int got) {
@@ -402,13 +416,28 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: _openHome,
           ),
+          const _Header('새 게임 온보딩'),
           ListTile(
-            leading: const Icon(Icons.people_alt_outlined),
-            title: const Text('새 게임: 선호 선택 화면'),
-            subtitle: const Text('누구를 만나고 싶나요? 두 장'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('1단계: 나는?'),
+            subtitle: const Text('남자 · 여자 · 선택 안 할래요 → 캐스트 소개'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: _openPreference,
+            onTap: _openOnboarding,
           ),
+          for (final (side, label) in [
+            (Preference.female, '2단계: 캐스트 소개 · 여성 캐릭터'),
+            (Preference.male, '2단계: 캐스트 소개 · 남성 캐릭터'),
+            (null, '2단계: 캐스트 소개 · 비교(선택 안 함)'),
+          ])
+            ListTile(
+              leading: const Icon(Icons.people_alt_outlined),
+              title: Text(label),
+              subtitle: Text(
+                side == null ? '두 쪽 요약 → 세그먼트로 비교' : '반대쪽 링크 · 시작하기',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openCast(side),
+            ),
           const _Header('엔딩 화면'),
           for (final t in byTier.keys)
             ExpansionTile(

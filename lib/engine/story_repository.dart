@@ -67,6 +67,35 @@ class StoryBundle {
     return e.when.pref;
   }
 
+  /// 캐스트 소개(새 게임 2단계)의 첫 메시지 미리보기.
+  ///
+  /// characters.json 의 `firstLine` 이 있으면 그것. 없으면 그 캐릭터의 루트 이벤트
+  /// `<id>_rNN` 을 번호 순으로 훑어 처음 나오는 `them` 대사(글이 있는 것). 둘 다 없으면 null.
+  String? firstLineOf(String id) => _firstLines.putIfAbsent(id, () {
+    final ch = characterById[id];
+    if (ch == null) return null;
+    final own = ch.firstLine;
+    if (own != null) return own;
+    final re = RegExp('^${RegExp.escape(id)}_r(\\d+)\$');
+    final route = [
+      for (final e in events)
+        if (re.firstMatch(e.id) case final m?) (int.parse(m.group(1)!), e),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    for (final (_, e) in route) {
+      for (final l in e.lines) {
+        if (l.who == 'them' && l.photo == null && l.text.trim().isNotEmpty) {
+          return l.text.trim();
+        }
+      }
+    }
+    return null;
+  });
+  final Map<String, String?> _firstLines = {};
+
+  /// [side] 쪽 회차에서 볼 수 있는 엔딩 수(그 쪽 캐릭터 엔딩 + 공용).
+  int endingCountFor(String side) =>
+      endings.where((e) => endingInPreference(e, side)).length;
+
   /// 레이어별 이벤트. 하루 계획에서 매번 240개를 훑지 않도록 한 번만 나눈다.
   late final Map<EventLayer, List<StoryEvent>> eventsByLayer = {
     for (final l in EventLayer.values)
@@ -318,6 +347,11 @@ class StoryBundle {
         throw StateError('같은 성별·역할이 둘: $key ($prev, ${c.id})');
       }
       seat[key] = c.id;
+      if (c.tagline.runes.length > CharacterDef.maxTagline) {
+        throw StateError(
+          'tagline ${CharacterDef.maxTagline}자 초과: ${c.id} (${c.tagline})',
+        );
+      }
       if (c.hidden != (c.role == CastRole.trainer)) {
         throw StateError(
           '히든은 ${CastRole.trainer} 역할만, ${CastRole.trainer} 는 히든만: ${c.id}',

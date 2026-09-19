@@ -405,12 +405,13 @@ Scaffold(
 
 | # | 조건 | `title` | `subtitle` | `leading` | `trailing` | 탭 |
 |---|---|---|---|---|---|---|
+| 0 | 항상(섹션 `게임`, 맨 위) | `내 성별` | `새 게임에서 먼저 소개할 캐릭터가 정해져요` | `Icon(Icons.person_outline)` | `Text(PlayerGender.label, labelMedium)` 예 `남자` · `아직 안 정함` | 세 가지 `SimpleDialog`(DESIGN_SYSTEM §2.11) |
 | 1 | `AdManager.instance.privacyOptionsRequired == true` 일 때만(`FutureBuilder`, 대기 중엔 숨김) | `개인정보 설정` | `광고 개인 맞춤 동의를 바꿉니다` | `Icon(Icons.shield_outlined)` | 기본 chevron | `AdManager.instance.showPrivacyOptions()` |
 | 2 | 항상 | `개인정보처리방침` | `외부 브라우저에서 열립니다` | `Icon(Icons.policy_outlined)` | `Icon(Icons.open_in_new, 18)` | `AppLinks.privacyPolicy` 열기 (§2.3) |
 | 3 | 항상 | `오픈소스 라이선스` | `사용한 라이브러리와 서체의 라이선스` | `Icon(Icons.description_outlined)` | chevron | `showLicensePage(context:, applicationName: '모쏠 키우기', applicationVersion: AppMeta.versionLabel)` |
 | 4 | 항상 | `서체` | `Pretendard · SIL Open Font License 1.1` | `Icon(Icons.text_fields)` | `Text('OFL', labelMedium)` | 없음(`onTap: null`, `showChevron: false`) |
 | 5 | 항상 | `앱 버전` | 없음 | `Icon(Icons.info_outline)` | `Text(AppMeta.versionLabel, tokens.numericSmall)` 예 `0.1.0 (1)` | 없음(`showChevron: false`) |
-| 6 | 항상 | `저장 데이터 초기화` | `회차 · 하트 · 출석 · 엔딩 앨범이 모두 지워집니다` | `Icon(Icons.delete_outline)` | chevron | §2.5 확인 다이얼로그 |
+| 6 | 항상 | `저장 데이터 초기화` | `회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별이 모두 지워집니다` | `Icon(Icons.delete_outline)` | chevron | §2.5 확인 다이얼로그 |
 
 - 행 6 은 `AppListRow(tone: AppTone.danger)` (§5.7 에서 추가하는 매개변수). 제목·leading 아이콘 색이
   `tokens.danger`. 배경은 그대로 `surfaceContainerLow` — 빨간 카드로 만들지 않는다.

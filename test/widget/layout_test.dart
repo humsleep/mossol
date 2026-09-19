@@ -18,6 +18,8 @@ import 'package:mossol/ui/call_view.dart';
 import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/notification_card.dart';
+import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
@@ -136,6 +138,75 @@ void main() {
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
       });
+
+      testWidgets('온보딩 1단계(나는?): 넘치지 않고 버튼 셋이 첫 화면 안, 탭 타깃·대비', (tester) async {
+        apply(tester, env);
+        await tester.pumpWidget(
+          wrapApp(OnboardingGenderScreen(onPicked: (_) {}), mode: modeOf(env)),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        for (final g in PlayerGender.values) {
+          final r = tester.getRect(find.byKey(Key('gender-$g')));
+          expect(r.height, greaterThanOrEqualTo(AppSpace.minTouch));
+          expect(r.right, lessThanOrEqualTo(320));
+          expect(
+            r.bottom,
+            lessThanOrEqualTo(568),
+            reason: '$g 버튼이 스크롤 없이 보여야 한다',
+          );
+        }
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      });
+
+      for (final side in [Preference.female, Preference.male, null]) {
+        testWidgets('캐스트 소개(${side ?? '비교'}): 넘치지 않고 시작 버튼이 첫 화면, 탭 타깃·대비', (
+          tester,
+        ) async {
+          apply(tester, env);
+          await tester.pumpWidget(
+            wrapApp(
+              PreferenceScreen(bundle: c.bundle, side: side, onPicked: (_) {}),
+              mode: modeOf(env),
+            ),
+          );
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+
+          Future<void> check() async {
+            final start = tester.getRect(find.byKey(const Key('cast-start')));
+            expect(start.bottom, lessThanOrEqualTo(568), reason: '시작하기');
+            expect(start.height, greaterThanOrEqualTo(AppSpace.minTouch));
+            await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+            await expectLater(tester, meetsGuideline(textContrastGuideline));
+            // 목록 끝(히든 한 칸)까지 넘침 없이.
+            await tester.drag(find.byType(ListView), const Offset(0, -3000));
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+            await expectLater(tester, meetsGuideline(textContrastGuideline));
+            await tester.drag(find.byType(ListView), const Offset(0, 3000));
+            await tester.pumpAndSettle();
+          }
+
+          await check();
+          if (side == null) {
+            // 비교 모드: 요약 카드(작은 화면에서는 스크롤해야 보인다)를 눌러 한쪽을 펼친 뒤에도.
+            await tester.ensureVisible(find.byKey(const Key('preference-m')));
+            await tester.pumpAndSettle();
+            await tester.tap(find.byKey(const Key('preference-m')));
+            await tester.pumpAndSettle();
+            expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
+            await check();
+          } else {
+            // 반대쪽으로 바꾼 뒤에도.
+            await tester.tap(find.byKey(const Key('cast-flip')));
+            await tester.pumpAndSettle();
+            await check();
+          }
+        });
+      }
 
       testWidgets('설정 화면이 넘치지 않고 탭 타깃·대비를 지킨다', (tester) async {
         apply(tester, env);

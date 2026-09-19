@@ -4,6 +4,7 @@ import 'package:mossol/engine/models.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/onboarding_gender_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 
 import 'helpers.dart';
@@ -41,13 +42,18 @@ void main() {
 
     await tester.tap(findText('새 게임'));
     await tester.pumpAndSettle();
-    // 새 게임은 선호 선택을 거친다. 고르면 확인 없이 시작한다.
+    // 첫 새 게임은 "나는?" → 캐스트 소개를 거친다. 시작하기를 누르면 확인 없이 시작한다.
+    expect(findText(OnboardingGenderScreen.title), findsOneWidget);
+    expect(c.phase, Phase.home);
+    await tester.tap(findText('남자'));
+    await tester.pumpAndSettle();
     expect(findText(PreferenceScreen.title), findsOneWidget);
     expect(c.phase, Phase.home);
-    await tester.tap(findText('여성 캐릭터'));
+    await tester.tap(findText(PreferenceScreen.startLabel));
     await tester.pumpAndSettle();
     expect(c.phase, Phase.action);
     expect(c.state!.preference, Preference.female);
+    expect(c.playerGender, PlayerGender.male);
     await spinRouletteSheet(tester);
     expect(c.rouletteSlot, isNotNull);
     expect(findText('D+1  ·  1장'), findsOneWidget);
@@ -152,20 +158,33 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('시작'));
     await tester.pumpAndSettle();
-    // 지우기 확인 뒤 선호 선택. 뒤로 가면 새 게임이 시작되지 않고 세이브도 그대로다.
+    // 지우기 확인 뒤 "나는?"(아직 답이 없다). 2단계에서 뒤로 가면 1단계로, 1단계에서 뒤로
+    // 가면 홈으로 — 새 게임이 시작되지 않고 세이브도 그대로, 답도 저장되지 않는다.
+    expect(findText(OnboardingGenderScreen.title), findsOneWidget);
+    await tester.tap(findText('여자'));
+    await tester.pumpAndSettle();
     expect(findText(PreferenceScreen.title), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(findText(OnboardingGenderScreen.title), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(c.phase, Phase.home);
     expect(c.hasSave, isTrue);
+    expect(c.playerGender, isNull);
     await tester.tap(findText('새 게임'));
     await tester.pumpAndSettle();
     await tester.tap(findText('시작'));
     await tester.pumpAndSettle();
-    await tester.tap(findText('남성 캐릭터'));
+    await tester.tap(findText('여자'));
+    await tester.pumpAndSettle();
+    // 여자 → 남성 캐릭터 쪽이 기본.
+    expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
+    await tester.tap(findText(PreferenceScreen.startLabel));
     await tester.pumpAndSettle();
     expect(c.phase, Phase.action);
     expect(c.state!.preference, Preference.male);
+    expect(c.playerGender, PlayerGender.female);
     await spinRouletteSheet(tester);
   });
 }

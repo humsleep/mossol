@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'models.dart' show PlayerGender;
+
 /// 회차와 세이브를 넘어 유지되는 플레이어 메타 기록.
 /// 출석·연속 접속·누적 회차·보류 중인 보상을 담는다.
 ///
@@ -23,6 +25,11 @@ class PlayerMeta {
   /// 7일 연속 출석으로 받은 룰렛 무료 재도전권. 회차와 무관하게 유지된다.
   int rerollTickets;
 
+  /// 온보딩 "나는?" 의 답([PlayerGender] 의 `m` | `f` | `none`). 아직 안 물었으면 null.
+  /// 새 게임 캐스트 소개의 기본 쪽만 정한다. 기기 밖으로 보내지 않고, 전체 초기화에서 지워진다.
+  /// 이 필드가 없던 예전 메타 JSON 은 null 로 읽힌다.
+  String? playerGender;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -33,19 +40,21 @@ class PlayerMeta {
     this.firstLaunchMs = 0,
     this.pendingHearts = 0,
     this.rerollTickets = 0,
+    this.playerGender,
   });
 
   Map<String, dynamic> toJson() => {
-        'lastCheckInDate': lastCheckInDate,
-        'streakDays': streakDays,
-        'bestStreak': bestStreak,
-        'totalCheckIns': totalCheckIns,
-        'totalRuns': totalRuns,
-        'bestDayReached': bestDayReached,
-        'firstLaunchMs': firstLaunchMs,
-        'pendingHearts': pendingHearts,
-        'rerollTickets': rerollTickets,
-      };
+    'lastCheckInDate': lastCheckInDate,
+    'streakDays': streakDays,
+    'bestStreak': bestStreak,
+    'totalCheckIns': totalCheckIns,
+    'totalRuns': totalRuns,
+    'bestDayReached': bestDayReached,
+    'firstLaunchMs': firstLaunchMs,
+    'pendingHearts': pendingHearts,
+    'rerollTickets': rerollTickets,
+    'playerGender': playerGender,
+  };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
 
@@ -61,6 +70,7 @@ class PlayerMeta {
       firstLaunchMs: _int(j['firstLaunchMs']),
       pendingHearts: _int(j['pendingHearts']),
       rerollTickets: _int(j['rerollTickets']),
+      playerGender: PlayerGender.parse(j['playerGender']),
     );
   }
 }

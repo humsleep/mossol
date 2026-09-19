@@ -5,6 +5,7 @@
   "gender": "f",
   "role": "senior",
   "title": "동아리 선배",
+  "tagline": "단톡에서 나만 콕 집은 선배",
   "likes": [
    "talk",
    "esteem"
@@ -33,6 +34,7 @@
   "gender": "m",
   "role": "parttime",
   "title": "알바 동료",
+  "tagline": "국밥값은 반반, 마감은 같이",
   "likes": [
    "sense",
    "money"
@@ -61,6 +63,7 @@
   "gender": "f",
   "role": "blinddate",
   "title": "소개팅 상대",
+  "tagline": "바빠도 답장은 칼같은 변호사",
   "likes": [
    "charm",
    "talk"
@@ -88,6 +91,7 @@
   "gender": "m",
   "role": "online",
   "title": "온라인 친구",
+  "tagline": "새벽 두 판, 얼굴은 비밀인 듀오",
   "likes": [
    "sincerity",
    "sense"
@@ -116,6 +120,7 @@
   "gender": "f",
   "role": "classmate",
   "title": "초등 동창",
+  "tagline": "내 흑역사를 다 기억하는 동창",
   "likes": [
    "esteem",
    "sincerity"
@@ -143,6 +148,7 @@
   "gender": "m",
   "role": "trainer",
   "title": "헬스 트레이너",
+  "tagline": "허리부터 챙겨 주는 트레이너",
   "likes": [
    "charm",
    "stress"
@@ -171,6 +177,8 @@
   "gender": "m",
   "role": "senior",
   "title": "동아리 선배",
+  "tagline": "나한테만 메신저가 서툰 회장님",
+  "firstLine": "아까 공지 딱딱했지. 하하. 반가워.",
   "likes": [
    "esteem",
    "stress"
@@ -199,6 +207,7 @@
   "gender": "f",
   "role": "parttime",
   "title": "알바 동료",
+  "tagline": "영수증 뒷면에 나를 그린 선임",
   "likes": [
    "sense",
    "sincerity"
@@ -227,6 +236,7 @@
   "gender": "m",
   "role": "blinddate",
   "title": "소개팅 상대",
+  "tagline": "좋으면 좋다고 말하는 수의사",
   "likes": [
    "sincerity",
    "talk"
@@ -247,7 +257,8 @@
    "야경",
    "사진"
   ],
-  "budget": 60
+  "budget": 60,
+  "firstLine": "부담되시면 거절하셔도 됩니다."
  },
  {
   "id": "sohee",
@@ -255,6 +266,7 @@
   "gender": "f",
   "role": "online",
   "title": "온라인 친구",
+  "tagline": "샷콜하던 그 목소리의 주인",
   "likes": [
    "talk",
    "sense"
@@ -283,6 +295,7 @@
   "gender": "m",
   "role": "classmate",
   "title": "초등 동창",
+  "tagline": "말없이 전학 간 짝꿍이 돌아왔다",
   "likes": [
    "talk",
    "charm"
@@ -311,6 +324,7 @@
   "gender": "f",
   "role": "trainer",
   "title": "헬스 트레이너",
+  "tagline": "칭찬으로 한 개 더 시키는 코치",
   "likes": [
    "sense",
    "esteem"

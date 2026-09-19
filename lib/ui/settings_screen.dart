@@ -3,8 +3,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../ads/ad_manager.dart';
 import '../app_meta.dart';
+import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'keep_all.dart';
+import 'onboarding_gender_screen.dart';
 import 'widgets.dart';
 
 /// 설정. 규격은 docs/HOME_REDESIGN.md §2.
@@ -38,6 +41,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AppSpace.xxl,
         ),
         children: [
+          const SectionHeader(title: '게임'),
+          ListenableBuilder(
+            listenable: c,
+            builder: (context, _) => AppListRow(
+              key: const Key('settings-gender'),
+              title: '내 성별',
+              subtitle: '새 게임에서 먼저 소개할 캐릭터가 정해져요',
+              leading: const Icon(Icons.person_outline, size: 22),
+              trailing: Text(
+                PlayerGender.label(c.playerGender),
+                style: context.text.labelMedium,
+              ),
+              onTap: () => _pickGender(context),
+            ),
+          ),
+          const SizedBox(height: AppSpace.sectionGap),
           const SectionHeader(title: '개인정보'),
           FutureBuilder<bool>(
             future: _privacyRequired,
@@ -94,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SectionHeader(title: '데이터'),
           AppListRow(
             title: '저장 데이터 초기화',
-            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범이 모두 지워집니다',
+            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별이 모두 지워집니다',
             leading: const Icon(Icons.delete_outline, size: 22),
             tone: AppTone.danger,
             onTap: () => _confirmReset(context),
@@ -109,6 +128,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       bottomNavigationBar: const BannerSlot(),
     );
+  }
+
+  /// "내 성별" 고르기. 온보딩 1단계와 같은 세 가지. 기기 메타에만 저장한다.
+  Future<void> _pickGender(BuildContext context) async {
+    final current = c.playerGender;
+    final picked = await showAppDialog<String>(
+      context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('내 성별'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.xxl,
+              0,
+              AppSpace.xxl,
+              AppSpace.sm,
+            ),
+            child: Text(
+              keepAll(OnboardingGenderScreen.note),
+              style: ctx.text.bodySmall?.copyWith(
+                color: ctx.scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          for (final (g, icon, label, hint) in OnboardingGenderScreen.options)
+            ListTile(
+              key: Key('settings-gender-$g'),
+              leading: Icon(icon),
+              title: Text(label),
+              subtitle: Text(keepAll(hint)),
+              trailing: g == current ? const Icon(Icons.check) : null,
+              selected: g == current,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.xxl,
+              ),
+              onTap: () => Navigator.pop(ctx, g),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    await c.setPlayerGender(picked);
   }
 
   /// 외부 브라우저로. 못 열면 주소를 복사할 수 있게 보여 준다.
@@ -172,8 +233,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await c.resetAllData();
     if (!context.mounted) return;
     Navigator.of(context).pop();
-    messenger.showSnackBar(
-      const SnackBar(content: Text('저장 데이터를 지웠어요')),
-    );
+    messenger.showSnackBar(const SnackBar(content: Text('저장 데이터를 지웠어요')));
   }
 }

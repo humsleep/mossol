@@ -2237,6 +2237,229 @@ class PreferenceCard extends StatelessWidget {
   }
 }
 
+/// 온보딩 1단계(`lib/ui/onboarding_gender_screen.dart`)의 큰 선택 버튼 한 장. DESIGN_SYSTEM §3.2.
+///
+/// `AppCard(onTap)` 안에 [아이콘 24(onSurfaceVariant) → md → 라벨 `titleMedium` + 보조 `bodySmall`
+/// → 우측 chevron 20]. 세 장이 같은 무게라 강조색·로즈를 쓰지 않는다. 카드 전체가 한 탭 대상
+/// (최소 높이 64)이고 스크린리더에는 "라벨. 보조" 한 덩어리 버튼으로 읽힌다.
+class GenderOptionCard extends StatelessWidget {
+  final IconData icon;
+
+  /// `'남자'` / `'여자'` / `'선택 안 할래요'`. 단일 Text.
+  final String label;
+
+  /// 이 답이 무엇을 바꾸는지 한 줄. 예: `'여성 캐릭터를 먼저 소개해요'`.
+  final String hint;
+
+  final VoidCallback onTap;
+
+  const GenderOptionCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.onTap,
+  });
+
+  static const minHeight = 64.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return Semantics(
+      button: true,
+      label: '$label. $hint',
+      excludeSemantics: true,
+      child: AppCard(
+        onTap: onTap,
+        padding: AppInsets.cardTight,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: minHeight - AppSpace.md * 2,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: scheme.onSurfaceVariant),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: context.text.titleMedium),
+                    const SizedBox(height: AppSpace.xxs),
+                    Text(
+                      keepAll(hint),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// [CastIntroCard] 한 장의 데이터. 화면이 `StoryBundle` 에서 만들어 넘긴다.
+class CastIntro {
+  final String id;
+  final String name;
+
+  /// 역할 호칭(`title`). 예: `'동아리 선배'`.
+  final String title;
+
+  /// 한 줄 매력(characters.json `tagline`). 비어 있으면 줄을 그리지 않는다.
+  final String tagline;
+
+  /// 첫 메시지 미리보기. null 이면 말풍선을 그리지 않는다.
+  final String? firstLine;
+
+  /// 히든. 이름·역할·문구를 전부 숨기고 `???` 실루엣 한 칸으로 그린다(스포일러).
+  final bool mystery;
+
+  const CastIntro({
+    required this.id,
+    required this.name,
+    this.title = '',
+    this.tagline = '',
+    this.firstLine,
+    this.mystery = false,
+  });
+}
+
+/// 새 게임 2단계(캐스트 소개)의 캐릭터 한 장. DESIGN_SYSTEM §3.2.
+///
+/// `AppCard`(neutral, 누르지 않음) 안에 [아바타 56(accentFor) → md → 본문]. 본문은
+/// 이름 `titleMedium` + 역할 `labelMedium`(onSurfaceVariant) 한 줄(좁으면 접힘) → xxs → 한 줄 매력
+/// `bodyMedium` w600 → sm → 첫 메시지 말풍선(상대 말풍선과 같은 `bubbleTheirs` + 1px
+/// `bubbleBorder` + `AppRadius.bubble(mine: false)`, `bubbleText`, 최대 3줄).
+/// [CastIntro.mystery] 면 실루엣 아바타 + `'???'` + 안내 한 줄만.
+/// 스크린리더에는 한 덩어리로 읽힌다(말풍선 앞에 "첫 메시지").
+class CastIntroCard extends StatelessWidget {
+  final CastIntro intro;
+
+  const CastIntroCard({super.key, required this.intro});
+
+  static const mysteryNote = '어떤 조건을 채우면 나타나는 사람';
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final e = intro;
+    final accent = e.mystery ? null : t.accentFor(e.id);
+
+    final List<Widget> body;
+    if (e.mystery) {
+      body = [
+        Text(
+          '???',
+          style: context.text.titleMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpace.xxs),
+        Text(
+          keepAll(mysteryNote),
+          style: context.text.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ];
+    } else {
+      final line = e.firstLine;
+      body = [
+        Wrap(
+          spacing: AppSpace.sm,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          children: [
+            Text(e.name, style: context.text.titleMedium),
+            if (e.title.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.xxs),
+                child: Text(
+                  keepAll(e.title),
+                  style: context.text.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (e.tagline.isNotEmpty) ...[
+          const SizedBox(height: AppSpace.xxs),
+          Text(
+            keepAll(e.tagline),
+            style: context.text.bodyMedium?.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        if (line != null) ...[
+          const SizedBox(height: AppSpace.sm),
+          Semantics(
+            label: '첫 메시지',
+            child: Container(
+              padding: AppInsets.bubble,
+              decoration: BoxDecoration(
+                color: t.bubbleTheirs,
+                borderRadius: AppRadius.bubble(mine: false),
+                border: Border.all(
+                  color: t.bubbleBorder,
+                  width: AppBorderWidth.hairline,
+                ),
+              ),
+              child: Text(
+                keepAll(line),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
+              ),
+            ),
+          ),
+        ],
+      ];
+    }
+
+    return MergeSemantics(
+      child: AppCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CharacterAvatar(
+              name: e.name,
+              accent: accent,
+              mystery: e.mystery,
+              size: 56,
+            ),
+            const SizedBox(width: AppSpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: body,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 이어하기 카드의 마지막 줄: 최애의 서사 신호가 주인공, 하트 숫자는 작은 보조.
 ///
 /// 아바타(32) 옆에 한 덩어리 `Text.rich`: 신호 문장 `bodyMedium`(onSurface) 뒤에

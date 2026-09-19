@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/app_meta.dart';
+import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/game_controller.dart';
@@ -65,20 +66,99 @@ void main() {
       expect(find.byType(HeartsRow), findsNothing);
       expect(findText('광고로 +1'), findsNothing);
 
-      // 사람들: 수치 없이 이름만, 히든(도윤·유나)은 맨 뒤 '???'.
-      expect(findText('등장인물'), findsOneWidget);
+      // 첫 실행("나는?" 답 없음): 쪽을 모르므로 등장인물 줄을 그리지 않는다. 12명을 섞어
+      // 보여 주지 않는다 — 소개는 새 게임 2단계(캐스트 소개)가 맡는다.
+      expect(findText('등장인물'), findsNothing);
+      expect(find.byType(CastStrip), findsNothing);
       expect(findText('호감 순'), findsNothing);
-      expect(findText('???'), findsNWidgets(2));
       expect(findTextContaining('♥'), findsNothing);
-      final strip = tester.widget<CastStrip>(find.byType(CastStrip));
-      expect(strip.entries.last.mystery, isTrue);
-      expect(strip.entries.length, c.bundle.characters.length);
+      // 소개 카드의 엔딩 수는 한 회차가 닿을 수 있는 수(한쪽 캐릭터 엔딩 + 공용).
+      final perRun = c.bundle.endingCountFor(Preference.female);
+      expect(perRun, lessThan(c.bundle.endings.length));
+      expect(findText('100일: 엔딩 $perRun개 중 하나'), findsOneWidget);
 
       // 앨범 카드.
       final total = c.bundle.endings.length;
       expect(findTextContaining('앨범  0 / $total'), findsOneWidget);
       expect(find.byType(EndingTierDots), findsOneWidget);
       expect(findTextContaining('다음 엔딩 힌트 · '), findsOneWidget);
+      // 쪽을 모르면 힌트는 공용 엔딩에서 고른다(한쪽 캐릭터 문장이 뜨지 않는다).
+      final common = c.bundle.endings.firstWhere(
+        (e) =>
+            c.bundle.endingSide(e) == null &&
+            e.tier != 'bad' &&
+            e.tier != 'hidden',
+      );
+      expect(
+        findText('다음 엔딩 힌트 · ${endingHintFor(common, c)}'),
+        findsOneWidget,
+      );
+      await unmount(tester);
+    });
+
+    for (final (gender, side) in [
+      (PlayerGender.male, Preference.female),
+      (PlayerGender.female, Preference.male),
+    ]) {
+      testWidgets(
+        '나는 ${PlayerGender.label(gender)}: 등장인물 줄은 기본 쪽 5명 + ???, 힌트도 그 쪽',
+        (tester) async {
+          await c.setPlayerGender(gender);
+          await showHome(tester);
+          expect(findText('등장인물'), findsOneWidget);
+          final strip = tester.widget<CastStrip>(find.byType(CastStrip));
+          final roster = c.bundle.charactersFor(side);
+          expect(strip.entries.map((e) => e.id).toSet(), {
+            for (final ch in roster) ch.id,
+          });
+          expect(strip.entries.length, 6);
+          expect(strip.entries.where((e) => e.mystery), hasLength(1));
+          expect(strip.entries.last.mystery, isTrue);
+          expect(findText('???'), findsOneWidget);
+          expect(findTextContaining('♥'), findsNothing);
+          // 반대쪽 이름은 없다.
+          for (final ch in c.bundle.characters) {
+            if (ch.gender == side || ch.hidden) continue;
+            expect(
+              find.descendant(
+                of: find.byType(CastStrip),
+                matching: findText(ch.name),
+              ),
+              findsNothing,
+              reason: ch.name,
+            );
+          }
+          // 힌트: 그 쪽 + 공용 중 첫 미획득(endings.json 순이라 그 쪽 해피가 먼저).
+          final first = c.bundle.endings.firstWhere(
+            (e) =>
+                c.bundle.endingInPreference(e, side) &&
+                e.tier != 'bad' &&
+                e.tier != 'hidden',
+          );
+          expect(first.character, isNotNull);
+          expect(c.bundle.characterById[first.character]!.gender, side);
+          expect(
+            findText('다음 엔딩 힌트 · ${endingHintFor(first, c)}'),
+            findsOneWidget,
+          );
+          await unmount(tester);
+        },
+      );
+    }
+
+    testWidgets('나는 선택 안 함: 첫 실행처럼 등장인물 줄 없음 · 공용 힌트', (tester) async {
+      await c.setPlayerGender(PlayerGender.none);
+      await showHome(tester);
+      expect(find.byType(CastStrip), findsNothing);
+      final hint = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => (t.data ?? '').replaceAll('\u2060', ''))
+          .firstWhere((t) => t.startsWith('다음 엔딩 힌트 · '));
+      final commonHints = {
+        for (final e in c.bundle.endings)
+          if (c.bundle.endingSide(e) == null) endingHintFor(e, c),
+      };
+      expect(commonHints.any((h) => hint.endsWith(h)), isTrue, reason: hint);
       await unmount(tester);
     });
 
@@ -363,6 +443,11 @@ void main() {
 
   group('설정', () {
     testWidgets('헤더 아이콘으로 진입, 항목이 규격 순서로 있다', (tester) async {
+      // 목록이 한 화면보다 길다(게임 섹션 추가). 끝까지 지어지도록 높게.
+      tester.view.physicalSize = const Size(400, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await showHome(tester);
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
@@ -370,7 +455,14 @@ void main() {
       expect(findText('설정'), findsOneWidget);
       // 광고 미지원 환경(테스트)에서는 UMP 행이 없다.
       expect(findText('개인정보 설정'), findsNothing);
-      final titles = ['개인정보처리방침', '오픈소스 라이선스', '서체', '앱 버전', '저장 데이터 초기화'];
+      final titles = [
+        '내 성별',
+        '개인정보처리방침',
+        '오픈소스 라이선스',
+        '서체',
+        '앱 버전',
+        '저장 데이터 초기화',
+      ];
       double lastTop = -1;
       for (final t in titles) {
         final rect = tester.getRect(findText(t));
@@ -413,6 +505,11 @@ void main() {
     });
 
     testWidgets('저장 데이터 초기화: 취소는 그대로, 지우기는 홈을 첫 실행 상태로', (tester) async {
+      tester.view.physicalSize = const Size(400, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await c.setPlayerGender(PlayerGender.male);
       await c.newGame(seed: 5);
       await c.save.addEnding(c.bundle.endings.first.id);
       c.endingAlbum = await c.save.loadEndings();
@@ -441,6 +538,10 @@ void main() {
       expect(c.endingAlbum, isEmpty);
       expect(await c.save.exists(), isFalse);
       expect(await c.save.loadEndings(), isEmpty);
+      // "나는?" 답도 지워진다(다음 새 게임에서 다시 묻는다: onboarding_test).
+      expect(c.playerGender, isNull);
+      expect((await c.metaService.load()).playerGender, isNull);
+      expect(find.byType(CastStrip), findsNothing);
       expect(findWidgetWithText(FilledButton, '새 게임'), findsOneWidget);
       expect(findText('이어하기'), findsNothing);
       expect(findTextContaining('앨범  0 /'), findsOneWidget);

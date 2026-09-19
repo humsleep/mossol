@@ -419,6 +419,23 @@ class GameController extends ChangeNotifier {
   /// 아직 세이브에 얹히지 않은 출석 하트. 세이브 없이 출석했을 때만 0 보다 크다.
   int get pendingHearts => meta?.pendingHearts ?? 0;
 
+  /// 온보딩 "나는?" 의 답. 아직 안 물었으면 null([PlayerGender]).
+  String? get playerGender => meta?.playerGender;
+
+  /// 새 게임 캐스트 소개의 기본 쪽(`f`|`m`). 답이 없거나 `none` 이면 null — 두 쪽을 비교한다.
+  String? get defaultSide => PlayerGender.sideFor(playerGender);
+
+  /// 온보딩 1단계 · 설정의 "내 성별". 기기 메타에만 저장한다. null 이면 다시 묻는다.
+  Future<void> setPlayerGender(String? gender) async {
+    final m = meta;
+    if (m == null) return;
+    final g = PlayerGender.parse(gender);
+    if (m.playerGender == g) return;
+    m.playerGender = g;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
   /// 룰렛 무료 재도전권 (7일 연속 출석 보상).
   int get rerollTickets => meta?.rerollTickets ?? 0;
   bool get canUseRerollTicket => rerollTickets > 0 && canRerollRoulette;
