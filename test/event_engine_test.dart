@@ -39,9 +39,17 @@ void main() {
       GameState.fresh(bundle.config, bundle.characters, seed: seed, run: run);
 
   group('데이터 로드', () {
+    // 모먼트(events_moments.json, id 접두사 mo_)는 작가가 계속 채우는 파일이라
+    // 분량 고정 검사에서 뺀다. 모먼트 규칙은 test/moments_test.dart 가 본다.
+    bool isMomentFile(StoryEvent e) => e.id.startsWith('mo_');
+    List<StoryEvent> baseEvents() => [
+          for (final e in bundle.events)
+            if (!isMomentFile(e)) e,
+        ];
+
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 6);
-      expect(bundle.events.length, 262);
+      expect(baseEvents().length, 262);
       expect(bundle.endings.length, 30);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
@@ -71,7 +79,11 @@ void main() {
     });
 
     test('레이어별 분량이 기획대로다', () {
-      expect(bundle.countByLayer, {
+      final byLayer = {for (final l in EventLayer.values) l: 0};
+      for (final e in baseEvents()) {
+        byLayer[e.layer] = byLayer[e.layer]! + 1;
+      }
+      expect(byLayer, {
         EventLayer.main: 40,
         EventLayer.route: 94,
         EventLayer.daily: 98,
@@ -83,7 +95,7 @@ void main() {
     test('캐릭터마다 루트 이벤트가 15개씩, 오프닝 r00 이 있는 4명은 16개', () {
       const withR00 = {'seoyeon', 'haneul', 'minjae', 'yeeun'};
       for (final c in bundle.characters) {
-        final n = bundle.events
+        final n = baseEvents()
             .where((e) => e.layer == EventLayer.route && e.character == c.id)
             .length;
         expect(n, withR00.contains(c.id) ? 16 : 15, reason: '${c.name} 루트');

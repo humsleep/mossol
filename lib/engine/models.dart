@@ -177,6 +177,42 @@ class Effects {
   }
 }
 
+/// 사진 메시지(docs/MOMENTS_SPEC.md §1.3). 실제 이미지는 없고 아이콘과 장면 설명만 있다.
+class Photo {
+  /// [Photo.icons] 중 하나. 모르는 값이면 UI 가 기본 사진 아이콘을 쓴다.
+  final String icon;
+
+  /// 사진 속 장면 설명. 20자 이내([maxCaption]).
+  final String caption;
+
+  const Photo({required this.icon, this.caption = ''});
+
+  /// 규격이 정한 아이콘 이름 14종.
+  static const icons = [
+    'cafe',
+    'food',
+    'sky',
+    'night',
+    'sea',
+    'selfie',
+    'pet',
+    'book',
+    'gym',
+    'game',
+    'music',
+    'flower',
+    'street',
+    'ticket',
+  ];
+
+  static const maxCaption = 20;
+
+  factory Photo.fromJson(Map<String, dynamic> j) => Photo(
+    icon: (j['icon'] as String?) ?? '',
+    caption: (j['caption'] as String?) ?? '',
+  );
+}
+
 /// 채팅 한 줄. who: them | me | narr | sys. sys 는 wait(초) 로 읽씹 대기를 표현한다.
 class Line {
   final String who;
@@ -184,7 +220,16 @@ class Line {
   final int wait;
   final String? name;
 
-  const Line({required this.who, this.text = '', this.wait = 0, this.name});
+  /// 사진 메시지. 있으면 말풍선 대신 사진 카드를 그리고 [text] 는 그 아래 말풍선이 된다.
+  final Photo? photo;
+
+  const Line({
+    required this.who,
+    this.text = '',
+    this.wait = 0,
+    this.name,
+    this.photo,
+  });
 
   bool get isWait => who == 'sys' && wait > 0;
 
@@ -193,6 +238,9 @@ class Line {
     text: (j['text'] as String?) ?? '',
     wait: ((j['wait'] as num?) ?? 0).toInt(),
     name: j['name'] as String?,
+    photo: j['photo'] == null
+        ? null
+        : Photo.fromJson(j['photo'] as Map<String, dynamic>),
   );
 }
 
@@ -216,6 +264,10 @@ class Choice {
   final List<Line> failReply;
   final List<Line> critReply;
 
+  /// 전화(`format: "call"`) 이벤트의 `거절` 버튼이 고르는 선택지.
+  /// 통화 중 선택지 패널에는 보이지 않는다(docs/MOMENTS_SPEC.md §1.1).
+  final bool decline;
+
   const Choice({
     required this.text,
     this.require,
@@ -228,6 +280,7 @@ class Choice {
     this.reply = const [],
     this.failReply = const [],
     this.critReply = const [],
+    this.decline = false,
   });
 
   /// 이 결과에 맞는 반응 줄.
@@ -251,6 +304,7 @@ class Choice {
     reply: _replyLines(j['reply']),
     failReply: _replyLines(j['failReply']),
     critReply: _replyLines(j['critReply']),
+    decline: (j['decline'] as bool?) ?? false,
   );
 }
 
@@ -286,6 +340,17 @@ class StoryEvent {
   final int? hint;
   final String? cliffhanger;
 
+  /// 화면 형식. [formatChat](기본) | [formatCall]. 검증기가 그 밖의 값을 거부한다.
+  final String format;
+
+  /// 상대가 먼저 보낸 톡 알림 문장(40자 이내). 있으면 이벤트 진입 때 알림 카드가 먼저 뜬다.
+  final String? preview;
+
+  static const formatChat = 'chat';
+  static const formatCall = 'call';
+  static const formats = [formatChat, formatCall];
+  static const maxPreview = 40;
+
   const StoryEvent({
     required this.id,
     required this.layer,
@@ -299,7 +364,32 @@ class StoryEvent {
     this.choices = const [],
     this.hint,
     this.cliffhanger,
+    this.format = formatChat,
+    this.preview,
   });
+
+  /// 상대가 먼저 거는 전화인지.
+  bool get isCall => format == formatCall;
+
+  /// 사진 줄이 있는지. 대사와 반응(reply/failReply/critReply) 전부를 본다.
+  bool get hasPhoto =>
+      lines.any((l) => l.photo != null) ||
+      choices.any(
+        (c) => [
+          ...c.reply,
+          ...c.failReply,
+          ...c.critReply,
+        ].any((l) => l.photo != null),
+      );
+
+  /// 형식을 깨는 이벤트("모먼트"): 전화이거나, 알림이 있거나, 사진 줄이 있다.
+  bool get isMoment => isCall || preview != null || hasPhoto;
+
+  /// 전화의 거절 선택지 인덱스. 없으면 null.
+  int? get declineIndex {
+    final i = choices.indexWhere((c) => c.decline);
+    return i < 0 ? null : i;
+  }
 
   factory StoryEvent.fromJson(Map<String, dynamic> j) {
     final layer = layerFrom(j['layer'] as String?);
@@ -320,6 +410,12 @@ class StoryEvent {
           .toList(),
       hint: (j['hint'] as num?)?.toInt(),
       cliffhanger: j['cliffhanger'] as String?,
+      format: (j['format'] as String?) ?? formatChat,
+      // 빈 문자열은 없는 것으로 본다(알림 카드에 빈 문장이 뜨지 않게).
+      preview: switch (j['preview'] as String?) {
+        final p? when p.trim().isNotEmpty => p,
+        _ => null,
+      },
     );
   }
 }
@@ -572,6 +668,10 @@ class GameState {
   /// 오늘 럭키 룰렛을 돌렸는지. 날이 바뀌면 풀린다.
   int rouletteDay;
 
+  /// 마지막으로 모먼트(전화·알림·사진 이벤트)를 본 날. 0 이면 아직 없다.
+  /// `planDay` 가 모먼트 가중치를 올릴지 정하는 데 쓴다(docs/MOMENTS_SPEC.md §2).
+  int lastMomentDay;
+
   GameState({
     this.day = 1,
     this.run = 1,
@@ -587,6 +687,7 @@ class GameState {
     this.lastCliffhanger,
     this.combo = 0,
     this.rouletteDay = 0,
+    this.lastMomentDay = 0,
   }) : flags = flags ?? {},
        seen = seen ?? {},
        album = album ?? [],
@@ -638,6 +739,11 @@ class GameState {
     'lastCliffhanger': lastCliffhanger,
     'combo': combo,
     'rouletteDay': rouletteDay,
+    'lastMomentDay': lastMomentDay,
+    'signalHistory': signalHistory.map((k, v) => MapEntry(k, List.of(v))),
+    'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
+    'overnightShifts': Map.of(overnightShifts),
+    'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
   };
 
   factory GameState.fromJson(Map<String, dynamic> j) => GameState(
@@ -658,5 +764,38 @@ class GameState {
     lastCliffhanger: j['lastCliffhanger'] as String?,
     combo: ((j['combo'] as num?) ?? 0).toInt(),
     rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
-  );
+    lastMomentDay: ((j['lastMomentDay'] as num?) ?? 0).toInt(),
+  )
+    ..signalHistory.addAll(_intListMap(j['signalHistory']))
+    ..signalPins.addAll(_intListMap(j['signalPins']))
+    ..overnightShifts.addAll({
+      for (final e in ((j['overnightShifts'] as Map?) ?? const {}).entries)
+        e.key as String: e.value as String,
+    })
+    ..dayDelta.addAll({
+      for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
+        e.key as String: _intMap(e.value),
+    });
+
+  // ---- 서사 신호(lib/engine/signals.dart). 없는 예전 세이브는 전부 빈 값. ----
+
+  /// 반복 방지 기록. 키 `캐릭터:구간번호`(또는 `캐릭터:down`) → 최근 보여 준 문장 번호.
+  final Map<String, List<int>> signalHistory = {};
+
+  /// 어젯밤 마감에서 고정한 오늘의 신호. 캐릭터 → [구간번호, 문장번호].
+  final Map<String, List<int>> signalPins = {};
+
+  /// 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려간 사람 → 하강 문장.
+  final Map<String, String> overnightShifts = {};
+
+  /// 오늘 쌓인 변화(`stats`/`affection`/`trust` → 키 → 변화량). 하루 도중 앱을 다시
+  /// 켜도 정산이 이어지게 컨트롤러가 저장 직전에 채운다.
+  final Map<String, Map<String, int>> dayDelta = {};
+
+  static Map<String, List<int>> _intListMap(Object? j) => {
+    for (final e in ((j as Map?) ?? const {}).entries)
+      e.key as String: [
+        for (final v in (e.value as List?) ?? const []) (v as num).toInt(),
+      ],
+  };
 }

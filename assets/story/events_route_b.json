@@ -7,12 +7,15 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
     3,
     100
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -37,14 +40,20 @@
     "effects": {
      "affection": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "minigame": "call_rhythm",
     "fail": {
      "stats": {
       "talk": -1,
       "stress": 5
-     }
+     },
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": "ㅋㅋ 아 진짜? 그럼 내가 1호네",
     "failReply": [
@@ -68,7 +77,10 @@
      "trust": {
       "*": -2
      },
-     "album": "만난 지 하루 만에 사진 요구"
+     "album": "만난 지 하루 만에 사진 요구",
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": [
      "…사진? 아 그런 거 안 올려",
@@ -88,7 +100,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": [
      "…어 뭐야 갑자기",
@@ -110,12 +125,15 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
     6,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -150,7 +168,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "minjae_rank_pact"
+     ]
     },
     "reply": "ㅋㅋ 말했다? 캡처함. 내일 안 오면 탈주 신고",
     "critReply": [
@@ -163,7 +184,10 @@
     "effects": {
      "affection": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "minjae_rank_pact"
+     ]
     },
     "reply": "아 ㅠ 그럼 주말에 몰아서 네 판. 빠지기 없기"
    },
@@ -178,7 +202,10 @@
      },
      "trust": {
       "*": -1
-     }
+     },
+     "setFlags": [
+      "minjae_rank_pact"
+     ]
     },
     "reply": [
      "ㅋㅋ 버스 태워 달라는 거네",
@@ -202,6 +229,9 @@
    "day": [
     10,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -334,6 +364,12 @@
    "day": [
     14,
     100
+   ],
+   "flags": [
+    "minjae_friend"
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -465,6 +501,9 @@
    "day": [
     19,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -591,6 +630,12 @@
    "day": [
     24,
     100
+   ],
+   "flags": [
+    "minjae_friend"
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -688,6 +733,12 @@
    "day": [
     31,
     100
+   ],
+   "flags": [
+    "minjae_friend"
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -811,6 +862,12 @@
    "day": [
     37,
     100
+   ],
+   "flags": [
+    "minjae_friend"
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -936,6 +993,12 @@
    "day": [
     44,
     100
+   ],
+   "flags": [
+    "minjae_friend"
+   ],
+   "notFlags": [
+    "minjae_met"
    ]
   },
   "weight": 2,
@@ -1061,8 +1124,11 @@
     ]
    },
    "day": [
-    54,
+    61,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -1162,7 +1228,8 @@
   "character": "minjae",
   "trigger": {
    "flags": [
-    "minjae_promised"
+    "minjae_promised",
+    "minjae_friend"
    ],
    "affection": {
     "*": [
@@ -1313,7 +1380,8 @@
   "character": "minjae",
   "trigger": {
    "flags": [
-    "minjae_met"
+    "minjae_met",
+    "minjae_friend"
    ],
    "affection": {
     "*": [
@@ -1440,6 +1508,9 @@
    "day": [
     19,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -1532,6 +1603,9 @@
    "day": [
     29,
     100
+   ],
+   "flags": [
+    "minjae_friend"
    ]
   },
   "weight": 2,
@@ -1660,6 +1734,10 @@
    "day": [
     91,
     100
+   ],
+   "flags": [
+    "minjae_friend",
+    "minjae_rank_pact"
    ]
   },
   "weight": 2,
@@ -1754,7 +1832,7 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
@@ -1785,7 +1863,9 @@
       "*": -1
      },
      "setFlags": [
-      "yeeun_avoid_1"
+      "yeeun_avoid_1",
+      "yeeun_contact",
+      "yeeun_reunion"
      ]
     },
     "reply": [
@@ -1808,13 +1888,21 @@
      },
      "trust": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "yeeun_contact",
+      "yeeun_reunion"
+     ]
     },
     "minigame": "group_chat",
     "fail": {
      "stats": {
       "reputation": -2
-     }
+     },
+     "setFlags": [
+      "yeeun_contact",
+      "yeeun_reunion"
+     ]
     },
     "reply": [
      "ㅋㅋㅋㅋ 인정하는 거 뭐야",
@@ -1845,7 +1933,11 @@
      },
      "trust": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "yeeun_contact",
+      "yeeun_reunion"
+     ]
     },
     "reply": [
      "…그걸 기억해?",
@@ -1873,6 +1965,9 @@
    "day": [
     7,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -1959,7 +2054,8 @@
   "character": "yeeun",
   "trigger": {
    "flags": [
-    "junho_yeeun"
+    "junho_yeeun",
+    "yeeun_contact"
    ],
    "affection": {
     "*": [
@@ -2094,6 +2190,9 @@
    "day": [
     13,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -2117,7 +2216,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "yeeun_school_closing"
+     ]
     },
     "reply": "ㅋㅋ 좋아. 토요일 10시 정문. 늦으면 우유 사 와"
    },
@@ -2129,7 +2231,10 @@
      },
      "affection": {
       "*": -3
-     }
+     },
+     "setFlags": [
+      "yeeun_school_closing"
+     ]
     },
     "reply": [
      "…아 그래",
@@ -2152,7 +2257,10 @@
      },
      "trust": {
       "*": 5
-     }
+     },
+     "setFlags": [
+      "yeeun_school_closing"
+     ]
     },
     "reply": [
      "6학년 3반!!",
@@ -2196,6 +2304,9 @@
    "day": [
     18,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -2308,6 +2419,9 @@
    "day": [
     23,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -2426,7 +2540,8 @@
   "character": "yeeun",
   "trigger": {
    "flags": [
-    "junho_yeeun"
+    "junho_yeeun",
+    "yeeun_contact"
    ],
    "affection": {
     "*": [
@@ -2622,6 +2737,10 @@
    "day": [
     33,
     100
+   ],
+   "flags": [
+    "yeeun_contact",
+    "yeeun_reunion"
    ]
   },
   "weight": 2,
@@ -2743,7 +2862,8 @@
   "character": "yeeun",
   "trigger": {
    "flags": [
-    "yeeun_letter_told"
+    "yeeun_letter_told",
+    "yeeun_contact"
    ],
    "affection": {
     "*": [
@@ -2893,6 +3013,9 @@
    "day": [
     35,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -3012,6 +3135,10 @@
    "day": [
     61,
     100
+   ],
+   "flags": [
+    "yeeun_contact",
+    "yeeun_reunion"
    ]
   },
   "weight": 2,
@@ -3129,6 +3256,9 @@
    "day": [
     71,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -3239,7 +3369,8 @@
   "character": "yeeun",
   "trigger": {
    "flags": [
-    "yeeun_avoid_1"
+    "yeeun_avoid_1",
+    "yeeun_contact"
    ],
    "affection": {
     "*": [
@@ -3350,6 +3481,9 @@
    "day": [
     11,
     100
+   ],
+   "flags": [
+    "yeeun_contact"
    ]
   },
   "weight": 2,
@@ -3510,6 +3644,10 @@
    "day": [
     77,
     100
+   ],
+   "flags": [
+    "yeeun_contact",
+    "yeeun_school_closing"
    ]
   },
   "weight": 2,
@@ -3599,7 +3737,7 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
@@ -3635,7 +3773,10 @@
     "effects": {
      "affection": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "doyun_met"
+     ]
     },
     "reply": "네. 무게보다 자세예요. 다음 세트 봐 드릴게요"
    },
@@ -3647,7 +3788,10 @@
      },
      "trust": {
       "*": -2
-     }
+     },
+     "setFlags": [
+      "doyun_met"
+     ]
     },
     "reply": [
      "아니요",
@@ -3667,7 +3811,10 @@
      },
      "trust": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "doyun_met"
+     ]
     },
     "reply": [
      "…아 네",
@@ -3685,19 +3832,16 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
     10,
     100
    ],
-   "stats": {
-    "charm": [
-     40,
-     100
-    ]
-   }
+   "flags": [
+    "doyun_met"
+   ]
   },
   "weight": 2,
   "title": "PT 권유",
@@ -3721,7 +3865,10 @@
      },
      "affection": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "doyun_pt"
+     ]
     },
     "reply": [
      "좋아요. 화요일 7시",
@@ -3739,7 +3886,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "doyun_pt"
+     ]
     },
     "reply": [
      "ㅎㅎ 솔직하시네요",
@@ -3762,7 +3912,10 @@
      },
      "trust": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "doyun_pt"
+     ]
     },
     "reply": [
      "돼요",
@@ -3787,12 +3940,9 @@
     15,
     100
    ],
-   "stats": {
-    "charm": [
-     40,
-     100
-    ]
-   }
+   "flags": [
+    "doyun_met"
+   ]
   },
   "weight": 2,
   "title": "운동 일지",
@@ -3879,6 +4029,9 @@
    "day": [
     23,
     100
+   ],
+   "flags": [
+    "doyun_met"
    ]
   },
   "weight": 2,
@@ -4070,6 +4223,10 @@
    "day": [
     30,
     100
+   ],
+   "flags": [
+    "doyun_met",
+    "doyun_pt"
    ]
   },
   "weight": 2,
@@ -4183,6 +4340,9 @@
    "day": [
     37,
     100
+   ],
+   "flags": [
+    "doyun_met"
    ]
   },
   "weight": 2,
@@ -4224,7 +4384,8 @@
       "*": -5
      },
      "setFlags": [
-      "overtraining"
+      "overtraining",
+      "doyun_warned"
      ]
     },
     "reply": [
@@ -4244,7 +4405,10 @@
      },
      "trust": {
       "*": 6
-     }
+     },
+     "setFlags": [
+      "doyun_warned"
+     ]
     },
     "reply": [
      "좋아요",
@@ -4269,7 +4433,10 @@
      },
      "trust": {
       "*": 6
-     }
+     },
+     "setFlags": [
+      "doyun_warned"
+     ]
     },
     "reply": [
      "좋은 질문이에요. 근손실, 요요, 관절",
@@ -4297,6 +4464,10 @@
    "day": [
     45,
     100
+   ],
+   "flags": [
+    "doyun_met",
+    "doyun_pt"
    ]
   },
   "weight": 2,
@@ -4402,6 +4573,9 @@
    "day": [
     20,
     100
+   ],
+   "flags": [
+    "doyun_met"
    ]
   },
   "weight": 2,
@@ -4498,6 +4672,10 @@
    "day": [
     50,
     100
+   ],
+   "flags": [
+    "doyun_met",
+    "doyun_warned"
    ]
   },
   "weight": 2,
@@ -4594,6 +4772,9 @@
    "day": [
     60,
     100
+   ],
+   "flags": [
+    "doyun_met"
    ]
   },
   "weight": 2,
@@ -4691,6 +4872,10 @@
    "day": [
     87,
     100
+   ],
+   "flags": [
+    "doyun_met",
+    "doyun_pt"
    ]
   },
   "weight": 2,
@@ -4789,7 +4974,8 @@
   "character": "doyun",
   "trigger": {
    "flags": [
-    "fake_record"
+    "fake_record",
+    "doyun_met"
    ],
    "affection": {
     "*": [
@@ -4889,7 +5075,8 @@
   "character": "doyun",
   "trigger": {
    "flags": [
-    "overtraining"
+    "overtraining",
+    "doyun_met"
    ],
    "affection": {
     "*": [
@@ -4986,6 +5173,9 @@
    "day": [
     65,
     100
+   ],
+   "flags": [
+    "doyun_met"
    ]
   },
   "weight": 2,
@@ -5101,6 +5291,9 @@
    "day": [
     1,
     100
+   ],
+   "notFlags": [
+    "minjae_friend"
    ]
   },
   "weight": 5,
@@ -5129,7 +5322,10 @@
     "effects": {
      "affection": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": [
      "오 ㅋㅋ 새벽 고정 멤버 ㅇㅈ",
@@ -5144,14 +5340,20 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "minigame": "pick_meme",
     "fail": {
      "affection": {
       "*": -1
      },
-     "album": "게임 친구에게 보낸 첫 짤이 아재 짤"
+     "album": "게임 친구에게 보낸 첫 짤이 아재 짤",
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": "ㅋㅋㅋㅋㅋ 아 이 짤 뭔데 저장함",
     "failReply": [
@@ -5172,7 +5374,10 @@
      "trust": {
       "*": -1
      },
-     "album": "친추 1분 만에 실물 검증"
+     "album": "친추 1분 만에 실물 검증",
+     "setFlags": [
+      "minjae_friend"
+     ]
     },
     "reply": [
      "어… 그건 왜 궁금한데 ㅋㅋ",
@@ -5200,6 +5405,9 @@
    "day": [
     1,
     100
+   ],
+   "notFlags": [
+    "yeeun_contact"
    ]
   },
   "weight": 5,
@@ -5227,7 +5435,10 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "yeeun_contact"
+     ]
     },
     "reply": [
      "헐 진짜?? ㅋㅋㅋ 다행이다",
@@ -5246,7 +5457,10 @@
      },
      "affection": {
       "*": -1
-     }
+     },
+     "setFlags": [
+      "yeeun_contact"
+     ]
     },
     "reply": [
      "아 ㅠㅠ 섭섭하다 진짜로",
@@ -5264,14 +5478,20 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "yeeun_contact"
+     ]
     },
     "chance": 55,
     "fail": {
      "affection": {
       "*": -1
      },
-     "album": "동창 기억을 딴 애랑 헷갈림"
+     "album": "동창 기억을 딴 애랑 헷갈림",
+     "setFlags": [
+      "yeeun_contact"
+     ]
     },
     "reply": [
      "헐 그걸 기억해??",

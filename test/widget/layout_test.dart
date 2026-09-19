@@ -9,12 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/models.dart';
+import 'package:mossol/debug/debug_gallery.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/album_screen.dart';
+import 'package:mossol/ui/call_view.dart';
 import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/notification_card.dart';
 import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
@@ -208,6 +211,113 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         expect(find.textContaining('초째 답이 없다'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await teardownScreen(tester);
+      });
+
+      // 모먼트(docs/MOMENTS_SPEC.md): 전화 두 화면 · 알림 카드 · 사진 말풍선.
+      Future<void> showMoment(WidgetTester tester, StoryEvent ev, {bool revealed = false}) async {
+        c.current = ev;
+        c.revealed = revealed ? ev.lines.length : 0;
+        c.lastOutcome = null;
+        c.phase = Phase.event;
+        await tester.pumpWidget(wrapApp(EventScreen(c: c), mode: modeOf(env)));
+        await tester.pump();
+      }
+
+      testWidgets('모먼트: 전화 수신 · 통화 중(선택지·결과)', (tester) async {
+        apply(tester, env);
+        final call = momentSamples(c.bundle)[0].$3;
+        await showMoment(tester, call);
+        expect(find.byType(IncomingCallView), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        await tester.tap(find.text('받기'));
+        await tester.pump();
+        await revealAll(tester, c);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(ActiveCallView), findsOneWidget);
+        expect(find.text(CallSubtitle.silence), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        await tester.tap(find.widgetWithText(OutlinedButton, call.choices.first.text));
+        await tester.pump();
+        await settleReplies(tester);
+        expect(find.text('계속'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      testWidgets('모먼트: 거절 뒤 채팅(부재중 전화 · 반응 · 결과)', (tester) async {
+        apply(tester, env);
+        await showMoment(tester, momentSamples(c.bundle)[0].$3);
+        await tester.tap(find.text('거절'));
+        await tester.pump();
+        await settleReplies(tester);
+        expect(find.textContaining('부재중 전화'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      testWidgets('모먼트: 알림 카드(40자 알림)', (tester) async {
+        apply(tester, env);
+        final ev = StoryEvent.fromJson({
+          'id': 'mo_layout_preview',
+          'layer': 'route',
+          'character': c.bundle.characters.first.id,
+          'preview': '가나다라마바사아자차카타파하 오늘 진짜 긴 알림 문장이 두 줄을 넘어가',
+          'lines': [
+            {'who': 'them', 'text': '안녕'},
+          ],
+          'choices': [
+            {'text': 'x', 'reply': 'ㅇㅇ'},
+          ],
+        });
+        expect(ev.preview!.length, lessThanOrEqualTo(StoryEvent.maxPreview));
+        await showMoment(tester, ev);
+        await tester.pump(const Duration(milliseconds: 400)); // 내려오는 연출 끝
+        expect(find.byType(NotificationCard), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      testWidgets('모먼트: 사진 말풍선(20자 설명 · 글 동반 · 내 사진)', (tester) async {
+        apply(tester, env);
+        final ev = StoryEvent.fromJson({
+          'id': 'mo_layout_photo',
+          'layer': 'daily',
+          'character': c.bundle.characters.first.id,
+          'lines': [
+            {
+              'who': 'them',
+              'photo': {'icon': 'night', 'caption': '가나다라마바사아자차카타파하 한강 야경'},
+              'text': '여기 진짜 예쁘다. 다음에 같이 올래? 야경 보면서 걷자',
+            },
+            {
+              'who': 'me',
+              'photo': {'icon': 'selfie', 'caption': '출발 인증'},
+            },
+          ],
+          'choices': [
+            {'text': 'x', 'reply': 'ㅇㅇ'},
+          ],
+        });
+        expect(ev.lines.first.photo!.caption.length, lessThanOrEqualTo(Photo.maxCaption));
+        await showMoment(tester, ev, revealed: true);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(PhotoBubble), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
       });
 

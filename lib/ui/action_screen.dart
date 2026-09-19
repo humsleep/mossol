@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
+import 'home_screen.dart' show OvernightNote;
 import 'roulette_sheet.dart';
 import 'widgets.dart';
 
@@ -125,6 +126,13 @@ class _ActionScreenState extends State<ActionScreen> {
           if (cliffhanger != null) ...[
             const SizedBox(height: AppSpace.md),
             CliffhangerCard(text: '어젯밤: $cliffhanger'),
+          ],
+
+          // 2-1. 밤사이 멀어진 사람. 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려갔을
+          // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
+          for (final e in c.overnightShifts.entries) ...[
+            const SizedBox(height: AppSpace.sm),
+            OvernightNote(id: e.key, text: e.value),
           ],
 
           // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.

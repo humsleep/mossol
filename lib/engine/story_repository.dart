@@ -8,7 +8,7 @@ import 'signals.dart';
 
 export 'signals.dart' show SignalBook, RelationShift;
 
-/// 스토리 데이터 묶음. JSON 4개 파일(+ 선택 signals.json)에서 만들어진다.
+/// 스토리 데이터 묶음. JSON 파일들(+ 선택 signals.json)에서 만들어진다.
 class StoryBundle {
   final GameConfig config;
   final List<CharacterDef> characters;
@@ -17,8 +17,12 @@ class StoryBundle {
 
   /// 서사 신호(선택). 파일이 없거나 비면 [SignalBook.empty].
   final SignalBook signals;
-  late final Map<String, StoryEvent> eventById = {for (final e in events) e.id: e};
-  late final Map<String, CharacterDef> characterById = {for (final c in characters) c.id: c};
+  late final Map<String, StoryEvent> eventById = {
+    for (final e in events) e.id: e,
+  };
+  late final Map<String, CharacterDef> characterById = {
+    for (final c in characters) c.id: c,
+  };
 
   /// 레이어별 이벤트. 하루 계획에서 매번 240개를 훑지 않도록 한 번만 나눈다.
   late final Map<EventLayer, List<StoryEvent>> eventsByLayer = {
@@ -44,7 +48,12 @@ class StoryBundle {
     'events_route_b.json',
     'events_daily.json',
     'events_special.json',
+    // 형식을 깨는 이벤트(전화·알림·사진). docs/MOMENTS_SPEC.md. 비어 있거나 없어도 된다.
+    'events_moments.json',
   ];
+
+  /// 없거나 비어 있어도 되는 이벤트 파일. 작가가 채우는 중인 파일이 앱을 막지 않게 한다.
+  static const optionalEventFiles = {'events_moments.json'};
 
   factory StoryBundle.fromJsonStrings({
     required String config,
@@ -61,16 +70,22 @@ class StoryBundle {
           .map((e) => CharacterDef.fromJson(e as Map<String, dynamic>))
           .toList(),
       events: [
+        // 빈 파일(작성 중)은 빈 배열로 본다.
         for (final raw in events)
-          ...(jsonDecode(raw) as List)
-              .map((e) => StoryEvent.fromJson(e as Map<String, dynamic>)),
+          if (raw.trim().isNotEmpty)
+            ...(jsonDecode(raw) as List).map(
+              (e) => StoryEvent.fromJson(e as Map<String, dynamic>),
+            ),
       ],
       endings: (jsonDecode(endings) as List)
           .map((e) => Ending.fromJson(e as Map<String, dynamic>))
           .toList(),
       signals: SignalBook.fromJsonString(signals),
     );
-    bundle.validate(knownMinigames: knownMinigames, requireEndingHints: requireEndingHints);
+    bundle.validate(
+      knownMinigames: knownMinigames,
+      requireEndingHints: requireEndingHints,
+    );
     return bundle;
   }
 
@@ -82,7 +97,17 @@ class StoryBundle {
     final characters = await rootBundle.loadString('$dir/characters.json');
     final endings = await rootBundle.loadString('$dir/endings.json');
     final events = await Future.wait(
-      eventFiles.map((f) => rootBundle.loadString('$dir/$f')),
+      eventFiles.map((f) async {
+        if (!optionalEventFiles.contains(f)) {
+          return rootBundle.loadString('$dir/$f');
+        }
+        // 선택 파일은 번들에 없으면 빈 배열.
+        try {
+          return await rootBundle.loadString('$dir/$f');
+        } catch (_) {
+          return '[]';
+        }
+      }),
     );
     // 서사 신호는 선택. 파일이 번들에 없으면 신호 없이 숫자만 보여 준다.
     String? signals;
@@ -105,16 +130,19 @@ class StoryBundle {
 
   /// 이벤트가 참조하는 미니게임 id 전부.
   Set<String> get referencedMinigames => {
-        for (final e in events)
-          for (final c in e.choices)
-            if (c.minigame != null) c.minigame!,
-      };
+    for (final e in events)
+      for (final c in e.choices)
+        if (c.minigame != null) c.minigame!,
+  };
 
   /// 데이터 오류를 출시 전에 잡기 위한 검사. 문제가 있으면 예외.
   /// [knownMinigames] 를 주면 없는 미니게임 참조도 함께 잡는다.
   /// [requireEndingHints] 면 엔딩마다 비어 있지 않은 `hint` 가 있어야 한다.
   /// 테스트용 합성 번들은 힌트를 생략하므로 기본은 끈다.
-  void validate({Set<String>? knownMinigames, bool requireEndingHints = false}) {
+  void validate({
+    Set<String>? knownMinigames,
+    bool requireEndingHints = false,
+  }) {
     final ids = <String>{};
     final charIds = <String>{};
     for (final c in characters) {
@@ -124,9 +152,15 @@ class StoryBundle {
     final early = config.earlyAffection;
     for (var i = 0; i < early.curve.length; i++) {
       final m = early.curve[i];
-      if (m < 1 || m > 4) throw StateError('earlyAffection.curve[$i] 범위 밖(1~4): $m');
+      if (m < 1 || m > 4) {
+        throw StateError('earlyAffection.curve[$i] 범위 밖(1~4): $m');
+      }
     }
-    if (early.maxTotal < 2) throw StateError('earlyAffection.maxTotal 은 크리티컬(2) 이상: ${early.maxTotal}');
+    if (early.maxTotal < 2) {
+      throw StateError(
+        'earlyAffection.maxTotal 은 크리티컬(2) 이상: ${early.maxTotal}',
+      );
+    }
     signals.validate(charIds);
     for (final a in config.actions) {
       _checkStatKeys(a.effects.stats.keys, 'action ${a.id}');
@@ -144,6 +178,8 @@ class StoryBundle {
         throw StateError('main 이벤트는 day 가 필요: ${e.id}');
       }
       _checkTrigger(e.trigger, '${e.id}.trigger');
+      _checkMoment(e);
+      _checkLines(e.lines, '${e.id}.lines');
       for (var i = 0; i < e.choices.length; i++) {
         final c = e.choices[i];
         final where = '${e.id}.choices[$i]';
@@ -153,6 +189,13 @@ class StoryBundle {
         }
         _checkEffects(c.effects, '$where.effects');
         _checkEffects(c.fail, '$where.fail');
+        for (final (name, lines) in [
+          ('reply', c.reply),
+          ('failReply', c.failReply),
+          ('critReply', c.critReply),
+        ]) {
+          _checkLines(lines, '$where.$name');
+        }
         final req = c.require;
         if (req != null) {
           _checkStatKeys(req.stats.keys, '$where.require');
@@ -164,7 +207,9 @@ class StoryBundle {
     for (final e in events) {
       for (final c in e.choices) {
         for (final n in [c.next, c.failNext]) {
-          if (n != null && !ids.contains(n)) throw StateError('없는 next 참조: ${e.id} -> $n');
+          if (n != null && !ids.contains(n)) {
+            throw StateError('없는 next 참조: ${e.id} -> $n');
+          }
         }
       }
     }
@@ -190,8 +235,62 @@ class StoryBundle {
     final mainDays = <int, String>{};
     for (final e in events.where((e) => e.layer == EventLayer.main)) {
       final prev = mainDays[e.day!];
-      if (prev != null) throw StateError('main 날짜 중복: ${e.day}일 ($prev, ${e.id})');
+      if (prev != null) {
+        throw StateError('main 날짜 중복: ${e.day}일 ($prev, ${e.id})');
+      }
       mainDays[e.day!] = e.id;
+    }
+  }
+
+  /// 모먼트 규칙(docs/MOMENTS_SPEC.md §1). 형식·알림·전화 거절 선택지.
+  void _checkMoment(StoryEvent e) {
+    if (!StoryEvent.formats.contains(e.format)) {
+      throw StateError('알 수 없는 format: ${e.id} -> ${e.format}');
+    }
+    final preview = e.preview;
+    if (preview != null) {
+      if (e.isCall) throw StateError('preview 는 chat 이벤트에만: ${e.id}');
+      if (preview.length > StoryEvent.maxPreview) {
+        throw StateError(
+          'preview ${StoryEvent.maxPreview}자 초과: ${e.id} (${preview.length})',
+        );
+      }
+    }
+    final declines = e.choices.where((c) => c.decline).toList();
+    if (!e.isCall) {
+      if (declines.isNotEmpty) {
+        throw StateError('decline 은 call 이벤트에만: ${e.id}');
+      }
+      return;
+    }
+    if (e.character == null) {
+      throw StateError('call 이벤트는 character 필수: ${e.id}');
+    }
+    if (declines.length != 1) {
+      throw StateError(
+        'call 이벤트는 decline 선택지가 정확히 1개: ${e.id} (${declines.length})',
+      );
+    }
+    final d = declines.single;
+    if (d.require != null) throw StateError('decline 선택지에 require 금지: ${e.id}');
+    if (d.minigame != null) {
+      throw StateError('decline 선택지에 minigame 금지: ${e.id}');
+    }
+    if (d.chance != null) throw StateError('decline 선택지에 chance 금지: ${e.id}');
+    if (e.choices.length < 2) {
+      throw StateError('call 이벤트는 decline 이 아닌 선택지가 1개 이상: ${e.id}');
+    }
+  }
+
+  /// 대사·반응 줄의 사진 설명 길이.
+  void _checkLines(List<Line> lines, String where) {
+    for (var i = 0; i < lines.length; i++) {
+      final p = lines[i].photo;
+      if (p != null && p.caption.length > Photo.maxCaption) {
+        throw StateError(
+          'photo caption ${Photo.maxCaption}자 초과: $where[$i] (${p.caption.length})',
+        );
+      }
     }
   }
 
@@ -218,7 +317,10 @@ class StoryBundle {
   void _checkEffects(Effects e, String where) {
     _checkStatKeys(e.stats.keys, where);
     // `@top`(지금 가장 가까운 사람)은 효과에서만 쓸 수 있다.
-    _checkCharKeys(e.affection.keys.where((k) => k != topKey), '$where.affection');
+    _checkCharKeys(
+      e.affection.keys.where((k) => k != topKey),
+      '$where.affection',
+    );
     _checkCharKeys(e.trust.keys.where((k) => k != topKey), '$where.trust');
   }
 
@@ -246,7 +348,9 @@ class StoryBundle {
       }
     }
     for (final e in endings) {
-      if (e.character == null && (e.when.affection.containsKey('*') || e.when.trust.containsKey('*'))) {
+      if (e.character == null &&
+          (e.when.affection.containsKey('*') ||
+              e.when.trust.containsKey('*'))) {
         out.add('ending ${e.id}: character 없이 * 사용 (절대 도달 불가)');
       }
     }

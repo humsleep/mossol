@@ -177,7 +177,9 @@ void main() {
       expect(line, findsOneWidget);
       // 신호와 '서연 ♥42' 는 한 덩어리 Text.rich. 신호가 주인공이라 글자가 더 크다.
       final spans = (tester.widget<Text>(line).textSpan! as TextSpan).children!;
-      final sig = spans.whereType<TextSpan>().firstWhere((x) => x.text == signal);
+      final sig = spans.whereType<TextSpan>().firstWhere(
+        (x) => x.text == signal,
+      );
       // 꼬리는 줄바꿈에 쪼개지지 않게 WidgetSpan 안의 Text 다.
       final heart = tester.widget<Text>(find.text('서연 ♥42'));
       expect(sig.style!.fontSize!, greaterThan(heart.style!.fontSize!));
@@ -348,7 +350,10 @@ void main() {
       c.endingAlbum = await c.save.loadEndings();
       c.goHome();
       await tester.pump();
-      expect(find.textContaining('앨범  ${all.length} / ${all.length}'), findsOneWidget);
+      expect(
+        find.textContaining('앨범  ${all.length} / ${all.length}'),
+        findsOneWidget,
+      );
       expect(find.text('모든 엔딩을 봤다'), findsOneWidget);
       await unmount(tester);
     });
@@ -363,29 +368,31 @@ void main() {
       expect(find.text('설정'), findsOneWidget);
       // 광고 미지원 환경(테스트)에서는 UMP 행이 없다.
       expect(find.text('개인정보 설정'), findsNothing);
-      final titles = [
-        '개인정보처리방침',
-        '오픈소스 라이선스',
-        '서체',
-        '앱 버전',
-        '저장 데이터 초기화',
-      ];
+      final titles = ['개인정보처리방침', '오픈소스 라이선스', '서체', '앱 버전', '저장 데이터 초기화'];
       double lastTop = -1;
       for (final t in titles) {
         final rect = tester.getRect(find.text(t));
         expect(rect.top, greaterThan(lastTop), reason: '$t 순서');
         lastTop = rect.top;
       }
-      expect(find.text('Pretendard · SIL Open Font License 1.1'), findsOneWidget);
+      expect(
+        find.text('Pretendard · SIL Open Font License 1.1'),
+        findsOneWidget,
+      );
       expect(find.text('OFL'), findsOneWidget);
       expect(find.text(AppMeta.versionLabel), findsOneWidget);
       expect(find.text('© 2026 모쏠 키우기'), findsOneWidget);
 
       // 서체·앱 버전 행은 눌리지 않는다.
-      final rows = tester.widgetList<AppListRow>(find.byType(AppListRow)).toList();
+      final rows = tester
+          .widgetList<AppListRow>(find.byType(AppListRow))
+          .toList();
       expect(rows.firstWhere((r) => r.title == '서체').onTap, isNull);
       expect(rows.firstWhere((r) => r.title == '앱 버전').onTap, isNull);
-      expect(rows.firstWhere((r) => r.title == '저장 데이터 초기화').tone, AppTone.danger);
+      expect(
+        rows.firstWhere((r) => r.title == '저장 데이터 초기화').tone,
+        AppTone.danger,
+      );
       await unmount(tester);
     });
 
@@ -452,6 +459,68 @@ void main() {
       final v = line.substring('version:'.length).trim().split('+');
       expect(AppMeta.version, v[0]);
       expect(AppMeta.build, v[1]);
+    });
+  });
+
+  group('서사 신호: 밤사이 하락 · 정산과 홈 일치', () {
+    Future<void> freshRun() async {
+      await c.newGame(seed: 21);
+      final s = c.state!;
+      for (final ch in c.bundle.characters) {
+        s.rel(ch.id).affection = 0;
+      }
+    }
+
+    testWidgets('마감 −1 로 구간이 내려간 사람은 다음 날 행동 화면에 조용한 한 줄', (tester) async {
+      await freshRun();
+      c.state!.rel('seoyeon').affection = 10;
+      await c.endDay();
+      expect(c.phase, Phase.action);
+      final text = c.overnightShifts['seoyeon']!;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      expect(find.byKey(const Key('overnight-seoyeon')), findsOneWidget);
+      expect(find.text(text), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('같은 한 줄이 홈에도 뜨고, 하락이 없으면 자리도 없다', (tester) async {
+      await freshRun();
+      c.state!.rel('seoyeon').affection = 10;
+      await c.endDay();
+      c.goHome();
+      await showHome(tester);
+      expect(find.byKey(const Key('overnight-seoyeon')), findsOneWidget);
+      expect(find.text(c.overnightShifts['seoyeon']!), findsOneWidget);
+
+      await c.continueGame();
+      c.state!.rel('seoyeon').contactedToday = true;
+      await c.endDay();
+      c.goHome();
+      await showHome(tester);
+      expect(find.byKey(const Key('overnight-seoyeon')), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('정산 카드 문장과 다음 날 아침 홈 카드 문장이 같다', (tester) async {
+      await freshRun();
+      final s = c.state!;
+      s.rel('yeeun')
+        ..affection = 12
+        ..contactedToday = true;
+      c.dayDelta.affection['yeeun'] = 5;
+      c.phase = Phase.summary;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pumpAndSettle();
+      final card = tester.widget<RelationShiftCard>(
+        find.byType(RelationShiftCard),
+      );
+      await c.endDay();
+      c.goHome();
+      await tester.pump();
+      expect(c.saveSummary!.topSignal, card.text);
+      expect(find.textContaining(card.text), findsOneWidget);
+      await unmount(tester);
     });
   });
 }

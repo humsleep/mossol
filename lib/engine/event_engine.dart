@@ -70,7 +70,8 @@ class EventEngine {
   ///
   /// `Object.hash` 는 실행마다 다른 시드를 섞기 때문에 앱을 껐다 켜면 결과가
   /// 달라진다. 저장·복원 뒤에도 같아야 하므로 직접 섞는다.
-  Random rng(GameState s, String salt) => Random(stableSeed(s.seed, s.day, salt));
+  Random rng(GameState s, String salt) =>
+      Random(stableSeed(s.seed, s.day, salt));
 
   /// FNV-1a 로 (seed, day, salt) 를 32비트로 섞는다. 플랫폼·실행에 무관하게 같다.
   static int stableSeed(int seed, int day, String salt) {
@@ -102,12 +103,35 @@ class EventEngine {
   List<StoryEvent> candidates(GameState s, EventLayer layer) =>
       bundle.eventsByLayer[layer]!.where((e) => _available(s, e)).toList();
 
-  StoryEvent? _weightedPick(List<StoryEvent> list, Random r) {
+  /// 형식을 깨는 이벤트(전화·알림·사진)인지. docs/MOMENTS_SPEC.md §2.
+  bool isMoment(StoryEvent e) => e.isMoment;
+
+  /// 모먼트 가중치 배율과 적용 시작일.
+  static const momentBoost = 3;
+  static const momentBoostFromDay = 3;
+
+  /// 모먼트를 이만큼(일) 못 봤으면 가중치를 올린다.
+  static const momentGapDays = 2;
+
+  /// 오늘 모먼트 가중치를 올릴지. 오프닝 흐름을 지키려고 [momentBoostFromDay]일차부터.
+  bool momentBoostActive(GameState s) =>
+      s.day >= momentBoostFromDay && s.day - s.lastMomentDay >= momentGapDays;
+
+  /// 그날 후보 추첨 가중치. 모먼트 보정이 켜져 있으면 모먼트는 [momentBoost]배.
+  int _weightOf(StoryEvent e, bool boost) =>
+      max(1, e.weight) * (boost && isMoment(e) ? momentBoost : 1);
+
+  /// 난수는 항상 한 번만 뽑는다. 가중치만 바뀌므로 salt 순서·호출 횟수는 그대로다.
+  StoryEvent? _weightedPick(
+    List<StoryEvent> list,
+    Random r, {
+    bool boost = false,
+  }) {
     if (list.isEmpty) return null;
-    final total = list.fold<int>(0, (a, e) => a + max(1, e.weight));
+    final total = list.fold<int>(0, (a, e) => a + _weightOf(e, boost));
     var roll = r.nextInt(total);
     for (final e in list) {
-      roll -= max(1, e.weight);
+      roll -= _weightOf(e, boost);
       if (roll < 0) return e;
     }
     return list.last;
@@ -117,6 +141,7 @@ class EventEngine {
   List<StoryEvent> planDay(GameState s) {
     final plan = <StoryEvent>[];
     final planned = <String>{};
+    final boost = momentBoostActive(s);
 
     void add(StoryEvent? e) {
       if (e != null && planned.add(e.id)) plan.add(e);
@@ -126,18 +151,26 @@ class EventEngine {
       add(e);
     }
 
-    final crisis = candidates(s, EventLayer.crisis)..sort((a, b) => b.weight - a.weight);
+    final crisis = candidates(s, EventLayer.crisis)
+      ..sort((a, b) => b.weight - a.weight);
     if (crisis.isNotEmpty) {
       add(crisis.first);
     } else {
-      add(_weightedPick(candidates(s, EventLayer.daily), rng(s, 'daily')));
+      add(
+        _weightedPick(
+          candidates(s, EventLayer.daily),
+          rng(s, 'daily'),
+          boost: boost,
+        ),
+      );
     }
 
-    add(_pickRoute(s));
+    add(_pickRoute(s, boost: boost));
 
     final hidden = candidates(s, EventLayer.hidden);
-    if (hidden.isNotEmpty && rng(s, 'hidden').nextInt(100) < hiddenChancePercent) {
-      add(_weightedPick(hidden, rng(s, 'hidden-pick')));
+    if (hidden.isNotEmpty &&
+        rng(s, 'hidden').nextInt(100) < hiddenChancePercent) {
+      add(_weightedPick(hidden, rng(s, 'hidden-pick'), boost: boost));
     }
 
     // 하루가 너무 짧으면 하트 하나를 쓴 보람이 없다.
@@ -151,7 +184,7 @@ class EventEngine {
         s,
         EventLayer.daily,
       ).where((e) => !planned.contains(e.id)).toList();
-      final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'));
+      final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'), boost: boost);
       if (pick == null) break;
       add(pick);
     }
@@ -160,7 +193,8 @@ class EventEngine {
 
   /// 호감도가 가장 높은 캐릭터를 우선하되, 후보가 있는 캐릭터 중에서 고른다.
   /// 오프닝(1~[openingDays]일차)에는 호감을 보지 않고 균등하게 고른다.
-  StoryEvent? _pickRoute(GameState s) {
+  /// [boost] 면 고른 캐릭터의 후보 안에서 모먼트 가중치를 올린다(캐릭터 선택은 그대로).
+  StoryEvent? _pickRoute(GameState s, {bool boost = false}) {
     final routes = candidates(s, EventLayer.route);
     if (routes.isEmpty) return null;
     final byChar = <String, List<StoryEvent>>{};
@@ -177,26 +211,26 @@ class EventEngine {
     // 같은 캐릭터를 밀어주지 않도록 후보가 있는 캐릭터 중 균등 무작위.
     if (isOpening(s)) {
       final chosen = chars[r.nextInt(chars.length)];
-      return _weightedPick(byChar[chosen]!, r);
+      return _weightedPick(byChar[chosen]!, r, boost: boost);
     }
     // 최상위와 호감도가 같은 캐릭터들 사이에서는 무작위.
     final top = s.affectionOf(chars.first);
     final tied = chars.where((c) => s.affectionOf(c) == top).toList();
     final chosen = tied[r.nextInt(tied.length)];
-    return _weightedPick(byChar[chosen]!, r);
+    return _weightedPick(byChar[chosen]!, r, boost: boost);
   }
 
   StoryEvent? byId(String id) => bundle.eventById[id];
 
   List<ChoiceView> choicesFor(GameState s, StoryEvent ev) => [
-        for (var i = 0; i < ev.choices.length; i++)
-          () {
-            final c = ev.choices[i];
-            final req = c.require;
-            final ok = req == null || req.satisfied(s, self: ev.character);
-            return ChoiceView(i, c, !ok, ok ? '' : req.describe());
-          }(),
-      ];
+    for (var i = 0; i < ev.choices.length; i++)
+      () {
+        final c = ev.choices[i];
+        final req = c.require;
+        final ok = req == null || req.satisfied(s, self: ev.character);
+        return ChoiceView(i, c, !ok, ok ? '' : req.describe());
+      }(),
+  ];
 
   /// 크리티컬 확률(%). 기본 5, 눈치 20당 +1, 물오름 상태면 두 배.
   int critChance(GameState s) {
@@ -209,22 +243,22 @@ class EventEngine {
 
   /// 오늘 오르는 호감에 곱할 배율. 초반 가속(config.earlyAffection) × 크리티컬,
   /// 상한은 `EarlyAffection.maxTotal`. 가속 기간이 끝나면 1(크리티컬이면 2).
-  double affectionMultiplier(GameState s, {bool critical = false}) =>
-      bundle.config.earlyAffection.combined(
-        s.day,
-        critical: critical,
-        critFactor: critFactor,
-      );
+  double affectionMultiplier(GameState s, {bool critical = false}) => bundle
+      .config
+      .earlyAffection
+      .combined(s.day, critical: critical, critFactor: critFactor);
 
   /// 확률 판정 보정(%p). 물오름 상태면 +20.
   int chanceBonus(GameState s) => s.onFire ? 20 : 0;
 
   /// 선택이 '좋은 선택'이었는지. 호감·신뢰가 오르고 아무것도 깎이지 않았을 때.
   bool _isGoodChoice(AppliedDelta d) {
-    final up = d.affection.values.any((v) => v > 0) ||
+    final up =
+        d.affection.values.any((v) => v > 0) ||
         d.trust.values.any((v) => v > 0) ||
         d.stats.entries.any((e) => e.key != Stat.stress && e.value > 0);
-    final down = d.affection.values.any((v) => v < 0) ||
+    final down =
+        d.affection.values.any((v) => v < 0) ||
         d.trust.values.any((v) => v < 0) ||
         d.album != null;
     return up && !down;
@@ -242,13 +276,16 @@ class EventEngine {
   }) {
     final r = random ?? rng(s, '${ev.id}:${c.text}');
     s.seen.add(ev.id);
+    // 모먼트를 본 날. 다음 모먼트 보정의 기준이 된다(거절한 전화도 본 것이다).
+    if (isMoment(ev)) s.lastMomentDay = s.day;
     final self = ev.character;
     if (self != null) s.rel(self).contactedToday = true;
 
     final chance = c.chance;
     final failed = forcedSuccess != null
         ? !forcedSuccess
-        : chance != null && r.nextInt(100) >= (chance + chanceBonus(s)).clamp(0, 100);
+        : chance != null &&
+              r.nextInt(100) >= (chance + chanceBonus(s)).clamp(0, 100);
     if (failed) {
       // 실패에도 오르는 호감(위로받는 선택 등)이 있으면 초반 가속만 건다.
       final d = applyEffects(
@@ -322,7 +359,8 @@ class EventEngine {
     return applyEffects(s, Effects(stats: e.$2));
   }
 
-  AppliedDelta applyAction(GameState s, DayAction a) => applyEffects(s, a.effects);
+  AppliedDelta applyAction(GameState s, DayAction a) =>
+      applyEffects(s, a.effects);
 
   /// 하루 마감. 접촉 없던 캐릭터 호감도 -1, 스트레스 자연 감소, 날짜 +1.
   void endDay(GameState s, {String? cliffhanger}) {
@@ -365,7 +403,9 @@ class EventEngine {
     if (gained <= 0) return 0;
     final add = min(gained, cfg.maxHearts - s.hearts);
     s.hearts += add;
-    s.lastHeartMs = s.hearts >= cfg.maxHearts ? nowMs : s.lastHeartMs + gained * per;
+    s.lastHeartMs = s.hearts >= cfg.maxHearts
+        ? nowMs
+        : s.lastHeartMs + gained * per;
     return add;
   }
 

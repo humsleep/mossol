@@ -856,6 +856,8 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 사진 줄은 누가 보냈든 말풍선 자리에 사진 카드로 그린다(me 면 오른쪽).
+    if (line.photo != null) return _bubble(context);
     switch (line.who) {
       case 'narr':
         return _narration(context);
@@ -972,32 +974,162 @@ class ChatBubble extends StatelessWidget {
                   ],
                 ),
               ),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-              ),
-              child: Container(
-                padding: AppInsets.bubble,
-                decoration: BoxDecoration(
-                  color: me ? t.bubbleMine : t.bubbleTheirs,
-                  borderRadius: AppRadius.bubble(mine: me, tail: isLastOfGroup),
-                  // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
-                  border: me
-                      ? null
-                      : Border.all(
-                          color: t.bubbleBorder,
-                          width: AppBorderWidth.hairline,
-                        ),
+            if (line.photo case final photo?) ...[
+              PhotoBubble(photo: photo, accent: a),
+              if (line.text.isNotEmpty) const SizedBox(height: AppSpace.xs),
+            ],
+            if (line.photo == null || line.text.isNotEmpty)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.72,
                 ),
-                child: Text(
-                  line.text,
-                  style: t.bubbleText.copyWith(
-                    color: me ? t.onBubbleMine : t.onBubbleTheirs,
+                child: Container(
+                  padding: AppInsets.bubble,
+                  decoration: BoxDecoration(
+                    color: me ? t.bubbleMine : t.bubbleTheirs,
+                    borderRadius: AppRadius.bubble(
+                      mine: me,
+                      tail: isLastOfGroup,
+                    ),
+                    // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
+                    border: me
+                        ? null
+                        : Border.all(
+                            color: t.bubbleBorder,
+                            width: AppBorderWidth.hairline,
+                          ),
+                  ),
+                  child: Text(
+                    line.text,
+                    style: t.bubbleText.copyWith(
+                      color: me ? t.onBubbleMine : t.onBubbleTheirs,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 사진 아이콘 이름(docs/MOMENTS_SPEC.md §1.3) → Material 아이콘. 14종.
+const Map<String, IconData> photoIcons = {
+  'cafe': Icons.local_cafe,
+  'food': Icons.restaurant,
+  'sky': Icons.wb_cloudy,
+  'night': Icons.nightlight_round,
+  'sea': Icons.waves,
+  'selfie': Icons.face,
+  'pet': Icons.pets,
+  'book': Icons.menu_book,
+  'gym': Icons.fitness_center,
+  'game': Icons.sports_esports,
+  'music': Icons.music_note,
+  'flower': Icons.local_florist,
+  'street': Icons.location_city,
+  'ticket': Icons.confirmation_number,
+};
+
+/// 모르는 이름이면 기본 사진 아이콘.
+IconData photoIconFor(String name) => photoIcons[name] ?? Icons.photo;
+
+/// 사진 메시지 카드. 실제 이미지 없이 "사진처럼" 보이게 한다(§3.2).
+///
+/// 4:3, 모서리 `AppRadius.md`. 캐릭터 강조색 container → base 쪽으로 기우는 대각
+/// 그라데이션 위에 큰 아이콘, 아래쪽에 장면 설명(caption)을 표면색 띠에 얹는다.
+/// 설명 글자는 그라데이션이 아니라 불투명에 가까운 띠 위에 있으므로 대비가 흔들리지 않는다.
+/// 스크린리더는 카드 전체를 이미지 하나로 읽는다: "사진: {caption}".
+class PhotoBubble extends StatelessWidget {
+  final Photo photo;
+
+  /// 그라데이션 색. null 이면 tokens.neutralAccent.
+  final CharacterAccent? accent;
+
+  /// 카드 폭. null 이면 화면 폭의 72%(말풍선 최대 폭과 같다), 최대 280.
+  final double? width;
+
+  const PhotoBubble({super.key, required this.photo, this.accent, this.width});
+
+  static const maxWidth = 280.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final a = accent ?? t.neutralAccent;
+    final w =
+        width ?? (MediaQuery.sizeOf(context).width * 0.72).clamp(0.0, maxWidth);
+    final caption = photo.caption.trim();
+
+    return Semantics(
+      container: true,
+      image: true,
+      label: caption.isEmpty ? '사진' : '사진: $caption',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: w,
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: ClipRRect(
+              borderRadius: AppRadius.rMd,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      a.container,
+                      Color.lerp(a.container, a.base, 0.45)!,
+                    ],
+                  ),
+                  border: Border.all(
+                    color: t.bubbleBorder,
+                    width: AppBorderWidth.hairline,
+                  ),
+                  borderRadius: AppRadius.rMd,
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: LayoutBuilder(
+                          builder: (context, box) => Icon(
+                            photoIconFor(photo.icon),
+                            size: (box.maxHeight * 0.55).clamp(
+                              AppSpace.xl,
+                              AppSpace.huge * 2,
+                            ),
+                            color: a.onContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (caption.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.md,
+                          vertical: AppSpace.sm,
+                        ),
+                        color: scheme.surfaceContainerLowest.withValues(
+                          alpha: 0.94,
+                        ),
+                        child: Text(
+                          caption,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.bodySmall?.copyWith(
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

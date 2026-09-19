@@ -8,8 +8,13 @@ import '../engine/models.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart';
 import '../minigames/registry.dart';
+import 'call_view.dart';
 import 'design_system.dart';
+import 'notification_card.dart';
 import 'widgets.dart';
+
+/// 전화 이벤트의 단계. docs/MOMENTS_SPEC.md §1.1.
+enum CallStage { ringing, active, declined }
 
 /// 채팅형 이벤트 화면. 말풍선이 순서대로 나타나고, 끝나면 하단 패널이 올라온다.
 ///
@@ -19,6 +24,12 @@ import 'widgets.dart';
 /// - 헤더는 상대(이니셜 원형 + 이름) · 이벤트 제목 · 날짜 · 진행 막대까지
 ///   한 줄로 정리한다. 진행 막대는 이 대화가 얼마나 남았는지를 알려 준다.
 /// - 컨트롤러 호출과 상태 사용 방식은 이전과 같다. 표현 계층만 바뀌었다.
+///
+/// 모먼트 변형(docs/MOMENTS_SPEC.md, DESIGN_SYSTEM §2.3):
+/// - `format == "call"`: 수신 화면 → (받기) 통화 화면(자막·타이머) → 선택지(decline 숨김)
+///   → 반응(자막) → 결과 패널. (거절) decline 선택지를 고르고 반응은 채팅 말풍선.
+/// - `preview`: 대화가 열리기 전 잠금화면 알림 카드. 탭하거나 1.8초 뒤 열린다.
+///   대사 자동 공개 타이머는 알림이 닫힌 뒤에 시작한다.
 class EventScreen extends StatefulWidget {
   final GameController c;
   const EventScreen({super.key, required this.c});
@@ -42,12 +53,36 @@ class _EventScreenState extends State<EventScreen> {
   Timer? _replyTimer;
   ChoiceOutcome? _replyFor;
 
+  /// 전화 이벤트 단계. 채팅 이벤트에서는 쓰지 않는다.
+  CallStage _callStage = CallStage.active;
+
+  /// 통화 시간(초)과 그 타이머.
+  int _callSeconds = 0;
+  Timer? _callTimer;
+
+  /// 알림 카드가 떠 있는지와 자동 열림 타이머.
+  bool _previewOpen = false;
+  Timer? _previewTimer;
+
+  /// 통화 중 대기 줄(`wait`)은 카운트다운 대신 이만큼 침묵한다. 벌점·광고 없음.
+  static const callSilence = Duration(seconds: 2);
+
+  /// initState 에서는 MediaQuery(동작 줄이기)를 읽을 수 없어서 첫 동기화를 미룬다.
+  bool _started = false;
+
   GameController get c => widget.c;
 
   @override
   void initState() {
     super.initState();
     c.addListener(_onChange);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
     _syncEvent();
   }
 
@@ -55,6 +90,8 @@ class _EventScreenState extends State<EventScreen> {
   void dispose() {
     _timer?.cancel();
     _replyTimer?.cancel();
+    _callTimer?.cancel();
+    _previewTimer?.cancel();
     c.removeListener(_onChange);
     _scroll.dispose();
     super.dispose();
@@ -62,9 +99,19 @@ class _EventScreenState extends State<EventScreen> {
 
   void _onChange() {
     if (!mounted) return;
-    if (c.lastOutcome == null) _picked = null;
+    if (c.lastOutcome == null) {
+      _picked = null;
+      // 거절을 되돌리면(광고) 다시 울리는 화면으로.
+      if (_callStage == CallStage.declined) _callStage = CallStage.ringing;
+    }
     _syncEvent();
     _syncReply();
+    if (c.current?.isCall == true &&
+        _callStage == CallStage.active &&
+        !_callEnded &&
+        !(_callTimer?.isActive ?? false)) {
+      _startCallClock();
+    }
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 프레임 사이에 화면이 내려갔을 수 있다. dispose 된 컨트롤러는 건드리지 않는다.
@@ -79,13 +126,87 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   void _syncEvent() {
-    final id = c.current?.id;
-    if (id != _eventId) {
-      _eventId = id;
-      _timer?.cancel();
-      _waitLeft = 0;
-      _scheduleReveal();
+    final ev = c.current;
+    final id = ev?.id;
+    if (id == _eventId) return;
+    _eventId = id;
+    _timer?.cancel();
+    _callTimer?.cancel();
+    _previewTimer?.cancel();
+    _waitLeft = 0;
+    _callSeconds = 0;
+    _previewOpen = false;
+    _callStage = CallStage.active;
+    // 처음부터 보는 이벤트일 때만 전화 수신·알림을 연출한다(복원·디버그 진입은 건너뜀).
+    final fresh = ev != null && c.revealed == 0 && c.lastOutcome == null;
+    if (ev != null && ev.isCall) {
+      if (fresh) {
+        _callStage = CallStage.ringing;
+        return;
+      }
+      _startCallClock();
+    } else if (ev != null && fresh && _previewName(ev) != null) {
+      // 동작 줄이기면 알림 없이 바로 대화가 열린다.
+      if (!AppMotion.reduced(context)) {
+        _previewOpen = true;
+        _previewTimer = Timer(NotificationPreview.autoOpen, _openPreview);
+        return;
+      }
     }
+    _scheduleReveal();
+  }
+
+  /// 알림 카드에 쓸 이름. 캐릭터 이름, 없으면 첫 `them` 줄의 name. 둘 다 없으면 null
+  /// (알림을 띄우지 않는다). `preview` 가 없어도 null.
+  String? _previewName(StoryEvent ev) {
+    if (ev.preview == null) return null;
+    if (ev.character != null) return c.characterName(ev.character);
+    for (final l in ev.lines) {
+      if (l.who == 'them') return l.name;
+    }
+    return null;
+  }
+
+  void _openPreview() {
+    if (!mounted || !_previewOpen) return;
+    _previewTimer?.cancel();
+    setState(() => _previewOpen = false);
+    _scheduleReveal();
+  }
+
+  // ---- 전화 ----
+
+  /// 결과 패널이 떠서 통화가 끝났는지.
+  bool get _callEnded =>
+      c.lastOutcome != null && _replyShown >= c.lastReply.length;
+
+  void _startCallClock() {
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      if (_callEnded) {
+        t.cancel();
+        setState(() {});
+        return;
+      }
+      setState(() => _callSeconds++);
+    });
+  }
+
+  void _acceptCall() {
+    setState(() => _callStage = CallStage.active);
+    _startCallClock();
+    _scheduleReveal();
+  }
+
+  /// 거절 = decline 선택지를 고른 것. 효과·반응·결과 패널이 그대로 따라온다.
+  void _declineCall() {
+    final i = c.current?.declineIndex;
+    if (i == null) return;
+    _timer?.cancel();
+    setState(() => _callStage = CallStage.declined);
+    _picked = null;
+    c.choose(i);
   }
 
   /// 선택 결과가 새로 나오면 상대 반응을 한 줄씩 타이핑하듯 보여 준다.
@@ -131,6 +252,14 @@ class _EventScreenState extends State<EventScreen> {
     final ev = c.current;
     if (ev == null || c.linesDone) return;
     final next = ev.lines[c.revealed];
+    if (next.isWait && ev.isCall) {
+      // 통화 중 대기 줄은 "…(침묵)" 을 바로 띄우고 잠시 멈춘다.
+      c.revealNext();
+      _timer = Timer(callSilence, () {
+        if (mounted) _scheduleReveal();
+      });
+      return;
+    }
     if (next.isWait) {
       _waitLeft = next.wait;
       _runWaitCountdown();
@@ -201,15 +330,82 @@ class _EventScreenState extends State<EventScreen> {
   Widget build(BuildContext context) {
     final ev = c.current;
     if (ev == null) return const SizedBox.shrink();
-    final s = c.state!;
     final partner = c.characterName(ev.character);
+    if (_previewOpen) {
+      return NotificationPreview(
+        name: _previewName(ev) ?? partner,
+        characterId: ev.character,
+        preview: ev.preview ?? '',
+        day: c.state!.day,
+        onOpen: _openPreview,
+      );
+    }
+    if (ev.isCall) {
+      switch (_callStage) {
+        case CallStage.ringing:
+          return IncomingCallView(
+            name: partner,
+            characterId: ev.character,
+            onAccept: _acceptCall,
+            onDecline: _declineCall,
+          );
+        case CallStage.active:
+          return _activeCall(ev, partner);
+        case CallStage.declined:
+          return _chat(ev, partner, missedCall: true);
+      }
+    }
+    return _chat(ev, partner);
+  }
+
+  /// 통화 중 화면. 자막 → 선택지(decline 숨김) → 내 말·반응(자막) → 결과 패널.
+  Widget _activeCall(StoryEvent ev, String partner) {
+    final visible = ev.lines.take(c.revealed).toList();
+    final o = c.lastOutcome;
+    final replying = o != null && _replyShown < c.lastReply.length;
+    Widget sub(Line l) =>
+        CallSubtitle(line: l, partnerName: partner, characterId: ev.character);
+    return ActiveCallView(
+      name: partner,
+      characterId: ev.character,
+      seconds: _callSeconds,
+      ended: _callEnded,
+      scroll: _scroll,
+      subtitles: [
+        for (final l in visible) sub(l),
+        if (o != null && _picked != null) sub(Line(who: 'me', text: _picked!)),
+        if (o != null)
+          for (final l in c.lastReply.take(_replyShown)) sub(l),
+        if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
+          const CallTyping(),
+      ],
+      bottom: o != null
+          ? (replying ? null : _ResultPanel(c: c))
+          : c.linesDone
+          ? _ChoicePanel(
+              c: c,
+              hideDecline: true,
+              onPicked: (text) => _picked = text,
+            )
+          : null,
+    );
+  }
+
+  bool _pendingIsWait(StoryEvent ev) =>
+      !c.linesDone && ev.lines[c.revealed].isWait;
+
+  /// 채팅 화면. [missedCall] 이면 거절한 전화 뒤의 톡: 대사 대신 "부재중 전화" 와 반응만.
+  Widget _chat(StoryEvent ev, String partner, {bool missedCall = false}) {
+    final s = c.state!;
     final t = context.tokens;
     final accent = t.accentFor(ev.character);
-    final visible = ev.lines.take(c.revealed).toList();
-    final waitLine = c.linesDone ? null : ev.lines[c.revealed];
+    final visible = missedCall
+        ? const <Line>[]
+        : ev.lines.take(c.revealed).toList();
+    final waitLine = c.linesDone || missedCall ? null : ev.lines[c.revealed];
     final waiting = waitLine != null && waitLine.isWait && _waitLeft > 0;
     final total = ev.lines.length;
-    final progress = total == 0 ? 1.0 : c.revealed / total;
+    final progress = total == 0 || missedCall ? 1.0 : c.revealed / total;
 
     return Scaffold(
       appBar: _header(context, ev, partner, accent, s.day, progress),
@@ -226,6 +422,7 @@ class _EventScreenState extends State<EventScreen> {
                   bottom: AppSpace.lg,
                 ),
                 children: [
+                  if (missedCall) _MissedCall(name: partner),
                   for (var i = 0; i < visible.length; i++)
                     ChatBubble(
                       line: visible[i],
@@ -268,7 +465,7 @@ class _EventScreenState extends State<EventScreen> {
                       secondsTotal: waitLine.wait,
                       onSkip: _skipWait,
                     )
-                  else if (!c.linesDone)
+                  else if (!c.linesDone && !missedCall)
                     const _TypingBubble(),
                 ],
               ),
@@ -313,10 +510,11 @@ class _EventScreenState extends State<EventScreen> {
                 children: [
                   if (hasPartner) ...[
                     TextSpan(text: partner, style: context.text.titleLarge),
+                    // 구분점도 글자다. 대비 기준(4.5:1)을 넘는 2차색을 쓴다.
                     TextSpan(
                       text: '  ·  ',
                       style: context.text.bodyMedium?.copyWith(
-                        color: scheme.outlineVariant,
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -395,6 +593,49 @@ class _AvatarDot extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// 거절한 전화 자리 표시. 시스템 줄과 같은 중립 pill 이되 아이콘을 붙이고 글자는
+/// 본문 2차색(`onSurfaceVariant`)으로 둔다 — 이 줄은 장식이 아니라 사건이라 읽혀야 한다.
+class _MissedCall extends StatelessWidget {
+  final String name;
+  const _MissedCall({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final fg = scheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.md,
+            vertical: AppSpace.xs + 2,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHigh,
+            borderRadius: AppRadius.rPill,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.phone_missed, size: 14, color: fg),
+              const SizedBox(width: AppSpace.xs),
+              Flexible(
+                child: Text(
+                  name.isEmpty ? '부재중 전화' : '부재중 전화 · $name',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium?.copyWith(color: fg),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// 타이핑 중 표시. 상대 말풍선과 같은 껍데기라 "다음 줄이 오는 중" 으로 읽힌다.
@@ -510,7 +751,14 @@ class _ChoicePanel extends StatelessWidget {
 
   /// 선택이 확정되기 직전에 부른다. 화면이 내 말풍선을 그리는 데만 쓴다.
   final ValueChanged<String> onPicked;
-  const _ChoicePanel({required this.c, required this.onPicked});
+
+  /// 통화 중이면 `decline` 선택지(= 거절 버튼)를 숨긴다.
+  final bool hideDecline;
+  const _ChoicePanel({
+    required this.c,
+    required this.onPicked,
+    this.hideDecline = false,
+  });
 
   /// 미니게임이 붙은 선택지는 먼저 게임을 돌리고 그 결과로 성패를 정한다.
   Future<void> _pick(BuildContext context, int index) async {
@@ -556,7 +804,10 @@ class _ChoicePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ev = c.current!;
-    final choices = c.choices;
+    final choices = [
+      for (final v in c.choices)
+        if (!(hideDecline && v.choice.decline)) v,
+    ];
 
     return BottomPanel(
       child: Column(

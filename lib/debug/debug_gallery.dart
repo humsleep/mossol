@@ -8,6 +8,7 @@ import '../minigames/minigame.dart';
 import '../minigames/registry.dart';
 import '../ui/design_system.dart';
 import '../ui/ending_screen.dart';
+import '../ui/event_screen.dart';
 import '../ui/widgets.dart';
 
 /// QA 용 디버그 갤러리. 미니게임 12종과 엔딩 화면을 100일 플레이 없이 연다.
@@ -105,11 +106,24 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     );
   }
 
+  /// 모먼트 미리보기: 합성 이벤트 하나를 실제 EventScreen 으로 연다.
+  /// 메모리 세이브라 기기 세이브를 건드리지 않는다. 결과 패널의 '계속' 이면 돌아온다.
+  Future<void> _openMoment(StoryEvent ev) async {
+    final c = GameController(bundle: bundle, save: _MemorySave());
+    c
+      ..state = _sampleState(day: 12)
+      ..current = ev
+      ..revealed = 0
+      ..phase = Phase.event;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => _MomentPreview(controller: c)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final byTier = <String, List<Ending>>{
-      for (final t in _tiers) t: [],
-    };
+    final moments = momentSamples(bundle);
+    final byTier = <String, List<Ending>>{for (final t in _tiers) t: []};
     for (final e in bundle.endings) {
       (byTier[e.tier] ??= []).add(e);
     }
@@ -141,6 +155,16 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
               trailing: const Icon(Icons.chevron_right),
               enabled: minigameRegistry.containsKey(id),
               onTap: () => _openMinigame(id),
+            ),
+          // QA 실기기 확인용: 전화 · 알림 · 사진을 하루 진행 없이 바로 띄운다.
+          const _Header('모먼트 미리보기'),
+          for (final (label, icon, ev) in moments)
+            ListTile(
+              leading: Icon(icon),
+              title: Text(label),
+              subtitle: Text(ev.id),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openMoment(ev),
             ),
           const _Header('엔딩 화면'),
           for (final t in byTier.keys)
@@ -237,6 +261,141 @@ class _EndingPreview extends StatelessWidget {
           return const Scaffold(body: SizedBox.shrink());
         }
         return EndingScreen(c: controller);
+      },
+    );
+  }
+}
+
+/// 디버그 갤러리의 모먼트 합성 이벤트 세 개(전화 · 알림 · 사진). 상대는 첫 캐릭터.
+/// 데이터 규격은 docs/MOMENTS_SPEC.md 그대로다(검증기를 통과하는 모양).
+List<(String, IconData, StoryEvent)> momentSamples(StoryBundle bundle) {
+  final who = bundle.characters.isEmpty ? null : bundle.characters.first.id;
+  final call = StoryEvent.fromJson({
+    'id': 'mo_debug_call',
+    'layer': 'route',
+    'character': who,
+    'format': 'call',
+    'title': '밤 11시의 전화',
+    'lines': [
+      {'who': 'them', 'text': '어… 자고 있었어?'},
+      {'who': 'me', 'text': '아니, 깨어 있었어.'},
+      {'who': 'narr', 'text': '수화기 너머로 바람 소리가 들린다.'},
+      {'who': 'sys', 'wait': 5},
+      {'who': 'them', 'text': '그냥… 목소리 듣고 싶어서.'},
+    ],
+    'choices': [
+      {
+        'text': '나도 마침 생각하고 있었어',
+        'effects': {
+          'affection': {'*': 3},
+        },
+        'reply': [
+          '진짜? 다행이다',
+          {'who': 'narr', 'text': '웃음소리가 조금 길어졌다.'},
+        ],
+      },
+      {
+        'text': '무슨 일 있어?',
+        'minigame': 'call_rhythm',
+        'effects': {
+          'trust': {'*': 2},
+        },
+        'reply': '아니야, 그냥. 고마워',
+        'failReply': '…아냐, 됐어. 잘 자',
+      },
+      {
+        'text': '거절',
+        'decline': true,
+        'effects': {
+          'affection': {'*': -1},
+        },
+        'reply': [
+          '바빠? 나중에 연락해',
+          {'who': 'narr', 'text': '부재중 표시가 오래 남았다.'},
+        ],
+      },
+    ],
+  });
+  final preview = StoryEvent.fromJson({
+    'id': 'mo_debug_preview',
+    'layer': 'route',
+    'character': who,
+    'title': '먼저 온 톡',
+    'preview': '오늘 퇴근길에 네 생각 났어',
+    'lines': [
+      {'who': 'them', 'text': '오늘 퇴근길에 네 생각 났어'},
+      {'who': 'them', 'text': '편의점 앞에서 네가 좋아하는 거 봤거든'},
+    ],
+    'choices': [
+      {
+        'text': '뭔데? 궁금해',
+        'effects': {
+          'affection': {'*': 2},
+        },
+        'reply': '비밀. 다음에 사 줄게',
+      },
+      {'text': 'ㅋㅋ 그랬구나', 'reply': '응 ㅋㅋ'},
+    ],
+  });
+  final photo = StoryEvent.fromJson({
+    'id': 'mo_debug_photo',
+    'layer': 'daily',
+    'character': who,
+    'title': '사진 한 장',
+    'lines': [
+      {
+        'who': 'them',
+        'photo': {'icon': 'cafe', 'caption': '창가 자리 잡았어'},
+        'text': '여기 올래?',
+      },
+      {
+        'who': 'them',
+        'photo': {'icon': 'unknown_icon', 'caption': '모르는 아이콘은 기본 사진'},
+      },
+      {
+        'who': 'me',
+        'photo': {'icon': 'selfie', 'caption': '출발 인증'},
+        'text': '지금 간다',
+      },
+    ],
+    'choices': [
+      {
+        'text': '자리 맡아 줘서 고마워',
+        'reply': [
+          {
+            'who': 'them',
+            'photo': {'icon': 'food', 'caption': '케이크도 시켜 둠'},
+          },
+          '빨리 와',
+        ],
+      },
+    ],
+  });
+  return [
+    ('전화 (수신 → 받기/거절)', Icons.call, call),
+    ('먼저 온 톡 알림', Icons.notifications_active_outlined, preview),
+    ('사진 메시지', Icons.photo_outlined, photo),
+  ];
+}
+
+/// 모먼트 이벤트를 실제 EventScreen 으로 띄운다. '계속' 으로 이벤트가 끝나면
+/// (컨트롤러가 정산으로 넘어가면) 갤러리로 돌아온다.
+class _MomentPreview extends StatelessWidget {
+  final GameController controller;
+  const _MomentPreview({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        if (controller.phase != Phase.event || controller.current == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) Navigator.of(context).maybePop();
+          });
+          return const Scaffold(body: SizedBox.shrink());
+        }
+        return EventScreen(c: controller);
       },
     );
   }

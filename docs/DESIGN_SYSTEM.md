@@ -293,6 +293,46 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 선택지는 `ChoiceButton` 하나로 통일하되 **내부는 반드시 `OutlinedButton`** 이어야 한다
   (§4.1 테스트 고정 사항).
 
+#### 2.3.1 모먼트 변형 (docs/MOMENTS_SPEC.md)
+
+형식을 깨는 이벤트 세 가지. 데이터 규격은 MOMENTS_SPEC 이 맞고, 여기는 표현만 정한다.
+
+**전화 (`format: "call"`)** — 구현 `lib/ui/call_view.dart`. 이 게임의 "유료 게임 같은 순간".
+- **항상 다크 테마**(`AppTheme.dark`)로 그린다. 라이트 모드에서도 밤에 걸려 온 전화처럼 화면 전체가
+  바뀌어야 채팅과 다른 사건으로 읽힌다. 바탕은 `CallBackdrop`: `AppPalette.violet900` → `scheme.surface`
+  세로 그라데이션(0 → 0.85). 양 끝 모두 `onSurface`·`onSurfaceVariant` 가 4.5:1 을 넘는다.
+- 1단계 수신(`IncomingCallView`): 위→아래 `'전화가 왔어요'`(`labelLarge`, `onSurfaceVariant`) → `xl` →
+  `PulseAvatar`(지름 96 이니셜 원 + 바깥 32 펄스 링 두 개, 1.6초 주기, 캐릭터 `accent.base`) → `lg` →
+  이름(`headlineMedium`, 1줄). 가운데 묶음은 스크롤 가능한 중앙 정렬. 하단에 가로 두 버튼
+  `거절`(`OutlinedButton.icon`, `Icons.call_end`) · `받기`(`FilledButton.icon`, `Icons.call`), 사이 `md`,
+  아래 여백 `xxl`. 진동·소리 없음. 동작 줄이기면 링은 멈춘 한 개(α0.35).
+- 2단계 통화 중(`ActiveCallView`): 상단 줄 = 작은 이니셜 원(40) · 이름(`titleMedium`) + `'통화 중'`/`'통화 종료'`
+  (`labelSmall`) · 타이머 `mm:ss`(`numericMedium`, 00:00 부터 1초씩). 아래 1px `outlineVariant` 구분선.
+  가운데 자막(`CallSubtitle`): `them` = `titleLarge` 가운데, `me` = `bodyMedium` `onSurfaceVariant` 오른쪽(최대 폭 72%),
+  `narr` = 이탤릭 `bodyMedium` `narration` 가운데, 대기 줄 = `'…(침묵)'`, 다음 줄 대기 중 = `'…'`(`CallTyping`).
+  대사가 끝나면 평소 `_ChoicePanel` 이 다크 표면으로 올라오되 **`decline` 선택지는 숨긴다**. 선택 뒤 내 말과 반응도
+  자막으로, 반응이 끝나면 `_ResultPanel`. 결과 패널이 뜨면 타이머가 멈추고 `'통화 종료'`.
+- 통화 중 대기 줄(`wait`)은 카운트다운·자존감 벌점·광고 버튼이 없다. `'…(침묵)'` 을 띄우고 2초 멈춘다.
+- 거절: decline 선택지를 고른 것과 같다. 화면은 평소 채팅으로 바뀌고, 대화 영역 맨 위에 `'부재중 전화 · 이름'`
+  pill(`Icons.phone_missed` + `labelMedium`, `onSurfaceVariant` on `surfaceContainerHigh`) → 반응 말풍선 → 결과 패널.
+  선택지 문구('거절')는 내 말풍선으로 남기지 않는다. 되돌리기(광고)면 수신 화면으로 돌아간다.
+- 트레이드드레스 회피: 둥근 초록/빨강 원형 버튼, 밀어서 받기, 흰 배경 키패드, 특정 메신저의 보이스톡 화면 요소를
+  쓰지 않는다. 버튼은 이 앱의 기본 버튼이다.
+
+**먼저 온 톡 알림 (`preview`)** — 구현 `lib/ui/notification_card.dart`.
+- 대화가 열리기 전 잠금화면 한 장(`NotificationPreview`, 바탕은 `CallBackdrop` 과 같은 다크): 위에 `'D+N'` pill →
+  `xl` → `NotificationCard` 가 위에서 내려온다(`dSlow`, `standard`) → `md` → `'탭해서 열기'`(`labelMedium`).
+- 카드: `surfaceContainerHigh` + 1px `outlineVariant`, 모서리 `lg`, 안쪽 `AppInsets.card`. 왼쪽 `CharacterAvatar(40)`,
+  오른쪽 이름(`titleSmall`) + `'지금'`(`labelSmall`) 한 줄, 아래 알림 문장(`bodyMedium`, 2줄까지). 카드 전체가 버튼.
+- 탭하거나 1.8초 뒤 열린다. 동작 줄이기면 알림 없이 곧바로 대화. 대사 자동 공개는 알림이 닫힌 뒤 시작.
+- 이미 대사가 일부 공개된 상태로 들어오면(복원·디버그) 알림과 수신 화면은 건너뛴다.
+
+**사진 (`photo` 줄)** — `ChatBubble` 이 `line.photo` 가 있으면 말풍선 자리에 `PhotoBubble`(§3.2)을 그리고
+`text` 가 있으면 그 아래 `xs` 간격으로 평소 말풍선을 붙인다. `me` 면 오른쪽. 반응 줄도 같은 경로.
+통화 자막 안의 사진은 화면 폭 60% 로 가운데.
+
+**헤더 구분점**: 채팅 헤더 `'이름  ·  제목'` 의 구분점은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
+
 ### 2.4 하루 정산 (`summary_screen.dart`)
 - **주인공**: 오늘 바뀐 수치. 변화량이 가장 크게 읽혀야 한다.
 - **배경**: 절대 수치, 하단 메타("흑역사 N개").
@@ -935,6 +975,40 @@ Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builde
 final AppTone tone;   // 기본 AppTone.neutral
 ```
 
+모먼트 컴포넌트(docs/MOMENTS_SPEC.md, 표현은 §2.3.1):
+
+```dart
+/// widgets.dart — 사진 메시지 카드. 4:3, 모서리 AppRadius.md, 1px bubbleBorder.
+/// 배경: accent.container → lerp(container, base, 0.45) 대각 그라데이션.
+/// 가운데 아이콘(photoIconFor, 색 accent.onContainer, 높이의 55%).
+/// 아래 caption 띠: surfaceContainerLowest α0.94 위 bodySmall onSurface, 2줄까지.
+/// Semantics(container, image, label: '사진: {caption}').
+class PhotoBubble extends StatelessWidget {
+  final Photo photo;
+  final CharacterAccent? accent;   // tokens.accentFor(character)
+  final double? width;             // 기본: 화면 72%, 최대 280
+}
+
+/// 아이콘 14종: cafe local_cafe · food restaurant · sky wb_cloudy · night nightlight_round ·
+/// sea waves · selfie face · pet pets · book menu_book · gym fitness_center ·
+/// game sports_esports · music music_note · flower local_florist · street location_city ·
+/// ticket confirmation_number. 모르는 값은 Icons.photo.
+const Map<String, IconData> photoIcons;
+IconData photoIconFor(String name);
+
+/// call_view.dart
+class CallBackdrop      // 다크 테마 강제 + 자수정 그라데이션 + SafeArea
+class PulseAvatar       // 지름 96 + 펄스 링 32, 동작 줄이기면 정지
+class IncomingCallView  // 1단계: name, characterId, onAccept, onDecline
+class ActiveCallView    // 2단계: name, characterId, seconds, ended, subtitles, scroll, bottom
+class CallSubtitle      // 자막 한 줄. CallSubtitle.silence == '…(침묵)'
+String formatCallTime(int seconds); // 'mm:ss'
+
+/// notification_card.dart
+class NotificationCard     // 알림 카드 한 장. name, characterId, preview, onOpen
+class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOpen = 1.8초
+```
+
 ### 3.3 유지하는 것
 
 - `CenteredScrollColumn` — 시그니처 변경 없음. 작은 화면 + 큰 글꼴 대응의 핵심이라
@@ -967,6 +1041,8 @@ final AppTone tone;   // 기본 AppTone.neutral
 | 홈 신호 줄 | 신호 문장과 `'서연 ♥42'` 가 한 `Text.rich` 안(`textContaining` 으로 찾는다). 신호가 없을 때만 `'가장 가까운 사람'` |
 | 행동 화면 AppBar | `'D+1  ·  1장'` (공백 2개 + 중점) |
 | 룰렛 | `'오늘의 운'`, `'돌리기'`, `'시작'`, `'한 번 더 (광고)'` / 재도전권이 있으면 대신 `'재도전권 사용 (N장)'` |
+| 전화 | 수신 `'전화가 왔어요'`, `'받기'`, `'거절'`, 통화 `'통화 중'`/`'통화 종료'`, 타이머 `'00:00'` 형식 단일 Text, 대기 `'…(침묵)'`, 거절 뒤 `'부재중 전화 · 이름'` |
+| 알림 · 사진 | 알림 카드 `'지금'`, 사진 스크린리더 라벨 `'사진: {caption}'` |
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |
 | 앨범 아이콘 | AppBar 액션은 `Icons.photo_album_outlined` |
 | 빈 앨범 | `'아직 흑역사가 없다'` |

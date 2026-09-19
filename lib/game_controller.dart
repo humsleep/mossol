@@ -9,6 +9,7 @@ import 'engine/event_engine.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
 import 'engine/save_service.dart';
+import 'engine/signals.dart';
 import 'engine/story_repository.dart';
 
 export 'engine/attendance.dart' show CheckInResult, Attendance;
@@ -36,8 +37,12 @@ class SaveSummary {
   final int topAffection;
 
   /// 최애의 서사 신호 한 줄(signals.json). 호감 0 이거나 데이터가 없으면 null.
-  /// 같은 세이브·같은 날이면 몇 번을 그려도 같은 문장이다.
+  /// 같은 세이브·같은 날이면 몇 번을 그려도 같은 문장이고, 어젯밤 정산에서 그 사람의
+  /// "가까워졌다" 카드를 봤다면 그 문장을 이어받는다([SignalBook.todaySignal]).
   final String? topSignal;
+
+  /// 어젯밤 마감(연락 없음 −1)으로 구간이 내려간 사람 → 하강 문장. characters.json 순.
+  final Map<String, String> overnight;
 
   /// 캐릭터 id → 호감. [affectionOf] 로 읽는다.
   final Map<String, int> affection;
@@ -52,6 +57,7 @@ class SaveSummary {
     required this.topCharacterId,
     required this.topAffection,
     this.topSignal,
+    this.overnight = const {},
     required this.affection,
   });
 
@@ -81,14 +87,22 @@ class SaveSummary {
       hearts: s.hearts,
       topCharacterId: best,
       topAffection: bestAff,
-      topSignal: best == null
-          ? null
-          : signals.signalFor(best, bestAff, seed: s.seed, day: s.day),
+      topSignal: best == null ? null : signals.todaySignal(s, best),
+      overnight: Map.unmodifiable(overnightOf(s, characters)),
       affection: Map.unmodifiable(aff),
     );
   }
 
   int affectionOf(String id) => affection[id] ?? 0;
+
+  /// [GameState.overnightShifts] 를 characters.json 순서로.
+  static Map<String, String> overnightOf(
+    GameState s,
+    List<CharacterDef> characters,
+  ) => {
+    for (final c in characters)
+      if (s.overnightShifts.containsKey(c.id)) c.id: s.overnightShifts[c.id]!,
+  };
 }
 
 /// 화면 흐름과 게임 상태를 잇는 컨트롤러. 광고 호출은 화면에서 하고,
@@ -109,7 +123,14 @@ class GameController extends ChangeNotifier {
     MetaService? meta,
     int Function()? clock,
   }) : metaService = meta ?? MetaService(),
-       nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
+       nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
+    // signals.json 의 `when` 이 가리키는 이벤트·플래그가 실제로 있는지. StoryBundle.validate
+    // 는 캐릭터만 보므로 디버그 빌드에서 여기서 한 번 더 본다(출시 빌드는 건너뛴다).
+    assert(() {
+      bundle.signals.validateReferences(bundle.events);
+      return true;
+    }());
+  }
 
   Phase phase = Phase.home;
   GameState? state;
@@ -161,6 +182,7 @@ class GameController extends ChangeNotifier {
   List<RelationShift> get todayShifts {
     final s = state;
     if (s == null || bundle.signals.isEmpty) return const [];
+    final ctx = SignalContext.of(s);
     final out = <RelationShift>[];
     for (final ch in bundle.characters) {
       final now = s.affectionOf(ch.id);
@@ -171,6 +193,7 @@ class GameController extends ChangeNotifier {
         now,
         seed: s.seed,
         day: s.day,
+        context: ctx,
       );
       // 0 → 첫 구간은 "처음 알게 됨" 이라 카드를 띄우지 않는다. 1일차에 매번 두 장이
       // 뜨면 진짜 "가까워졌다" 의 무게가 떨어진다. 한 번에 두 구간 이상 뛰면 보여 준다.
@@ -191,6 +214,15 @@ class GameController extends ChangeNotifier {
 
   /// 정산에 띄우는 관계 변화 카드 최대 수.
   static const maxShiftCards = 2;
+
+  /// 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려간 사람 → 하강 문장.
+  /// [endDay] 가 엔진 호출 전후 호감을 비교해 세이브에 남기고, 다음 마감 때 비운다.
+  /// 행동 화면과 홈이 조용한 한 줄로 보여 준다. characters.json 순.
+  Map<String, String> get overnightShifts {
+    final s = state ?? _peek;
+    return s == null ? const {} : SaveSummary.overnightOf(s, bundle.characters);
+  }
+
   String? cliffhanger;
 
   /// 되돌리기용 스냅샷. 선택 직전 상태와 그 시점의 하루 합계.
@@ -222,7 +254,7 @@ class GameController extends ChangeNotifier {
     rouletteSlot = slot;
     rouletteRerolled = false;
     dayDelta.merge(engine.applyRoulette(s, slot));
-    save.save(s);
+    _save(s);
     notifyListeners();
     return slot;
   }
@@ -239,7 +271,7 @@ class GameController extends ChangeNotifier {
     rouletteSlot = slot;
     rouletteRerolled = true;
     dayDelta.merge(engine.applyRoulette(s, slot));
-    save.save(s);
+    _save(s);
     notifyListeners();
     return slot;
   }
@@ -260,6 +292,30 @@ class GameController extends ChangeNotifier {
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
     _syncSummary();
     notifyListeners();
+  }
+
+  /// 세이브. 진행 중인 회차면 오늘의 변화([dayDelta])를 함께 남겨, 하루 도중 앱을
+  /// 다시 켜도 정산이 이어지게 한다. 홈에서 복원 전 세이브(_peek)를 저장할 때는
+  /// 메모리의 dayDelta 가 비어 있으므로 세이브에 있던 값을 건드리지 않는다.
+  Future<void> _save(GameState s) {
+    if (identical(s, state)) {
+      s.dayDelta
+        ..clear()
+        ..addAll({
+          if (dayDelta.stats.isNotEmpty) 'stats': Map.of(dayDelta.stats),
+          if (dayDelta.affection.isNotEmpty)
+            'affection': Map.of(dayDelta.affection),
+          if (dayDelta.trust.isNotEmpty) 'trust': Map.of(dayDelta.trust),
+        });
+    }
+    return save.save(s);
+  }
+
+  /// 세이브에 남은 오늘의 변화를 [dayDelta] 로 되살린다. [continueGame] 에서 부른다.
+  void _restoreDayDelta(GameState s) {
+    dayDelta.stats.addAll(s.dayDelta['stats'] ?? const {});
+    dayDelta.affection.addAll(s.dayDelta['affection'] ?? const {});
+    dayDelta.trust.addAll(s.dayDelta['trust'] ?? const {});
   }
 
   /// [saveSummary] 를 지금 상태로 다시 만든다. 세이브가 없으면 null.
@@ -313,7 +369,7 @@ class GameController extends ChangeNotifier {
     var granted = 0;
     if (s != null) {
       granted = Attendance.grantHearts(s, r.heartsGranted, config.maxHearts);
-      await save.save(s);
+      await _save(s);
     }
     // 세이브가 없거나 상한에 걸려 못 얹은 몫은 보관해 뒀다가 다음에 얹는다.
     _bankHearts(m, r.heartsGranted - granted);
@@ -456,7 +512,7 @@ class GameController extends ChangeNotifier {
       await metaService.save(m);
     }
     await _applyPendingHearts(s);
-    await save.save(s);
+    await _save(s);
     hasSave = true;
     _peek = null;
     _syncSummary();
@@ -471,10 +527,11 @@ class GameController extends ChangeNotifier {
     runBonus = const {};
     _regenHearts();
     _resetDay();
+    _restoreDayDelta(s);
     phase = Phase.action;
     if (pendingHearts > 0) {
       await _applyPendingHearts(s);
-      await save.save(s);
+      await _save(s);
     }
     _syncSummary();
     notifyListeners();
@@ -514,7 +571,7 @@ class GameController extends ChangeNotifier {
     }
     final gained = engine.regenHearts(s, nowMs: nowMs());
     if (gained > 0) {
-      await save.save(s);
+      await _save(s);
       _syncSummary();
       notifyListeners();
     }
@@ -564,7 +621,7 @@ class GameController extends ChangeNotifier {
     // 홈(상태 복원 전)에서도 광고 하트를 받을 수 있어야 한다.
     final s = (state ?? _peek)!;
     s.hearts = min(config.maxHearts, s.hearts + 1);
-    await save.save(s);
+    await _save(s);
     _syncSummary();
     notifyListeners();
   }
@@ -586,7 +643,7 @@ class GameController extends ChangeNotifier {
       ..clear()
       ..addAll(engine.planDay(s));
     // 하트를 쓴 시점을 저장한다. 여기서 끊기면 하트만 사라지고 하루는 안 시작된 게 된다.
-    await save.save(s);
+    await _save(s);
     _nextEvent();
     return true;
   }
@@ -602,7 +659,7 @@ class GameController extends ChangeNotifier {
       current = null;
       revealed = 0;
       phase = Phase.summary;
-      save.save(state!);
+      _save(state!);
     } else {
       current = _queue.removeAt(0);
       revealed = 0;
@@ -619,7 +676,7 @@ class GameController extends ChangeNotifier {
     final s = state;
     if (s == null) return;
     dayDelta.merge(applyEffects(s, const Effects(stats: {Stat.esteem: -1})));
-    save.save(s);
+    _save(s);
     notifyListeners();
   }
 
@@ -671,7 +728,7 @@ class GameController extends ChangeNotifier {
       _queue.insert(0, next);
     }
     // 선택은 되돌릴 수 없는 진행이다. 여기서 끊겨도 결과가 남아야 한다.
-    save.save(s);
+    _save(s);
     notifyListeners();
   }
 
@@ -707,7 +764,10 @@ class GameController extends ChangeNotifier {
       ..seen.addAll(restored.seen)
       ..album.clear()
       ..album.addAll(restored.album)
-      ..combo = restored.combo;
+      ..combo = restored.combo
+      // 저장용 하루 합계 사본도 선택 직전으로(메모리의 dayDelta 는 아래에서 되돌린다).
+      ..dayDelta.clear()
+      ..dayDelta.addAll(restored.dayDelta);
     dayDelta
       ..clear()
       ..merge(dayBefore);
@@ -735,9 +795,23 @@ class GameController extends ChangeNotifier {
   void continueAfterChoice() => _nextEvent();
 
   /// 정산 화면에서 "다음 날".
+  ///
+  /// 엔진의 마감(연락 안 한 사람 호감 −1, day+1) 전후 호감을 비교해 밤사이 구간이
+  /// 내려간 사람을 [overnightShifts] 로 남긴다. 방금 정산에서 본 관계 변화 문장은
+  /// 오늘 아침 홈 카드 문장으로 고정하고 반복 방지 기록에 넣는다([SignalBook.rollover]).
   Future<void> endDay() async {
     final s = state!;
+    final shown = todayShifts;
+    final before = {
+      for (final ch in bundle.characters) ch.id: s.affectionOf(ch.id),
+    };
     engine.endDay(s, cliffhanger: cliffhanger);
+    bundle.signals.rollover(
+      s,
+      ids: [for (final ch in bundle.characters) ch.id],
+      before: before,
+      shown: shown,
+    );
     _resetDay();
     await _recordBestDay(s.day);
     final imm = resolver.immediate(s);
@@ -750,7 +824,7 @@ class GameController extends ChangeNotifier {
       return;
     }
     phase = Phase.action;
-    await save.save(s);
+    await _save(s);
     notifyListeners();
   }
 

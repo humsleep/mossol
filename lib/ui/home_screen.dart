@@ -153,6 +153,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? null
                     : context.tokens.accentFor(summary.topCharacterId),
               ),
+            // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
+            if (summary != null)
+              for (final e in summary.overnight.entries) ...[
+                const SizedBox(height: AppSpace.sm),
+                OvernightNote(id: e.key, text: e.value),
+              ],
             const SizedBox(height: AppSpace.lg),
 
             // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
@@ -232,13 +238,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return [...known, ...mystery];
   }
 
-  void _openSettings(BuildContext context) => Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => SettingsScreen(c: c)),
-  );
+  void _openSettings(BuildContext context) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => SettingsScreen(c: c)));
 
-  void _openAlbum(BuildContext context) => Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => AlbumScreen(c: c)),
-  );
+  void _openAlbum(BuildContext context) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => AlbumScreen(c: c)));
 
   /// 진행 중인 회차를 지우기 전에 한 번 묻는다. 문구·동작은 그대로 둔다.
   Future<void> _confirmNewGame(BuildContext context) async {
@@ -306,7 +312,10 @@ class _IntroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('100일 프로젝트', style: context.text.labelSmall?.copyWith(color: fg)),
+          Text(
+            '100일 프로젝트',
+            style: context.text.labelSmall?.copyWith(color: fg),
+          ),
           const SizedBox(height: AppSpace.xs),
           Text(
             '100일 뒤, 이 남자는 달라져 있을까',
@@ -390,9 +399,7 @@ class _ResourceRow extends StatelessWidget {
       await c.grantHeart();
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'),
-        ),
+        const SnackBar(content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
       );
     }
   }
@@ -454,7 +461,8 @@ class _AlbumCard extends StatelessWidget {
           const SizedBox(height: AppSpace.md),
           EndingTierDots(
             counts: {
-              for (final e in totals.entries) e.key: (counts[e.key] ?? 0, e.value),
+              for (final e in totals.entries)
+                e.key: (counts[e.key] ?? 0, e.value),
             },
           ),
           const SizedBox(height: AppSpace.md),
@@ -475,6 +483,44 @@ class _AlbumCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 밤사이 멀어진 사람의 조용한 한 줄. 경고색 없이 캐릭터 점 + 흐린 글씨.
+/// 행동 화면(어젯밤 마감 직후 첫 화면)과 홈이 같이 쓴다.
+class OvernightNote extends StatelessWidget {
+  final String id;
+  final String text;
+  const OvernightNote({super.key, required this.id, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = context.scheme.onSurfaceVariant;
+    return Semantics(
+      label: '밤사이: $text',
+      excludeSemantics: true,
+      child: Row(
+        key: Key('overnight-$id'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Icon(
+              Icons.nights_stay_outlined,
+              size: AppSpace.lg,
+              color: context.tokens.accentFor(id).base,
+            ),
+          ),
+          const SizedBox(width: AppSpace.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: context.text.bodySmall?.copyWith(color: muted),
+            ),
           ),
         ],
       ),

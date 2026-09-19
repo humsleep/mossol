@@ -12,13 +12,17 @@ const files = [
   'events_route_a.json',
   'events_route_b.json',
   'events_special.json',
+  'events_moments.json',
 ];
 
 const maxLines = 3;
 const maxChars = 60;
 
 List<Map<String, dynamic>> _events(String f) {
-  final raw = jsonDecode(File('assets/story/$f').readAsStringSync());
+  final text = File('assets/story/$f').readAsStringSync();
+  // 작가가 채우는 중인 빈 파일은 이벤트 0개로 본다(StoryBundle 과 같은 규칙).
+  if (text.trim().isEmpty) return const [];
+  final raw = jsonDecode(text);
   final list = raw is List ? raw : (raw as Map)['events'] as List;
   return list.cast<Map<String, dynamic>>();
 }
@@ -47,7 +51,10 @@ List<String> problemsIn(String f) {
           if (!const {'them', 'narr', 'sys', 'me'}.contains(l.who)) {
             out.add('$where.$name: who=${l.who}');
           }
-          if (l.text.trim().isEmpty) out.add('$where.$name: 빈 줄');
+          // 사진 줄(MOMENTS_SPEC §1.3)은 글 없이 사진만 보내도 된다.
+          if (l.text.trim().isEmpty && l.photo == null) {
+            out.add('$where.$name: 빈 줄');
+          }
           if (l.text.length > maxChars) {
             out.add('$where.$name: $maxChars자 초과 (${l.text.length})');
           }

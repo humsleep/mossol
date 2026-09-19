@@ -7,7 +7,7 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
@@ -37,13 +37,19 @@
     "effects": {
      "affection": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "minigame": "group_chat",
     "fail": {
      "stats": {
       "reputation": -2
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": "ㅇㅋ 빠지면 벌금인 거 알지 ㅋㅋ",
     "failReply": [
@@ -70,7 +76,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": [
      "…뭐야 그 대답",
@@ -89,7 +98,10 @@
      },
      "affection": {
       "*": -1
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": [
      "ㅇㅇ",
@@ -110,12 +122,15 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
     6,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -147,7 +162,10 @@
      },
      "affection": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "seoyeon_presentation"
+     ]
     },
     "reply": "아이스 아메리카노. 샷 추가. 기억해 둬"
    },
@@ -167,7 +185,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "seoyeon_presentation"
+     ]
     },
     "reply": [
      "ㅋㅋㅋ 이게 컸네",
@@ -187,7 +208,10 @@
      "affection": {
       "*": -2
      },
-     "album": "선배 앞에서 잔고 공개"
+     "album": "선배 앞에서 잔고 공개",
+     "setFlags": [
+      "seoyeon_presentation"
+     ]
     },
     "reply": [
      "…아니 진짜 사라는 게 아니었는데",
@@ -209,8 +233,11 @@
     ]
    },
    "day": [
-    9,
+    18,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -341,6 +368,10 @@
    "day": [
     11,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_presentation"
    ]
   },
   "weight": 3,
@@ -473,6 +504,9 @@
    "day": [
     16,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -583,6 +617,9 @@
    "day": [
     21,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -712,6 +749,9 @@
    "day": [
     26,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -743,7 +783,10 @@
      },
      "affection": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "seoyeon_ex"
+     ]
     },
     "reply": [
      "…그 말도 존댓말이네 ㅋㅋ",
@@ -761,7 +804,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "seoyeon_ex"
+     ]
     },
     "reply": [
      "그것만은 아니고",
@@ -783,7 +829,8 @@
       "*": 5
      },
      "setFlags": [
-      "seoyeon_banmal"
+      "seoyeon_banmal",
+      "seoyeon_ex"
      ]
     },
     "reply": [
@@ -830,6 +877,9 @@
    "day": [
     41,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -857,7 +907,10 @@
      },
      "trust": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "seoyeon_moving"
+     ]
     },
     "reply": "토요일 2시. 박스테이프는 네 담당"
    },
@@ -877,7 +930,10 @@
      },
      "trust": {
       "*": 5
-     }
+     },
+     "setFlags": [
+      "seoyeon_moving"
+     ]
     },
     "reply": [
      "그거 1학년 때 내가 처음 만든 포스터인데",
@@ -896,7 +952,10 @@
      },
      "trust": {
       "*": -2
-     }
+     },
+     "setFlags": [
+      "seoyeon_moving"
+     ]
     },
     "reply": [
      "아 그래? 그럼 됐어",
@@ -939,6 +998,10 @@
    "day": [
     46,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_moving"
    ]
   },
   "weight": 2,
@@ -973,14 +1036,20 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "seoyeon_asked"
+     ]
     },
     "minigame": "nerve_gauge",
     "fail": {
      "stats": {
       "esteem": -3,
       "stress": 8
-     }
+     },
+     "setFlags": [
+      "seoyeon_asked"
+     ]
     },
     "reply": [
      "…네, 래 ㅋㅋ",
@@ -1018,7 +1087,8 @@
       "*": 8
      },
      "setFlags": [
-      "seoyeon_banmal"
+      "seoyeon_banmal",
+      "seoyeon_asked"
      ]
     },
     "reply": [
@@ -1039,7 +1109,10 @@
      },
      "affection": {
       "*": -4
-     }
+     },
+     "setFlags": [
+      "seoyeon_asked"
+     ]
     },
     "reply": [
      "지금 아니면 못 물어보니까",
@@ -1080,6 +1153,10 @@
    "day": [
     51,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_asked"
    ]
   },
   "weight": 2,
@@ -1193,6 +1270,11 @@
    "day": [
     56,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_ex",
+    "seoyeon_asked"
    ]
   },
   "weight": 2,
@@ -1309,6 +1391,10 @@
    "day": [
     71,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_asked"
    ]
   },
   "weight": 2,
@@ -1336,7 +1422,10 @@
      },
      "trust": {
       "*": 5
-     }
+     },
+     "setFlags": [
+      "seoyeon_moved"
+     ]
     },
     "reply": [
      "첫차 5시 반인데 ㅋㅋ",
@@ -1354,7 +1443,10 @@
      },
      "trust": {
       "*": 8
-     }
+     },
+     "setFlags": [
+      "seoyeon_moved"
+     ]
     },
     "chance": 75,
     "fail": {
@@ -1364,7 +1456,10 @@
      "affection": {
       "*": -3
      },
-     "album": "밤에 찾아갔다가 문전박대"
+     "album": "밤에 찾아갔다가 문전박대",
+     "setFlags": [
+      "seoyeon_moved"
+     ]
     },
     "reply": [
      "…지금?",
@@ -1391,7 +1486,10 @@
      "trust": {
       "*": -5
      },
-     "album": "이사 당일 잠수"
+     "album": "이사 당일 잠수",
+     "setFlags": [
+      "seoyeon_moved"
+     ]
     },
     "reply": [
      "아 그래",
@@ -1420,7 +1518,10 @@
     13,
     100
    ],
-   "affection": {}
+   "affection": {},
+   "flags": [
+    "seoyeon_met"
+   ]
   },
   "weight": 2,
   "title": "선배의 실수",
@@ -1505,6 +1606,9 @@
    "day": [
     19,
     100
+   ],
+   "flags": [
+    "seoyeon_met"
    ]
   },
   "weight": 2,
@@ -1643,6 +1747,10 @@
    "day": [
     86,
     100
+   ],
+   "flags": [
+    "seoyeon_met",
+    "seoyeon_moved"
    ]
   },
   "weight": 2,
@@ -1748,7 +1856,7 @@
    "affection": {
     "*": [
      0,
-     45
+     100
     ]
    },
    "day": [
@@ -1781,7 +1889,11 @@
     "effects": {
      "stats": {
       "esteem": -1
-     }
+     },
+     "setFlags": [
+      "haneul_contact",
+      "haneul_first_shift"
+     ]
     },
     "reply": "아니 사과하라는 게 아니라… 장난이라니까. 괜찮아"
    },
@@ -1790,7 +1902,11 @@
     "effects": {
      "affection": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "haneul_contact",
+      "haneul_first_shift"
+     ]
     },
     "reply": "ㅋㅋ 오늘만 봐준다. 내일부턴 국물도 없어"
    },
@@ -1808,12 +1924,20 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "haneul_contact",
+      "haneul_first_shift"
+     ]
     },
     "fail": {
      "stats": {
       "talk": -1
-     }
+     },
+     "setFlags": [
+      "haneul_contact",
+      "haneul_first_shift"
+     ]
     },
     "reply": [
      "오 ㅋㅋㅋ 말은 잘하네",
@@ -1848,6 +1972,9 @@
    "day": [
     6,
     100
+   ],
+   "flags": [
+    "haneul_first_shift"
    ]
   },
   "weight": 2,
@@ -1944,6 +2071,9 @@
    "day": [
     9,
     100
+   ],
+   "flags": [
+    "haneul_first_shift"
    ]
   },
   "weight": 2,
@@ -2120,7 +2250,10 @@
      },
      "trust": {
       "*": -1
-     }
+     },
+     "setFlags": [
+      "haneul_gukbap"
+     ]
     },
     "reply": [
      "…왜? 반반 하자니까",
@@ -2135,7 +2268,10 @@
      },
      "trust": {
       "*": 2
-     }
+     },
+     "setFlags": [
+      "haneul_gukbap"
+     ]
     },
     "reply": "ㅇㅋ 딱 반. 깔끔해서 좋다"
    },
@@ -2154,7 +2290,8 @@
       "*": 2
      },
      "setFlags": [
-      "haneul_next_date"
+      "haneul_next_date",
+      "haneul_gukbap"
      ],
      "trust": {
       "*": 2
@@ -2671,7 +2808,8 @@
     100
    ],
    "flags": [
-    "haneul_banmal"
+    "haneul_banmal",
+    "haneul_gukbap"
    ]
   },
   "weight": 2,
@@ -3243,6 +3381,9 @@
    "day": [
     22,
     100
+   ],
+   "flags": [
+    "haneul_first_shift"
    ]
   },
   "weight": 2,
@@ -3471,9 +3612,13 @@
    "affection": {
     "*": [
      0,
-     20
+     100
     ]
-   }
+   },
+   "day": [
+    5,
+    25
+   ]
   },
   "weight": 5,
   "title": "소개팅 첫 메시지",
@@ -3493,13 +3638,19 @@
     "effects": {
      "affection": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "jiwoo_texted"
+     ]
     },
     "minigame": "reply_timing",
     "fail": {
      "stats": {
       "esteem": -1
-     }
+     },
+     "setFlags": [
+      "jiwoo_texted"
+     ]
     },
     "reply": [
      "안녕하세요. 네 얘기 들었어요",
@@ -3526,7 +3677,10 @@
      },
      "trust": {
       "*": 3
-     }
+     },
+     "setFlags": [
+      "jiwoo_texted"
+     ]
     },
     "reply": [
      "오 한강 어느 쪽이요?",
@@ -3541,7 +3695,10 @@
      },
      "affection": {
       "*": -2
-     }
+     },
+     "setFlags": [
+      "jiwoo_texted"
+     ]
     },
     "reply": [
      "아 네. 바쁘시면 무리 안 하셔도 돼요",
@@ -3560,12 +3717,15 @@
    "affection": {
     "*": [
      0,
-     30
+     100
     ]
    },
    "day": [
-    6,
-    100
+    27,
+    28
+   ],
+   "flags": [
+    "jiwoo_texted"
    ]
   },
   "weight": 2,
@@ -3653,7 +3813,7 @@
     ]
    },
    "day": [
-    10,
+    30,
     100
    ]
   },
@@ -3768,7 +3928,7 @@
     ]
    },
    "day": [
-    16,
+    30,
     100
    ]
   },
@@ -3889,7 +4049,7 @@
     ]
    },
    "day": [
-    22,
+    30,
     100
    ]
   },
@@ -4014,7 +4174,7 @@
     ]
    },
    "day": [
-    26,
+    30,
     100
    ]
   },
@@ -4533,7 +4693,10 @@
      },
      "trust": {
       "*": 5
-     }
+     },
+     "setFlags": [
+      "jiwoo_big_case"
+     ]
     },
     "reply": [
      "…그 말 들으려고 한 말 아니었는데",
@@ -4551,7 +4714,10 @@
      },
      "trust": {
       "*": 4
-     }
+     },
+     "setFlags": [
+      "jiwoo_big_case"
+     ]
     },
     "reply": "네. 그게 맞는 것 같아요. …두 달 뒤에 꼭이요"
    },
@@ -4571,7 +4737,10 @@
      },
      "trust": {
       "*": 8
-     }
+     },
+     "setFlags": [
+      "jiwoo_big_case"
+     ]
     },
     "reply": [
      "30분이요?",
@@ -4826,7 +4995,7 @@
     ]
    },
    "day": [
-    14,
+    30,
     100
    ],
    "affection": {}
@@ -5027,6 +5196,9 @@
    "day": [
     86,
     100
+   ],
+   "flags": [
+    "jiwoo_big_case"
    ]
   },
   "weight": 2,
@@ -5127,6 +5299,9 @@
    "day": [
     1,
     100
+   ],
+   "notFlags": [
+    "seoyeon_met"
    ]
   },
   "weight": 5,
@@ -5155,14 +5330,20 @@
     "effects": {
      "affection": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "minigame": "group_chat",
     "fail": {
      "stats": {
       "reputation": -2
      },
-     "album": "단톡에서 선배 호명에 답 늦어 정적"
+     "album": "단톡에서 선배 호명에 답 늦어 정적",
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": [
      "ㅋㅋ 역시 맞네",
@@ -5189,7 +5370,10 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": "눈썰미가 아니라 너 그때 지도 거꾸로 들고 있었어 ㅋㅋ"
    },
@@ -5201,7 +5385,10 @@
      },
      "affection": {
       "*": -1
-     }
+     },
+     "setFlags": [
+      "seoyeon_met"
+     ]
     },
     "reply": [
      "아 그래?",
@@ -5228,7 +5415,8 @@
     100
    ],
    "notFlags": [
-    "haneul_banmal"
+    "haneul_banmal",
+    "haneul_contact"
    ]
   },
   "weight": 5,
@@ -5257,7 +5445,10 @@
     "effects": {
      "affection": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "haneul_contact"
+     ]
     },
     "reply": "ㅇㅋ M. 내일 5시 50분까지. 6시면 늦은 거임"
    },
@@ -5269,14 +5460,20 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "haneul_contact"
+     ]
     },
     "chance": 50,
     "fail": {
      "affection": {
       "*": -1
      },
-     "album": "첫 만남 전에 농담 헛스윙"
+     "album": "첫 만남 전에 농담 헛스윙",
+     "setFlags": [
+      "haneul_contact"
+     ]
     },
     "reply": [
      "ㅋㅋㅋ 첫날부터 뻔뻔하네",
@@ -5307,7 +5504,10 @@
      },
      "trust": {
       "*": 1
-     }
+     },
+     "setFlags": [
+      "haneul_contact"
+     ]
     },
     "reply": [
      "오 꼼꼼하네",
