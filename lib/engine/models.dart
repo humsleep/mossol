@@ -39,6 +39,74 @@ class Stat {
   static int maxOf(String key) => key == money ? 9999 : 100;
 }
 
+/// 새 게임에서 고르는 "누구를 만나고 싶나요?" 선호. 회차마다 하나.
+///
+/// - [female] / [male]: 그 성별 캐릭터만 등장한다(이벤트·효과·엔딩·신호·홈 전부).
+/// - [all]: 선호 필드가 없던 예전 세이브. 모든 캐릭터가 등장하고, 쪽별 버전이 있는
+///   이벤트(`trigger.pref`)는 [female] 쪽을 쓴다(선호 도입 전 경험을 그대로 유지).
+class Preference {
+  static const female = 'f';
+  static const male = 'm';
+  static const all = 'all';
+
+  /// 캐릭터 성별이자 `trigger.pref` 가 가질 수 있는 값.
+  static const genders = [female, male];
+  static const values = [female, male, all];
+
+  /// 모르는 값·없는 값은 [all] (예전 세이브 호환).
+  static String parse(Object? v) => v is String && values.contains(v) ? v : all;
+
+  /// `trigger.pref` 판정에 쓰는 쪽. [all] 은 [female] 쪽 버전을 본다.
+  static String side(String pref) => pref == male ? male : female;
+
+  /// [gender] 캐릭터가 [pref] 회차에 등장하는지.
+  static bool allowsGender(String pref, String gender) =>
+      pref == all || pref == gender;
+
+  /// `trigger.pref` 가 [eventPref] 인 이벤트·엔딩이 [pref] 회차에 열리는지.
+  static bool allowsSide(String pref, String? eventPref) =>
+      eventPref == null || eventPref == side(pref);
+
+  /// 화면 표기. 예: "1회차 · 여성 캐릭터".
+  static String label(String pref) => switch (pref) {
+    female => '여성 캐릭터',
+    male => '남성 캐릭터',
+    _ => '모든 캐릭터',
+  };
+}
+
+/// 캐릭터 역할. 여성·남성 쪽이 역할마다 한 명씩 짝을 이룬다(docs/CAST_BIBLE.md).
+class CastRole {
+  static const senior = 'senior';
+  static const parttime = 'parttime';
+  static const blinddate = 'blinddate';
+  static const online = 'online';
+  static const classmate = 'classmate';
+
+  /// 히든 역할. 이 역할이면 `hidden: true`, 아니면 `hidden: false`.
+  static const trainer = 'trainer';
+
+  static const values = [
+    senior,
+    parttime,
+    blinddate,
+    online,
+    classmate,
+    trainer,
+  ];
+
+  static const labels = {
+    senior: '선배',
+    parttime: '알바 동료',
+    blinddate: '소개팅 상대',
+    online: '온라인 친구',
+    classmate: '초등 동창',
+    trainer: '트레이너',
+  };
+
+  static String label(String role) => labels[role] ?? role;
+}
+
 class Range {
   final int min;
   final int max;
@@ -88,6 +156,11 @@ class Trigger {
   final List<String> notFlags;
   final CountCondition? anyAffection;
 
+  /// [Preference.female] | [Preference.male]. 있으면 그 선호로 시작한 회차에서만 열린다.
+  /// main 이벤트의 쪽별 버전, 공용 엔딩의 쪽별 조건에 쓴다. [Preference.all] 세이브는
+  /// [Preference.female] 쪽으로 본다([Preference.side]).
+  final String? pref;
+
   const Trigger({
     this.day,
     this.run,
@@ -97,6 +170,7 @@ class Trigger {
     this.flags = const [],
     this.notFlags = const [],
     this.anyAffection,
+    this.pref,
   });
 
   static const always = Trigger();
@@ -118,6 +192,7 @@ class Trigger {
               (any['min'] as num).toInt(),
               (any['count'] as num).toInt(),
             ),
+      pref: j['pref'] as String?,
     );
   }
 }
@@ -423,7 +498,15 @@ class StoryEvent {
 class CharacterDef {
   final String id;
   final String name;
+
+  /// [Preference.female] | [Preference.male]. 필수(검증기가 잡는다).
+  final String gender;
+
+  /// [CastRole.values] 중 하나. 필수. 성별마다 역할당 최대 한 명.
   final String role;
+
+  /// 사람이 읽는 소개 호칭(예: "동아리 선배"). 없으면 [CastRole.label].
+  final String title;
   final List<String> likes;
   final List<String> mines;
   final bool hidden;
@@ -438,7 +521,9 @@ class CharacterDef {
   const CharacterDef({
     required this.id,
     required this.name,
-    required this.role,
+    this.gender = '',
+    this.role = '',
+    this.title = '',
     this.likes = const [],
     this.mines = const [],
     this.hidden = false,
@@ -451,7 +536,9 @@ class CharacterDef {
   factory CharacterDef.fromJson(Map<String, dynamic> j) => CharacterDef(
     id: j['id'] as String,
     name: j['name'] as String,
+    gender: (j['gender'] as String?) ?? '',
     role: (j['role'] as String?) ?? '',
+    title: (j['title'] as String?) ?? '',
     likes: _strList(j['likes']),
     mines: _strList(j['mines']),
     hidden: (j['hidden'] as bool?) ?? false,
@@ -462,6 +549,12 @@ class CharacterDef {
     tags: _strList(j['tags']),
     budget: ((j['budget'] as num?) ?? 40).toInt(),
   );
+
+  /// [pref] 회차에 등장하는지.
+  bool appearsIn(String pref) => Preference.allowsGender(pref, gender);
+
+  /// 화면에 쓰는 호칭. [title] 이 없으면 역할 이름.
+  String get displayTitle => title.isNotEmpty ? title : CastRole.label(role);
 }
 
 class Ending {
@@ -480,6 +573,9 @@ class Ending {
   /// true 면 100일을 기다리지 않고 조건 충족 즉시 종료.
   final bool immediate;
   final bool isDefault;
+
+  // 캐릭터 엔딩([character])은 그 캐릭터의 성별로 자동 필터된다([EndingResolver]).
+  // 공용 엔딩을 한쪽에만 두려면 `when.pref` 를 쓴다.
 
   const Ending({
     required this.id,
@@ -652,6 +748,10 @@ class GameState {
   int day;
   int run;
   int seed;
+
+  /// 이 회차의 선호([Preference]). 새 게임에서 고르고 회차 내내 바뀌지 않는다.
+  /// 필드가 없는 예전 세이브는 [Preference.all] 로 읽는다.
+  final String preference;
   final Map<String, int> stats;
   final Map<String, Relation> relations;
   final Set<String> flags;
@@ -676,6 +776,7 @@ class GameState {
     this.day = 1,
     this.run = 1,
     required this.seed,
+    this.preference = Preference.all,
     required this.stats,
     required this.relations,
     Set<String>? flags,
@@ -699,11 +800,13 @@ class GameState {
     List<CharacterDef> characters, {
     required int seed,
     int run = 1,
+    String preference = Preference.all,
     List<String>? previousEndings,
     int? nowMs,
   }) => GameState(
     seed: seed,
     run: run,
+    preference: Preference.parse(preference),
     stats: {for (final k in Stat.all) k: cfg.initialStats[k] ?? 0},
     relations: {for (final c in characters) c.id: Relation()},
     hearts: cfg.maxHearts,
@@ -728,6 +831,7 @@ class GameState {
     'day': day,
     'run': run,
     'seed': seed,
+    'preference': preference,
     'stats': Map.of(stats),
     'relations': relations.map((k, v) => MapEntry(k, v.toJson())),
     'flags': flags.toList(),
@@ -746,36 +850,40 @@ class GameState {
     'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
   };
 
-  factory GameState.fromJson(Map<String, dynamic> j) => GameState(
-    day: (j['day'] as num).toInt(),
-    run: ((j['run'] as num?) ?? 1).toInt(),
-    seed: (j['seed'] as num).toInt(),
-    stats: _intMap(j['stats']),
-    relations: ((j['relations'] as Map?) ?? const {}).map(
-      (k, v) =>
-          MapEntry(k as String, Relation.fromJson(v as Map<String, dynamic>)),
-    ),
-    flags: _strList(j['flags']).toSet(),
-    seen: _strList(j['seen']).toSet(),
-    album: _strList(j['album']),
-    endings: _strList(j['endings']),
-    hearts: ((j['hearts'] as num?) ?? 5).toInt(),
-    lastHeartMs: ((j['lastHeartMs'] as num?) ?? 0).toInt(),
-    lastCliffhanger: j['lastCliffhanger'] as String?,
-    combo: ((j['combo'] as num?) ?? 0).toInt(),
-    rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
-    lastMomentDay: ((j['lastMomentDay'] as num?) ?? 0).toInt(),
-  )
-    ..signalHistory.addAll(_intListMap(j['signalHistory']))
-    ..signalPins.addAll(_intListMap(j['signalPins']))
-    ..overnightShifts.addAll({
-      for (final e in ((j['overnightShifts'] as Map?) ?? const {}).entries)
-        e.key as String: e.value as String,
-    })
-    ..dayDelta.addAll({
-      for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
-        e.key as String: _intMap(e.value),
-    });
+  factory GameState.fromJson(Map<String, dynamic> j) =>
+      GameState(
+          day: (j['day'] as num).toInt(),
+          run: ((j['run'] as num?) ?? 1).toInt(),
+          seed: (j['seed'] as num).toInt(),
+          preference: Preference.parse(j['preference']),
+          stats: _intMap(j['stats']),
+          relations: ((j['relations'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(
+              k as String,
+              Relation.fromJson(v as Map<String, dynamic>),
+            ),
+          ),
+          flags: _strList(j['flags']).toSet(),
+          seen: _strList(j['seen']).toSet(),
+          album: _strList(j['album']),
+          endings: _strList(j['endings']),
+          hearts: ((j['hearts'] as num?) ?? 5).toInt(),
+          lastHeartMs: ((j['lastHeartMs'] as num?) ?? 0).toInt(),
+          lastCliffhanger: j['lastCliffhanger'] as String?,
+          combo: ((j['combo'] as num?) ?? 0).toInt(),
+          rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
+          lastMomentDay: ((j['lastMomentDay'] as num?) ?? 0).toInt(),
+        )
+        ..signalHistory.addAll(_intListMap(j['signalHistory']))
+        ..signalPins.addAll(_intListMap(j['signalPins']))
+        ..overnightShifts.addAll({
+          for (final e in ((j['overnightShifts'] as Map?) ?? const {}).entries)
+            e.key as String: e.value as String,
+        })
+        ..dayDelta.addAll({
+          for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
+            e.key as String: _intMap(e.value),
+        });
 
   // ---- 서사 신호(lib/engine/signals.dart). 없는 예전 세이브는 전부 빈 값. ----
 

@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
+import 'preference_screen.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 
@@ -153,6 +155,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 topAccent: summary.topCharacterId == null
                     ? null
                     : context.tokens.accentFor(summary.topCharacterId),
+                // 선호가 없던 예전 세이브(all)는 표기하지 않는다.
+                preferenceLabel: summary.preference == Preference.all
+                    ? null
+                    : Preference.label(summary.preference),
               ),
             // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
             if (summary != null)
@@ -195,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ] else
               FilledButton(
-                onPressed: () => c.newGame(),
+                onPressed: () => _startNewGame(context),
                 child: const Text('새 게임'),
               ),
             const SizedBox(height: AppSpace.sectionGap),
@@ -220,8 +226,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// 호감 내림차순(동점은 characters.json 순). 히든은 호감이 생기기 전까지 맨 뒤 `???`.
+  /// 세이브가 있으면 그 회차 선호에 맞는 사람만, 없으면 전원(등장인물 소개).
   List<CastEntry> _castEntries(SaveSummary? summary) {
-    final chars = c.bundle.characters;
+    final chars = summary == null
+        ? c.bundle.characters
+        : c.bundle.charactersFor(summary.preference);
     final known = <CastEntry>[];
     final mystery = <CastEntry>[];
     for (final ch in chars) {
@@ -266,8 +275,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-    if (ok != true) return;
-    await c.newGame();
+    if (ok != true || !context.mounted) return;
+    await _startNewGame(context);
+  }
+
+  /// 선호 선택 화면을 거쳐 새 게임. 뒤로 가면 아무것도 하지 않는다.
+  Future<void> _startNewGame(BuildContext context) async {
+    final pref = await PreferenceScreen.show(context, c.bundle);
+    if (pref == null) return;
+    await c.newGame(preference: pref);
   }
 }
 
@@ -319,7 +335,7 @@ class _IntroCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpace.xs),
           Text(
-            keepAll('100일 뒤, 이 남자는 달라져 있을까'),
+            keepAll('100일 뒤, 나는 달라져 있을까'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: context.text.headlineMedium?.copyWith(color: fg),

@@ -18,6 +18,10 @@
 `jiwoo_r02 ← jiwoo_r01` 1492회, `seoyeon_r03 ← m07` 1448회, `jiwoo_r02`가 m11 뒤에 나온 경우 876회,
 `doyun_r02 ← doyun_r01` 660회. 수정 후에는 1200시드 × 6전략에서 0회다(`tool/sim_out/route_order_report.txt`).
 
+선호(남성향·여성향) 도입 뒤 시뮬레이션은 선호별로 돈다. 기본은 f 와 m 을 각각(`route_order_report_f.txt`,
+`route_order_report_m.txt`), `--dart-define=ROUTE_PREF=all` 이면 예전과 같은 전원 등장 회차(`route_order_report.txt`).
+캐릭터가 없는 쪽은 건너뛰고, 그 선호에서 나올 수 없는 이벤트가 걸린 쌍(예: 남성 쪽의 `m10 ← jiwoo_r01`)은 세지 않는다.
+
 ### 보장 방법
 - **진행 플래그**: 앞 이벤트의 모든 선택지 `effects`에 `setFlags`로 넣고, 미니게임·확률 선택지는 `fail`에도 넣는다.
   뒤 이벤트는 트리거 `flags`로 요구한다.

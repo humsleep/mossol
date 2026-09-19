@@ -55,7 +55,7 @@ void main() {
     testWidgets('소개 카드 · 새 게임 · 등장인물 · 앨범 0 / N · 힌트', (tester) async {
       await showHome(tester);
       expect(findText('모쏠 키우기'), findsOneWidget);
-      expect(findText('100일 뒤, 이 남자는 달라져 있을까'), findsOneWidget);
+      expect(findText('100일 뒤, 나는 달라져 있을까'), findsOneWidget);
       expect(findText('아침: 오늘 할 일 하나 고르기'), findsOneWidget);
       expect(findWidgetWithText(FilledButton, '새 게임'), findsOneWidget);
       expect(findText('새 게임'), findsOneWidget);

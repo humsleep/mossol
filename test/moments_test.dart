@@ -15,8 +15,8 @@ const _config = {
   'actions': [],
 };
 const _chars = [
-  {'id': 'a', 'name': '가람'},
-  {'id': 'b', 'name': '보람'},
+  {'id': 'a', 'name': '가람', 'gender': 'f', 'role': 'senior'},
+  {'id': 'b', 'name': '보람', 'gender': 'm', 'role': 'senior'},
 ];
 const _endings = [
   {'id': 'd', 'name': 'd', 'default': true, 'when': {}},

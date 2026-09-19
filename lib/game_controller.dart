@@ -44,10 +44,14 @@ class SaveSummary {
   /// 어젯밤 마감(연락 없음 −1)으로 구간이 내려간 사람 → 하강 문장. characters.json 순.
   final Map<String, String> overnight;
 
-  /// 캐릭터 id → 호감. [affectionOf] 로 읽는다.
+  /// 캐릭터 id → 호감. [affectionOf] 로 읽는다. 이 회차에 등장하는 사람만 담긴다.
   final Map<String, int> affection;
 
+  /// 이 회차의 선호([Preference]). 홈 카드의 "1회차 · 여성 캐릭터" 와 사람들 줄이 쓴다.
+  final String preference;
+
   const SaveSummary({
+    this.preference = Preference.all,
     required this.run,
     required this.day,
     required this.totalDays,
@@ -70,7 +74,7 @@ class SaveSummary {
     String? best;
     var bestAff = 0;
     final aff = <String, int>{};
-    for (final c in characters) {
+    for (final c in characters.where((c) => c.appearsIn(s.preference))) {
       final a = s.affectionOf(c.id);
       aff[c.id] = a;
       if (a > bestAff) {
@@ -79,6 +83,7 @@ class SaveSummary {
       }
     }
     return SaveSummary(
+      preference: s.preference,
       run: s.run,
       day: s.day,
       totalDays: config.totalDays,
@@ -95,13 +100,14 @@ class SaveSummary {
 
   int affectionOf(String id) => affection[id] ?? 0;
 
-  /// [GameState.overnightShifts] 를 characters.json 순서로.
+  /// [GameState.overnightShifts] 를 characters.json 순서로. 선호 밖 캐릭터는 뺀다.
   static Map<String, String> overnightOf(
     GameState s,
     List<CharacterDef> characters,
   ) => {
     for (final c in characters)
-      if (s.overnightShifts.containsKey(c.id)) c.id: s.overnightShifts[c.id]!,
+      if (c.appearsIn(s.preference) && s.overnightShifts.containsKey(c.id))
+        c.id: s.overnightShifts[c.id]!,
   };
 }
 
@@ -112,7 +118,10 @@ class GameController extends ChangeNotifier {
   final SaveService save;
   final MetaService metaService;
   late final EventEngine engine = EventEngine(bundle);
-  late final EndingResolver resolver = EndingResolver(bundle.endings);
+  late final EndingResolver resolver = EndingResolver(
+    bundle.endings,
+    characters: bundle.characters,
+  );
 
   /// 현재 시각(ms). 테스트에서 시계를 고정할 때 바꿔 끼운다.
   final int Function() nowMs;
@@ -187,7 +196,7 @@ class GameController extends ChangeNotifier {
     if (s == null || bundle.signals.isEmpty) return const [];
     final ctx = SignalContext.of(s);
     final out = <RelationShift>[];
-    for (final ch in bundle.characters) {
+    for (final ch in roster) {
       final now = s.affectionOf(ch.id);
       final before = now - (dayDelta.affection[ch.id] ?? 0);
       final shift = bundle.signals.shiftFor(
@@ -280,6 +289,12 @@ class GameController extends ChangeNotifier {
   }
 
   GameConfig get config => bundle.config;
+
+  /// 지금 회차(또는 홈에서 읽어 둔 세이브)의 선호. 세이브가 없으면 [Preference.all].
+  String get preference => (state ?? _peek)?.preference ?? Preference.all;
+
+  /// 지금 회차에 등장하는 캐릭터(characters.json 순). 선호 밖 캐릭터는 빠진다.
+  List<CharacterDef> get roster => bundle.charactersFor(preference);
 
   Future<void> init() async {
     hasSave = await save.exists();
@@ -447,7 +462,7 @@ class GameController extends ChangeNotifier {
     if (s == null) return null;
     String? best;
     var bestAff = 0;
-    for (final c in bundle.characters) {
+    for (final c in roster) {
       final a = s.affectionOf(c.id);
       if (a > bestAff) {
         bestAff = a;
@@ -494,12 +509,19 @@ class GameController extends ChangeNotifier {
 
   // ---- 회차 시작·복원 ----
 
-  Future<void> newGame({int? seed, int run = 1}) async {
+  /// 새 회차. [preference] 는 선택 화면(`PreferenceScreen`)이 고른 값이다.
+  /// 기본값 [Preference.all] 은 예전 호출부(테스트·디버그)를 위한 것이고 UI 는 늘 고른다.
+  Future<void> newGame({
+    String preference = Preference.all,
+    int? seed,
+    int run = 1,
+  }) async {
     final s = GameState.fresh(
       config,
       bundle.characters,
       seed: seed ?? Random().nextInt(1 << 31),
       run: run,
+      preference: preference,
       previousEndings: endingAlbum,
       nowMs: nowMs(),
     );
@@ -805,13 +827,12 @@ class GameController extends ChangeNotifier {
   Future<void> endDay() async {
     final s = state!;
     final shown = todayShifts;
-    final before = {
-      for (final ch in bundle.characters) ch.id: s.affectionOf(ch.id),
-    };
+    final cast = roster;
+    final before = {for (final ch in cast) ch.id: s.affectionOf(ch.id)};
     engine.endDay(s, cliffhanger: cliffhanger);
     bundle.signals.rollover(
       s,
-      ids: [for (final ch in bundle.characters) ch.id],
+      ids: [for (final ch in cast) ch.id],
       before: before,
       shown: shown,
     );
@@ -844,10 +865,14 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 엔딩 후 다음 회차. run 이 올라가 히든 조건이 열린다.
+  /// 엔딩 후 다음 회차. run 이 올라가 히든 조건이 열린다. 선호는 이번 회차 것을 잇는다
+  /// (바꾸려면 홈의 새 게임에서 다시 고른다).
   Future<void> nextRun() async {
     final prevRun = state?.run ?? 1;
-    await newGame(run: prevRun + 1);
+    await newGame(
+      preference: state?.preference ?? Preference.all,
+      run: prevRun + 1,
+    );
   }
 
   String characterName(String? id) =>

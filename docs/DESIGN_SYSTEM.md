@@ -251,6 +251,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   + `CastStrip` → `sectionGap` → 앨범 `AppCard(onTap)`(`'앨범  N / M'` 단일 Text + `EndingTierDots` +
   다음 엔딩 힌트).
 - 세이브가 없으면 `새 게임` 이 1차 버튼 자리에 온다. 빈자리를 남기지 않는다.
+- `새 게임` 은 곧바로 시작하지 않고 선호 선택(§2.9)을 거친다. 이어하기 카드와 사람들 줄의 선호 표기는 §2.10.
 - **상단 여백 40% 와 로즈 방사 그라데이션은 폐지.** 배경은 `surface` 단색. 빈 공간으로 만든 여백은
   실기기에서 휑함으로 읽혔다.
 - 높이 예산: 320×568 · 글자 1.3배 · 배너 있음에서 1차 버튼 하단 ≤ 568. 이를 위해 카드 안 텍스트는
@@ -390,6 +391,34 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 모든 탭 대상은 최소 44×44. 원형 버튼(`_RoundBtn` 류)은 지름 최소 64.
 - 선택 목록은 `MinigameOption` 만 쓴다. 게임마다 `Container` + `BoxDecoration` 을
   새로 만들지 마라.
+
+### 2.9 선호 선택 (`preference_screen.dart`)
+- **주인공**: 카드 두 장(`PreferenceCard` — 여성 캐릭터 / 남성 캐릭터).
+- **배경**: 헤드라인 `'누구를 만나고 싶나요?'`, 하단 안내 `'나중에 새 게임에서 바꿀 수 있어요'`.
+- 진입: 홈의 `새 게임`. 세이브가 있으면 기존 확인 다이얼로그(`진행 중인 회차가 지워집니다…`)를
+  먼저 거친 뒤 이 화면이 뜬다. 카드를 누르면 **확인 없이** 그 선호로 새 게임이 시작된다.
+  뒤로 가면 아무것도 바뀌지 않는다(세이브도 그대로).
+- 구성(위→아래, `ListView`, 패딩 20/4/20/24): 빈 `AppBar`(뒤로 가기만. 제목을 AppBar 에 두지
+  않는 건 홈의 `'새 게임'` 단일 Text 규칙과 겹치지 않게 하려는 것) → 헤드라인 `headlineMedium`
+  → `sectionGap` → 카드(여성) → `gap` → 카드(남성) → `lg` → `Icons.info_outline`(16,
+  `onSurfaceVariant`) + 안내 `bodySmall`.
+- 카드 순서·아바타·소개는 전부 characters.json 에서 나온다(캐스트 3+3 이든 6+6 이든 그대로).
+  아바타 줄은 characters.json 순, 히든은 맨 뒤 실루엣. 소개는 히든이 아닌 사람들의 역할 이름
+  (`선배 · 소개팅 상대 · 초등 동창`), 최대 2줄.
+- 한쪽 캐릭터가 0명이면 그 카드는 비활성: 화살표 대신 `'준비 중'`(`labelSmall`), 제목은
+  `onSurfaceVariant`, 탭되지 않는다.
+- 색: 카드 바탕은 `AppCard` 기본(neutral). `primaryContainer`·로즈를 쓰지 않는다 — 두 선택지의
+  무게가 같아야 한다. 캐릭터 강조색은 아바타에만. 노란색 없음.
+- 높이 예산: 320×568 · 1.3배에서 두 카드가 스크롤 없이 첫 화면에 들어온다(테스트 고정).
+
+### 2.10 선호 표기 (홈 · 앨범)
+- 홈 이어하기 카드: 회차 줄 `'1회차 · 2장'` 단일 Text 뒤에 별도 Text `' · 여성 캐릭터'`
+  (`labelSmall`, `Key('continue-preference')`)를 붙인다. 좁으면 이쪽이 먼저 말줄임된다.
+  선호가 없던 예전 세이브(`all`)는 붙이지 않는다.
+- 홈 사람들 줄: 세이브가 있으면 그 회차 선호 쪽 사람만. 세이브가 없으면 전원(등장인물 소개).
+- 앨범 엔딩 탭: 진행도 블록 아래 `lg` 뒤에 `EndingFilterBar`(전체 · 여성 · 남성 · 공용). 진행도
+  `'N / M'` 은 **필터와 무관하게 전체 기준**이다(테스트 고정). 캐릭터 엔딩은 캐릭터 성별,
+  공용 엔딩은 `when.pref`, 둘 다 없으면 공용. 걸러서 비면 `AppEmptyState('이 분류의 엔딩이 없다')`.
 
 ---
 
@@ -967,6 +996,48 @@ class EndingTierDots extends StatelessWidget {
 Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builder});
 ```
 
+선호(남성향·여성향) 컴포넌트(§2.9, §2.10):
+
+```dart
+/// widgets.dart — 선호 선택 카드 한 장. AppCard(onTap, 최소 높이 56) 안에
+/// [제목 titleMedium + 우측 chevron_right 20] → md → 아바타 Wrap(CharacterAvatar 40,
+/// 간격 sm, 강조색 accentFor(id), 히든은 mystery) → sm → 소개 bodySmall(onSurfaceVariant, 2줄).
+/// Semantics(button, enabled, label: '제목. 이름들(히든은 "숨은 인물 N명"). 소개') 한 덩어리.
+/// onTap == null 이면 비활성: chevron 자리에 unavailableNote(labelSmall), 제목 onSurfaceVariant.
+class PreferenceCard extends StatelessWidget {
+  final String title;            // '여성 캐릭터' / '남성 캐릭터' 단일 Text
+  final String intro;            // '선배 · 소개팅 상대 · 초등 동창'
+  final List<CastEntry> cast;    // 아바타 줄. mystery 면 실루엣
+  final VoidCallback? onTap;
+  final String unavailableNote;  // 기본 '준비 중'
+
+  const PreferenceCard({
+    super.key,
+    required this.title,
+    required this.intro,
+    required this.cast,
+    this.onTap,
+    this.unavailableNote = '준비 중',
+  });
+}
+
+/// album_screen.dart — 엔딩 목록 필터 칩 줄. Wrap(간격 sm) + ChoiceChip(테마 chipTheme 그대로).
+/// 선택 상태는 selectedColor(primaryContainer) + avatar Icons.check 16 — 색만으로 알리지 않는다.
+/// 칩 탭 영역은 기본 MaterialTapTargetSize.padded(48)로 44 를 넘긴다.
+enum EndingFilter { all('전체'), female('여성'), male('남성'), common('공용') }
+class EndingFilterBar extends StatelessWidget {
+  final EndingFilter value;
+  final ValueChanged<EndingFilter> onChanged;
+}
+```
+
+`ContinueCard` 에 매개변수 하나 추가:
+
+```dart
+/// 이 회차의 선호 표기('여성 캐릭터'). null 이면(예전 세이브) 붙이지 않는다(§2.10).
+final String? preferenceLabel;
+```
+
 `AppListRow` 에 매개변수 하나 추가:
 
 ```dart
@@ -1061,6 +1132,9 @@ class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOp
 | 홈 예고 | `'어젯밤: ...'` 단일 Text(행동 화면과 같은 규칙) |
 | 홈 출석 줄 | 미수령 `'출석 보상 하트 +1'` + `'받기'`, 수령 `'오늘 출석 완료'` |
 | 홈 사람들 | 히든 미해금 `'???'`, 호감은 이름과 별개 Text `'♥N'` |
+| 홈 선호 표기 | 이어하기 카드의 `'1회차 · 2장'` 단일 Text 는 그대로, 선호는 별도 Text `' · 여성 캐릭터'`(`Key('continue-preference')`) |
+| 선호 선택 | 헤드라인 `'누구를 만나고 싶나요?'`, 카드 제목 `'여성 캐릭터'` / `'남성 캐릭터'`(`Key('preference-f')` / `'preference-m'`), 안내 `'나중에 새 게임에서 바꿀 수 있어요'`, 비활성 `'준비 중'` |
+| 앨범 엔딩 필터 | 칩 `'전체'` `'여성'` `'남성'` `'공용'`. 진행도 `'N / M'` 은 필터와 무관하게 전체 기준 |
 | 설정 | AppBar `'설정'`, 행 `'개인정보처리방침'` / `'오픈소스 라이선스'` / `'서체'` / `'앱 버전'` / `'저장 데이터 초기화'`, 확인 `'저장 데이터를 지울까요?'` → `'지우기'`, 스낵바 `'저장 데이터를 지웠어요'` |
 
 `test/widget/helpers.dart` 의 `wrapApp` 은 아직 자체 `ThemeData` 를 만든다. QA 단계에서

@@ -24,6 +24,49 @@ class StoryBundle {
     for (final c in characters) c.id: c,
   };
 
+  /// [pref] 회차에 등장하는 캐릭터(characters.json 순). [Preference.all] 이면 전부.
+  List<CharacterDef> charactersFor(String pref) => _rosters.putIfAbsent(
+    pref,
+    () => List.unmodifiable(characters.where((c) => c.appearsIn(pref))),
+  );
+  final Map<String, List<CharacterDef>> _rosters = {};
+
+  /// [pref] 회차에 등장하지 않는 캐릭터 id. 엔진이 조건·효과·후보에서 뺀다.
+  Set<String> absentIds(String pref) => _absent.putIfAbsent(
+    pref,
+    () => Set.unmodifiable({
+      for (final c in characters)
+        if (!c.appearsIn(pref)) c.id,
+    }),
+  );
+  final Map<String, Set<String>> _absent = {};
+
+  /// 이벤트가 [pref] 회차에 나올 수 있는지(날짜·조건과 무관한 정적 판정).
+  /// 캐릭터 이벤트는 그 캐릭터가 등장해야 하고, `trigger.pref` 는 쪽이 맞아야 한다.
+  bool eventInPreference(StoryEvent e, String pref) {
+    final ch = e.character;
+    if (ch != null && absentIds(pref).contains(ch)) return false;
+    return Preference.allowsSide(pref, e.trigger.pref);
+  }
+
+  /// 엔딩이 [pref] 회차에 나올 수 있는지. 캐릭터 엔딩은 캐릭터 성별, 공용은 `when.pref`.
+  bool endingInPreference(Ending e, String pref) {
+    final ch = e.character;
+    if (ch != null && absentIds(pref).contains(ch)) return false;
+    return Preference.allowsSide(pref, e.when.pref);
+  }
+
+  /// 엔딩의 쪽. 캐릭터 엔딩은 캐릭터 성별, 공용은 `when.pref`, 둘 다 없으면 null(공용).
+  /// 앨범 필터가 쓴다.
+  String? endingSide(Ending e) {
+    final ch = e.character;
+    if (ch != null) {
+      final g = characterById[ch]?.gender;
+      if (g != null && g.isNotEmpty) return g;
+    }
+    return e.when.pref;
+  }
+
   /// 레이어별 이벤트. 하루 계획에서 매번 240개를 훑지 않도록 한 번만 나눈다.
   late final Map<EventLayer, List<StoryEvent>> eventsByLayer = {
     for (final l in EventLayer.values)
@@ -148,6 +191,7 @@ class StoryBundle {
     for (final c in characters) {
       if (!charIds.add(c.id)) throw StateError('캐릭터 id 중복: ${c.id}');
     }
+    _checkCast();
     _checkStatKeys(config.initialStats.keys, 'config.initialStats');
     final early = config.earlyAffection;
     for (var i = 0; i < early.curve.length; i++) {
@@ -232,14 +276,66 @@ class StoryBundle {
     }
 
     // main 이벤트는 날짜가 겹치면 하루에 둘이 잡혀 흐름이 꼬인다.
-    final mainDays = <int, String>{};
+    // 예외: 쪽별 버전(`trigger.pref` f 와 m 각 1개)은 한 회차에 하나만 열리므로 같은 날 둔다.
+    // 공용(pref 없음)과 쪽별 버전이 같은 날 겹치면 한 회차에 둘이 잡히므로 오류다.
+    final mainDays = <int, Map<String?, String>>{};
     for (final e in events.where((e) => e.layer == EventLayer.main)) {
-      final prev = mainDays[e.day!];
-      if (prev != null) {
-        throw StateError('main 날짜 중복: ${e.day}일 ($prev, ${e.id})');
+      final slots = mainDays.putIfAbsent(e.day!, () => {});
+      final p = e.trigger.pref;
+      final clash =
+          slots[p] ??
+          (p == null && slots.isNotEmpty ? slots.values.first : null) ??
+          (p != null ? slots[null] : null);
+      if (clash != null) {
+        throw StateError('main 날짜 중복: ${e.day}일 ($clash, ${e.id})');
       }
-      mainDays[e.day!] = e.id;
+      slots[p] = e.id;
     }
+  }
+
+  /// 캐스트 규칙. gender·role 필수, 성별마다 역할당 최대 한 명, 히든은 트레이너 역할.
+  /// 한쪽에 역할이 비어 있는 것은 오류가 아니라 [lint] 경고다(작가가 채우는 중일 수 있다).
+  void _checkCast() {
+    final seat = <String, String>{};
+    for (final c in characters) {
+      if (!Preference.genders.contains(c.gender)) {
+        throw StateError('캐릭터 gender 는 f|m 필수: ${c.id} -> "${c.gender}"');
+      }
+      if (!CastRole.values.contains(c.role)) {
+        throw StateError(
+          '캐릭터 role 은 ${CastRole.values.join('|')} 중 하나: ${c.id} -> "${c.role}"',
+        );
+      }
+      final key = '${c.gender}/${c.role}';
+      final prev = seat[key];
+      if (prev != null) {
+        throw StateError('같은 성별·역할이 둘: $key ($prev, ${c.id})');
+      }
+      seat[key] = c.id;
+      if (c.hidden != (c.role == CastRole.trainer)) {
+        throw StateError(
+          '히든은 ${CastRole.trainer} 역할만, ${CastRole.trainer} 는 히든만: ${c.id}',
+        );
+      }
+    }
+  }
+
+  /// 성별마다 비어 있는 역할. 예: `{'m': ['senior', 'blinddate', 'classmate']}`.
+  /// 빈 쪽이 없으면 빈 맵.
+  Map<String, List<String>> get castGaps {
+    final out = <String, List<String>>{};
+    for (final g in Preference.genders) {
+      final have = {
+        for (final c in characters)
+          if (c.gender == g) c.role,
+      };
+      final miss = [
+        for (final r in CastRole.values)
+          if (!have.contains(r)) r,
+      ];
+      if (miss.isNotEmpty) out[g] = miss;
+    }
+    return out;
   }
 
   /// 모먼트 규칙(docs/MOMENTS_SPEC.md §1). 형식·알림·전화 거절 선택지.
@@ -309,6 +405,10 @@ class StoryBundle {
   }
 
   void _checkTrigger(Trigger t, String where) {
+    final p = t.pref;
+    if (p != null && !Preference.genders.contains(p)) {
+      throw StateError('pref 는 f|m: $where -> $p');
+    }
     _checkStatKeys(t.stats.keys, where);
     _checkCharKeys(t.affection.keys, '$where.affection');
     _checkCharKeys(t.trust.keys, '$where.trust');
@@ -326,8 +426,13 @@ class StoryBundle {
 
   /// 치명적이지는 않지만 의도와 다를 가능성이 큰 데이터. 출시 전 점검용.
   /// 예: character 가 없는 이벤트에서 `*` 를 쓰면 그 효과는 조용히 버려진다.
+  ///
+  /// 캐스트 빈칸(한쪽 성별에 역할이 없음)은 `캐스트:` 로 시작하는 경고로 알린다.
   List<String> lint() {
-    final out = <String>[];
+    final out = <String>[
+      for (final e in castGaps.entries)
+        '$castLintPrefix ${Preference.label(e.key)} 쪽에 역할 없음: ${e.value.join(', ')}',
+    ];
     for (final e in events) {
       if (e.character != null) continue;
       bool star(Map<String, Object?> m) => m.containsKey('*');
@@ -347,6 +452,20 @@ class StoryBundle {
         }
       }
     }
+    // main 쪽별 버전은 짝이 맞아야 한쪽 회차에만 빈 날이 생기지 않는다.
+    final mainSides = <int, Set<String?>>{};
+    for (final e in events.where((e) => e.layer == EventLayer.main)) {
+      mainSides.putIfAbsent(e.day!, () => {}).add(e.trigger.pref);
+    }
+    for (final d in mainSides.keys.toList()..sort()) {
+      final sides = mainSides[d]!;
+      if (sides.contains(null)) continue;
+      for (final g in Preference.genders) {
+        if (!sides.contains(g)) {
+          out.add('main $d일: ${Preference.label(g)} 쪽 버전 없음');
+        }
+      }
+    }
     for (final e in endings) {
       if (e.character == null &&
           (e.when.affection.containsKey('*') ||
@@ -356,6 +475,9 @@ class StoryBundle {
     }
     return out;
   }
+
+  /// [lint] 의 캐스트 빈칸 경고 머리말.
+  static const castLintPrefix = '캐스트:';
 
   /// 레이어별 이벤트 수. 콘텐츠 분량 확인용.
   Map<EventLayer, int> get countByLayer {

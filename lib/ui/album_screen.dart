@@ -203,14 +203,47 @@ class _ShameCard extends StatelessWidget {
 // 엔딩
 // ---------------------------------------------------------------------------
 
-class _EndingTab extends StatelessWidget {
+class _EndingTab extends StatefulWidget {
   final GameController c;
   const _EndingTab({required this.c});
+
+  @override
+  State<_EndingTab> createState() => _EndingTabState();
+}
+
+/// 엔딩 목록 필터. 캐릭터 엔딩은 캐릭터 성별, 공용 엔딩은 `when.pref` 로 나눈다.
+enum EndingFilter {
+  all('전체'),
+  female('여성'),
+  male('남성'),
+  common('공용');
+
+  final String label;
+  const EndingFilter(this.label);
+
+  /// [side] 는 `StoryBundle.endingSide` (f | m | null=공용).
+  bool accepts(String? side) => switch (this) {
+    all => true,
+    female => side == Preference.female,
+    male => side == Preference.male,
+    common => side == null,
+  };
+}
+
+class _EndingTabState extends State<_EndingTab> {
+  EndingFilter _filter = EndingFilter.all;
+
+  GameController get c => widget.c;
 
   @override
   Widget build(BuildContext context) {
     final got = c.endingAlbum.toSet();
     final all = c.bundle.endings;
+    // 진행도는 늘 전체 기준(`N / M`). 필터는 아래 목록만 거른다.
+    final shown = [
+      for (final e in all)
+        if (_filter.accepts(c.bundle.endingSide(e))) e,
+    ];
     return ListView(
       padding: AppInsets.screen,
       children: [
@@ -221,11 +254,22 @@ class _EndingTab extends StatelessWidget {
           value: all.isEmpty ? 0 : got.length / all.length,
           semanticLabel: '본 엔딩 ${got.length}개 / ${all.length}개',
         ),
-        const SizedBox(height: AppSpace.sectionGap),
-        for (var i = 0; i < all.length; i++) ...[
+        const SizedBox(height: AppSpace.lg),
+        EndingFilterBar(
+          value: _filter,
+          onChanged: (f) => setState(() => _filter = f),
+        ),
+        const SizedBox(height: AppSpace.lg),
+        if (shown.isEmpty)
+          const AppEmptyState(
+            icon: Icons.filter_alt_off_outlined,
+            title: '이 분류의 엔딩이 없다',
+            body: '다른 분류를 골라 보자.',
+          ),
+        for (var i = 0; i < shown.length; i++) ...[
           Builder(
             builder: (context) {
-              final e = all[i];
+              final e = shown[i];
               final owned = got.contains(e.id);
               return _EndingCard(
                 title: owned ? e.name : '???',
@@ -236,7 +280,7 @@ class _EndingTab extends StatelessWidget {
               );
             },
           ),
-          if (i < all.length - 1) const SizedBox(height: AppSpace.listGap),
+          if (i < shown.length - 1) const SizedBox(height: AppSpace.listGap),
         ],
       ],
     );
@@ -250,21 +294,20 @@ class _EndingTab extends StatelessWidget {
     'hidden' => '히든',
     _ => '',
   };
-
 }
 
 /// 플래그 이름만으로는 무슨 조건인지 알 수 없어 사람 말로 옮긴다.
 const _flagHints = {
-    'hardcore': '하드코어 모드',
-    'seoyeon_banmal': '서연에게 반말하기',
-    'burnout_x3': '번아웃 3번',
-    'album_20': '흑역사 20개 수집',
-    'chose_loop': '100일째의 마지막 선택',
-    'jiwoo_intro': '엄마의 소개팅 나가기',
-    'yeeun_avoid_1': '옛날 얘기 피하기',
-    'fake_record': '운동일지에 거짓말',
-    'learner': '준호의 비결 묻기',
-  };
+  'hardcore': '하드코어 모드',
+  'seoyeon_banmal': '서연에게 반말하기',
+  'burnout_x3': '번아웃 3번',
+  'album_20': '흑역사 20개 수집',
+  'chose_loop': '100일째의 마지막 선택',
+  'jiwoo_intro': '엄마의 소개팅 나가기',
+  'yeeun_avoid_1': '옛날 얘기 피하기',
+  'fake_record': '운동일지에 거짓말',
+  'learner': '준호의 비결 묻기',
+};
 
 /// 미획득 엔딩의 한 줄 힌트. 홈과 앨범이 같은 문장을 쓴다(HOME_REDESIGN §0.2).
 ///
@@ -447,4 +490,33 @@ class _TierPill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 엔딩 목록 필터 칩 줄(전체 · 여성 · 남성 · 공용). DESIGN_SYSTEM §3.2.
+/// 선택 상태는 색 + 체크 아이콘으로 알린다(색만으로 전하지 않는다).
+class EndingFilterBar extends StatelessWidget {
+  final EndingFilter value;
+  final ValueChanged<EndingFilter> onChanged;
+
+  const EndingFilterBar({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: AppSpace.sm,
+    runSpacing: AppSpace.sm,
+    children: [
+      for (final f in EndingFilter.values)
+        ChoiceChip(
+          key: Key('ending-filter-${f.name}'),
+          label: Text(f.label),
+          selected: f == value,
+          avatar: f == value ? const Icon(Icons.check, size: 16) : null,
+          onSelected: (_) => onChanged(f),
+        ),
+    ],
+  );
 }

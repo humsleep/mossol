@@ -62,8 +62,8 @@ const _miniConfig = {
 };
 
 const _miniChars = [
-  {'id': 'a', 'name': 'A'},
-  {'id': 'b', 'name': 'B'},
+  {'id': 'a', 'name': 'A', 'gender': 'f', 'role': 'senior'},
+  {'id': 'b', 'name': 'B', 'gender': 'm', 'role': 'senior'},
 ];
 
 const _miniEvents = [
@@ -191,6 +191,12 @@ const _miniEndings = [
   },
   {'id': 'def', 'name': '기본', 'priority': 0, 'default': true, 'when': {}},
 ];
+
+/// 캐스트 빈칸(`캐스트:`)을 뺀 lint. 합성 번들은 캐릭터가 몇 명뿐이라 늘 빈칸이 있다.
+List<String> dataLint(StoryBundle b) => [
+      for (final w in b.lint())
+        if (!w.startsWith(StoryBundle.castLintPrefix)) w,
+    ];
 
 StoryBundle miniBundle({
   Object config = _miniConfig,
@@ -1110,7 +1116,7 @@ void main() {
     test('정상 번들은 통과하고 lint 도 비어 있다', () {
       final b = miniBundle();
       expect(b.events.length, 5);
-      expect(b.lint(), isEmpty);
+      expect(dataLint(b), isEmpty);
     });
 
     test('id 중복', () {
@@ -1341,12 +1347,22 @@ void main() {
           ]
         }
       ]));
-      expect(b.lint(), ['a.choices[0].effects: character 없이 * 사용 (효과가 버려짐)']);
+      expect(dataLint(b), ['a.choices[0].effects: character 없이 * 사용 (효과가 버려짐)']);
     });
 
     test('실제 데이터의 lint 결과 (알려진 것만)', () {
       // 원본 정리(2026-09-19)로 알려진 경고가 모두 사라졌다. 새로 생기면 여기서 잡힌다.
-      expect(real.lint(), isEmpty);
+      expect(dataLint(real), isEmpty);
+      // 캐스트 빈칸은 신규 캐릭터(docs/CAST_BIBLE.md)가 들어올 때까지의 알려진 경고다.
+      // 캐릭터를 추가하면 이 목록을 줄이고, 6+6 이 되면 빈 목록이 된다.
+      expect(real.castGaps, {
+        'f': ['parttime', 'online', 'trainer'],
+        'm': ['senior', 'blinddate', 'classmate'],
+      });
+      expect(
+        real.lint().where((w) => w.startsWith(StoryBundle.castLintPrefix)),
+        hasLength(real.castGaps.length),
+      );
     });
 
     test('아예 깨진 JSON 은 FormatException', () {
@@ -1434,7 +1450,7 @@ void main() {
   test('호감이 오르지 않는 선택지는 크리티컬이 나지 않는다', () {
     final b = StoryBundle.fromJsonStrings(
       config: '{"totalDays":100,"initialStats":{"charm":10},"actions":[]}',
-      characters: '[{"id":"a","name":"A","role":"r"}]',
+      characters: '[{"id":"a","name":"A","gender":"f","role":"senior"}]',
       events: [
         '[{"id":"e","layer":"daily","character":"a","title":"t","lines":[],"choices":['
             '{"text":"cold","effects":{"affection":{"*":-5}}},'
@@ -1460,7 +1476,7 @@ void main() {
   test('@top 은 지금 호감이 가장 높은 한 사람에게만 적용된다', () {
     final b = StoryBundle.fromJsonStrings(
       config: '{"totalDays":100,"initialStats":{"charm":10},"actions":[]}',
-      characters: '[{"id":"a","name":"A","role":"r"},{"id":"b","name":"B","role":"r"}]',
+      characters: '[{"id":"a","name":"A","gender":"f","role":"senior"},{"id":"b","name":"B","gender":"f","role":"online"}]',
       events: [
         '[{"id":"e","layer":"daily","title":"t","lines":[],"choices":['
             '{"text":"x","effects":{"affection":{"@top":4},"trust":{"@top":-2}}}]}]',

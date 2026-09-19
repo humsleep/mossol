@@ -140,7 +140,7 @@ Scaffold(
 Column(crossAxisAlignment: start)
   Text('100일 프로젝트', labelSmall, color: onPrimaryContainer)            // 눈썹
   gap xs 4
-  Text('100일 뒤, 이 남자는 달라져 있을까', headlineMedium, color: onPrimaryContainer,
+  Text('100일 뒤, 나는 달라져 있을까', headlineMedium, color: onPrimaryContainer,
        maxLines: 2, overflow: ellipsis)
   gap md 12
   _Step(Icons.wb_twilight,          '아침: 오늘 할 일 하나 고르기')
@@ -355,7 +355,7 @@ AppCard(onTap:)
 | A 워드마크 | `모쏠 키우기` |
 | A 설정 툴팁 | `설정` |
 | B-1 눈썹 | `100일 프로젝트` |
-| B-1 헤드라인 | `100일 뒤, 이 남자는 달라져 있을까` |
+| B-1 헤드라인 | `100일 뒤, 나는 달라져 있을까` |
 | B-1 단계 1/2/3 | `아침: 오늘 할 일 하나 고르기` / `밤: 메신저로 대화하기` / `100일: 엔딩 30개 중 하나` |
 | B-2 회차 줄 | `{run}회차 · {chapter}장` |
 | B-2 진행 | `D+{day} / {totalDays}` |

@@ -94,10 +94,23 @@ class EventEngine {
     return h;
   }
 
+  /// 이 회차 선호 밖이라 등장하지 않는 캐릭터 id([StoryBundle.absentIds]).
+  Set<String> absentFor(GameState s) => bundle.absentIds(s.preference);
+
+  /// 이 회차에 등장하는 캐릭터(characters.json 순).
+  List<CharacterDef> rosterFor(GameState s) =>
+      bundle.charactersFor(s.preference);
+
+  /// 선호 밖 캐릭터를 뺀 호감 1위. 효과 키 `@top` 과 같은 사람이다.
+  String? topCharacter(GameState s) => topCharacterOf(s, absent: absentFor(s));
+
   bool _available(GameState s, StoryEvent e) {
     if (e.once && s.seen.contains(e.id)) return false;
     if (e.day != null && e.day != s.day) return false;
-    return e.trigger.matches(s, self: e.character);
+    final absent = absentFor(s);
+    // 선호 밖 캐릭터의 이벤트는 후보가 아니다. `trigger.pref` 는 matches 가 본다.
+    if (e.character != null && absent.contains(e.character)) return false;
+    return e.trigger.matches(s, self: e.character, absent: absent);
   }
 
   List<StoryEvent> candidates(GameState s, EventLayer layer) =>
@@ -227,7 +240,9 @@ class EventEngine {
       () {
         final c = ev.choices[i];
         final req = c.require;
-        final ok = req == null || req.satisfied(s, self: ev.character);
+        final ok =
+            req == null ||
+            req.satisfied(s, self: ev.character, absent: absentFor(s));
         return ChoiceView(i, c, !ok, ok ? '' : req.describe());
       }(),
   ];
@@ -293,6 +308,7 @@ class EventEngine {
         c.fail,
         self: self,
         affectionMultiplier: affectionMultiplier(s),
+        absent: absentFor(s),
       );
       final had = s.combo;
       s.combo = 0;
@@ -307,13 +323,16 @@ class EventEngine {
     // 운으로 나는 크리티컬은 호감을 2배로 올리는 연출이라, 호감이 오르지 않는
     // 선택지(차갑게 굴기 등)에서는 굴리지 않는다. 미니게임 크리티컬은 실력으로
     // 딴 것이므로 그대로 인정한다.
-    final canCrit = c.effects.affection.values.any((v) => v > 0);
+    final canCrit = c.effects.affection.entries.any(
+      (e) => e.value > 0 && !absentFor(s).contains(e.key),
+    );
     final crit = forcedCritical ?? (canCrit && r.nextInt(100) < critChance(s));
     final d = applyEffects(
       s,
       c.effects,
       self: self,
       affectionMultiplier: affectionMultiplier(s, critical: crit),
+      absent: absentFor(s),
     );
     final wasOnFire = s.onFire;
     if (_isGoodChoice(d)) {
@@ -360,7 +379,7 @@ class EventEngine {
   }
 
   AppliedDelta applyAction(GameState s, DayAction a) =>
-      applyEffects(s, a.effects);
+      applyEffects(s, a.effects, absent: absentFor(s));
 
   /// 하루 마감. 접촉 없던 캐릭터 호감도 -1, 스트레스 자연 감소, 날짜 +1.
   void endDay(GameState s, {String? cliffhanger}) {

@@ -2,7 +2,9 @@
  {
   "id": "seoyeon",
   "name": "서연",
-  "role": "동아리 선배",
+  "gender": "f",
+  "role": "senior",
+  "title": "동아리 선배",
   "likes": [
    "talk",
    "esteem"
@@ -28,7 +30,9 @@
  {
   "id": "haneul",
   "name": "하늘",
-  "role": "알바 동료",
+  "gender": "m",
+  "role": "parttime",
+  "title": "알바 동료",
   "likes": [
    "sense",
    "money"
@@ -54,7 +58,9 @@
  {
   "id": "jiwoo",
   "name": "지우",
-  "role": "소개팅 상대",
+  "gender": "f",
+  "role": "blinddate",
+  "title": "소개팅 상대",
   "likes": [
    "charm",
    "talk"
@@ -79,7 +85,9 @@
  {
   "id": "minjae",
   "name": "민재",
-  "role": "온라인 친구",
+  "gender": "m",
+  "role": "online",
+  "title": "온라인 친구",
   "likes": [
    "sincerity",
    "sense"
@@ -105,7 +113,9 @@
  {
   "id": "yeeun",
   "name": "예은",
-  "role": "초등 동창",
+  "gender": "f",
+  "role": "classmate",
+  "title": "초등 동창",
   "likes": [
    "esteem",
    "sincerity"
@@ -130,7 +140,9 @@
  {
   "id": "doyun",
   "name": "도윤",
-  "role": "헬스 트레이너",
+  "gender": "m",
+  "role": "trainer",
+  "title": "헬스 트레이너",
   "likes": [
    "charm",
    "stress"

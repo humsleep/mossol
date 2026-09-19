@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/preference_screen.dart';
 
 import 'helpers.dart';
 
@@ -38,8 +40,14 @@ void main() {
     expect(findText('이어하기'), findsNothing);
 
     await tester.tap(findText('새 게임'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    // 새 게임은 선호 선택을 거친다. 고르면 확인 없이 시작한다.
+    expect(findText(PreferenceScreen.title), findsOneWidget);
+    expect(c.phase, Phase.home);
+    await tester.tap(findText('여성 캐릭터'));
+    await tester.pumpAndSettle();
     expect(c.phase, Phase.action);
+    expect(c.state!.preference, Preference.female);
     await spinRouletteSheet(tester);
     expect(c.rouletteSlot, isNotNull);
     expect(findText('D+1  ·  1장'), findsOneWidget);
@@ -77,7 +85,11 @@ void main() {
     // D+2 의 m02 에는 미니게임 선택지(표정 읽기)가 있다.
     // 어젯밤 예고 카드가 생겨 행동 목록이 아래로 밀리므로 먼저 보이게 스크롤한다.
     final secondAction = findText(c.config.actions[1].name);
-    await tester.dragUntilVisible(secondAction, find.byType(ListView), const Offset(0, -200));
+    await tester.dragUntilVisible(
+      secondAction,
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     await tester.pumpAndSettle();
     await tester.tap(secondAction);
     await tester.pump();
@@ -99,7 +111,11 @@ void main() {
     expect(find.byType(MinigameScaffold), findsNothing);
     expect(c.lastOutcome, isNotNull);
     expect(c.lastOutcome!.critical, isTrue);
-    expect(findText('크리티컬!'), findsOneWidget, reason: 'm02 는 호감이 걸리지 않아 2배 문구가 없다');
+    expect(
+      findText('크리티컬!'),
+      findsOneWidget,
+      reason: 'm02 는 호감이 걸리지 않아 2배 문구가 없다',
+    );
     expect(findTextContaining('전부 맞췄다'), findsOneWidget);
 
     await tester.tap(findText('계속'));
@@ -135,8 +151,21 @@ void main() {
     await tester.tap(findText('새 게임'));
     await tester.pumpAndSettle();
     await tester.tap(findText('시작'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    // 지우기 확인 뒤 선호 선택. 뒤로 가면 새 게임이 시작되지 않고 세이브도 그대로다.
+    expect(findText(PreferenceScreen.title), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(c.phase, Phase.home);
+    expect(c.hasSave, isTrue);
+    await tester.tap(findText('새 게임'));
+    await tester.pumpAndSettle();
+    await tester.tap(findText('시작'));
+    await tester.pumpAndSettle();
+    await tester.tap(findText('남성 캐릭터'));
+    await tester.pumpAndSettle();
     expect(c.phase, Phase.action);
+    expect(c.state!.preference, Preference.male);
     await spinRouletteSheet(tester);
   });
 }

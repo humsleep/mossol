@@ -1550,7 +1550,8 @@ class CharacterChip extends StatelessWidget {
             ),
           ),
           // 한 덩어리 Text 를 유지한다(테스트 고정).
-          Text(keepAll('$name ♥$affection ✓$trust'),
+          Text(
+            keepAll('$name ♥$affection ✓$trust'),
             style: context.text.labelMedium?.copyWith(color: fg),
           ),
         ],
@@ -1935,6 +1936,10 @@ class ContinueCard extends StatelessWidget {
   /// 최애의 서사 신호 한 줄. null 이면 예전처럼 `'서연 ♥42'` + '가장 가까운 사람'.
   final String? topSignal;
 
+  /// 이 회차의 선호 표기(`'여성 캐릭터'`). 회차 줄 뒤에 `' · 여성 캐릭터'` 로 작게 붙는다.
+  /// null 이면(선호가 없던 예전 세이브) 붙이지 않는다. `'1회차 · 2장'` 은 단일 Text 그대로다.
+  final String? preferenceLabel;
+
   /// 요약을 아직 못 읽은 첫 프레임인지.
   final bool _placeholder;
 
@@ -1949,6 +1954,7 @@ class ContinueCard extends StatelessWidget {
     this.topAffection = 0,
     this.topAccent,
     this.topSignal,
+    this.preferenceLabel,
   }) : _placeholder = false;
 
   /// 세이브 요약을 아직 못 읽은 첫 프레임용.
@@ -1962,6 +1968,7 @@ class ContinueCard extends StatelessWidget {
       topAffection = 0,
       topAccent = null,
       topSignal = null,
+      preferenceLabel = null,
       _placeholder = true;
 
   @override
@@ -1988,11 +1995,28 @@ class ContinueCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  _placeholder ? '저장된 회차' : '$run회차 · $chapter장',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium,
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _placeholder ? '저장된 회차' : '$run회차 · $chapter장',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.labelMedium,
+                      ),
+                    ),
+                    // 선호는 회차 줄 꼬리. 좁으면 이쪽이 먼저 말줄임된다.
+                    if (!_placeholder && preferenceLabel != null)
+                      Flexible(
+                        child: Text(
+                          ' · $preferenceLabel',
+                          key: const Key('continue-preference'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.labelSmall,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (!_placeholder) ...[
@@ -2042,7 +2066,8 @@ class ContinueCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
-                    child: Text(keepAll('아직 아무와도 가까워지지 않았다'),
+                    child: Text(
+                      keepAll('아직 아무와도 가까워지지 않았다'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.bodySmall,
@@ -2063,7 +2088,8 @@ class ContinueCard extends StatelessWidget {
                   CharacterAvatar(name: topName!, accent: topAccent, size: 32),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
-                    child: Text(keepAll('$topName ♥$topAffection'),
+                    child: Text(
+                      keepAll('$topName ♥$topAffection'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.labelMedium?.copyWith(
@@ -2077,6 +2103,121 @@ class ContinueCard extends StatelessWidget {
               ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// 선호 선택 카드 한 장(`lib/ui/preference_screen.dart`). DESIGN_SYSTEM §3.2.
+///
+/// 제목(`titleMedium`) + 우측 화살표 → 그 쪽 캐릭터 이니셜 아바타 줄(40, 강조색, 히든은
+/// 실루엣) → 한 줄 소개(`bodySmall`, 최대 2줄). 카드 전체가 한 탭 대상(최소 56)이고
+/// 스크린리더에는 제목·소개·인원을 한 문장으로 읽힌다. [onTap] 이 null 이면 그 쪽 데이터가
+/// 아직 없는 것 — 화살표 대신 [unavailableNote] 를 보이고 탭되지 않는다.
+class PreferenceCard extends StatelessWidget {
+  /// `'여성 캐릭터'` / `'남성 캐릭터'`. 단일 Text.
+  final String title;
+
+  /// 한 줄 소개. 예: `'선배 · 소개팅 상대 · 초등 동창'`.
+  final String intro;
+
+  /// 아바타 줄. 순서는 호출부가 정한다. [CastEntry.mystery] 면 실루엣.
+  final List<CastEntry> cast;
+
+  final VoidCallback? onTap;
+
+  /// 탭할 수 없을 때 화살표 자리에 둘 짧은 말.
+  final String unavailableNote;
+
+  const PreferenceCard({
+    super.key,
+    required this.title,
+    required this.intro,
+    required this.cast,
+    this.onTap,
+    this.unavailableNote = '준비 중',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    final enabled = onTap != null;
+    final names = [
+      for (final e in cast)
+        if (!e.mystery) e.name,
+    ];
+    final hidden = cast.where((e) => e.mystery).length;
+    final who = [...names, if (hidden > 0) '숨은 인물 $hidden명'].join(', ');
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: [
+        title,
+        if (who.isNotEmpty) who,
+        if (intro.isNotEmpty) intro,
+        if (!enabled) unavailableNote,
+      ].join('. '),
+      excludeSemantics: true,
+      child: AppCard(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleMedium?.copyWith(
+                      color: enabled
+                          ? scheme.onSurface
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.sm),
+                if (enabled)
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: scheme.onSurfaceVariant,
+                  )
+                else
+                  Text(unavailableNote, style: context.text.labelSmall),
+              ],
+            ),
+            if (cast.isNotEmpty) ...[
+              const SizedBox(height: AppSpace.md),
+              Wrap(
+                spacing: AppSpace.sm,
+                runSpacing: AppSpace.sm,
+                children: [
+                  for (final e in cast)
+                    CharacterAvatar(
+                      name: e.name,
+                      accent: e.mystery ? null : t.accentFor(e.id),
+                      mystery: e.mystery,
+                    ),
+                ],
+              ),
+            ],
+            if (intro.isNotEmpty) ...[
+              const SizedBox(height: AppSpace.sm),
+              Text(
+                keepAll(intro),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -2125,7 +2266,8 @@ class _SignalLine extends StatelessWidget {
                 WidgetSpan(
                   alignment: PlaceholderAlignment.baseline,
                   baseline: TextBaseline.alphabetic,
-                  child: Text(keepAll('$name ♥$affection'),
+                  child: Text(
+                    keepAll('$name ♥$affection'),
                     style: context.text.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),

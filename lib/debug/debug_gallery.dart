@@ -13,6 +13,7 @@ import '../ui/design_system.dart';
 import '../ui/ending_screen.dart';
 import '../ui/event_screen.dart';
 import '../ui/home_screen.dart';
+import '../ui/preference_screen.dart';
 import '../ui/summary_screen.dart';
 import '../ui/widgets.dart';
 
@@ -61,12 +62,22 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
   /// 미니게임 난이도에 쓰는 상대. null 이면 기본값(replyZone 가운데, warm).
   String? _partnerId;
 
+  /// 미리보기 회차의 선호. 모먼트·정산·홈·엔딩 미리보기가 이 쪽 캐릭터로 꾸며진다.
+  String _pref = Preference.all;
+
   StoryBundle get bundle => widget.bundle;
+
+  /// 미리보기 선호에서 등장하는 캐릭터.
+  List<CharacterDef> get _roster => bundle.charactersFor(_pref);
 
   /// 미니게임·엔딩에 넘길 샘플 상태. 눈치 30 정도의 중반 플레이어.
   GameState _sampleState({int day = 40}) {
-    final s = GameState.fresh(bundle.config, bundle.characters, seed: 7)
-      ..day = day;
+    final s = GameState.fresh(
+      bundle.config,
+      bundle.characters,
+      seed: 7,
+      preference: _pref,
+    )..day = day;
     for (final k in [Stat.charm, Stat.talk, Stat.esteem, Stat.sense]) {
       s.stats[k] = 30 + (s.stats[k] ?? 0);
     }
@@ -97,7 +108,9 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     // 실제 SaveService 를 쓰면 기기의 진짜 세이브를 덮어쓴다. 메모리 세이브로 대체.
     final c = GameController(bundle: bundle, save: _MemorySave());
     final s = _sampleState(day: bundle.config.totalDays + 1);
-    final who = e.character ?? bundle.characters.first.id;
+    final who =
+        e.character ??
+        (_roster.isEmpty ? bundle.characters.first.id : _roster.first.id);
     s.relations[who]
       ?..affection = e.tier == 'solo' || e.tier == 'bad' ? 20 : 85
       ..trust = 60;
@@ -150,7 +163,7 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
   }) {
     final signals = bundle.signals;
     final ctx = SignalContext.of(s);
-    for (final ch in bundle.characters) {
+    for (final ch in _roster) {
       if (ch.hidden || exclude.contains(ch.id)) continue;
       final bands = signals.byCharacter[ch.id]?.bands;
       if (bands == null || bands.length < 2) continue;
@@ -273,6 +286,17 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     );
   }
 
+  /// 새 게임의 선호 선택 화면. 고르면 새 게임 대신 고른 값을 알려 주고 돌아온다.
+  Future<void> _openPreference() async {
+    final pref = await PreferenceScreen.show(context, bundle);
+    if (!mounted || pref == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('고른 선호: ${Preference.label(pref)} ($pref)')),
+      );
+  }
+
   void _warnShort(int want, int got) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -283,7 +307,7 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final moments = momentSamples(bundle);
+    final moments = momentSamples(bundle, preference: _pref);
     final byTier = <String, List<Ending>>{for (final t in _tiers) t: []};
     for (final e in bundle.endings) {
       (byTier[e.tier] ??= []).add(e);
@@ -294,6 +318,27 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
       body: ListView(
         padding: const EdgeInsets.only(bottom: AppSpace.xxl),
         children: [
+          // 미리보기 회차의 선호. 모먼트·정산·홈·엔딩 미리보기가 이 쪽 캐릭터를 쓴다.
+          const _Header('미리보기 선호'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.screenX),
+            child: SegmentedButton<String>(
+              key: const Key('debug-preference'),
+              segments: [
+                for (final p in Preference.values)
+                  ButtonSegment(
+                    value: p,
+                    label: Text(switch (p) {
+                      Preference.female => '여성',
+                      Preference.male => '남성',
+                      _ => '전체(예전 세이브)',
+                    }),
+                  ),
+              ],
+              selected: {_pref},
+              onSelectionChanged: (v) => setState(() => _pref = v.first),
+            ),
+          ),
           const _Header('미니게임 12종'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.screenX),
@@ -356,6 +401,13 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
             subtitle: const Text('이어하기 카드와 하락 한 줄'),
             trailing: const Icon(Icons.chevron_right),
             onTap: _openHome,
+          ),
+          ListTile(
+            leading: const Icon(Icons.people_alt_outlined),
+            title: const Text('새 게임: 선호 선택 화면'),
+            subtitle: const Text('누구를 만나고 싶나요? 두 장'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openPreference,
           ),
           const _Header('엔딩 화면'),
           for (final t in byTier.keys)
@@ -457,10 +509,19 @@ class _EndingPreview extends StatelessWidget {
   }
 }
 
-/// 디버그 갤러리의 모먼트 합성 이벤트 세 개(전화 · 알림 · 사진). 상대는 첫 캐릭터.
+/// 디버그 갤러리의 모먼트 합성 이벤트 세 개(전화 · 알림 · 사진). 상대는 [preference]
+/// 회차에 등장하는 첫 캐릭터(없으면 전체의 첫 캐릭터).
 /// 데이터 규격은 docs/MOMENTS_SPEC.md 그대로다(검증기를 통과하는 모양).
-List<(String, IconData, StoryEvent)> momentSamples(StoryBundle bundle) {
-  final who = bundle.characters.isEmpty ? null : bundle.characters.first.id;
+List<(String, IconData, StoryEvent)> momentSamples(
+  StoryBundle bundle, {
+  String preference = Preference.all,
+}) {
+  final roster = bundle.charactersFor(preference);
+  final who = roster.isNotEmpty
+      ? roster.first.id
+      : bundle.characters.isEmpty
+      ? null
+      : bundle.characters.first.id;
   final call = StoryEvent.fromJson({
     'id': 'mo_debug_call',
     'layer': 'route',

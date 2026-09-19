@@ -43,10 +43,12 @@ const topKey = '@top';
 
 /// 호감이 가장 높은 캐릭터 id. 동점이면 먼저 만난(관계 목록 앞) 쪽.
 /// 아무와도 호감이 없으면 null 이고, 그때 `@top` 효과는 적용되지 않는다.
-String? topCharacterOf(GameState s) {
+/// [absent](선호 밖 캐릭터)는 후보에서 뺀다.
+String? topCharacterOf(GameState s, {Set<String> absent = const {}}) {
   String? best;
   var bestAff = 0;
   s.relations.forEach((id, r) {
+    if (absent.contains(id)) return;
     if (r.affection > bestAff) {
       bestAff = r.affection;
       best = id;
@@ -65,11 +67,15 @@ int scaleGain(int v, double m) {
 /// [effects] 를 [s] 에 적용하고 실제 변화량을 돌려준다.
 /// [affectionMultiplier] 는 **오르는 호감에만** 곱한다(올림). 크리티컬 2배와
 /// 초반 가속(`EarlyAffection`)을 곱한 값이 들어온다. 감소·신뢰는 그대로.
+///
+/// [absent] 는 이 회차 선호 밖 캐릭터 id. 그 캐릭터를 id 로 직접 가리킨 호감·신뢰
+/// 효과(`"seoyeon": 3`)는 적용하지 않고, `@top` 도 그 캐릭터를 고르지 않는다.
 AppliedDelta applyEffects(
   GameState s,
   Effects effects, {
   String? self,
   double affectionMultiplier = 1,
+  Set<String> absent = const {},
 }) {
   final d = AppliedDelta();
 
@@ -84,10 +90,10 @@ AppliedDelta applyEffects(
     src.forEach((k, v) {
       final id = switch (k) {
         '*' => self,
-        topKey => topCharacterOf(s),
+        topKey => topCharacterOf(s, absent: absent),
         _ => k,
       };
-      if (id == null) return;
+      if (id == null || absent.contains(id)) return;
       final r = s.rel(id);
       final before = isAffection ? r.affection : r.trust;
       final amount = isAffection ? scaleGain(v, affectionMultiplier) : v;

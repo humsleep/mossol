@@ -15,9 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widget/helpers.dart';
 
 const _chars = '''[
-  {"id": "a", "name": "가", "hidden": false},
-  {"id": "b", "name": "나", "hidden": false},
-  {"id": "h", "name": "히", "hidden": true}
+  {"id": "a", "name": "가", "gender": "f", "role": "senior", "hidden": false},
+  {"id": "b", "name": "나", "gender": "m", "role": "senior", "hidden": false},
+  {"id": "h", "name": "히", "gender": "m", "role": "trainer", "hidden": true}
 ]''';
 
 const _endings =

@@ -27,6 +27,18 @@ const kOutDir = String.fromEnvironment('SIM_OUT', defaultValue: 'tool/sim_out');
 /// true 면 config 의 earlyAffection(초반 호감 가속)을 빼고 돌린다. 전후 비교용.
 const kNoEarly = bool.fromEnvironment('NO_EARLY');
 
+/// 회차 선호(`--dart-define=PREF=f|m|all`). 봇은 이 쪽 캐릭터만 대상으로 삼는다.
+/// `all` 은 선호 도입 전(예전 세이브)과 같은 전원 등장 회차다.
+const kPref = String.fromEnvironment('PREF', defaultValue: Preference.female);
+
+/// [kPref] 를 검사해 돌려준다. 오타면 조용히 all 로 돌지 않게 바로 실패한다.
+String simPreference() {
+  if (!Preference.values.contains(kPref)) {
+    throw ArgumentError('PREF 는 ${Preference.values.join('|')}: $kPref');
+  }
+  return kPref;
+}
+
 String _config() {
   final raw = File('$kStoryDir/config.json').readAsStringSync();
   if (!kNoEarly) return raw;
@@ -52,11 +64,14 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
 /// 이게 없으면 `@top` 선택지를 가치 0으로 보고 엉뚱한 선택을 한다.
 String? simTop;
 
+/// 지금 회차 선호 밖이라 등장하지 않는 캐릭터. 엔진이 그 id 효과를 버리므로 봇도 가치 0으로 본다.
+Set<String> simAbsent = const {};
+
 double sumMap(Map<String, int> m, {String? only, String? self}) {
   var t = 0.0;
   m.forEach((k, v) {
     final id = k == '*' ? self : (k == topKey ? simTop : k);
-    if (id == null) return;
+    if (id == null || simAbsent.contains(id)) return;
     if (only == null || id == only) t += v;
   });
   return t;
@@ -526,10 +541,11 @@ class RunResult {
   RunResult(this.strategy, this.seed, this.target);
 }
 
-RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1}) {
+RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String? pref}) {
   final engine = EventEngine(b);
-  final resolver = EndingResolver(b.endings);
-  final s = GameState.fresh(b.config, b.characters, seed: seed, run: run);
+  final resolver = EndingResolver(b.endings, characters: b.characters);
+  final s = GameState.fresh(b.config, b.characters, seed: seed, run: run, preference: pref ?? simPreference());
+  simAbsent = engine.absentFor(s);
   final r = Random(seed * 7919 + strat.name.hashCode);
   final res = RunResult(strat.name, seed, strat is FocusStrategy ? strat.target : null);
   Ending? ending;
@@ -606,7 +622,7 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1}) {
         }
       }
       final open = views.where((v) => !v.locked).toList();
-      simTop = topCharacterOf(s);
+      simTop = engine.topCharacter(s);
       if (open.isEmpty) {
         res.stuckEvents++;
         s.seen.add(ev.id);
@@ -664,7 +680,7 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1}) {
   res.tier = ending.tier;
   res.endDay = s.day - 1;
   res.stats.addAll(s.stats);
-  for (final c in b.characters) {
+  for (final c in engine.rosterFor(s)) {
     res.aff[c.id] = s.affectionOf(c.id);
     res.trust[c.id] = s.trustOf(c.id);
   }
@@ -712,8 +728,11 @@ void main() {
       out.writeln(o);
     }
 
-    final chars = bundle.characters.map((c) => c.id).toList();
-    final targets = chars; // 도윤 포함 6명 순환
+    final pref = simPreference();
+    final roster = bundle.charactersFor(pref);
+    final chars = roster.map((c) => c.id).toList();
+    final targets = chars; // 히든 포함 선호 쪽 전원 순환
+    final hiddenId = roster.where((c) => c.hidden).map((c) => c.id).firstOrNull;
     final strategies = <String, Strategy Function(int seed)>{
       'first': (_) => FirstStrategy(),
       'maxAff': (_) => MaxAffectionStrategy(),
@@ -750,7 +769,7 @@ void main() {
       byStrat.putIfAbsent(r.strategy, () => []).add(r);
     }
 
-    p('=== 시뮬레이션: 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===');
+    p('=== 시뮬레이션: 선호 $pref(${chars.join(' ')}), 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===');
     for (final e in byStrat.entries) {
       final rs = e.value;
       final n = rs.length;
@@ -893,11 +912,17 @@ void main() {
         final it = t.value.entries.toList()..sort((a, b) => b.value - a.value);
         p('    대상 ${t.key}: ${it.map((x) => '${x.key} ${x.value}').join(', ')}');
       }
-      final d = Dist(run2.map((r) => r.aff['doyun']!));
-      final dt = Dist(run2.map((r) => r.trust['doyun']!));
-      p('    도윤 호감 ${d.summary} | 신뢰 ${dt.summary} | 히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차');
-      final dd = run2.where((r) => r.target == 'doyun').toList();
-      p('    도윤 집중 시 도윤 호감 ${Dist(dd.map((r) => r.aff['doyun']!)).summary} 신뢰 ${Dist(dd.map((r) => r.trust['doyun']!)).summary} 도윤 루트 이벤트 ${Dist(dd.map((r) => r.routeByChar['doyun'] ?? 0)).mean.toStringAsFixed(1)}개');
+      // 히든 캐릭터(트레이너)는 선호 쪽에 있을 때만 본다.
+      final h = hiddenId;
+      if (h != null) {
+        final d = Dist(run2.map((r) => r.aff[h]!));
+        final dt = Dist(run2.map((r) => r.trust[h]!));
+        p('    히든 $h 호감 ${d.summary} | 신뢰 ${dt.summary} | 히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차');
+        final dd = run2.where((r) => r.target == h).toList();
+        p('    $h 집중 시 $h 호감 ${Dist(dd.map((r) => r.aff[h]!)).summary} 신뢰 ${Dist(dd.map((r) => r.trust[h]!)).summary} $h 루트 이벤트 ${Dist(dd.map((r) => r.routeByChar[h] ?? 0)).mean.toStringAsFixed(1)}개');
+      } else {
+        p('    히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차 (선호 $pref 쪽에 히든 캐릭터 없음)');
+      }
     }
     all.addAll(run2);
 
@@ -922,8 +947,11 @@ void main() {
 
     // (b) 한 번도 안 나온 엔딩
     final reached = all.map((r) => r.ending).toSet();
-    final never = bundle.endings.where((e) => !reached.contains(e.id)).map((e) => '${e.id}(${e.tier})').toList();
-    p('\n[b] 전 전략 통틀어 한 번도 안 나온 엔딩 ${never.length}/${bundle.endings.length}: ${never.join(', ')}');
+    final possible = bundle.endings.where((e) => bundle.endingInPreference(e, pref)).toList();
+    final never = possible.where((e) => !reached.contains(e.id)).map((e) => '${e.id}(${e.tier})').toList();
+    p('\n[b] 전 전략 통틀어 한 번도 안 나온 엔딩 ${never.length}/${possible.length} (선호 $pref 에서 가능한 엔딩 기준): ${never.join(', ')}');
+    final leaked = reached.where((id) => !possible.any((e) => e.id == id)).toList();
+    expect(leaked, isEmpty, reason: '선호 $pref 밖 엔딩이 나왔다');
     p('    나온 엔딩: ${reached.join(', ')}');
 
     final dir = Directory(kOutDir)..createSync(recursive: true);

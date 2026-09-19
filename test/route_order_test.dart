@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mossol/engine/effects.dart';
 import 'package:mossol/engine/ending_resolver.dart';
 import 'package:mossol/engine/event_engine.dart';
 import 'package:mossol/engine/models.dart';
@@ -16,6 +15,7 @@ import 'sim_balance_test.dart'
     show
         loadBundle,
         simTop,
+        simAbsent,
         kMinigameSuccess,
         Strategy,
         FirstStrategy,
@@ -207,6 +207,22 @@ const optionalScenes = {'jiwoo_r02'};
 
 const kRouteSeeds = int.fromEnvironment('ROUTE_SEEDS', defaultValue: 300);
 
+/// 시뮬레이션할 선호(`--dart-define=ROUTE_PREF=f|m|all`). 기본은 f 와 m 을 각각 돈다.
+/// 캐릭터가 한 명도 없는 쪽은 건너뛴다(신규 캐스트가 들어오기 전 데이터에서도 돈다).
+const kRoutePref = String.fromEnvironment('ROUTE_PREF', defaultValue: 'each');
+
+/// [kRoutePref] 에 해당하는, 캐릭터가 있는 선호 목록.
+List<String> routePrefs(StoryBundle b) {
+  final wanted = kRoutePref == 'each' ? Preference.genders : [kRoutePref];
+  for (final p in wanted) {
+    if (!Preference.values.contains(p)) throw ArgumentError('ROUTE_PREF: $p');
+  }
+  return [
+    for (final p in wanted)
+      if (b.charactersFor(p).isNotEmpty) p,
+  ];
+}
+
 // ---------------------------------------------------------------------------
 
 class _Run {
@@ -215,10 +231,11 @@ class _Run {
   String? target;
 }
 
-_Run _simulate(StoryBundle b, Strategy strat, int seed) {
+_Run _simulate(StoryBundle b, Strategy strat, int seed, String pref) {
   final engine = EventEngine(b);
-  final resolver = EndingResolver(b.endings);
-  final s = GameState.fresh(b.config, b.characters, seed: seed);
+  final resolver = EndingResolver(b.endings, characters: b.characters);
+  final s = GameState.fresh(b.config, b.characters, seed: seed, preference: pref);
+  simAbsent = engine.absentFor(s);
   final r = Random(seed * 7919 + strat.name.hashCode);
   final run = _Run()..target = strat is FocusStrategy ? strat.target : null;
 
@@ -241,7 +258,7 @@ _Run _simulate(StoryBundle b, Strategy strat, int seed) {
       }
       final views = engine.choicesFor(s, ev);
       final open = views.where((v) => !v.locked).toList();
-      simTop = topCharacterOf(s);
+      simTop = engine.topCharacter(s);
       if (open.isEmpty) {
         s.seen.add(ev.id);
         continue;
@@ -448,114 +465,130 @@ void main() {
     expect(bad.toList(), isEmpty, reason: bad.join('\n'));
   });
 
-  test('시뮬레이션: 뒤 이벤트가 앞 이벤트보다 먼저 나온 적 0번 + 도달성', () {
-    final strategies = <String, Strategy Function(int seed)>{
-      'first': (_) => FirstStrategy(),
-      'maxAff': (_) => MaxAffectionStrategy(),
-      'focus': (seed) => FocusStrategy(bundle.characters[seed % bundle.characters.length].id),
-      'focus+hint': (seed) => FocusStrategy(bundle.characters[seed % bundle.characters.length].id, useHint: true),
-      'random': (_) => RandomStrategy(),
-      'doubleTimer': (seed) {
-        final cs = bundle.characters.map((c) => c.id).toList();
-        return DoubleTimerStrategy(cs[seed % cs.length], cs[(seed + 2) % cs.length]);
-      },
-    };
-    final chars = bundle.characters.map((c) => c.id).toList();
-    final violations = <String, int>{};
-    final examples = <String, String>{};
-    // 전략 → 캐릭터 → (도달, 분모)
-    final reach = <String, Map<String, List<int>>>{};
-    // focus 대상별 루트 이벤트 열람 수 (r00~r15)
-    final seenBy = <String, Map<String, int>>{};
-    final focusN = <String, int>{};
+  // 선호마다 따로 돈다. 데이터가 없는 쪽(캐릭터 0명)은 routePrefs 가 뺀다.
+  for (final pref in Preference.values) {
+    test('시뮬레이션[$pref]: 뒤 이벤트가 앞 이벤트보다 먼저 나온 적 0번 + 도달성', () {
+      if (!routePrefs(bundle).contains(pref)) {
+        markTestSkipped('ROUTE_PREF=$kRoutePref 이거나 $pref 쪽 캐릭터가 없음');
+        return;
+      }
+      // 봇은 이 선호 쪽 캐릭터만 대상으로 삼는다.
+      final roster = bundle.charactersFor(pref);
+      final chars = roster.map((c) => c.id).toList();
+      final strategies = <String, Strategy Function(int seed)>{
+        'first': (_) => FirstStrategy(),
+        'maxAff': (_) => MaxAffectionStrategy(),
+        'focus': (seed) => FocusStrategy(chars[seed % chars.length]),
+        'focus+hint': (seed) => FocusStrategy(chars[seed % chars.length], useHint: true),
+        'random': (_) => RandomStrategy(),
+        'doubleTimer': (seed) => DoubleTimerStrategy(chars[seed % chars.length], chars[(seed + 2) % chars.length]),
+      };
+      // 이 선호에서 나올 수 없는 이벤트가 걸린 쌍은 건너뛴다(예: 남성 쪽 회차의 m10 ← jiwoo_r01).
+      bool inPref(String id) => bundle.eventInPreference(bundle.eventById[id]!, pref);
+      final prereq = [
+        for (final (later, earlier) in prerequisites)
+          if (inPref(later) && earlier.split('|').any(inPref)) (later, earlier),
+      ];
+      final order = [
+        for (final (later, earlier) in orderOnly)
+          if (inPref(later) && inPref(earlier)) (later, earlier),
+      ];
+      final violations = <String, int>{};
+      final examples = <String, String>{};
+      // 전략 → 캐릭터 → (도달, 분모)
+      final reach = <String, Map<String, List<int>>>{};
+      // focus 대상별 루트 이벤트 열람 수 (r00~r15)
+      final seenBy = <String, Map<String, int>>{};
+      final focusN = <String, int>{};
 
-    for (final entry in strategies.entries) {
-      final rr = reach.putIfAbsent(entry.key, () => {for (final c in chars) c: [0, 0]});
-      for (var seed = 1; seed <= kRouteSeeds; seed++) {
-        final run = _simulate(bundle, entry.value(seed), seed);
-        for (final (later, earlier) in prerequisites) {
-          final li = run.index[later];
-          if (li == null) continue;
-          final eis = earlier.split('|').map((x) => run.index[x]).whereType<int>();
-          final ei = eis.isEmpty ? null : eis.reduce(min);
-          if (ei == null || ei > li) {
-            final k = '$later ← $earlier';
-            violations[k] = (violations[k] ?? 0) + 1;
-            examples.putIfAbsent(k, () => '${entry.key}#$seed');
+      for (final entry in strategies.entries) {
+        final rr = reach.putIfAbsent(entry.key, () => {for (final c in chars) c: [0, 0]});
+        for (var seed = 1; seed <= kRouteSeeds; seed++) {
+          final run = _simulate(bundle, entry.value(seed), seed, pref);
+          for (final (later, earlier) in prereq) {
+            final li = run.index[later];
+            if (li == null) continue;
+            final eis = earlier.split('|').map((x) => run.index[x]).whereType<int>();
+            final ei = eis.isEmpty ? null : eis.reduce(min);
+            if (ei == null || ei > li) {
+              final k = '$later ← $earlier';
+              violations[k] = (violations[k] ?? 0) + 1;
+              examples.putIfAbsent(k, () => '${entry.key}#$seed');
+            }
           }
-        }
-        for (final (later, earlier) in orderOnly) {
-          final li = run.index[later];
-          final ei = run.index[earlier];
-          if (li != null && ei != null && ei > li) {
-            final k = '$earlier 가 $later 뒤에';
-            violations[k] = (violations[k] ?? 0) + 1;
-            examples.putIfAbsent(k, () => '${entry.key}#$seed');
+          for (final (later, earlier) in order) {
+            final li = run.index[later];
+            final ei = run.index[earlier];
+            if (li != null && ei != null && ei > li) {
+              final k = '$earlier 가 $later 뒤에';
+              violations[k] = (violations[k] ?? 0) + 1;
+              examples.putIfAbsent(k, () => '${entry.key}#$seed');
+            }
           }
-        }
-        if (entry.key == 'focus' && run.target != null) {
-          final t = run.target!;
-          focusN[t] = (focusN[t] ?? 0) + 1;
-          final m = seenBy.putIfAbsent(t, () => {});
-          for (final id in run.index.keys.where((k) => k.startsWith('${t}_r'))) {
-            m[id] = (m[id] ?? 0) + 1;
+          if (entry.key == 'focus' && run.target != null) {
+            final t = run.target!;
+            focusN[t] = (focusN[t] ?? 0) + 1;
+            final m = seenBy.putIfAbsent(t, () => {});
+            for (final id in run.index.keys.where((k) => k.startsWith('${t}_r'))) {
+              m[id] = (m[id] ?? 0) + 1;
+            }
           }
-        }
-        for (final c in chars) {
-          if (run.target != null && run.target != c) continue;
-          rr[c]![1]++;
-          if (run.index.containsKey('${c}_r15')) rr[c]![0]++;
+          for (final c in chars) {
+            if (run.target != null && run.target != c) continue;
+            rr[c]![1]++;
+            if (run.index.containsKey('${c}_r15')) rr[c]![0]++;
+          }
         }
       }
-    }
 
-    final out = StringBuffer('=== 루트 r15 도달 비율 (시드 $kRouteSeeds) ===\n');
-    out.writeln('전략'.padRight(12) + chars.map((c) => c.padLeft(9)).join());
-    for (final e in reach.entries) {
-      out.writeln(e.key.padRight(12) +
-          chars.map((c) {
-            final v = e.value[c]!;
-            return (v[1] == 0 ? '-' : (v[0] / v[1]).toStringAsFixed(3)).padLeft(9);
-          }).join());
-    }
-    out.writeln('\n=== focus 대상별 루트 이벤트 열람률 % (r00..r15) ===');
-    for (final c in chars) {
-      final n = focusN[c] ?? 0;
-      if (n == 0) continue;
-      final row = List.generate(16, (i) {
-        final id = '${c}_r${i.toString().padLeft(2, '0')}';
-        if (!bundle.eventById.containsKey(id)) return '   -';
-        return (100 * (seenBy[c]?[id] ?? 0) / n).round().toString().padLeft(4);
-      }).join();
-      out.writeln('${c.padRight(8)} $row');
-    }
-    out.writeln('\n=== 순서 위반 ===');
-    final vs = violations.entries.toList()..sort((a, b) => b.value - a.value);
-    for (final v in vs) {
-      out.writeln('${v.key}: ${v.value}회 (예: ${examples[v.key]})');
-    }
-    print(out);
-    Directory('tool/sim_out').createSync(recursive: true);
-    File('tool/sim_out/route_order_report.txt').writeAsStringSync(out.toString());
+      final out = StringBuffer('=== 루트 r15 도달 비율 (선호 $pref, 시드 $kRouteSeeds) ===\n');
+      out.writeln('전략'.padRight(12) + chars.map((c) => c.padLeft(9)).join());
+      for (final e in reach.entries) {
+        out.writeln(e.key.padRight(12) +
+            chars.map((c) {
+              final v = e.value[c]!;
+              return (v[1] == 0 ? '-' : (v[0] / v[1]).toStringAsFixed(3)).padLeft(9);
+            }).join());
+      }
+      out.writeln('\n=== focus 대상별 루트 이벤트 열람률 % (r00..r15) ===');
+      for (final c in chars) {
+        final n = focusN[c] ?? 0;
+        if (n == 0) continue;
+        final row = List.generate(16, (i) {
+          final id = '${c}_r${i.toString().padLeft(2, '0')}';
+          if (!bundle.eventById.containsKey(id)) return '   -';
+          return (100 * (seenBy[c]?[id] ?? 0) / n).round().toString().padLeft(4);
+        }).join();
+        out.writeln('${c.padRight(8)} $row');
+      }
+      out.writeln('\n=== 순서 위반 ===');
+      final vs = violations.entries.toList()..sort((a, b) => b.value - a.value);
+      for (final v in vs) {
+        out.writeln('${v.key}: ${v.value}회 (예: ${examples[v.key]})');
+      }
+      print(out);
+      Directory('tool/sim_out').createSync(recursive: true);
+      File(pref == Preference.all ? 'tool/sim_out/route_order_report.txt' : 'tool/sim_out/route_order_report_$pref.txt').writeAsStringSync(out.toString());
 
-    // 도달성: 캐릭터마다 최소 한 전략에서 수정 전보다 5%p 넘게 떨어지지 않는다.
-    final reachBad = <String>[];
-    for (final c in chars) {
-      final base = baselineReach[c];
-      if (base == null) continue;
-      final ok = base.entries.any((b) {
-        final v = reach[b.key]?[c];
-        if (v == null || v[1] == 0) return false;
-        return v[0] / v[1] >= b.value - 0.05;
-      });
-      if (!ok) reachBad.add(c);
-    }
-    expect(violations, isEmpty, reason: '순서 위반:\n${vs.map((v) => '${v.key} ${v.value}').join('\n')}');
-    expect(reachBad, isEmpty, reason: 'r15 도달성이 크게 떨어진 캐릭터: $reachBad');
-    // 어떤 전략으로도 도달 못 하는 캐릭터가 있으면 막다른 길이다.
-    for (final c in chars) {
-      final best = reach.values.map((m) => m[c]![1] == 0 ? 0.0 : m[c]![0] / m[c]![1]).reduce(max);
-      expect(best, greaterThan(0), reason: '$c r15 도달 0');
-    }
-  }, timeout: const Timeout(Duration(minutes: 15)));
+      // 도달성: 캐릭터마다 최소 한 전략에서 수정 전보다 5%p 넘게 떨어지지 않는다.
+      final reachBad = <String>[];
+      for (final c in chars) {
+        final base = baselineReach[c];
+        if (base == null) continue;
+        final ok = base.entries.any((b) {
+          final v = reach[b.key]?[c];
+          if (v == null || v[1] == 0) return false;
+          return v[0] / v[1] >= b.value - 0.05;
+        });
+        if (!ok) reachBad.add(c);
+      }
+      expect(violations, isEmpty, reason: '순서 위반:\n${vs.map((v) => '${v.key} ${v.value}').join('\n')}');
+      expect(reachBad, isEmpty, reason: 'r15 도달성이 크게 떨어진 캐릭터: $reachBad');
+      // 어떤 전략으로도 도달 못 하는 캐릭터가 있으면 막다른 길이다.
+      for (final c in chars) {
+        final best = reach.values.map((m) => m[c]![1] == 0 ? 0.0 : m[c]![0] / m[c]![1]).reduce(max);
+        expect(best, greaterThan(0), reason: '$c r15 도달 0');
+      }
+    }, timeout: const Timeout(Duration(minutes: 15)));
+  }
 }

@@ -78,7 +78,7 @@ class _ActionScreenState extends State<ActionScreen> {
     final s = c.state!;
     // 히든 캐릭터는 한 번이라도 얽힌 뒤에야 관계 줄에 나온다(기존 규칙 유지).
     final cast = [
-      for (final ch in c.bundle.characters)
+      for (final ch in c.roster)
         if (!ch.hidden || s.affectionOf(ch.id) > 0) ch,
     ];
     final cliffhanger = s.lastCliffhanger;
