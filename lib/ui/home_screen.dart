@@ -253,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       builder: (ctx) => AlertDialog(
         title: const Text('새 게임'),
-        content: const Text('진행 중인 회차가 지워집니다. 시작할까요?'),
+        content: Text(keepAll('진행 중인 회차가 지워집니다. 시작할까요?')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -319,7 +319,7 @@ class _IntroCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpace.xs),
           Text(
-            '100일 뒤, 이 남자는 달라져 있을까',
+            keepAll('100일 뒤, 이 남자는 달라져 있을까'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: context.text.headlineMedium?.copyWith(color: fg),
@@ -350,7 +350,7 @@ class _Step extends StatelessWidget {
         const SizedBox(width: AppSpace.sm),
         Expanded(
           child: Text(
-            text,
+            keepAll(text),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.bodyMedium?.copyWith(color: fg),
@@ -400,7 +400,7 @@ class _ResourceRow extends StatelessWidget {
       await c.grantHeart();
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
+        SnackBar(content: Text(keepAll('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))),
       );
     }
   }
@@ -447,7 +447,9 @@ class _AlbumCard extends StatelessWidget {
               Expanded(
                 // 공백 두 개, 단일 Text(테스트 고정).
                 child: Text(
-                  '앨범  ${c.endingAlbum.length} / ${c.bundle.endings.length}',
+                  keepAll(
+                    '앨범  ${c.endingAlbum.length} / ${c.bundle.endings.length}',
+                  ),
                   maxLines: 1,
                   style: t.numericMedium,
                 ),
@@ -477,7 +479,7 @@ class _AlbumCard extends StatelessWidget {
               const SizedBox(width: AppSpace.sm),
               Expanded(
                 child: Text(
-                  _hintLine(),
+                  keepAll(_hintLine()),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall,

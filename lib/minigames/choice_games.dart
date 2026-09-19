@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import 'minigame.dart';
+import '../ui/keep_all.dart';
 
 /// 4. 표정 읽기 퀴즈 — 눈치
 class ReadEmotionGame extends StatefulWidget {
@@ -139,8 +140,7 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
               onTap: () => _pick(i),
             ),
           const SizedBox(height: AppSpace.md),
-          Text(
-            '${_round + 1} / ${_rounds.length}',
+          Text(keepAll('${_round + 1} / ${_rounds.length}'),
             textAlign: TextAlign.center,
             style: t.numericSmall,
           ),
@@ -239,8 +239,7 @@ class _PickMemeGameState extends State<PickMemeGame> {
                     width: AppBorderWidth.hairline,
                   ),
                 ),
-                child: Text(
-                  '"방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ"',
+                child: Text(keepAll('"방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ"'),
                   style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
                 ),
               ),
@@ -482,8 +481,7 @@ class _DateCourseGameState extends State<DateCourseGame> {
                 const SizedBox(width: AppSpace.xs),
               ],
               Flexible(
-                child: Text(
-                  '합계 $_cost / $budget${over ? "  (예산 초과)" : ""}',
+                child: Text(keepAll('합계 $_cost / $budget${over ? "  (예산 초과)" : ""}'),
                   textAlign: TextAlign.center,
                   style: t.numericMedium.copyWith(
                     color: over ? t.danger : scheme.onSurface,

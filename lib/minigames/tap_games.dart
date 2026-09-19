@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import 'minigame.dart';
+import '../ui/keep_all.dart';
 
 /// 보낸 사람 자리. 사진 대신 강조색 이니셜 원형을 쓴다(규격서 §4.3).
 class _Initial extends StatelessWidget {
@@ -141,7 +142,7 @@ class _GroupChatGameState extends State<GroupChatGame> {
               onTap: () => _tap(i),
             ),
           const SizedBox(height: AppSpace.md),
-          Text('누른 순서가 곧 답장 순서다.', style: context.text.bodySmall),
+          Text(keepAll('누른 순서가 곧 답장 순서다.'), style: context.text.bodySmall),
         ],
       ),
     );
@@ -288,7 +289,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
                     ),
                   ),
                   child: Text(
-                    line.$1,
+                    keepAll(line.$1),
                     style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
                   ),
                 ),
@@ -356,7 +357,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
               ),
             ),
             const SizedBox(height: AppSpace.md),
-            Text('$done / ${_beats.length}   콤보 $_combo', style: t.numericSmall),
+            Text(keepAll('$done / ${_beats.length}   콤보 $_combo'), style: t.numericSmall),
           ],
         ),
       ),
@@ -482,13 +483,13 @@ class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
                     ),
                     const SizedBox(height: AppSpace.md),
                     Text(
-                      p.$1,
+                      keepAll(p.$1),
                       textAlign: TextAlign.center,
                       style: context.text.titleMedium,
                     ),
                     const SizedBox(height: AppSpace.xs),
                     Text(
-                      p.$2,
+                      keepAll(p.$2),
                       textAlign: TextAlign.center,
                       style: context.text.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
@@ -525,8 +526,7 @@ class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
           ),
           const SizedBox(height: AppSpace.sm),
           Center(
-            child: Text(
-              '$seen / ${_profiles.length}   매칭 $_matches',
+            child: Text(keepAll('$seen / ${_profiles.length}   매칭 $_matches'),
               style: t.numericSmall,
             ),
           ),

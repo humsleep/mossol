@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import 'minigame.dart';
+import '../ui/keep_all.dart';
 
 /// 좌우로 움직이는 마커를 원하는 구간에서 멈추는 공용 위젯.
 ///
@@ -191,8 +192,7 @@ class _SweepBarState extends State<_SweepBar>
                 ),
                 const SizedBox(width: AppSpace.sm),
                 Flexible(
-                  child: Text(
-                    '화면 아무 데나 눌러서 멈추기',
+                  child: Text(keepAll('화면 아무 데나 눌러서 멈추기'),
                     style: context.text.bodySmall,
                   ),
                 ),
@@ -436,8 +436,7 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
                       color: t.bubbleMine,
                       borderRadius: AppRadius.bubble(mine: true),
                     ),
-                    child: Text(
-                      '야 서연 선배 오늘 진짜 멋있지 않았냐',
+                    child: Text(keepAll('야 서연 선배 오늘 진짜 멋있지 않았냐'),
                       style: t.bubbleText.copyWith(color: t.onBubbleMine),
                     ),
                   ),

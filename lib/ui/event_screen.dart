@@ -12,6 +12,7 @@ import 'call_view.dart';
 import 'design_system.dart';
 import 'notification_card.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 전화 이벤트의 단계. docs/MOMENTS_SPEC.md §1.1.
 enum CallStage { ringing, active, declined }
@@ -716,8 +717,7 @@ class _WaitingBlock extends StatelessWidget {
               color: scheme.surfaceContainerHigh,
               borderRadius: AppRadius.rPill,
             ),
-            child: Text(
-              '읽음 · $secondsLeft초째 답이 없다',
+            child: Text(keepAll('읽음 · $secondsLeft초째 답이 없다'),
               textAlign: TextAlign.center,
               style: AppTypography.tabular(base.copyWith(color: t.systemLine)),
             ),
@@ -845,7 +845,7 @@ class _ChoicePanel extends StatelessWidget {
                     if (ok) c.revealHint();
                   },
                   icon: const Icon(Icons.lightbulb_outline, size: 18),
-                  label: const Text('태현에게 물어보기 (광고)'),
+                  label: Text(keepAll('태현에게 물어보기 (광고)')),
                 ),
               ),
             ),
@@ -931,7 +931,7 @@ class _ResultPanel extends StatelessWidget {
               const SizedBox(width: AppSpace.sm),
               Expanded(
                 child: Text(
-                  headline,
+                  keepAll(headline),
                   style: context.text.titleMedium?.copyWith(color: fg),
                 ),
               ),
@@ -959,7 +959,7 @@ class _ResultPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: AppSpace.sm),
               child: Text(
-                c.minigameNote!,
+                keepAll(c.minigameNote!),
                 style: context.text.bodyMedium?.copyWith(color: fg),
               ),
             ),
@@ -982,8 +982,7 @@ class _ResultPanel extends StatelessWidget {
                   Icon(Icons.photo_album_outlined, size: 16, color: fg),
                   const SizedBox(width: AppSpace.xs),
                   Expanded(
-                    child: Text(
-                      '흑역사 앨범에 추가: ${o.delta.album}',
+                    child: Text(keepAll('흑역사 앨범에 추가: ${o.delta.album}'),
                       style: context.text.bodySmall?.copyWith(color: fg),
                     ),
                   ),

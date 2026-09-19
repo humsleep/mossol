@@ -1099,7 +1099,7 @@ class SectionHeader extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            title,
+            keepAll(title),
             style: context.text.titleMedium,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1289,7 +1289,7 @@ class AppListRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      keepAll(title),
                       style: context.text.titleSmall?.copyWith(
                         fontSize: 15,
                         color: fg,
@@ -1299,7 +1299,7 @@ class AppListRow extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: AppSpace.xxs),
                         child: Text(
-                          subtitle!,
+                          keepAll(subtitle!),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: context.text.bodySmall?.copyWith(
@@ -1456,7 +1456,7 @@ class ResultBadge extends StatelessWidget {
         SizedBox(width: large ? AppSpace.sm : AppSpace.xs),
         Flexible(
           child: Text(
-            label,
+            keepAll(label),
             textAlign: large ? TextAlign.center : TextAlign.start,
             style: labelStyle,
           ),
@@ -1475,7 +1475,7 @@ class ResultBadge extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: AppSpace.xs),
             child: Text(
-              detail!,
+              keepAll(detail!),
               textAlign: large ? TextAlign.center : TextAlign.start,
               style: context.text.bodyMedium?.copyWith(color: tn.fg),
             ),
@@ -1550,8 +1550,7 @@ class CharacterChip extends StatelessWidget {
             ),
           ),
           // 한 덩어리 Text 를 유지한다(테스트 고정).
-          Text(
-            '$name ♥$affection ✓$trust',
+          Text(keepAll('$name ♥$affection ✓$trust'),
             style: context.text.labelMedium?.copyWith(color: fg),
           ),
         ],
@@ -1602,13 +1601,13 @@ class AppEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpace.lg),
             Text(
-              title,
+              keepAll(title),
               textAlign: TextAlign.center,
               style: context.text.titleMedium,
             ),
             const SizedBox(height: AppSpace.sm),
             Text(
-              body,
+              keepAll(body),
               textAlign: TextAlign.center,
               style: context.text.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
@@ -1698,7 +1697,7 @@ class ChoiceButton extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: AppSpace.xxs),
                       child: Text(
-                        lockedReason!,
+                        keepAll(lockedReason!),
                         style: context.text.bodySmall?.copyWith(
                           color: t.lockedForeground,
                         ),
@@ -1900,7 +1899,7 @@ class _CastItem extends StatelessWidget {
                 const SizedBox(height: AppSpace.xxs),
                 // 이름과 별개 Text(테스트 고정).
                 Text(
-                  '♥${e.affection}',
+                  keepAll('♥${e.affection}'),
                   maxLines: 1,
                   textAlign: TextAlign.center,
                   style: t.numericSmall,
@@ -1998,7 +1997,7 @@ class ContinueCard extends StatelessWidget {
               ),
               if (!_placeholder) ...[
                 const SizedBox(width: AppSpace.sm),
-                Text('D+$day / $totalDays', style: t.numericMedium),
+                Text(keepAll('D+$day / $totalDays'), style: t.numericMedium),
               ],
             ],
           ),
@@ -2023,7 +2022,7 @@ class ContinueCard extends StatelessWidget {
               const SizedBox(width: AppSpace.md),
               Expanded(
                 child: Text(
-                  preview,
+                  keepAll(preview),
                   maxLines: tight ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodyMedium,
@@ -2043,8 +2042,7 @@ class ContinueCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
-                    child: Text(
-                      '아직 아무와도 가까워지지 않았다',
+                    child: Text(keepAll('아직 아무와도 가까워지지 않았다'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.bodySmall,
@@ -2065,8 +2063,7 @@ class ContinueCard extends StatelessWidget {
                   CharacterAvatar(name: topName!, accent: topAccent, size: 32),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
-                    child: Text(
-                      '$topName ♥$topAffection',
+                    child: Text(keepAll('$topName ♥$topAffection'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.labelMedium?.copyWith(
@@ -2128,8 +2125,7 @@ class _SignalLine extends StatelessWidget {
                 WidgetSpan(
                   alignment: PlaceholderAlignment.baseline,
                   baseline: TextBaseline.alphabetic,
-                  child: Text(
-                    '$name ♥$affection',
+                  child: Text(keepAll('$name ♥$affection'),
                     style: context.text.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -2334,14 +2330,14 @@ class RewardStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  keepAll(title),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.titleSmall?.copyWith(color: fg),
                 ),
                 const SizedBox(height: AppSpace.xxs),
                 Text(
-                  subtitle,
+                  keepAll(subtitle),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall?.copyWith(color: sub),
@@ -2450,7 +2446,7 @@ class EndingTierDots extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpace.sm),
                   Text(
-                    '${rows[i].$2.$1}/${rows[i].$2.$2}',
+                    keepAll('${rows[i].$2.$1}/${rows[i].$2.$2}'),
                     style: t.numericSmall,
                   ),
                 ],

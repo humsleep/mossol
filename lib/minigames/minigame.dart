@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
+import '../ui/keep_all.dart';
 
 /// 미니게임 한 판의 결과.
 /// [success] 는 선택지의 효과를 적용할지, [critical] 은 호감 상승을 2배로 할지 결정한다.
@@ -199,7 +200,7 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
                     children: [
                       Expanded(
                         child: Text(
-                          widget.title,
+                          keepAll(widget.title),
                           style: context.text.titleLarge,
                         ),
                       ),
@@ -226,7 +227,7 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
                   ),
                   const SizedBox(height: AppSpace.xs),
                   Text(
-                    widget.instruction,
+                    keepAll(widget.instruction),
                     style: context.text.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -434,7 +435,7 @@ class MinigameOption extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          label,
+                          keepAll(label),
                           style: context.text.bodyMedium?.copyWith(
                             fontSize: 15,
                             color: labelColor,
@@ -444,7 +445,7 @@ class MinigameOption extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: AppSpace.xxs),
                             child: Text(
-                              sub!,
+                              keepAll(sub!),
                               style: context.text.bodySmall?.copyWith(
                                 color: scheme.onSurfaceVariant,
                               ),

@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../engine/models.dart';
 import 'design_system.dart';
 import 'widgets.dart' show showAppDialog;
+import 'keep_all.dart';
 
 /// 사진 아이콘 이름(docs/MOMENTS_SPEC.md §1.3) → Material 아이콘. 14종.
 const Map<String, IconData> photoIcons = {
@@ -181,7 +182,7 @@ class PolaroidFrame extends StatelessWidget {
               child: caption.isEmpty
                   ? const SizedBox.shrink()
                   : Text(
-                      caption,
+                      keepAll(caption),
                       maxLines: fullCaption ? null : 2,
                       overflow: fullCaption ? null : TextOverflow.ellipsis,
                       style:

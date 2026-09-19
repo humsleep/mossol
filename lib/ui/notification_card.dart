@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'call_view.dart';
 import 'design_system.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 알림 카드 한 장. 탭하면 [onOpen].
 class NotificationCard extends StatelessWidget {
@@ -89,7 +90,7 @@ class NotificationCard extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpace.xxs),
                         Text(
-                          preview,
+                          keepAll(preview),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: context.text.bodyMedium?.copyWith(
@@ -185,7 +186,7 @@ class _NotificationPreviewState extends State<NotificationPreview>
                       borderRadius: AppRadius.rPill,
                     ),
                     child: Text(
-                      'D+${widget.day}',
+                      keepAll('D+${widget.day}'),
                       style: context.tokens.numericSmall.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),

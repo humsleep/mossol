@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import 'minigame.dart';
+import '../ui/keep_all.dart';
 
 /// 9. 선 지키기 — 드립 한 번 더
 /// 분위기가 좋을 때 드립을 몇 번까지 치고 멈출지 고르는 게임.
@@ -142,8 +143,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
             style: t.numericLarge,
           ),
           const SizedBox(height: AppSpace.xs),
-          Text(
-            '지금 멈추면 분위기를 맞춘 것으로 끝난다',
+          Text(keepAll('지금 멈추면 분위기를 맞춘 것으로 끝난다'),
             textAlign: TextAlign.center,
             style: context.text.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
@@ -168,8 +168,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
                     ),
                     const SizedBox(width: AppSpace.sm),
                     Expanded(
-                      child: Text(
-                        '다음 드립 흑역사 확률 $bust%',
+                      child: Text(keepAll('다음 드립 흑역사 확률 $bust%'),
                         style: t.numericMedium.copyWith(
                           color: risky
                               ? t.onWarningContainer

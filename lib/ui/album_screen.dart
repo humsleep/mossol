@@ -4,6 +4,7 @@ import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 흑역사 앨범과 엔딩 앨범. 실패도 수집 요소가 된다.
 ///
@@ -80,7 +81,7 @@ class _CollectionHeader extends StatelessWidget {
             const SizedBox(width: AppSpace.sm),
             Expanded(
               child: Text(
-                title,
+                keepAll(title),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.titleMedium,
@@ -375,7 +376,7 @@ class _EndingCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        title,
+                        keepAll(title),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: context.text.titleMedium?.copyWith(
@@ -394,7 +395,7 @@ class _EndingCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpace.xs),
                 Text(
-                  body,
+                  keepAll(body),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall?.copyWith(
@@ -439,7 +440,7 @@ class _TierPill extends StatelessWidget {
         ),
       ),
       child: Text(
-        label,
+        keepAll(label),
         style: context.text.labelSmall?.copyWith(
           color: owned ? accent.onContainer : scheme.onSurfaceVariant,
         ),

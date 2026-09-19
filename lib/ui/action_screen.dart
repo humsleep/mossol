@@ -10,6 +10,7 @@ import 'design_system.dart';
 import 'home_screen.dart' show OvernightNote;
 import 'roulette_sheet.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 아침 행동 선택 화면. 하트 1개를 쓰고 하루를 시작한다.
 ///
@@ -84,7 +85,7 @@ class _ActionScreenState extends State<ActionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('D+${s.day}  ·  ${s.chapter(c.config)}장'),
+        title: Text(keepAll('D+${s.day}  ·  ${s.chapter(c.config)}장')),
         leading: IconButton(
           icon: const Icon(Icons.home_outlined),
           onPressed: c.goHome,
@@ -184,7 +185,9 @@ class _ActionScreenState extends State<ActionScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('하트가 없어요'),
         content: Text(
-          '${c.config.heartRegenMinutes}분마다 1개 회복됩니다. 광고를 보면 지금 바로 1개를 받을 수 있어요.',
+          keepAll(
+            '${c.config.heartRegenMinutes}분마다 1개 회복됩니다. 광고를 보면 지금 바로 1개를 받을 수 있어요.',
+          ),
         ),
         actions: [
           TextButton(
@@ -205,7 +208,7 @@ class _ActionScreenState extends State<ActionScreen> {
       await c.grantHeart();
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
+        SnackBar(content: Text(keepAll('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))),
       );
     }
   }

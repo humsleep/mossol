@@ -5,6 +5,7 @@ import '../game_controller.dart';
 import '../minigames/minigame.dart' show CenteredScrollColumn;
 import 'design_system.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 회차의 마지막 화면. 규격은 docs/DESIGN_SYSTEM.md §2.5.
 ///
@@ -44,7 +45,7 @@ class EndingScreen extends StatelessWidget {
               width: double.infinity,
               child: FilledButton(
                 onPressed: c.nextRun,
-                child: Text('${s.run + 1}회차 시작'),
+                child: Text(keepAll('${s.run + 1}회차 시작')),
               ),
             ),
             const SizedBox(height: AppSpace.sm),
@@ -115,13 +116,13 @@ class _Keepsake extends StatelessWidget {
             _TierPill(label: tierLabel),
             const SizedBox(height: AppSpace.xs),
             Text(
-              ending.name,
+              keepAll(ending.name),
               textAlign: TextAlign.center,
               style: context.text.headlineMedium,
             ),
             const SizedBox(height: AppSpace.lg),
             Text(
-              ending.epilogue,
+              keepAll(ending.epilogue),
               textAlign: TextAlign.center,
               style: context.text.bodyLarge?.copyWith(height: 1.65),
             ),
@@ -157,7 +158,7 @@ class _TierPill extends StatelessWidget {
         borderRadius: AppRadius.rPill,
       ),
       child: Text(
-        label,
+        keepAll(label),
         style: context.text.labelMedium?.copyWith(
           color: scheme.onPrimaryContainer,
         ),
@@ -207,8 +208,7 @@ class _GradeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.sm),
-          Text(
-            '${state.run}회차 · D+${state.day - 1} · 흑역사 ${state.album.length}개',
+          Text(keepAll('${state.run}회차 · D+${state.day - 1} · 흑역사 ${state.album.length}개'),
             textAlign: TextAlign.center,
             style: t.numericSmall,
           ),

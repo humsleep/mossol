@@ -4,6 +4,7 @@ import '../ads/ad_manager.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
 import 'widgets.dart';
+import 'keep_all.dart';
 
 /// 하루 정산. "다음 날" 을 누르면 정책에 맞을 때만 전면 광고가 나온다.
 ///
@@ -116,8 +117,7 @@ class SummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.sm),
-          Text(
-            '흑역사 ${s.album.length}개',
+          Text(keepAll('흑역사 ${s.album.length}개'),
             textAlign: TextAlign.center,
             style: context.text.bodySmall,
           ),

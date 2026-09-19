@@ -7,6 +7,7 @@ import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'keep_all.dart';
 
 /// 하루 시작 전 럭키 룰렛. 결과가 나쁘면 광고로 한 번 더 돌릴 수 있다.
 ///
@@ -86,8 +87,7 @@ class _RouletteSheetState extends State<RouletteSheet>
               style: context.text.titleLarge,
             ),
             const SizedBox(height: AppSpace.xs),
-            Text(
-              '하루에 한 번. 결과가 마음에 안 들면 광고로 한 번 더.',
+            Text(keepAll('하루에 한 번. 결과가 마음에 안 들면 광고로 한 번 더.'),
               textAlign: TextAlign.center,
               style: context.text.bodySmall,
             ),
@@ -154,7 +154,7 @@ class _RouletteSheetState extends State<RouletteSheet>
                             return widget.c.rouletteSlot!;
                           }),
                   icon: const Icon(Icons.confirmation_number_outlined, size: 18),
-                  label: Text('재도전권 사용 (${widget.c.rerollTickets}장)'),
+                  label: Text(keepAll('재도전권 사용 (${widget.c.rerollTickets}장)')),
                 ),
               ] else if (widget.c.canRerollRoulette) ...[
                 const SizedBox(height: AppSpace.md),
@@ -254,7 +254,7 @@ class _SlotCard extends StatelessWidget {
             ],
             Flexible(
               child: Text(
-                title,
+                keepAll(title),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -268,7 +268,7 @@ class _SlotCard extends StatelessWidget {
         ),
         const SizedBox(height: AppSpace.xs),
         Text(
-          sub,
+          keepAll(sub),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
