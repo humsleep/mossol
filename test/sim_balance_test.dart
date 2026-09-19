@@ -21,6 +21,9 @@ const kMinigameSuccess = int.fromEnvironment("MG", defaultValue: 60) / 100;
 /// 스토리 데이터 위치. 전후 비교 때 같은 스냅샷을 쓰려고 바꿀 수 있게 둔다.
 const kStoryDir = String.fromEnvironment('STORY_DIR', defaultValue: 'assets/story');
 
+/// 결과 파일 위치. 여러 실험을 동시에 돌릴 때 서로 덮어쓰지 않게 바꿀 수 있다.
+const kOutDir = String.fromEnvironment('SIM_OUT', defaultValue: 'tool/sim_out');
+
 /// true 면 config 의 earlyAffection(초반 호감 가속)을 빼고 돌린다. 전후 비교용.
 const kNoEarly = bool.fromEnvironment('NO_EARLY');
 
@@ -923,7 +926,7 @@ void main() {
     p('\n[b] 전 전략 통틀어 한 번도 안 나온 엔딩 ${never.length}/${bundle.endings.length}: ${never.join(', ')}');
     p('    나온 엔딩: ${reached.join(', ')}');
 
-    final dir = Directory('tool/sim_out')..createSync(recursive: true);
+    final dir = Directory(kOutDir)..createSync(recursive: true);
     File('${dir.path}/sim_balance_report.txt').writeAsStringSync(out.toString());
     File('${dir.path}/sim_balance_runs.csv').writeAsStringSync(csv.toString());
     p('\n저장: ${dir.path}/sim_balance_report.txt, sim_balance_runs.csv');

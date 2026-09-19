@@ -257,7 +257,7 @@
       "sincerity": 4
      },
      "affection": {
-      "@top": 2
+      "@top": 1
      },
      "trust": {
       "@top": 5
@@ -1383,7 +1383,7 @@
       "esteem": 2
      },
      "affection": {
-      "@top": 3
+      "@top": 2
      },
      "trust": {
       "@top": 6
@@ -1905,7 +1905,7 @@
       "esteem": 3
      },
      "affection": {
-      "@top": 2
+      "@top": 1
      }
     },
     "reply": [
