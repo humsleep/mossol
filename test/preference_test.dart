@@ -840,6 +840,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('gender-m')));
       await tester.pumpAndSettle();
+      await skipNameStep(tester);
       expect(find.byType(PreferenceScreen), findsOneWidget);
       expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
       await tester.tap(findText(PreferenceScreen.startLabel));

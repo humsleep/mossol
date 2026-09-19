@@ -8,9 +8,11 @@ import 'engine/ending_resolver.dart';
 import 'engine/event_engine.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
+import 'engine/player_name.dart';
 import 'engine/save_service.dart';
 import 'engine/signals.dart';
 import 'engine/story_repository.dart';
+import 'engine/text_template.dart';
 
 export 'engine/attendance.dart' show CheckInResult, Attendance;
 export 'engine/signals.dart' show RelationShift;
@@ -169,12 +171,15 @@ class GameController extends ChangeNotifier {
   /// 방금 고른 선택지. 결과 패널이 전화 거절 같은 선택의 성격을 알 때 쓴다.
   Choice? get lastChoice => lastOutcome == null ? null : _lastChoice;
 
-  /// 방금 선택에 대한 상대의 반응 줄. 결과가 없으면 빈 목록.
+  /// 방금 선택에 대한 상대의 반응 줄(이름 치환 끝). 결과가 없으면 빈 목록.
   List<Line> get lastReply {
     final o = lastOutcome;
     final ch = _lastChoice;
     if (o == null || ch == null) return const [];
-    return ch.replyFor(success: o.success, critical: o.critical);
+    return [
+      for (final l in ch.replyFor(success: o.success, critical: o.critical))
+        l.mapText(say),
+    ];
   }
 
   /// 방금 끝난 미니게임의 한 줄 결과. 결과 패널에 같이 보여 준다.
@@ -305,6 +310,7 @@ class GameController extends ChangeNotifier {
       await metaService.save(m);
     }
     meta = m;
+    TextTemplate.currentName = m.playerName;
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
@@ -357,6 +363,7 @@ class GameController extends ChangeNotifier {
     final m = PlayerMeta(firstLaunchMs: nowMs());
     await metaService.save(m);
     meta = m;
+    TextTemplate.currentName = null;
     state = null;
     _peek = null;
     hasSave = false;
@@ -435,6 +442,70 @@ class GameController extends ChangeNotifier {
     await metaService.save(m);
     notifyListeners();
   }
+
+  // ---- 플레이어 이름 (docs/NAME_GUIDE.md) ----
+
+  /// 온보딩 이름 단계 · 설정 "내 이름". 없으면 null(대사는 대체어로 나간다).
+  String? get playerName => meta?.playerName;
+
+  /// 새 게임에서 이름 단계를 띄울지. 이름이 없고 아직 한 번도 묻지 않았을 때만.
+  bool get shouldAskName =>
+      meta != null && meta!.playerName == null && !meta!.nameAsked;
+
+  /// 이름을 저장한다. null·빈 값이면 지운다. 규칙([PlayerName.validate])에 어긋나면
+  /// [ArgumentError]. 기기 메타에만 저장하고 세이브에는 복사하지 않는다 — 바꾸면 다음에
+  /// 그려지는 대사부터 새 이름이 나간다. 이름 단계를 거친 것으로 기록한다.
+  Future<void> setPlayerName(String? name) async {
+    final m = meta;
+    if (m == null) return;
+    final n = name == null ? null : PlayerName.normalize(name);
+    if (n != null && n.isNotEmpty && !PlayerName.isValid(n)) {
+      throw ArgumentError.value(name, 'name', PlayerName.validate(n));
+    }
+    final value = (n == null || n.isEmpty) ? null : n;
+    if (m.playerName == value && m.nameAsked) return;
+    m.playerName = value;
+    m.nameAsked = true;
+    TextTemplate.currentName = value;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// 이름 단계를 건너뛰었다. 이름은 그대로(없음) 두고 다음 새 게임에서 다시 묻지 않는다.
+  Future<void> skipPlayerName() async {
+    final m = meta;
+    if (m == null || m.nameAsked) return;
+    m.nameAsked = true;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// 대사 문자열의 자리표시자(`{name|아야}` 등)를 지금 이름으로 바꾼다. 화면에 내기
+  /// 직전에 부르고, `keepAll` 은 그 결과에 씌운다. 저장·비교에는 원문을 쓴다.
+  String say(String text) => TextTemplate.fill(text, name: playerName);
+
+  /// [say] 의 null 허용판.
+  String? sayOrNull(String? text) => text == null ? null : say(text);
+
+  /// 지금 이벤트를 화면용으로 치환한 사본. 엔진·선택에는 [current](원본)를 쓴다.
+  /// 같은 이벤트·같은 이름이면 같은 사본을 돌려준다.
+  StoryEvent? get shownEvent {
+    final ev = current;
+    if (ev == null) return null;
+    final name = playerName;
+    final cached = _shown;
+    if (cached != null && identical(cached.$1, ev) && cached.$2 == name) {
+      return cached.$3;
+    }
+    final out = TextTemplate.hasToken(_eventText(ev)) ? ev.mapText(say) : ev;
+    _shown = (ev, name, out);
+    return out;
+  }
+
+  (StoryEvent, String?, StoryEvent)? _shown;
+
+  static String _eventText(StoryEvent ev) =>
+      ev.displayTexts.map((e) => e.$2).join('\n');
 
   /// 룰렛 무료 재도전권 (7일 연속 출석 보상).
   int get rerollTickets => meta?.rerollTickets ?? 0;

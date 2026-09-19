@@ -13,6 +13,7 @@ import 'package:mossol/ui/summary_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
 import 'helpers.dart';
+import 'portrait_helpers.dart';
 
 /// QA 디버그 갤러리 스모크 테스트. 미니게임·엔딩 목록이 뜨고 엔딩 화면이 실제로 열리는지.
 void main() {
@@ -228,4 +229,25 @@ void main() {
       await closePreview(tester);
     });
   }
+
+  testWidgets('초상화 12명 미리보기: 그림 있음·없음 모두 12줄, 다크 전환도 넘치지 않는다', (tester) async {
+    usePortraits(ids: ['seoyeon', 'jeongwoo', 'yuna']);
+    await openPreview(tester, '초상화 12명 미리보기');
+    await settleImages(tester);
+    expect(find.byType(PortraitPreviewScreen), findsOneWidget);
+    expect(findTextContaining('12명 중 3장 있음'), findsOneWidget);
+    // 다크로 바꾼 뒤 끝까지 내려 본다.
+    await tester.tap(findText('다크'));
+    await tester.pumpAndSettle();
+    await settleImages(tester);
+    for (final id in portraitIds) {
+      await tester.dragUntilVisible(
+        find.byKey(Key('portrait-$id')),
+        find.byType(ListView).last,
+        const Offset(0, -300),
+      );
+    }
+    expect(tester.takeException(), isNull);
+    await closePreview(tester);
+  });
 }

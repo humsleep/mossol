@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/text_template.dart';
 
 const files = [
   'events_main.json',
@@ -22,6 +23,9 @@ const files = [
 ];
 
 const maxLines = 3;
+
+/// 반응 한 줄 최대 글자 수. 이름 자리표시자(`{name|아야}` 등)가 있으면 **가장 긴 이름(6자)으로
+/// 바꾼 결과**로 잰다 — 화면에 실제로 보이는 길이가 기준이다(docs/NAME_GUIDE.md).
 const maxChars = 60;
 
 List<Map<String, dynamic>> _events(String f) {
@@ -61,8 +65,9 @@ List<String> problemsIn(String f) {
           if (l.text.trim().isEmpty && l.photo == null) {
             out.add('$where.$name: 빈 줄');
           }
-          if (l.text.length > maxChars) {
-            out.add('$where.$name: $maxChars자 초과 (${l.text.length})');
+          final n = TextTemplate.maxLength(l.text);
+          if (n > maxChars) {
+            out.add('$where.$name: $maxChars자 초과 ($n, 이름 6자 기준)');
           }
           if (l.wait > 0) out.add('$where.$name: 반응에는 대기 줄 금지');
         }
@@ -94,6 +99,17 @@ void main() {
     expect(ch.replyFor(success: false, critical: false).single.who, 'narr');
     expect(ch.replyFor(success: true, critical: true).length, 2);
     expect(ch.replyFor(success: true, critical: false).single.text, 'ㅋㅋ 뭐야');
+  });
+
+  test('길이는 이름을 넣은 뒤 기준: 원문이 60자를 넘어도 6자 이름으로 바꾼 길이가 60 이내면 통과', () {
+    // 원문 61자(자리표시자 9자) → 가장 긴 이름 '가나다라마박아, …' 59자.
+    final ok = '{name|아야}, ${'가' * 50}';
+    expect(ok.length, 61);
+    expect(TextTemplate.maxLength(ok), 59);
+    expect(TextTemplate.maxLength(ok), lessThanOrEqualTo(maxChars));
+    // 대체어가 이름보다 길면 대체어 쪽 길이로 잰다.
+    final long = '{name|씨|우리 동아리 새 신입 회원님}${'가' * 46}';
+    expect(TextTemplate.maxLength(long), greaterThan(maxChars));
   });
 
   test('critReply 가 없으면 크리티컬에도 reply 를 쓴다', () {

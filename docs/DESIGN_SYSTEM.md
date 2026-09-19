@@ -399,8 +399,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   "이 사람과 톡하고 싶다" 가 들어야 하므로 카드마다 **한 줄 매력**과 **첫 메시지 말풍선**이 있다.
 - **배경**: 헤드라인 `'이 사람들을 만나게 돼요'`, 부제, 쪽 이름 + 인원(`SectionHeader`, `'5명 + ?'`),
   하단 패널의 `시작하기` 와 `반대쪽 캐릭터 만나기`.
-- 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 다이얼로그 뒤). "나는?" 답이 없으면 §2.11 을 먼저 거치고,
-  답이 있으면 곧바로 이 화면. 기본 쪽은 남자 → 여성 캐릭터, 여자 → 남성 캐릭터, 선택 안 함 → 비교 모드.
+- 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 다이얼로그 뒤). "나는?" 답이 없으면 §2.11 을, 이름을 아직 안 물었으면
+  §2.12 이름 단계를 먼저 거치고, 둘 다 끝났으면 곧바로 이 화면. 기본 쪽은 남자 → 여성 캐릭터, 여자 → 남성 캐릭터, 선택 안 함 → 비교 모드.
   뒤로 가면 1단계(거쳐 왔다면) 또는 홈. 아무것도 바뀌지 않는다(세이브·답 그대로).
 - 구성(위→아래): 빈 `AppBar`(뒤로 가기만) → `ListView`(패딩 20/4/20/24): 헤드라인 `headlineMedium` → `xs`
   → 부제 `bodyMedium`(onSurfaceVariant; 비교 모드는 `'두 쪽을 눌러 비교해 보고 골라요'`) → `sectionGap`
@@ -444,7 +444,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   가운데 장식(실루엣 아바타 56 + 점 세 개 입력 중 말풍선 + `'누가 먼저 말을 걸어올까요?'` `labelMedium`, 스크린리더 제외), 하단 안내
   `Icons.lock_outline` 16 + `'이 기기에만 저장돼요. 설정에서 바꿀 수 있어요'`(`bodySmall`).
 - 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 뒤). 기기 메타 `playerGender` 가 비어 있을 때만 뜬다.
-  버튼을 누르면 확인 없이 캐스트 소개(§2.9)로 넘어가고, 거기서 뒤로 오면 이 화면이다. 답은 **새 게임이 실제로
+  버튼을 누르면 확인 없이 이름 단계(§2.12, 아직 안 물었을 때) 또는 캐스트 소개(§2.9)로 넘어가고, 거기서 뒤로 오면 이 화면이다. 답은 **새 게임이 실제로
   시작될 때** 저장한다(중간에 나가면 아무것도 남지 않는다). 설정 `게임 › 내 성별` 에서 바꾸고, 전체 초기화에서 지운다.
   값은 기기 밖으로 보내지 않는다. 주인공 대사·호칭은 이 값과 무관하게 성별 중립이다.
 - 구성: 빈 `AppBar` → `SafeArea(top: false)` 안 `SingleChildScrollView`(패딩 20/4/20/24) + 화면 높이를 채우는
@@ -455,6 +455,41 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 높이 예산: 320×568 · 1.3배에서 버튼 셋이 스크롤 없이 첫 화면 안(테스트 고정, 라이트·다크).
 - 설정 행: `SectionHeader('게임')` 아래 `AppListRow('내 성별', trailing: 현재 값 labelMedium)`. 누르면
   `SimpleDialog`(안내 `bodySmall` + 세 항목 `ListTile`, 현재 값에 `Icons.check` + selected). 바깥을 누르면 그대로.
+
+### 2.12 온보딩 이름 단계 — "뭐라고 불러 드릴까요?" (`onboarding_name_screen.dart`)
+- **주인공**: 입력창 하나와 그 아래 **미리보기 말풍선**. 적는 순간 "캐릭터가 나를 이렇게 부른다" 가 보여야 한다.
+  대사 규격·조사 규칙은 docs/NAME_GUIDE.md.
+- **배경**: 제목 `'뭐라고 불러 드릴까요?'`(`headlineMedium`), 부제 `'캐릭터들이 대화에서 이 이름으로 불러요'`
+  (`bodyLarge`, onSurfaceVariant), 하단 안내 `Icons.lock_outline` 16 + `'이 기기에만 저장돼요. 설정에서 바꿀 수 있어요'`(`bodySmall`).
+- 진입: 새 게임에서 "나는?"(§2.11, 답이 있으면 생략) **다음**, 캐스트 소개(§2.9) **앞**. 기기 메타에 이름이 없고
+  이름 단계를 한 번도 거치지 않았을 때만 뜬다(`GameController.shouldAskName`). 건너뛰면 다음 새 게임부터 묻지 않고,
+  설정 `게임 › 내 이름` 에서 적는다. 뒤로 가기: 캐스트 소개 → 이름 단계 → 나는? → 홈. 이름은 **새 게임이 실제로
+  시작될 때** 저장한다(§2.11 과 같다). 전체 초기화에서 지우고, 기기 밖으로 보내지 않는다.
+- 구성(위→아래): 빈 `AppBar` → `Column`[`Expanded`(`SingleChildScrollView`, 패딩 20/4/20/24: 제목 → `xs` → 부제
+  → `sectionGap` → 입력창 → `lg` → 미리보기 → `sectionGap` → 안내) + `BottomPanel`(`다음` `FilledButton` 전폭 52 →
+  `xs` → `건너뛰기` `TextButton`(onSurfaceVariant, 2차 무게))]. `Scaffold.resizeToAvoidBottomInset` 이라 **키보드가
+  올라오면 본문이 줄고 하단 패널이 키보드 바로 위에 붙는다** — 버튼은 가려지지 않고 본문만 스크롤된다.
+  (`bottomNavigationBar` 에 두면 키보드 뒤로 숨는다. 쓰지 않는다.)
+- 입력창(`Key('name-field')`): `TextField`, 글자 `titleLarge`, 채움 `surfaceContainerLowest`, 테두리 `outline` 1px
+  → 포커스 `primary` 2px → 오류 `error`, 모서리 `AppRadius.md`. 힌트 `'예: 민지'`(onSurfaceVariant), 도움말
+  `'한글 · 영문 · 숫자 6자까지, 띄어쓰기 없이'`, 카운터 `'n/6'`(`numericSmall`, onSurfaceVariant, 스크린리더
+  `'6자 중 n자'`). 열리면 바로 포커스(키보드가 올라온다), 키보드 완료 = `다음`.
+- 규칙: 1~6자(자소 묶음 기준), 한글 완성형·영문·숫자. 공백·기호는 입력 때 걸러진다. 자모만 남으면
+  `'완성된 글자로 써 주세요'`, 부적절한 말이면 `'이 이름은 쓸 수 없어요. 다른 이름을 써 주세요'` 를 `errorText` 로
+  보이고 `다음` 을 끈다. 빈 값은 오류 없이 `다음` 만 꺼진다.
+- **한글 조합(iOS)**: `maxLengthEnforcement: truncateAfterCompositionEnds` — 조합 중(밑줄 구간)에는 자르지 않고
+  조합이 끝난 뒤 6자로 자른다. 거르개(`NameInputFormatter`)도 조합 중에는 손대지 않는다. 조합 중에는 오류를 띄우지 않는다.
+- 미리보기(`NamePreviewBubble`, `Key('name-preview')`): `'이렇게 불러요'`(`labelMedium`, onSurfaceVariant) → `sm`
+  → 상대 말풍선 한 개(`bubbleTheirs` + `bubbleBorder` 1px, `AppRadius.bubble(mine: false)`, `bodyLarge` onSurface).
+  문장은 `'{name|아야}, 자?'` 를 입력값으로 치환한 것 — `민석아, 자?` / `민수야, 자?`. 비었거나 규칙에 어긋나면
+  이름 없는 대사 `자?`. 캐릭터 색으로 칠하지 않는다. 스크린리더는 `'미리보기: …'` 한 덩어리.
+- 색: 로즈는 `다음` 버튼과 포커스 테두리 두 곳만. 노란색 없음.
+- 높이 예산: 320×568 · 1.3배, 라이트·다크, 키보드 없음·키보드 260pt 올라옴 네 경우 모두 `다음`·`건너뛰기` 가
+  보이는 영역 안(키보드 위), 넘침 없음, 탭 타깃 44, 대비 4.5:1(오류 상태 포함) — `layout_test` 가 고정한다.
+- 설정 행: `SectionHeader('게임')` 의 `내 성별` 아래 `listGap` 뒤 `AppListRow('내 이름', subtitle: '캐릭터들이 대화에서
+  이 이름으로 불러요', leading: Icons.badge_outlined, trailing: 이름 또는 '없음' labelMedium)`(`Key('settings-name')`).
+  누르면 같은 화면을 `push` 한다: 1차 버튼 `'저장'`, 2차 링크는 `건너뛰기` 대신 `'이름 지우기'`(이름이 있을 때만).
+  저장·지우기는 설정으로 돌아온다. 진행 중인 회차에도 **다음에 그려지는 대사부터** 새 이름이 나간다.
 
 ---
 
@@ -1162,6 +1197,26 @@ class NotificationCard     // 알림 카드 한 장. name, characterId, preview,
 class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOpen = 1.8초
 ```
 
+이름 단계 컴포넌트(§2.12, `onboarding_name_screen.dart` — widgets.dart 가 아니라 화면 파일에 둔다):
+
+```dart
+/// 이름 단계 화면이자 설정 "내 이름" 편집 화면. 저장은 하지 않고 콜백으로 넘긴다.
+class OnboardingNameScreen extends StatefulWidget {
+  final String? initial;              // 설정에서 편집할 때 지금 이름
+  final ValueChanged<String> onSubmit; // 규칙 통과 · 공백 제거 끝
+  final VoidCallback? onSkip;         // null 이면 '건너뛰기' 없음
+  final VoidCallback? onClear;        // null 이면 '이름 지우기' 없음
+  final String submitLabel;           // nextLabel '다음' | saveLabel '저장'
+  static String previewFor(String raw); // '{name|아야}, 자?' 치환 결과
+}
+
+/// '이렇게 불러요' + 상대 말풍선 한 개. Semantics label '미리보기: {text}'.
+class NamePreviewBubble extends StatelessWidget { final String text; }
+
+/// 조합 중에는 통과, 조합이 끝난 값에서 한글 완성형·자모·영문·숫자 밖의 글자를 뺀다.
+class NameInputFormatter extends TextInputFormatter {}
+```
+
 ### 3.3 유지하는 것
 
 - `CenteredScrollColumn` — 시그니처 변경 없음. 작은 화면 + 큰 글꼴 대응의 핵심이라
@@ -1207,6 +1262,7 @@ class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOp
 | 홈 선호 표기 | 이어하기 카드의 `'1회차 · 2장'` 단일 Text 는 그대로, 선호는 별도 Text `' · 여성 캐릭터'`(`Key('continue-preference')`) |
 | 선호 선택 | 헤드라인 `'누구를 만나고 싶나요?'`, 카드 제목 `'여성 캐릭터'` / `'남성 캐릭터'`(`Key('preference-f')` / `'preference-m'`), 안내 `'나중에 새 게임에서 바꿀 수 있어요'`, 비활성 `'준비 중'` |
 | 앨범 엔딩 필터 | 칩 `'전체'` `'여성'` `'남성'` `'공용'`. 진행도 `'N / M'` 은 필터와 무관하게 전체 기준 |
+| 이름 단계 | 제목 `'뭐라고 불러 드릴까요?'`, 입력창 `Key('name-field')`, 미리보기 `Key('name-preview')`(빈 값 `'자?'`, `민석` → `'민석아, 자?'`), 버튼 `Key('name-submit')` `'다음'`/`'저장'`, 링크 `Key('name-skip')` `'건너뛰기'` · `Key('name-clear')` `'이름 지우기'`, 카운터 `'n/6'`, 설정 행 `Key('settings-name')` `'내 이름'`(없으면 `'없음'`) |
 | 설정 | AppBar `'설정'`, 행 `'개인정보처리방침'` / `'오픈소스 라이선스'` / `'서체'` / `'앱 버전'` / `'저장 데이터 초기화'`, 확인 `'저장 데이터를 지울까요?'` → `'지우기'`, 스낵바 `'저장 데이터를 지웠어요'` |
 
 `test/widget/helpers.dart` 의 `wrapApp` 은 아직 자체 `ThemeData` 를 만든다. QA 단계에서

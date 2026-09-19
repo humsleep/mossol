@@ -329,7 +329,8 @@ class _EventScreenState extends State<EventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ev = c.current;
+    // 화면에는 이름을 치환한 사본(docs/NAME_GUIDE.md). 엔진 호출은 c.current(원본).
+    final ev = c.shownEvent;
     if (ev == null) return const SizedBox.shrink();
     final partner = c.characterName(ev.character);
     if (_previewOpen) {
@@ -717,7 +718,8 @@ class _WaitingBlock extends StatelessWidget {
               color: scheme.surfaceContainerHigh,
               borderRadius: AppRadius.rPill,
             ),
-            child: Text(keepAll('읽음 · $secondsLeft초째 답이 없다'),
+            child: Text(
+              keepAll('읽음 · $secondsLeft초째 답이 없다'),
               textAlign: TextAlign.center,
               style: AppTypography.tabular(base.copyWith(color: t.systemLine)),
             ),
@@ -765,7 +767,7 @@ class _ChoicePanel extends StatelessWidget {
     final ev = c.current!;
     final id = ev.choices[index].minigame;
     if (id == null) {
-      onPicked(ev.choices[index].text);
+      onPicked(c.say(ev.choices[index].text));
       c.choose(index);
       return;
     }
@@ -775,7 +777,7 @@ class _ChoicePanel extends StatelessWidget {
       MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
     );
     // 미니게임 도중 컨트롤러가 갱신돼도 지워지지 않게 결과 직전에 넘긴다.
-    onPicked(ev.choices[index].text);
+    onPicked(c.say(ev.choices[index].text));
     c.choose(
       index,
       minigameSuccess: result.success,
@@ -819,7 +821,7 @@ class _ChoicePanel extends StatelessWidget {
                 bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
               ),
               child: ChoiceButton(
-                text: choices[i].choice.text,
+                text: c.say(choices[i].choice.text),
                 onPressed: choices[i].locked
                     ? null
                     : () => _pick(context, choices[i].index),
@@ -982,7 +984,8 @@ class _ResultPanel extends StatelessWidget {
                   Icon(Icons.photo_album_outlined, size: 16, color: fg),
                   const SizedBox(width: AppSpace.xs),
                   Expanded(
-                    child: Text(keepAll('흑역사 앨범에 추가: ${o.delta.album}'),
+                    child: Text(
+                      keepAll('흑역사 앨범에 추가: ${o.delta.album}'),
                       style: context.text.bodySmall?.copyWith(color: fg),
                     ),
                   ),

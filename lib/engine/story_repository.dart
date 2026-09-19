@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'effects.dart';
 import 'models.dart';
 import 'signals.dart';
+import 'text_template.dart';
 
 export 'signals.dart' show SignalBook, RelationShift;
 
@@ -71,7 +72,18 @@ class StoryBundle {
   ///
   /// characters.json 의 `firstLine` 이 있으면 그것. 없으면 그 캐릭터의 루트 이벤트
   /// `<id>_rNN` 을 번호 순으로 훑어 처음 나오는 `them` 대사(글이 있는 것). 둘 다 없으면 null.
-  String? firstLineOf(String id) => _firstLines.putIfAbsent(id, () {
+  ///
+  /// 자리표시자(`{name|아야}` 등)는 [TextTemplate.currentName] 으로 바꿔 돌려준다 — 캐스트
+  /// 소개 화면은 컨트롤러를 받지 않으므로 여기서 치환한다. 원문은 [rawFirstLineOf].
+  String? firstLineOf(String id) {
+    final raw = rawFirstLineOf(id);
+    return raw == null
+        ? null
+        : TextTemplate.fill(raw, name: TextTemplate.currentName);
+  }
+
+  /// [firstLineOf] 의 치환 전 원문.
+  String? rawFirstLineOf(String id) => _firstLines.putIfAbsent(id, () {
     final ch = characterById[id];
     if (ch == null) return null;
     final own = ch.firstLine;
@@ -227,6 +239,15 @@ class StoryBundle {
       if (!charIds.add(c.id)) throw StateError('캐릭터 id 중복: ${c.id}');
     }
     _checkCast();
+    for (final c in characters) {
+      final first = c.firstLine;
+      if (first != null) _checkTemplate(first, '${c.id}.firstLine');
+      _checkNoTemplate(c.tagline, '${c.id}.tagline');
+      _checkNoTemplate(c.name, '${c.id}.name');
+    }
+    for (final (where, text) in signals.allTexts) {
+      _checkTemplate(text, 'signals $where');
+    }
     _checkStatKeys(config.initialStats.keys, 'config.initialStats');
     final early = config.earlyAffection;
     for (var i = 0; i < early.curve.length; i++) {
@@ -256,6 +277,9 @@ class StoryBundle {
       if (e.layer == EventLayer.main && e.day == null) {
         throw StateError('main 이벤트는 day 가 필요: ${e.id}');
       }
+      for (final (where, text) in e.displayTexts) {
+        _checkTemplate(text, where);
+      }
       _checkTrigger(e.trigger, '${e.id}.trigger');
       _checkMoment(e);
       _checkLines(e.lines, '${e.id}.lines');
@@ -268,6 +292,9 @@ class StoryBundle {
         }
         _checkEffects(c.effects, '$where.effects');
         _checkEffects(c.fail, '$where.fail');
+        for (final a in [c.effects.album, c.fail.album]) {
+          if (a != null) _checkNoTemplate(a, '$where.album');
+        }
         for (final (name, lines) in [
           ('reply', c.reply),
           ('failReply', c.failReply),
@@ -299,6 +326,9 @@ class StoryBundle {
         throw StateError('엔딩이 없는 캐릭터 참조: ${e.id} -> ${e.character}');
       }
       _checkTrigger(e.when, 'ending ${e.id}');
+      _checkTemplate(e.epilogue, 'ending ${e.id}.epilogue');
+      if (e.hint != null) _checkTemplate(e.hint!, 'ending ${e.id}.hint');
+      _checkNoTemplate(e.name, 'ending ${e.id}.name');
       if (requireEndingHints && (e.hint ?? '').trim().isEmpty) {
         throw StateError('엔딩 hint 없음: ${e.id}');
       }
@@ -386,10 +416,10 @@ class StoryBundle {
     final preview = e.preview;
     if (preview != null) {
       if (e.isCall) throw StateError('preview 는 chat 이벤트에만: ${e.id}');
-      if (preview.length > StoryEvent.maxPreview) {
-        throw StateError(
-          'preview ${StoryEvent.maxPreview}자 초과: ${e.id} (${preview.length})',
-        );
+      // 이름이 들어가는 문장은 가장 긴 이름(6자)으로 바꾼 길이로 잰다.
+      final n = TextTemplate.maxLength(preview);
+      if (n > StoryEvent.maxPreview) {
+        throw StateError('preview ${StoryEvent.maxPreview}자 초과: ${e.id} ($n)');
       }
     }
     final declines = e.choices.where((c) => c.decline).toList();
@@ -418,13 +448,31 @@ class StoryBundle {
     }
   }
 
+  /// 이름 자리표시자 형식(lib/engine/text_template.dart, docs/NAME_GUIDE.md).
+  /// 모르는 조사·닫히지 않은 중괄호는 오류.
+  void _checkTemplate(String text, String where) {
+    final p = TextTemplate.problems(text);
+    if (p.isNotEmpty) {
+      throw StateError('자리표시자 오류: $where (${p.join(', ')}) "$text"');
+    }
+  }
+
+  /// 치환하지 않는 필드(이름·앨범 제목·한 줄 매력)에 자리표시자가 있으면 오류.
+  void _checkNoTemplate(String text, String where) {
+    if (text.contains('{') || text.contains('}')) {
+      throw StateError('이 필드에는 자리표시자·중괄호를 쓸 수 없음: $where "$text"');
+    }
+  }
+
   /// 대사·반응 줄의 사진 설명 길이.
   void _checkLines(List<Line> lines, String where) {
     for (var i = 0; i < lines.length; i++) {
       final p = lines[i].photo;
-      if (p != null && p.caption.length > Photo.maxCaption) {
+      if (p == null) continue;
+      final n = TextTemplate.maxLength(p.caption);
+      if (n > Photo.maxCaption) {
         throw StateError(
-          'photo caption ${Photo.maxCaption}자 초과: $where[$i] (${p.caption.length})',
+          'photo caption ${Photo.maxCaption}자 초과: $where[$i] ($n)',
         );
       }
     }

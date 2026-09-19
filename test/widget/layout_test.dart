@@ -19,11 +19,14 @@ import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/notification_card.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/onboarding_name_screen.dart';
+import 'package:mossol/ui/portraits.dart';
 import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
 import 'helpers.dart';
+import 'portrait_helpers.dart';
 
 /// 큰 화면 한 벌과 작은 화면 한 벌. 각각 라이트·다크로 돈다.
 enum _Env { smallLight, smallDark }
@@ -159,6 +162,49 @@ void main() {
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
+
+      for (final keyboard in [false, true]) {
+        testWidgets(
+          '온보딩 이름 단계${keyboard ? '(키보드 올라옴)' : ''}: 넘치지 않고 다음·건너뛰기가 보인다, 탭 타깃·대비',
+          (tester) async {
+            apply(tester, env);
+            if (keyboard) {
+              // iPhone SE 한글 키보드 높이 정도. 패널이 키보드 위로 올라와야 한다.
+              tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+              addTearDown(tester.view.resetViewInsets);
+            }
+            await tester.pumpWidget(
+              wrapApp(
+                OnboardingNameScreen(onSubmit: (_) {}, onSkip: () {}),
+                mode: modeOf(env),
+              ),
+            );
+            await tester.pump();
+            await tester.enterText(
+              find.byKey(const Key('name-field')),
+              '가나다라마바',
+            );
+            await tester.pump();
+            expect(tester.takeException(), isNull);
+            final visibleBottom = 568 - (keyboard ? 260 : 0);
+            for (final k in ['name-submit', 'name-skip']) {
+              final r = tester.getRect(find.byKey(Key(k)));
+              expect(r.height, greaterThanOrEqualTo(AppSpace.minTouch));
+              expect(
+                r.bottom,
+                lessThanOrEqualTo(visibleBottom),
+                reason: '$k 가 키보드에 가리면 안 된다',
+              );
+            }
+            // 입력 오류 상태(부적절한 말)에서도 넘치지 않는다.
+            await tester.enterText(find.byKey(const Key('name-field')), '병신');
+            await tester.pump();
+            expect(tester.takeException(), isNull);
+            await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+            await expectLater(tester, meetsGuideline(textContrastGuideline));
+          },
+        );
+      }
 
       for (final side in [Preference.female, Preference.male, null]) {
         testWidgets('캐스트 소개(${side ?? '비교'}): 넘치지 않고 시작 버튼이 첫 화면, 탭 타깃·대비', (
@@ -349,6 +395,68 @@ void main() {
         expect(findText('계속'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await teardownScreen(tester);
+      });
+
+      // 초상화(docs/PORTRAIT_PROMPTS.md): 12명 그림이 다 들어온 상태에서도 넘치지 않는다.
+      // 그림은 이니셜과 같은 크기의 원이라 레이아웃이 달라지지 않아야 한다.
+      for (final side in [Preference.female, Preference.male]) {
+        testWidgets('초상화 있음: 캐스트 소개($side) 넘치지 않고 그림이 보인다', (tester) async {
+          apply(tester, env);
+          usePortraits();
+          await tester.pumpWidget(
+            wrapApp(
+              PreferenceScreen(bundle: c.bundle, side: side, onPicked: (_) {}),
+              mode: modeOf(env),
+            ),
+          );
+          await settleImages(tester);
+          expect(tester.takeException(), isNull);
+          expect(find.byType(PortraitImage), findsWidgets);
+          final start = tester.getRect(find.byKey(const Key('cast-start')));
+          expect(start.bottom, lessThanOrEqualTo(568), reason: '시작하기');
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          await tester.drag(find.byType(ListView), const Offset(0, -3000));
+          await tester.pumpAndSettle();
+          await settleImages(tester);
+          expect(tester.takeException(), isNull);
+          // 히든은 그림이 있어도 실루엣.
+          final hidden = c.bundle.characters.firstWhere(
+            (ch) => ch.gender == side && ch.hidden,
+          );
+          expect(
+            find.descendant(
+              of: find.byKey(Key('cast-${hidden.id}')),
+              matching: find.byType(PortraitImage),
+            ),
+            findsNothing,
+          );
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+        });
+      }
+
+      testWidgets('초상화 있음: 전화 수신 · 통화 중이 넘치지 않는다', (tester) async {
+        apply(tester, env);
+        usePortraits();
+        final call = momentSamples(c.bundle)[0].$3;
+        await showMoment(tester, call);
+        await settleImages(tester);
+        expect(find.byType(IncomingCallView), findsOneWidget);
+        expect(find.byType(PortraitImage), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+
+        await tester.tap(findText('받기'));
+        await tester.pump();
+        await revealAll(tester, c);
+        await tester.pump(const Duration(milliseconds: 400));
+        await settleImages(tester);
+        expect(find.byType(ActiveCallView), findsOneWidget);
+        expect(find.byType(PortraitImage), findsOneWidget);
+        expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
       });
@@ -591,6 +699,42 @@ void main() {
       });
     });
   }
+
+  testWidgets('초상화 있음: 390pt 캐스트 소개는 아바타 72, 320pt 는 56', (tester) async {
+    usePortraits();
+    Future<double> avatarWidth(Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await tester.pumpWidget(
+        wrapApp(
+          PreferenceScreen(
+            bundle: c.bundle,
+            side: Preference.female,
+            onPicked: (_) {},
+          ),
+        ),
+      );
+      await settleImages(tester);
+      expect(tester.takeException(), isNull);
+      return tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byKey(const Key('cast-seoyeon')),
+                  matching: find.byType(CharacterAvatar),
+                )
+                .first,
+          )
+          .width;
+    }
+
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    expect(await avatarWidth(const Size(390, 844)), 72);
+    expect(await avatarWidth(const Size(320, 568)), 56);
+  });
 
   testWidgets('배너 틀은 bottomNavigationBar 에서 본문을 밀어내지 않는다', (tester) async {
     // 실기기에서 배너가 로드되면 Center 가 세로로 늘어나 본문 높이가 0 이 되던 회귀.

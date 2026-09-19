@@ -81,7 +81,8 @@ class _ActionScreenState extends State<ActionScreen> {
       for (final ch in c.roster)
         if (!ch.hidden || s.affectionOf(ch.id) > 0) ch,
     ];
-    final cliffhanger = s.lastCliffhanger;
+    // 대사 속 이름 자리표시자는 표시 직전에 바꾼다(세이브에는 원문).
+    final cliffhanger = c.sayOrNull(s.lastCliffhanger);
 
     return Scaffold(
       appBar: AppBar(
@@ -133,7 +134,7 @@ class _ActionScreenState extends State<ActionScreen> {
           // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
           for (final e in c.overnightShifts.entries) ...[
             const SizedBox(height: AppSpace.sm),
-            OvernightNote(id: e.key, text: e.value),
+            OvernightNote(id: e.key, text: c.say(e.value)),
           ],
 
           // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.

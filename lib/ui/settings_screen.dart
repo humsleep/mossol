@@ -8,6 +8,7 @@ import '../game_controller.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'onboarding_gender_screen.dart';
+import 'onboarding_name_screen.dart';
 import 'widgets.dart';
 
 /// 설정. 규격은 docs/HOME_REDESIGN.md §2.
@@ -54,6 +55,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: context.text.labelMedium,
               ),
               onTap: () => _pickGender(context),
+            ),
+          ),
+          const SizedBox(height: AppSpace.listGap),
+          ListenableBuilder(
+            listenable: c,
+            builder: (context, _) => AppListRow(
+              key: const Key('settings-name'),
+              title: '내 이름',
+              subtitle: '캐릭터들이 대화에서 이 이름으로 불러요',
+              leading: const Icon(Icons.badge_outlined, size: 22),
+              trailing: Text(
+                c.playerName ?? '없음',
+                style: context.text.labelMedium,
+              ),
+              onTap: () => _editName(context),
             ),
           ),
           const SizedBox(height: AppSpace.sectionGap),
@@ -113,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SectionHeader(title: '데이터'),
           AppListRow(
             title: '저장 데이터 초기화',
-            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별이 모두 지워집니다',
+            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름이 모두 지워집니다',
             leading: const Icon(Icons.delete_outline, size: 22),
             tone: AppTone.danger,
             onTap: () => _confirmReset(context),
@@ -170,6 +186,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (picked == null) return;
     await c.setPlayerGender(picked);
+  }
+
+  /// "내 이름" 편집. 온보딩 이름 단계와 같은 화면에 [저장] · [이름 지우기].
+  /// 기기 메타에만 저장하고, 진행 중인 회차에는 다음에 그려지는 대사부터 반영된다.
+  Future<void> _editName(BuildContext context) async {
+    final had = c.playerName;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (ctx) => OnboardingNameScreen(
+          initial: had,
+          submitLabel: OnboardingNameScreen.saveLabel,
+          onSubmit: (name) async {
+            await c.setPlayerName(name);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          onClear: had == null
+              ? null
+              : () async {
+                  await c.setPlayerName(null);
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                },
+        ),
+      ),
+    );
   }
 
   /// 외부 브라우저로. 못 열면 주소를 복사할 수 있게 보여 준다.

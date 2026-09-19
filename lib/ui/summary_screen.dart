@@ -23,7 +23,7 @@ class SummaryScreen extends StatelessWidget {
     final s = c.state!;
     final d = c.dayDelta;
     final hasRelation = d.affection.isNotEmpty || d.trust.isNotEmpty;
-    final cliffhanger = c.cliffhanger;
+    final cliffhanger = c.sayOrNull(c.cliffhanger);
     final shifts = c.todayShifts.take(GameController.maxShiftCards).toList();
 
     // 관계 변화 줄. 라벨('서연 호감')과 변화량('+4')을 나눠 변화량을 앞세운다.
@@ -61,9 +61,10 @@ class SummaryScreen extends StatelessWidget {
               index: i,
               child: RelationShiftCard(
                 name: c.characterName(shifts[i].id),
-                text: shifts[i].text,
+                text: c.say(shifts[i].text),
                 up: shifts[i].up,
                 accent: context.tokens.accentFor(shifts[i].id),
+                characterId: shifts[i].id,
               ),
             ),
             const SizedBox(height: AppSpace.listGap),
@@ -117,7 +118,8 @@ class SummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.sm),
-          Text(keepAll('흑역사 ${s.album.length}개'),
+          Text(
+            keepAll('흑역사 ${s.album.length}개'),
             textAlign: TextAlign.center,
             style: context.text.bodySmall,
           ),
@@ -126,7 +128,6 @@ class SummaryScreen extends StatelessWidget {
       bottomNavigationBar: const BannerSlot(),
     );
   }
-
 }
 
 /// 관계 변화 한 줄분.

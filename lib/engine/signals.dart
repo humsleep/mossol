@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'models.dart';
+import 'text_template.dart';
 
 /// 서사 신호. 호감 숫자 대신 "예은이 프사를 바꿨다" 같은 한 줄로 관계 진전을 보여 준다.
 ///
@@ -505,12 +506,22 @@ class SignalBook {
     }
   }
 
+  /// 모든 문장(위치, 글). 검증기가 이름 자리표시자 형식을 본다.
+  Iterable<(String, String)> get allTexts sync* {
+    for (final (w, l) in _allLines()) {
+      yield (w, l.text);
+    }
+  }
+
   /// 데이터 검사. 문제가 있으면 [StateError]. `StoryBundle.validate` 가 부른다.
   void validate(Set<String> characterIds) {
     void checkLine(SignalLine l, String where) {
       final t = l.text;
       if (t.trim().isEmpty) throw StateError('signals 빈 문장: $where');
-      final n = t.runes.length;
+      // 이름 자리표시자는 가장 긴 이름으로 바꾼 길이로 잰다.
+      final n = TextTemplate.hasToken(t)
+          ? TextTemplate.maxLength(t)
+          : t.runes.length;
       if (n > maxLength) {
         throw StateError('signals 문장이 $maxLength자 초과($n자): $where "$t"');
       }

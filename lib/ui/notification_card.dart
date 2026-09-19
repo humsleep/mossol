@@ -60,6 +60,7 @@ class NotificationCard extends StatelessWidget {
                 children: [
                   CharacterAvatar(
                     name: name,
+                    characterId: characterId,
                     accent: context.tokens.accentFor(characterId),
                   ),
                   const SizedBox(width: AppSpace.md),

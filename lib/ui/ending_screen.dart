@@ -35,6 +35,7 @@ class EndingScreen extends StatelessWidget {
               key: shareBoundaryKey,
               child: _Keepsake(
                 ending: e,
+                epilogue: c.say(e.epilogue),
                 state: s,
                 grade: _grade(s),
                 tierLabel: _tierLabel(e.tier),
@@ -93,12 +94,16 @@ class EndingScreen extends StatelessWidget {
 /// 않지만, 이 경계만 이미지로 캡처했을 때 투명 배경이 되지 않게 한다.
 class _Keepsake extends StatelessWidget {
   final Ending ending;
+
+  /// 이름 치환을 끝낸 에필로그(docs/NAME_GUIDE.md).
+  final String epilogue;
   final GameState state;
   final String grade;
   final String tierLabel;
 
   const _Keepsake({
     required this.ending,
+    required this.epilogue,
     required this.state,
     required this.grade,
     required this.tierLabel,
@@ -122,18 +127,14 @@ class _Keepsake extends StatelessWidget {
             ),
             const SizedBox(height: AppSpace.lg),
             Text(
-              keepAll(ending.epilogue),
+              keepAll(epilogue),
               textAlign: TextAlign.center,
               style: context.text.bodyLarge?.copyWith(height: 1.65),
             ),
             const SizedBox(height: AppSpace.xxxl),
             SizedBox(
               width: double.infinity,
-              child: _GradeCard(
-                state: state,
-                grade: grade,
-                tier: ending.tier,
-              ),
+              child: _GradeCard(state: state, grade: grade, tier: ending.tier),
             ),
           ],
         ),
@@ -208,7 +209,10 @@ class _GradeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.sm),
-          Text(keepAll('${state.run}회차 · D+${state.day - 1} · 흑역사 ${state.album.length}개'),
+          Text(
+            keepAll(
+              '${state.run}회차 · D+${state.day - 1} · 흑역사 ${state.album.length}개',
+            ),
             textAlign: TextAlign.center,
             style: t.numericSmall,
           ),

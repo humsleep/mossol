@@ -17,6 +17,7 @@ import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
+import 'ui/portraits.dart';
 import 'ui/summary_screen.dart';
 
 Future<void> main() async {
@@ -25,7 +26,12 @@ Future<void> main() async {
   registerPretendardLicense();
   registerMinigames();
   try {
-    final bundle = await StoryBundle.loadFromAssets(knownMinigames: minigameIds);
+    // 초상화 목록(AssetManifest)은 스토리와 나란히 읽는다. 실패해도 던지지 않는다(이니셜로 대체).
+    final portraits = PortraitRegistry.load();
+    final bundle = await StoryBundle.loadFromAssets(
+      knownMinigames: minigameIds,
+    );
+    await portraits;
     if (kDebugMode && kDebugGallery) {
       // QA 용. `--dart-define=MOSSOL_DEBUG_GALLERY=true` 로 미니게임·엔딩 갤러리에서 시작.
       // kDebugMode 가 const false 인 릴리스 빌드에서는 갤러리 코드가 트리셰이킹된다.

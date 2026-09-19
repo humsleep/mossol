@@ -81,6 +81,7 @@ void main() {
       await tapNewGame(tester);
       await tester.tap(findText('남자'));
       await tester.pumpAndSettle();
+      await skipNameStep(tester);
       expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
       expect(find.byKey(const Key('cast-seoyeon')), findsOneWidget);
       expect(find.byKey(const Key('cast-jeongwoo')), findsNothing);
@@ -102,6 +103,7 @@ void main() {
       await tapNewGame(tester);
       await tester.tap(findText('여자'));
       await tester.pumpAndSettle();
+      await skipNameStep(tester);
       expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
       await tester.tap(findText(PreferenceScreen.flipLabel));
       await tester.pumpAndSettle();
@@ -120,6 +122,7 @@ void main() {
       await tapNewGame(tester);
       await tester.tap(findText('선택 안 할래요'));
       await tester.pumpAndSettle();
+      await skipNameStep(tester);
       FilledButton start() =>
           tester.widget<FilledButton>(find.byKey(const Key('cast-start')));
       expect(start().onPressed, isNull);
@@ -146,6 +149,7 @@ void main() {
       await tapNewGame(tester);
       await tester.tap(findText('여자'));
       await tester.pumpAndSettle();
+      await skipNameStep(tester);
       await tapStart(tester);
       expect(c.state!.preference, Preference.male);
       await spinRouletteSheet(tester);
@@ -169,6 +173,8 @@ void main() {
       await c.setPlayerGender(PlayerGender.none);
       await showHome(tester);
       await tapNewGame(tester);
+      // 이름 단계는 성별과 따로 묻는다(아직 안 물었으면 뜬다).
+      await skipNameStep(tester);
       expect(find.byType(OnboardingGenderScreen), findsNothing);
       expect(find.byKey(const Key('cast-segment')), findsOneWidget);
       expect(find.byType(PreferenceCard), findsNWidgets(2));
@@ -218,6 +224,7 @@ void main() {
         containsAll(['haneul', 'jeongwoo']),
       );
       await tapNewGame(tester);
+      await skipNameStep(tester);
       expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
       await unmount(tester);
     });

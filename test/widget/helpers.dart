@@ -10,6 +10,7 @@ import 'package:mossol/main.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 import 'package:mossol/ui/design_system.dart';
+import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 StoryBundle? _cached;
@@ -25,7 +26,9 @@ StoryBundle testBundle() {
         File('assets/story/$f').readAsStringSync(),
     ],
     endings: File('assets/story/endings.json').readAsStringSync(),
-    signals: File('assets/story/signals.json').existsSync() ? File('assets/story/signals.json').readAsStringSync() : null,
+    signals: File('assets/story/signals.json').existsSync()
+        ? File('assets/story/signals.json').readAsStringSync()
+        : null,
     knownMinigames: minigameIds,
   );
 }
@@ -39,16 +42,19 @@ Future<GameController> makeController() async {
 
 /// 앱과 같은 테마로 화면 하나를 감싼다. 실제 앱의 AppTheme 를 그대로 쓴다.
 Widget wrapApp(Widget child, {ThemeMode mode = ThemeMode.light}) => MaterialApp(
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: mode,
-      home: child,
-    );
+  theme: AppTheme.light,
+  darkTheme: AppTheme.dark,
+  themeMode: mode,
+  home: child,
+);
 
 Widget fullApp(GameController c) => MossolApp(controller: c);
 
 /// 작은 화면 + 큰 글꼴. tearDown 에서 자동 복원.
-void useSmallScreenLargeFont(WidgetTester tester, {Size size = const Size(320, 568)}) {
+void useSmallScreenLargeFont(
+  WidgetTester tester, {
+  Size size = const Size(320, 568),
+}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   tester.platformDispatcher.textScaleFactorTestValue = 1.3;
@@ -62,6 +68,15 @@ void useSmallScreenLargeFont(WidgetTester tester, {Size size = const Size(320, 5
 void useDarkMode(WidgetTester tester) {
   tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+}
+
+/// 새 게임 이름 단계("뭐라고 불러 드릴까요?")가 떠 있으면 건너뛰기를 누른다. 없으면 아무것도 안 한다.
+/// 이름 단계는 이름이 없고 아직 한 번도 묻지 않았을 때만 뜬다(docs/NAME_GUIDE.md).
+Future<void> skipNameStep(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  if (find.byType(OnboardingNameScreen).evaluate().isEmpty) return;
+  await tester.tap(find.byKey(const Key('name-skip')));
+  await tester.pumpAndSettle();
 }
 
 /// 이벤트 대사가 전부 공개될 때까지 1초씩 시간을 흘린다(읽씹 대기 포함).
@@ -102,8 +117,10 @@ Future<void> spinRouletteSheet(WidgetTester tester) async {
   expect(findText('오늘의 운'), findsNothing);
 }
 
-MinigameContext ctxFor(GameController c, {String? partner}) =>
-    MinigameContext(state: c.state!, partner: partner == null ? null : c.characterOf(partner));
+MinigameContext ctxFor(GameController c, {String? partner}) => MinigameContext(
+  state: c.state!,
+  partner: partner == null ? null : c.characterOf(partner),
+);
 
 GameState freshState() {
   final b = testBundle();

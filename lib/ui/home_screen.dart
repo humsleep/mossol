@@ -149,10 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 chapter: summary.chapter,
                 day: summary.day,
                 totalDays: summary.totalDays,
-                cliffhanger: summary.lastCliffhanger,
+                cliffhanger: c.sayOrNull(summary.lastCliffhanger),
                 topName: c.characterOf(summary.topCharacterId)?.name,
                 topAffection: summary.topAffection,
-                topSignal: summary.topSignal,
+                topSignal: c.sayOrNull(summary.topSignal),
                 topAccent: summary.topCharacterId == null
                     ? null
                     : context.tokens.accentFor(summary.topCharacterId),
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (summary != null)
               for (final e in summary.overnight.entries) ...[
                 const SizedBox(height: AppSpace.sm),
-                OvernightNote(id: e.key, text: e.value),
+                OvernightNote(id: e.key, text: c.say(e.value)),
               ],
             const SizedBox(height: AppSpace.lg),
 
@@ -291,17 +291,23 @@ class _HomeScreenState extends State<HomeScreen> {
     await _startNewGame(context);
   }
 
-  /// 온보딩("나는?", 답이 없을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
+  /// 온보딩("나는?", 답이 없을 때만) → 이름(아직 안 물었을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
   /// 하지 않는다. 1단계 답은 새 게임이 실제로 시작될 때 기기 메타에 저장한다.
   Future<void> _startNewGame(BuildContext context) async {
     final pick = await OnboardingGenderScreen.run(
       context,
       c.bundle,
       savedGender: c.playerGender,
+      askName: c.shouldAskName,
     );
     if (pick == null) return;
     final g = pick.gender;
     if (g != null) await c.setPlayerGender(g);
+    // 이름 단계: 입력했으면 저장, 건너뛰었으면 다음부터 묻지 않는다(설정에서 바꿀 수 있다).
+    if (pick.nameStep) {
+      final n = pick.name;
+      n == null ? await c.skipPlayerName() : await c.setPlayerName(n);
+    }
     await c.newGame(preference: pick.preference);
   }
 }

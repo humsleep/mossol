@@ -5,6 +5,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 
 import 'helpers.dart';
@@ -47,6 +48,9 @@ void main() {
     expect(c.phase, Phase.home);
     await tester.tap(findText('남자'));
     await tester.pumpAndSettle();
+    // 그다음 이름 단계("뭐라고 불러 드릴까요?"). 건너뛰면 이름 없이 진행한다.
+    expect(findText(OnboardingNameScreen.title), findsOneWidget);
+    await skipNameStep(tester);
     expect(findText(PreferenceScreen.title), findsOneWidget);
     expect(c.phase, Phase.home);
     await tester.tap(findText(PreferenceScreen.startLabel));
@@ -163,7 +167,14 @@ void main() {
     expect(findText(OnboardingGenderScreen.title), findsOneWidget);
     await tester.tap(findText('여자'));
     await tester.pumpAndSettle();
+    expect(findText(OnboardingNameScreen.title), findsOneWidget);
+    await tester.tap(find.byKey(const Key('name-skip')));
+    await tester.pumpAndSettle();
     expect(findText(PreferenceScreen.title), findsOneWidget);
+    // 캐스트 소개 → 이름 단계 → 나는? 순으로 뒤로 간다.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(findText(OnboardingNameScreen.title), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(findText(OnboardingGenderScreen.title), findsOneWidget);
@@ -178,6 +189,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('여자'));
     await tester.pumpAndSettle();
+    await skipNameStep(tester);
     // 여자 → 남성 캐릭터 쪽이 기본.
     expect(find.byKey(const Key('cast-side-m')), findsOneWidget);
     await tester.tap(findText(PreferenceScreen.startLabel));

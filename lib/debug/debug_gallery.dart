@@ -14,6 +14,8 @@ import '../ui/ending_screen.dart';
 import '../ui/event_screen.dart';
 import '../ui/home_screen.dart';
 import '../ui/onboarding_gender_screen.dart';
+import '../ui/onboarding_name_screen.dart';
+import '../ui/portraits.dart';
 import '../ui/preference_screen.dart';
 import '../ui/summary_screen.dart';
 import '../ui/widgets.dart';
@@ -298,12 +300,34 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     );
   }
 
+  /// 이름 단계만. 입력·건너뛰기 결과를 스낵바로 알리고 돌아온다. 기기 메타는 건드리지 않는다.
+  Future<void> _openNameStep() async {
+    final name = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (ctx) => OnboardingNameScreen(
+          onSubmit: (n) => Navigator.of(ctx).pop(n),
+          onSkip: () => Navigator.of(ctx).pop(''),
+        ),
+      ),
+    );
+    if (!mounted || name == null) return;
+    _toast(
+      name.isEmpty
+          ? '이름: 건너뜀 · ${OnboardingNameScreen.previewFor('')}'
+          : '이름: $name · ${OnboardingNameScreen.previewFor(name)}',
+    );
+  }
+
   /// 새 게임 2단계만. [side] 가 null 이면 "선택 안 할래요" 의 비교 모드.
   Future<void> _openCast(String? side) async {
     final pref = await PreferenceScreen.show(context, bundle, side: side);
     if (!mounted || pref == null) return;
     _toast('고른 쪽: ${Preference.label(pref)} ($pref)');
   }
+
+  Future<void> _openPortraits() => Navigator.of(context).push<void>(
+    MaterialPageRoute(builder: (_) => PortraitPreviewScreen(bundle: bundle)),
+  );
 
   void _toast(String text) {
     ScaffoldMessenger.of(context)
@@ -424,6 +448,13 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: _openOnboarding,
           ),
+          ListTile(
+            leading: const Icon(Icons.badge_outlined),
+            title: const Text('이름 단계: 뭐라고 불러 드릴까요?'),
+            subtitle: const Text('입력 · 미리보기 말풍선 · 건너뛰기'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openNameStep,
+          ),
           for (final (side, label) in [
             (Preference.female, '2단계: 캐스트 소개 · 여성 캐릭터'),
             (Preference.male, '2단계: 캐스트 소개 · 남성 캐릭터'),
@@ -438,6 +469,15 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openCast(side),
             ),
+          const _Header('초상화'),
+          ListTile(
+            key: const Key('debug-portraits'),
+            leading: const Icon(Icons.account_circle_outlined),
+            title: const Text('초상화 12명 미리보기'),
+            subtitle: Text('원형 크롭 확인 · 있음 ${PortraitRegistry.current.length}장'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openPortraits,
+          ),
           const _Header('엔딩 화면'),
           for (final t in byTier.keys)
             ExpansionTile(
@@ -493,6 +533,187 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
                     ),
                 ],
               ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 초상화 12명 미리보기. `assets/portraits/<id>.png` 를 넣은 뒤 원형으로 잘렸을 때 얼굴이
+/// 온전한지, 12장이 한 화풍으로 보이는지 한 화면에서 확인한다(docs/PORTRAIT_PROMPTS.md §7).
+///
+/// 캐릭터마다: 원본 정사각형(원형 가이드 선) → 실제 크기 32·40·56·72·96 → 히든 미공개 모습.
+/// 위쪽 세그먼트로 라이트·다크를 바꿔 테두리 대비도 본다.
+class PortraitPreviewScreen extends StatefulWidget {
+  final StoryBundle bundle;
+  const PortraitPreviewScreen({super.key, required this.bundle});
+
+  static const sizes = <double>[32, 40, 56, 72, 96];
+
+  @override
+  State<PortraitPreviewScreen> createState() => _PortraitPreviewScreenState();
+}
+
+class _PortraitPreviewScreenState extends State<PortraitPreviewScreen> {
+  bool _dark = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final chars = [
+      for (final g in Preference.genders)
+        ...widget.bundle.characters.where((c) => c.gender == g),
+    ];
+    return Theme(
+      data: _dark ? AppTheme.dark : AppTheme.light,
+      child: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('초상화 12명 미리보기')),
+          body: ValueListenableBuilder<PortraitRegistry>(
+            valueListenable: PortraitRegistry.listenable,
+            builder: (context, portraits, _) => ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.md,
+                AppSpace.screenX,
+                AppSpace.xxl,
+              ),
+              children: [
+                SegmentedButton<bool>(
+                  key: const Key('portrait-theme'),
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('라이트')),
+                    ButtonSegment(value: true, label: Text('다크')),
+                  ],
+                  selected: {_dark},
+                  onSelectionChanged: (v) => setState(() => _dark = v.first),
+                ),
+                const SizedBox(height: AppSpace.md),
+                Text(
+                  '${chars.length}명 중 ${chars.where((c) => portraits.pathFor(c.id) != null).length}장 있음 · '
+                  '${PortraitRegistry.dir}<id>.png',
+                  style: context.text.bodySmall,
+                ),
+                const SizedBox(height: AppSpace.md),
+                // 12장 나란히: 화풍·밝기·얼굴 위치가 맞는지 한눈에.
+                Wrap(
+                  spacing: AppSpace.sm,
+                  runSpacing: AppSpace.sm,
+                  children: [
+                    for (final c in chars)
+                      CharacterAvatar(
+                        name: c.name,
+                        characterId: c.id,
+                        accent: context.tokens.accentFor(c.id),
+                        size: 48,
+                      ),
+                  ],
+                ),
+                for (final c in chars) ...[
+                  const SizedBox(height: AppSpace.lg),
+                  _PortraitRow(
+                    character: c,
+                    path: portraits.pathFor(c.id),
+                    bundle: portraits.bundle,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PortraitRow extends StatelessWidget {
+  final CharacterDef character;
+  final String? path;
+  final AssetBundle? bundle;
+
+  const _PortraitRow({
+    required this.character,
+    required this.path,
+    required this.bundle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = character;
+    final accent = context.tokens.accentFor(c.id);
+    final scheme = context.scheme;
+    const square = 112.0;
+    return AppCard(
+      key: Key('portrait-${c.id}'),
+      accentStripe: accent.base,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${c.name} · ${c.id}${c.hidden ? ' · 히든' : ''}',
+            style: context.text.titleMedium,
+          ),
+          Text(
+            path ?? '없음 → 이니셜',
+            style: context.text.bodySmall?.copyWith(
+              color: path == null ? scheme.onSurfaceVariant : scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Wrap(
+            spacing: AppSpace.md,
+            runSpacing: AppSpace.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              // 원본 정사각형 + 원형 크롭 가이드. 원 밖으로 얼굴·머리가 잘리면 다시 뽑는다.
+              SizedBox.square(
+                dimension: square,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accent.container,
+                    border: Border.all(color: scheme.outlineVariant),
+                  ),
+                  position: DecorationPosition.background,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (path != null)
+                        Image.asset(
+                          path!,
+                          bundle: bundle,
+                          scale: 1,
+                          cacheWidth:
+                              (square * MediaQuery.devicePixelRatioOf(context))
+                                  .ceil(),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) =>
+                              const Center(child: Icon(Icons.broken_image)),
+                        ),
+                      IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: scheme.primary,
+                              width: AppBorderWidth.emphasis,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              for (final size in PortraitPreviewScreen.sizes)
+                CharacterAvatar(
+                  name: c.name,
+                  characterId: c.id,
+                  accent: accent,
+                  size: size,
+                ),
+              if (c.hidden)
+                const CharacterAvatar(name: '', mystery: true, size: 56),
+            ],
+          ),
         ],
       ),
     );

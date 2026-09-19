@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import '../engine/models.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
+import 'portraits.dart';
 import 'widgets.dart';
 
 /// `mm:ss`. 한 시간을 넘으면 분이 60 을 넘어 그대로 센다(통화가 그렇게 길 일은 없다).
@@ -65,13 +66,16 @@ class CallBackdrop extends StatelessWidget {
   }
 }
 
-/// 이니셜 원형 아바타(전화용 큰 크기). 사진 대신 강조색 이니셜(§4.3).
+/// 전화용 큰 원형 아바타. 초상화가 있으면 원형 그림, 없으면 강조색 이니셜(§4.3).
+/// 테두리(강조색 2pt)와 크기는 그림 유무와 무관하게 같다.
 class _CallAvatar extends StatelessWidget {
   final String name;
+  final String? characterId;
   final CharacterAccent accent;
   final double size;
   const _CallAvatar({
     required this.name,
+    required this.characterId,
     required this.accent,
     required this.size,
   });
@@ -81,15 +85,7 @@ class _CallAvatar extends StatelessWidget {
     final style = size >= 64
         ? context.text.headlineMedium
         : context.text.titleMedium;
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: accent.container,
-        shape: BoxShape.circle,
-        border: Border.all(color: accent.base, width: AppBorderWidth.emphasis),
-      ),
+    Widget initial(BuildContext context) => Center(
       child: Text(
         name.isEmpty ? '' : name.characters.first,
         maxLines: 1,
@@ -100,6 +96,36 @@ class _CallAvatar extends StatelessWidget {
         ),
       ),
     );
+    return ValueListenableBuilder<PortraitRegistry>(
+      valueListenable: PortraitRegistry.listenable,
+      builder: (context, portraits, _) {
+        final path = portraits.pathFor(characterId);
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: accent.container,
+            shape: BoxShape.circle,
+          ),
+          foregroundDecoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: accent.base,
+              width: AppBorderWidth.emphasis,
+            ),
+          ),
+          child: path == null
+              ? initial(context)
+              : PortraitImage(
+                  path: path,
+                  size: size,
+                  bundle: portraits.bundle,
+                  semanticLabel: name,
+                  fallback: initial,
+                ),
+        );
+      },
+    );
   }
 }
 
@@ -109,6 +135,9 @@ class PulseAvatar extends StatefulWidget {
   final String name;
   final CharacterAccent accent;
 
+  /// 초상화용 id. null 이면 이니셜.
+  final String? characterId;
+
   /// 아바타 지름. 링은 바깥으로 [ringSpread] 만큼 더 퍼진다.
   final double size;
   final double ringSpread;
@@ -117,6 +146,7 @@ class PulseAvatar extends StatefulWidget {
     super.key,
     required this.name,
     required this.accent,
+    this.characterId,
     this.size = 96,
     this.ringSpread = AppSpace.xxxl,
   });
@@ -175,6 +205,7 @@ class _PulseAvatarState extends State<PulseAvatar>
         child: Center(
           child: _CallAvatar(
             name: widget.name,
+            characterId: widget.characterId,
             accent: widget.accent,
             size: widget.size,
           ),
@@ -267,7 +298,11 @@ class IncomingCallView extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpace.xl),
                         ExcludeSemantics(
-                          child: PulseAvatar(name: name, accent: accent),
+                          child: PulseAvatar(
+                            name: name,
+                            characterId: characterId,
+                            accent: accent,
+                          ),
                         ),
                         const SizedBox(height: AppSpace.lg),
                         Text(
@@ -372,6 +407,7 @@ class ActiveCallView extends StatelessWidget {
                     ExcludeSemantics(
                       child: _CallAvatar(
                         name: name,
+                        characterId: characterId,
                         accent: accent,
                         size: AppSpace.huge,
                       ),

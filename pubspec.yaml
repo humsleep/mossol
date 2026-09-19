@@ -25,6 +25,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/story/
+    # 캐릭터 초상화. `<캐릭터 id>.png` 를 넣으면 이니셜 대신 그림이 뜬다(docs/PORTRAIT_PROMPTS.md).
+    # 비어 있어도 빌드가 깨지지 않게 .gitkeep 을 둔다. 목록은 시작할 때 AssetManifest 로 읽는다.
+    - assets/portraits/
     # OFL 라이선스 전문. 앱 안 라이선스 화면에서 읽어 줄 수 있게 함께 번들한다.
     - assets/fonts/Pretendard-LICENSE.txt
 

@@ -315,6 +315,10 @@ class Photo {
 
   static const maxCaption = 20;
 
+  /// 캡션을 [f] 로 바꾼 사본(이름 치환, lib/engine/text_template.dart).
+  Photo mapText(String Function(String) f) =>
+      Photo(icon: icon, caption: f(caption));
+
   factory Photo.fromJson(Map<String, dynamic> j) => Photo(
     icon: (j['icon'] as String?) ?? '',
     caption: (j['caption'] as String?) ?? '',
@@ -340,6 +344,15 @@ class Line {
   });
 
   bool get isWait => who == 'sys' && wait > 0;
+
+  /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
+  Line mapText(String Function(String) f) => Line(
+    who: who,
+    text: f(text),
+    wait: wait,
+    name: name,
+    photo: photo?.mapText(f),
+  );
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
     who: (j['who'] as String?) ?? 'them',
@@ -390,6 +403,22 @@ class Choice {
     this.critReply = const [],
     this.decline = false,
   });
+
+  /// 문구와 반응 줄을 [f] 로 바꾼 사본. 효과·조건·다음 이벤트는 그대로.
+  Choice mapText(String Function(String) f) => Choice(
+    text: f(text),
+    require: require,
+    effects: effects,
+    next: next,
+    chance: chance,
+    fail: fail,
+    failNext: failNext,
+    minigame: minigame,
+    reply: [for (final l in reply) l.mapText(f)],
+    failReply: [for (final l in failReply) l.mapText(f)],
+    critReply: [for (final l in critReply) l.mapText(f)],
+    decline: decline,
+  );
 
   /// 이 결과에 맞는 반응 줄.
   List<Line> replyFor({required bool success, required bool critical}) {
@@ -478,6 +507,49 @@ class StoryEvent {
 
   /// 상대가 먼저 거는 전화인지.
   bool get isCall => format == formatCall;
+
+  /// 화면에 보이는 글(제목·대사·사진 캡션·선택지·반응·알림·클리프행어)을 [f] 로 바꾼
+  /// 사본. id·조건·효과는 그대로라 엔진에는 원본을 넘긴다. `GameController.shownEvent`.
+  StoryEvent mapText(String Function(String) f) => StoryEvent(
+    id: id,
+    layer: layer,
+    character: character,
+    trigger: trigger,
+    weight: weight,
+    day: day,
+    once: once,
+    title: f(title),
+    lines: [for (final l in lines) l.mapText(f)],
+    choices: [for (final c in choices) c.mapText(f)],
+    hint: hint,
+    cliffhanger: cliffhanger == null ? null : f(cliffhanger!),
+    format: format,
+    preview: preview == null ? null : f(preview!),
+  );
+
+  /// 화면에 보이는 글 전부(위치, 문자열). 검증기가 자리표시자 형식을 본다.
+  Iterable<(String, String)> get displayTexts sync* {
+    yield ('$id.title', title);
+    if (preview != null) yield ('$id.preview', preview!);
+    if (cliffhanger != null) yield ('$id.cliffhanger', cliffhanger!);
+    Iterable<(String, String)> linesOf(String where, List<Line> ls) sync* {
+      for (var i = 0; i < ls.length; i++) {
+        yield ('$where[$i]', ls[i].text);
+        final p = ls[i].photo;
+        if (p != null) yield ('$where[$i].photo.caption', p.caption);
+      }
+    }
+
+    yield* linesOf('$id.lines', lines);
+    for (var i = 0; i < choices.length; i++) {
+      final c = choices[i];
+      final w = '$id.choices[$i]';
+      yield ('$w.text', c.text);
+      yield* linesOf('$w.reply', c.reply);
+      yield* linesOf('$w.failReply', c.failReply);
+      yield* linesOf('$w.critReply', c.critReply);
+    }
+  }
 
   /// 사진 줄이 있는지. 대사와 반응(reply/failReply/critReply) 전부를 본다.
   bool get hasPhoto =>

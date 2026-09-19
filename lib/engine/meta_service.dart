@@ -30,6 +30,14 @@ class PlayerMeta {
   /// 이 필드가 없던 예전 메타 JSON 은 null 로 읽힌다.
   String? playerGender;
 
+  /// 온보딩 이름 단계 · 설정 "내 이름" 의 값. 캐릭터가 대사에서 이 이름을 부른다
+  /// (docs/NAME_GUIDE.md). 없으면 null — 대사는 대체어로 나간다. 기기 밖으로 보내지
+  /// 않고, 세이브에 복사하지 않으며(회차 도중 바꾸면 다음 대사부터 반영), 전체 초기화에서 지워진다.
+  String? playerName;
+
+  /// 이름 단계를 한 번 거쳤는지(입력했든 건너뛰었든). true 면 다음 새 게임에서 다시 묻지 않는다.
+  bool nameAsked;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -41,6 +49,8 @@ class PlayerMeta {
     this.pendingHearts = 0,
     this.rerollTickets = 0,
     this.playerGender,
+    this.playerName,
+    this.nameAsked = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -54,6 +64,8 @@ class PlayerMeta {
     'pendingHearts': pendingHearts,
     'rerollTickets': rerollTickets,
     'playerGender': playerGender,
+    'playerName': playerName,
+    'nameAsked': nameAsked,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -71,6 +83,11 @@ class PlayerMeta {
       pendingHearts: _int(j['pendingHearts']),
       rerollTickets: _int(j['rerollTickets']),
       playerGender: PlayerGender.parse(j['playerGender']),
+      playerName: switch (j['playerName']) {
+        final String v when v.trim().isNotEmpty => v.trim(),
+        _ => null,
+      },
+      nameAsked: j['nameAsked'] == true,
     );
   }
 }

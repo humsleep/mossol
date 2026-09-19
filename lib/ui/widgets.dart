@@ -15,6 +15,7 @@ import '../engine/models.dart';
 import 'design_system.dart';
 
 import 'photo_card.dart';
+import 'portraits.dart';
 import 'keep_all.dart';
 
 export 'photo_card.dart';
@@ -1756,14 +1757,22 @@ Future<T?> showAppDialog<T>(
 // 9. 홈 부품 — 아바타 · 사람들 · 이어하기 · 출석 · 엔딩 점
 // ---------------------------------------------------------------------------
 
-/// 캐릭터 이니셜 원형. 실제 사진 대신 강조색 + 이름 첫 글자(§4.3).
+/// 캐릭터 원형 아바타. 초상화가 있으면 원형으로 자른 그림, 없으면 강조색 + 이름 첫 글자(§4.3).
 ///
-/// [mystery] 는 히든 미해금. 글자 대신 사람 실루엣, 배경은 중립 표면.
+/// 초상화는 규칙 기반이다: [characterId] 의 `assets/portraits/<id>.png` 가 번들에 있으면 쓴다
+/// ([PortraitRegistry]). 그림을 읽는 중이거나 실패하면 이니셜을 그린다. 어느 쪽이든 크기·테두리는
+/// 같아서 레이아웃이 달라지지 않는다. [characterId] 를 안 주면 [accent] 로 캐릭터를 거꾸로 찾는다
+/// (`accentFor` 가 돌려준 강조색이면 찾힌다. 예전 호출부 호환).
+///
+/// [mystery] 는 히든 미해금. 그림이 있어도 글자 대신 사람 실루엣, 배경은 중립 표면(스포일러 방지).
 class CharacterAvatar extends StatelessWidget {
   final String name;
   final CharacterAccent? accent;
 
-  /// 32 · 40 · 56 만 쓴다.
+  /// 초상화를 찾을 캐릭터 id. null 이면 [accent] 로 찾는다.
+  final String? characterId;
+
+  /// 32 · 40 · 56 · 72 를 쓴다(72 는 캐스트 소개 카드).
   final double size;
   final bool mystery;
 
@@ -1771,9 +1780,19 @@ class CharacterAvatar extends StatelessWidget {
     super.key,
     required this.name,
     this.accent,
+    this.characterId,
     this.size = 40,
     this.mystery = false,
   });
+
+  /// 강조색으로 캐릭터 id 를 거꾸로 찾는다. 중립색이거나 모르는 색이면 null.
+  static String? idForAccent(AppTokens t, CharacterAccent? accent) {
+    if (accent == null) return null;
+    for (final e in t.characterAccents.entries) {
+      if (identical(e.value, accent) || e.value == accent) return e.key;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1789,28 +1808,53 @@ class CharacterAvatar extends StatelessWidget {
                 : context.text.labelLarge)
             ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
 
+    Widget initialCircle(BuildContext context) => Center(
+      child: mystery
+          ? Icon(
+              Icons.person_outline,
+              size: size * 0.5,
+              color: t.lockedForeground,
+            )
+          : Text(initial, style: style),
+    );
+
+    final border = Border.all(
+      color: mystery ? scheme.outlineVariant : a.base,
+      width: AppBorderWidth.hairline,
+    );
+
     return Semantics(
       label: mystery ? '아직 만나지 않은 사람' : name,
       child: ExcludeSemantics(
-        child: Container(
-          width: size,
-          height: size,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: mystery ? scheme.surfaceContainerHigh : a.container,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: mystery ? scheme.outlineVariant : a.base,
-              width: AppBorderWidth.hairline,
-            ),
-          ),
-          child: mystery
-              ? Icon(
-                  Icons.person_outline,
-                  size: size * 0.5,
-                  color: t.lockedForeground,
-                )
-              : Text(initial, style: style),
+        child: ValueListenableBuilder<PortraitRegistry>(
+          valueListenable: PortraitRegistry.listenable,
+          builder: (context, portraits, _) {
+            final path = mystery
+                ? null
+                : portraits.pathFor(characterId ?? idForAccent(t, accent));
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: mystery ? scheme.surfaceContainerHigh : a.container,
+                shape: BoxShape.circle,
+              ),
+              // 테두리는 그림 위에 얹는다. 그림 가장자리가 강조색 선을 덮지 않게.
+              foregroundDecoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: border,
+              ),
+              child: path == null
+                  ? initialCircle(context)
+                  : PortraitImage(
+                      path: path,
+                      size: size,
+                      bundle: portraits.bundle,
+                      semanticLabel: name,
+                      fallback: initialCircle,
+                    ),
+            );
+          },
         ),
       ),
     );
@@ -1885,6 +1929,7 @@ class _CastItem extends StatelessWidget {
             children: [
               CharacterAvatar(
                 name: e.name,
+                characterId: e.id,
                 accent: e.mystery ? null : t.accentFor(e.id),
                 mystery: e.mystery,
               ),
@@ -1933,6 +1978,9 @@ class ContinueCard extends StatelessWidget {
   final int topAffection;
   final CharacterAccent? topAccent;
 
+  /// 최애의 id(초상화용). null 이면 [topAccent] 로 찾는다.
+  final String? topCharacterId;
+
   /// 최애의 서사 신호 한 줄. null 이면 예전처럼 `'서연 ♥42'` + '가장 가까운 사람'.
   final String? topSignal;
 
@@ -1953,6 +2001,7 @@ class ContinueCard extends StatelessWidget {
     this.topName,
     this.topAffection = 0,
     this.topAccent,
+    this.topCharacterId,
     this.topSignal,
     this.preferenceLabel,
   }) : _placeholder = false;
@@ -1967,6 +2016,7 @@ class ContinueCard extends StatelessWidget {
       topName = null,
       topAffection = 0,
       topAccent = null,
+      topCharacterId = null,
       topSignal = null,
       preferenceLabel = null,
       _placeholder = true;
@@ -2080,12 +2130,18 @@ class ContinueCard extends StatelessWidget {
                 name: topName!,
                 affection: topAffection,
                 accent: topAccent,
+                characterId: topCharacterId,
                 signal: topSignal!,
               )
             else
               Row(
                 children: [
-                  CharacterAvatar(name: topName!, accent: topAccent, size: 32),
+                  CharacterAvatar(
+                    name: topName!,
+                    characterId: topCharacterId,
+                    accent: topAccent,
+                    size: 32,
+                  ),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
                     child: Text(
@@ -2210,6 +2266,7 @@ class PreferenceCard extends StatelessWidget {
                       for (final e in cast)
                         CharacterAvatar(
                           name: e.name,
+                          characterId: e.id,
                           accent: e.mystery ? null : t.accentFor(e.id),
                           mystery: e.mystery,
                           size: size,
@@ -2342,7 +2399,7 @@ class CastIntro {
 
 /// 새 게임 2단계(캐스트 소개)의 캐릭터 한 장. DESIGN_SYSTEM §3.2.
 ///
-/// `AppCard`(neutral, 누르지 않음) 안에 [아바타 56(accentFor) → md → 본문]. 본문은
+/// `AppCard`(neutral, 누르지 않음) 안에 [아바타 72·좁으면 56(accentFor, 초상화) → md → 본문]. 본문은
 /// 이름 `titleMedium` + 역할 `labelMedium`(onSurfaceVariant) 한 줄(좁으면 접힘) → xxs → 한 줄 매력
 /// `bodyMedium` w600 → sm → 첫 메시지 말풍선(상대 말풍선과 같은 `bubbleTheirs` + 1px
 /// `bubbleBorder` + `AppRadius.bubble(mine: false)`, `bubbleText`, 최대 3줄).
@@ -2354,6 +2411,10 @@ class CastIntroCard extends StatelessWidget {
   const CastIntroCard({super.key, required this.intro});
 
   static const mysteryNote = '어떤 조건을 채우면 나타나는 사람';
+
+  /// 카드 안쪽 폭 [width] 에 맞는 아바타 크기. 초상화 얼굴이 보이게 넉넉하면 72,
+  /// 좁은 화면(320pt 폰, 안쪽 폭 약 248)은 본문 폭을 지키려 56. 그림 유무와 무관하다.
+  static double avatarSizeFor(double width) => width >= 280 ? 72 : 56;
 
   @override
   Widget build(BuildContext context) {
@@ -2437,23 +2498,29 @@ class CastIntroCard extends StatelessWidget {
 
     return MergeSemantics(
       child: AppCard(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CharacterAvatar(
-              name: e.name,
-              accent: accent,
-              mystery: e.mystery,
-              size: 56,
-            ),
-            const SizedBox(width: AppSpace.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: body,
-              ),
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final size = avatarSizeFor(box.maxWidth);
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CharacterAvatar(
+                  name: e.name,
+                  characterId: e.id,
+                  accent: accent,
+                  mystery: e.mystery,
+                  size: size,
+                ),
+                const SizedBox(width: AppSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: body,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -2469,6 +2536,7 @@ class _SignalLine extends StatelessWidget {
   final String name;
   final int affection;
   final CharacterAccent? accent;
+  final String? characterId;
   final String signal;
 
   const _SignalLine({
@@ -2476,6 +2544,7 @@ class _SignalLine extends StatelessWidget {
     required this.affection,
     required this.accent,
     required this.signal,
+    this.characterId,
   });
 
   @override
@@ -2484,7 +2553,12 @@ class _SignalLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CharacterAvatar(name: name, accent: accent, size: 32),
+        CharacterAvatar(
+          name: name,
+          characterId: characterId,
+          accent: accent,
+          size: 32,
+        ),
         const SizedBox(width: AppSpace.sm),
         Expanded(
           child: Text.rich(
@@ -2534,12 +2608,16 @@ class RelationShiftCard extends StatelessWidget {
   final bool up;
   final CharacterAccent? accent;
 
+  /// 초상화용 id. null 이면 [accent] 로 찾는다.
+  final String? characterId;
+
   const RelationShiftCard({
     super.key,
     required this.name,
     required this.text,
     required this.up,
     this.accent,
+    this.characterId,
   });
 
   @override
@@ -2593,7 +2671,12 @@ class RelationShiftCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CharacterAvatar(name: name, accent: a, size: 40),
+            CharacterAvatar(
+              name: name,
+              characterId: characterId,
+              accent: a,
+              size: 40,
+            ),
             const SizedBox(width: AppSpace.md),
             Expanded(
               child: Column(

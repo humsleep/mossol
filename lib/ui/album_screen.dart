@@ -273,7 +273,7 @@ class _EndingTabState extends State<_EndingTab> {
               final owned = got.contains(e.id);
               return _EndingCard(
                 title: owned ? e.name : '???',
-                body: owned ? e.epilogue : endingHintFor(e, c),
+                body: owned ? c.say(e.epilogue) : endingHintFor(e, c),
                 tierLabel: _tier(e.tier),
                 owned: owned,
                 accent: context.tokens.accentFor(e.character),
@@ -315,7 +315,7 @@ const _flagHints = {
 /// 하한이 있으면 "N 이상", 상한만 있으면 "N 이하"로 읽기 쉽게 옮긴다.
 String endingHintFor(Ending e, GameController c) {
   final human = e.hint?.trim();
-  if (human != null && human.isNotEmpty) return human;
+  if (human != null && human.isNotEmpty) return c.say(human);
 
   final w = e.when;
   final parts = <String>[];
