@@ -157,6 +157,9 @@ class GameController extends ChangeNotifier {
   ChoiceOutcome? lastOutcome;
   Choice? _lastChoice;
 
+  /// 방금 고른 선택지. 결과 패널이 전화 거절 같은 선택의 성격을 알 때 쓴다.
+  Choice? get lastChoice => lastOutcome == null ? null : _lastChoice;
+
   /// 방금 선택에 대한 상대의 반응 줄. 결과가 없으면 빈 목록.
   List<Line> get lastReply {
     final o = lastOutcome;

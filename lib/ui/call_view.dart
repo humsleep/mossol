@@ -14,6 +14,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../engine/models.dart';
 import 'design_system.dart';
@@ -36,21 +37,26 @@ class CallBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark,
-      child: Builder(
-        builder: (context) => Scaffold(
-          backgroundColor: context.scheme.surface,
-          body: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [AppPalette.violet900, context.scheme.surface],
-                stops: const [0, 0.85],
+    // 배경이 항상 어두우므로 상태 표시줄(시계·배터리)도 밝은 글자로. 앱이 라이트
+    // 모드면 시스템이 검은 글자를 써서 자수정 배경 위에서 거의 안 보인다.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Theme(
+        data: AppTheme.dark,
+        child: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: context.scheme.surface,
+            body: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppPalette.violet900, context.scheme.surface],
+                  stops: const [0, 0.85],
+                ),
               ),
+              child: SafeArea(bottom: false, child: child),
             ),
-            child: SafeArea(bottom: false, child: child),
           ),
         ),
       ),

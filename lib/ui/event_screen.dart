@@ -877,7 +877,11 @@ class _ResultPanel extends StatelessWidget {
         : !o.success
         ? t.onDangerContainer
         : scheme.onSurface;
-    final headline = o.critical
+    // 전화를 거절한 건 '성공'이 아니다. 판정 없는 선택이므로 담담하게 적는다.
+    final declined = c.lastChoice?.decline == true;
+    final headline = declined
+        ? '전화를 넘겼다'
+        : o.critical
         // 초반에는 초반 가속과 겹쳐 2배가 넘으므로 배수를 적지 않는다. 실제 수치는 아래 칩에 있다.
         ? (o.delta.affection.values.any((v) => v > 0) ? '크리티컬! 호감 폭발' : '크리티컬!')
         : !o.success
@@ -885,7 +889,9 @@ class _ResultPanel extends StatelessWidget {
         : o.comboStarted
         ? '물올랐다!'
         : '성공';
-    final icon = o.critical
+    final icon = declined
+        ? Icons.phone_missed_outlined
+        : o.critical
         ? Icons.auto_awesome
         : !o.success
         ? Icons.error_outline

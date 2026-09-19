@@ -122,6 +122,9 @@ void main() {
       await settleReplies(tester);
       expect(find.widgetWithText(ChatBubble, '바빠? 나중에 연락해'), findsOneWidget);
       expect(find.text('계속'), findsOneWidget);
+      // 거절은 '성공' 이 아니다.
+      expect(find.text('전화를 넘겼다'), findsOneWidget);
+      expect(find.text('성공'), findsNothing);
       // 결정한 선택지 문구('거절')를 내 말풍선으로 남기지 않는다.
       expect(find.widgetWithText(ChatBubble, '거절'), findsNothing);
 
