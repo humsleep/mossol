@@ -12,6 +12,12 @@ const files = [
   'events_route_a.json',
   'events_route_b.json',
   'events_special.json',
+  'route_jeongwoo.json',
+  'route_daeun.json',
+  'route_seunghyun.json',
+  'route_sohee.json',
+  'route_geonwoo.json',
+  'route_yuna.json',
   'events_moments.json',
 ];
 

@@ -165,6 +165,171 @@
   "hint": 2
  },
  {
+  "id": "d_kakao_01_m",
+  "layer": "daily",
+  "character": "jeongwoo",
+  "trigger": {
+   "day": [
+    8,
+    100
+   ],
+   "affection": {
+    "jeongwoo": [
+     20,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "잘못 보낸 톡",
+  "lines": [
+   {
+    "who": "me",
+    "text": "야 정우 선배 오늘 진짜 멋있지 않았냐"
+   },
+   {
+    "who": "narr",
+    "text": "…준호 방이 아니다. 정우 선배 방이다."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   }
+  ],
+  "choices": [
+   {
+    "text": "5초 안에 삭제",
+    "effects": {
+     "stats": {
+      "stress": 5
+     },
+     "setFlags": [
+      "fast_hands"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "stress": 12
+     },
+     "affection": {
+      "jeongwoo": -5
+     },
+     "album": "삭제 실패, 읽음 1"
+    },
+    "minigame": "delete_fast",
+    "reply": [
+     {
+      "who": "narr",
+      "text": "1이 사라지기 직전, 메시지가 지워졌다."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "방금 뭐 보냈어? 알림엔 뭐가 떴는데."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "하하. 준호한테 보낸 거지."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…지우지 마. 이거 좀 오래 볼래."
+     }
+    ]
+   },
+   {
+    "text": "아 죄송 친구한테 보낸 거예요",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "affection": {
+      "jeongwoo": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "아. 그렇구나."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "준호한테 안부 전해 줘."
+     }
+    ]
+   },
+   {
+    "text": "…네 멋있었어요",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "jeongwoo": 6
+     }
+    },
+    "chance": 75,
+    "fail": {
+     "stats": {
+      "stress": 10,
+      "esteem": -2
+     },
+     "affection": {
+      "jeongwoo": -2
+     },
+     "album": "오발송에 '네 멋있었어요'로 확인 사살"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…"
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "방금 거 취소 안 할 거지? 하하. 안 해도 돼."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…그래. 고마워."
+     },
+     {
+      "who": "narr",
+      "text": "대화는 거기서 멈췄다. 이틀 동안 공지만 왔다."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…"
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "그럼 내일도 이 셔츠 입고 갈게."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
   "id": "d_kakao_02",
   "layer": "daily",
   "trigger": {
@@ -985,6 +1150,86 @@
   "once": false
  },
  {
+  "id": "d_sns_01_m",
+  "layer": "daily",
+  "character": "jeongwoo",
+  "trigger": {
+   "day": [
+    3,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "새벽 스토리 좋아요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 1시. 3주 만에 정우 선배 스토리가 다섯 개 올라왔다. 엄지가 하트 위를 맴돈다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "전부 좋아요",
+    "effects": {
+     "stats": {
+      "reputation": -1
+     },
+     "affection": {
+      "jeongwoo": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "새벽 1시에 알림 다섯 개가 연달아 갔을 것이다."
+     },
+     {
+      "who": "narr",
+      "text": "답은 없다."
+     }
+    ]
+   },
+   {
+    "text": "하나만",
+    "effects": {
+     "affection": {
+      "jeongwoo": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "하하. 그거 나도 제일 잘 나온 건데."
+     }
+    ]
+   },
+   {
+    "text": "안 누른다",
+    "effects": {
+     "affection": {
+      "jeongwoo": 4
+     },
+     "setFlags": [
+      "they_dm_first"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다음 날 아침, 톡이 왔다."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "어제 스토리 올렸는데. 봤어? …아니, 그냥 궁금해서."
+     }
+    ]
+   }
+  ],
+  "once": false
+ },
+ {
   "id": "d_sns_02",
   "layer": "daily",
   "trigger": {
@@ -1693,7 +1938,8 @@
       "sense": 2
      },
      "affection": {
-      "jiwoo": 1
+      "jiwoo": 1,
+      "seunghyun": 1
      }
     },
     "fail": {
@@ -1705,7 +1951,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "매칭 1. 전시회 앞에서 찍은 사진, 자기소개는 딱 한 줄."
+      "text": "매칭 1. 산책길에서 찍은 사진, 자기소개는 딱 한 줄."
      }
     ],
     "failReply": [
@@ -1753,6 +1999,7 @@
  {
   "id": "d_meet_04",
   "layer": "daily",
+  "character": "haneul",
   "trigger": {
    "day": [
     25,
@@ -1837,6 +2084,96 @@
   "hint": 0
  },
  {
+  "id": "d_meet_04_f",
+  "layer": "daily",
+  "character": "daeun",
+  "trigger": {
+   "day": [
+    25,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 3,
+  "title": "알바 단골손님",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새 손님이 매일 같은 시간에 온다."
+   },
+   {
+    "who": "narr",
+    "text": "오늘은 쪽지를 두고 갔다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "읽어본다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "\"항상 친절하셔서요. 커피 한잔 하실래요?\""
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…그 쪽지, 봤어. 매일 같은 시간에 오는 사람."
+     }
+    ]
+   },
+   {
+    "text": "점장에게 준다",
+    "effects": {
+     "stats": {
+      "esteem": -1,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "점장이 쪽지를 읽고 웃었다. \"인기 좋네.\" 그걸로 끝이었다."
+     }
+    ]
+   },
+   {
+    "text": "다은에게 보여준다",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "daeun": -3
+     },
+     "trust": {
+      "daeun": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "이걸 왜 나한테 보여줘?"
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…알아서 해. 보여 준 건 고맙고."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
   "id": "d_meet_05",
   "layer": "daily",
   "trigger": {
@@ -1912,7 +2249,7 @@
     ]
    },
    {
-    "text": "서연 선배가 했던 대로 한다",
+    "text": "선배가 해 줬던 대로 한다",
     "require": {
      "stats": {
       "talk": 42
@@ -1924,7 +2261,8 @@
       "talk": 3
      },
      "affection": {
-      "seoyeon": 2
+      "seoyeon": 2,
+      "jeongwoo": 2
      }
     },
     "reply": [
@@ -1934,21 +2272,18 @@
       "text": "와 선배님 말투 너무 좋아요!"
      },
      {
-      "who": "them",
-      "name": "서연",
-      "text": "어디서 많이 본 멘트인데? ㅋㅋ"
+      "who": "narr",
+      "text": "동아리방 문가에서 누가 웃음을 참았다. 그 말투의 원래 주인이다."
      }
     ],
     "critReply": [
      {
-      "who": "them",
-      "name": "서연",
-      "text": "잘하네. 근데 그거 누구한테 배웠어?"
+      "who": "narr",
+      "text": "문가에 서 있던 선배와 눈이 마주쳤다."
      },
      {
-      "who": "them",
-      "name": "서연",
-      "text": "…나한테 배운 거면 수업료 내"
+      "who": "narr",
+      "text": "선배가 소리 없이 엄지를 들어 보였다. 잘 배웠다는 뜻이다."
      }
     ]
    }
@@ -3926,6 +4261,116 @@
   "hint": 2
  },
  {
+  "id": "d_friend_03_m",
+  "layer": "daily",
+  "character": "jeongwoo",
+  "trigger": {
+   "day": [
+    30,
+    100
+   ],
+   "affection": {
+    "jeongwoo": [
+     20,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "라이벌 등장",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리에 새로 온 사람이 있다. 키가 크고 말을 잘한다."
+   },
+   {
+    "who": "narr",
+    "text": "그리고 정우 선배 옆자리에 앉았다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "자연스럽게 합류한다",
+    "effects": {
+     "stats": {
+      "talk": 3
+     },
+     "affection": {
+      "jeongwoo": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "왔어? 여기 앉아. 자리 맡아 뒀어."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…조금 늦었네. 괜찮아, 천천히 와도 돼."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "왔다. 기다렸어."
+     },
+     {
+      "who": "narr",
+      "text": "정우 선배가 옆 의자에 올려 둔 가방을 치웠다. 내 자리였다."
+     }
+    ]
+   },
+   {
+    "text": "멀리서 지켜본다",
+    "effects": {
+     "stats": {
+      "stress": 12,
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "두 사람이 웃는 소리가 여기까지 들린다."
+     }
+    ]
+   },
+   {
+    "text": "그 사람과 먼저 친해진다",
+    "require": {
+     "stats": {
+      "sense": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "reputation": 4,
+      "sense": 3
+     },
+     "affection": {
+      "jeongwoo": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "둘이 언제 그렇게 친해졌어?"
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "…하하. 나만 몰랐네."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
   "id": "d_friend_04",
   "layer": "daily",
   "trigger": {
@@ -3960,14 +4405,15 @@
       "reputation": 2
      },
      "affection": {
-      "jiwoo": 1
+      "jiwoo": 1,
+      "seunghyun": 1
      }
     },
     "reply": [
      {
       "who": "them",
       "name": "준호 여친",
-      "text": "오 진짜요? 제 친구 전시 보는 거 좋아해요!"
+      "text": "오 진짜요? 제 친구 진짜 괜찮은 사람이에요!"
      },
      {
       "who": "them",
@@ -4531,7 +4977,8 @@
       "talk": 2
      },
      "affection": {
-      "yeeun": 2
+      "yeeun": 2,
+      "geonwoo": 2
      }
     },
     "fail": {
@@ -4550,7 +4997,7 @@
      {
       "who": "them",
       "name": "아빠",
-      "text": "근데 너 어릴 때 편지 주고받던 예은이, 요즘 연락하니?"
+      "text": "근데 너 6학년 때 우유 사건 그 친구, 요즘 연락은 하니?"
      }
     ],
     "failReply": [
@@ -5129,7 +5576,8 @@
       "stress": 5
      },
      "affection": {
-      "jiwoo": 2
+      "jiwoo": 2,
+      "seunghyun": 2
      }
     },
     "reply": [
@@ -6243,7 +6691,12 @@
       "haneul": 1,
       "jiwoo": 1,
       "minjae": 1,
-      "yeeun": 1
+      "yeeun": 1,
+      "jeongwoo": 1,
+      "daeun": 1,
+      "seunghyun": 1,
+      "sohee": 1,
+      "geonwoo": 1
      },
      "setFlags": [
       "fishing_mind"
@@ -7052,6 +7505,107 @@
   "hint": 0
  },
  {
+  "id": "d_twist_03_f",
+  "layer": "daily",
+  "character": "daeun",
+  "trigger": {
+   "day": [
+    26,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ],
+   "notFlags": [
+    "daeun_school"
+   ],
+   "affection": {
+    "daeun": [
+     23,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "다은의 진짜 전공",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "휴게실 테이블에 다은의 필통이 열려 있다. 연필이 전부 다르게 깎여 있다."
+   },
+   {
+    "who": "narr",
+    "text": "그 밑에 접힌 종이. 서양화과 복학 신청서다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "물어본다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "daeun": 4
+     },
+     "trust": {
+      "daeun": 4
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "응. 서양화과. 지금은 휴학 중."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…알바만 하는 사람인 줄 알았지? 딴 데 말하지 마."
+     }
+    ]
+   },
+   {
+    "text": "못 본 척한다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "못 본 척했다. 다은이 신청서를 조용히 앞치마 주머니에 넣었다."
+     }
+    ]
+   },
+   {
+    "text": "\"복학해?\"",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "daeun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…아직 몰라. 내 봐야 알아."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "전공은 서양화야. 여기선 너만 알아."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
   "id": "d_twist_04",
   "layer": "daily",
   "character": "jiwoo",
@@ -7148,6 +7702,109 @@
       "who": "them",
       "name": "지우",
       "text": "이해는 해요. 근데 당분간은 연락 안 할게요"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_twist_04_m",
+  "layer": "daily",
+  "character": "seunghyun",
+  "trigger": {
+   "day": [
+    45,
+    100
+   ],
+   "affection": {
+    "seunghyun": [
+     23,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "소개팅 상대의 정체",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "태현이 몰래 임시 보호하던 유기견이 아프다며 병원에 같이 가 달라고 했다."
+   },
+   {
+    "who": "narr",
+    "text": "진료실 문이 열렸다. 가운을 입은 사람은 승현이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "먼저 아는 척한다",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "seunghyun": 5
+     },
+     "trust": {
+      "seunghyun": 6
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "…먼저 말해 줘서 다행이다. 저도 방금 알아봤어요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "보호자분 친구셨구나. 이 친구, 제때 잘 데려왔어요."
+     }
+    ]
+   },
+   {
+    "text": "모르는 척한다",
+    "effects": {
+     "stats": {
+      "sincerity": -3,
+      "stress": 15
+     },
+     "trust": {
+      "seunghyun": -5
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "진료 내내 눈을 피했다. 승현은 개만 봤다."
+     },
+     {
+      "who": "narr",
+      "text": "그날 밤 톡이 왔다. \"아까 모른 척한 이유가 있으면 말해 줘요. 없어도 괜찮고요.\""
+     }
+    ]
+   },
+   {
+    "text": "태현에게 대신 말하게 한다",
+    "effects": {
+     "stats": {
+      "esteem": -2
+     },
+     "affection": {
+      "seunghyun": -6
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "…태현 씨한테 들었어요. 친구분이 저를 아신다고요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "직접 들었으면 좋았을 텐데. 당분간은 병원에서만 뵐게요."
      }
     ]
    }
@@ -7259,7 +7916,7 @@
      {
       "who": "them",
       "name": "예은",
-      "text": "답장 오는 데 20년 걸렸네 ㅋㅋ"
+      "text": "답장 오는 데 십 년 넘게 걸렸네 ㅋㅋ"
      },
      {
       "who": "them",
@@ -7274,7 +7931,7 @@
      "stats": {
       "stress": 10
      },
-     "album": "20년째 안 열어본 편지"
+     "album": "십 년 넘게 안 열어본 편지"
     },
     "reply": [
      {
@@ -7286,6 +7943,143 @@
   ],
   "hint": 1,
   "cliffhanger": "봉투 뒷면에 적힌 한 줄: \"답장 안 해도 돼. 그냥 알고만 있어.\""
+ },
+ {
+  "id": "d_twist_05_m",
+  "layer": "daily",
+  "character": "geonwoo",
+  "trigger": {
+   "day": [
+    50,
+    100
+   ],
+   "flags": [
+    "geonwoo_note"
+   ],
+   "affection": {
+    "geonwoo": [
+     20,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "건우의 쪽지",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "책상 위 옛 필통에서 쪽지를 다시 꺼냈다."
+   },
+   {
+    "who": "narr",
+    "text": "보낸 사람: 6학년 3반 건우. \"미안. 나 내일 전학 가. 우유는 언젠가 사 줄게.\""
+   },
+   {
+    "who": "narr",
+    "text": "…그 애는 인사를 하고 갔던 거였다. 내가 못 받았을 뿐."
+   }
+  ],
+  "choices": [
+   {
+    "text": "쪽지 사진을 보낸다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "geonwoo": 8
+     },
+     "trust": {
+      "geonwoo": 5
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "야 그거 아직 있어? 진짜로?"
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "…농담 아니고, 못 받은 줄 알았어. 십 년 넘게."
+     }
+    ]
+   },
+   {
+    "text": "건우에게 한 줄 답장을 쓴다",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "geonwoo": 10
+     },
+     "trust": {
+      "geonwoo": 6
+     }
+    },
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "esteem": -1
+     }
+    },
+    "minigame": "word_order",
+    "reply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "…읽었구나."
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "우유 빚 아직 유효하다. 이자까지 쳐서."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "'쪽지 읽었어'가 '쪽지 버렸어'로 전송됐다."
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "…아 그래? ㅋㅋ 그럴 줄 알았어. …농담이고."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "답장 오는 데 십 년 넘게 걸렸네 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "…이번엔 내가 먼저 인사할게. 제대로."
+     }
+    ]
+   },
+   {
+    "text": "다시 필통에 넣는다",
+    "effects": {
+     "stats": {
+      "stress": 10
+     },
+     "album": "십 년 넘게 못 한 답장"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "필통을 닫았다. 그때처럼, 또 한 번."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "쪽지 맨 아래, 작은 글씨가 하나 더 있었다. \"인사 못 하고 가서 미안.\""
  },
  {
   "id": "d_misc_01",

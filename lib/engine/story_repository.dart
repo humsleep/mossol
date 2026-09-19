@@ -91,6 +91,12 @@ class StoryBundle {
     'events_route_b.json',
     'events_daily.json',
     'events_special.json',
+    'route_jeongwoo.json',
+    'route_daeun.json',
+    'route_seunghyun.json',
+    'route_sohee.json',
+    'route_geonwoo.json',
+    'route_yuna.json',
     // 형식을 깨는 이벤트(전화·알림·사진). docs/MOMENTS_SPEC.md. 비어 있거나 없어도 된다.
     'events_moments.json',
   ];

@@ -1,0 +1,71 @@
+[
+ {
+  "id": "seunghyun_happy",
+  "name": "승현 · 확실한 사람",
+  "tier": "happy",
+  "priority": 200,
+  "character": "seunghyun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "seunghyun_pace"
+   ]
+  },
+  "epilogue": "\"좋아해요.\" 백 번째도 처음처럼 확실했다. 산책 줄은 셋이 나눠 잡는다. 둘과 보리.",
+  "hint": "내 속도를 말로 알려 주면"
+ },
+ {
+  "id": "seunghyun_some",
+  "name": "승현 · 다음 약속은 미정",
+  "tier": "good",
+  "priority": 150,
+  "character": "seunghyun",
+  "when": {
+   "affection": {
+    "*": [
+     60,
+     79
+    ]
+   }
+  },
+  "epilogue": "메모장 스물세 곳 중 한 곳을 같이 갔다. 나머지는 다음 회차에.",
+  "hint": "승현과 썸까지만 가고 멈추면"
+ },
+ {
+  "id": "seunghyun_bad",
+  "name": "승현 · 확실한 끝",
+  "tier": "bad",
+  "priority": 120,
+  "character": "seunghyun",
+  "when": {
+   "flags": [
+    "seunghyun_intro"
+   ],
+   "affection": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "엄마가 새 사진을 보냈다. 승현은 \"좋은 분 만나세요\"라고 확실하게 끝냈다.",
+  "hint": "엄마가 준 번호를 흐지부지 끝내면"
+ }
+]

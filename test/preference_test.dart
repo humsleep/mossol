@@ -349,7 +349,14 @@ void main() {
       s.rel('seoyeon').affection = 30;
       c.dayDelta.affection['haneul'] = 40;
       c.dayDelta.affection['seoyeon'] = 25;
-      expect(c.roster.map((x) => x.id), ['seoyeon', 'jiwoo', 'yeeun']);
+      expect(c.roster.map((x) => x.id), [
+        'seoyeon',
+        'jiwoo',
+        'yeeun',
+        'daeun',
+        'sohee',
+        'yuna',
+      ]);
       expect(c.topCharacterId, 'seoyeon');
       expect(c.todayShifts.map((x) => x.id), isNot(contains('haneul')));
       expect(c.todayShifts.map((x) => x.id), contains('seoyeon'));
@@ -363,7 +370,14 @@ void main() {
       );
       expect(sum.preference, Preference.female);
       expect(sum.topCharacterId, 'seoyeon');
-      expect(sum.affection.keys, ['seoyeon', 'jiwoo', 'yeeun']);
+      expect(sum.affection.keys, [
+        'seoyeon',
+        'jiwoo',
+        'yeeun',
+        'daeun',
+        'sohee',
+        'yuna',
+      ]);
       expect(sum.overnight, isEmpty);
       await c.endDay();
       expect(s.signalPins.keys, isNot(contains('haneul')));
@@ -544,18 +558,36 @@ void main() {
       expect(casts.first, contains('여성 캐릭터 쪽에 역할 없음'));
     });
 
-    test('실제 데이터: 3+3, 역할 짝이 겹치지 않는다', () {
+    test('실제 데이터: 6+6, 역할 짝이 겹치지 않는다', () {
       final real = testBundle();
       expect(real.charactersFor('f').map((c) => c.id), [
         'seoyeon',
         'jiwoo',
         'yeeun',
+        'daeun',
+        'sohee',
+        'yuna',
       ]);
       expect(real.charactersFor('m').map((c) => c.id), [
         'haneul',
         'minjae',
         'doyun',
+        'jeongwoo',
+        'seunghyun',
+        'geonwoo',
       ]);
+      // 성별마다 역할 6개가 한 명씩, 히든은 트레이너 하나씩.
+      for (final g in Preference.genders) {
+        final side = real.charactersFor(g);
+        expect(
+          side.map((c) => c.role).toSet(),
+          CastRole.values.toSet(),
+          reason: g,
+        );
+        expect(side.where((c) => c.hidden).map((c) => c.role), [
+          CastRole.trainer,
+        ], reason: g);
+      }
       for (final c in real.characters) {
         expect(c.title, isNotEmpty, reason: '${c.id} 소개 호칭');
       }
@@ -635,13 +667,20 @@ void main() {
       expect(findText('여성 캐릭터'), findsOneWidget);
       expect(findText('남성 캐릭터'), findsOneWidget);
       expect(findText('나중에 새 게임에서 바꿀 수 있어요'), findsOneWidget);
-      // 여성 3 + 남성 3(히든 1 은 실루엣).
+      // 여성 6 + 남성 6(각 쪽 히든 1 은 실루엣).
       expect(
         find.byType(CharacterAvatar),
         findsNWidgets(bundle.characters.length),
       );
-      expect(findText('선배 · 소개팅 상대 · 초등 동창'), findsOneWidget);
-      expect(findText('알바 동료 · 온라인 친구'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((w) => w is CharacterAvatar && w.mystery),
+        findsNWidgets(2),
+      );
+      // 소개는 히든이 아닌 다섯 역할. 두 쪽이 같은 역할 짝이라 문구도 같다.
+      expect(
+        findText('선배 · 알바 동료 · 소개팅 상대 · 온라인 친구 · 초등 동창'),
+        findsNWidgets(2),
+      );
       await tester.tap(findText('남성 캐릭터'));
       expect(picked, Preference.male);
     });
@@ -703,6 +742,22 @@ void main() {
           tester.getRect(find.byKey(const Key('preference-m'))).bottom,
           lessThanOrEqualTo(568),
         );
+        // 아바타 6개는 카드마다 한 줄이다(두 줄로 접히면 높이 예산을 넘는다).
+        for (final g in Preference.genders) {
+          final tops = find
+              .descendant(
+                of: find.byKey(Key('preference-$g')),
+                matching: find.byType(CharacterAvatar),
+              )
+              .evaluate()
+              .map(
+                (e) => (e.renderObject! as RenderBox)
+                    .localToGlobal(Offset.zero)
+                    .dy,
+              )
+              .toSet();
+          expect(tops, hasLength(1), reason: '$g 아바타 줄');
+        }
       });
     }
   });
@@ -787,7 +842,9 @@ void main() {
         expect(cards(), bySide[side] ?? 0, reason: label);
         expect(findText(total), findsOneWidget, reason: '진행도는 그대로');
       }
-      expect(bySide['f'], 3 * 3, reason: '여성 3명 × 캐릭터 엔딩 3종');
+      expect(bySide['f'], 6 * 3, reason: '여성 6명 × 캐릭터 엔딩 3종');
+      expect(bySide['m'], 6 * 3, reason: '남성 6명 × 캐릭터 엔딩 3종');
+      expect(bySide[null], 12, reason: '공용 엔딩');
     });
   });
 }

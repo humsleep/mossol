@@ -1,0 +1,2786 @@
+[
+ {
+  "id": "daeun_r00",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ],
+   "notFlags": [
+    "daeun_sketch",
+    "daeun_contact"
+   ]
+  },
+  "weight": 5,
+  "title": "모르는 번호의 앞치마",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "밤 10시. 내일이 카페 알바 첫 출근이다. 모르는 번호로 톡이 왔다."
+   },
+   {
+    "who": "them",
+    "text": "내일 오픈 조 같이예요. 6시 50분."
+   },
+   {
+    "who": "them",
+    "text": "앞치마는 제가 챙겨 갈게요."
+   },
+   {
+    "who": "them",
+    "text": "다은이에요. 저장해 두세요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "네! 잘 부탁드립니다",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "daeun_contact"
+     ]
+    },
+    "reply": [
+     "네.",
+     {
+      "who": "narr",
+      "text": "그게 끝인 줄 알았다. 1분 뒤 한 줄이 더 왔다."
+     },
+     "알람 두 개 맞추세요."
+    ]
+   },
+   {
+    "text": "6시 50분이면… 새벽 아니에요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "daeun_contact"
+     ]
+    },
+    "chance": 50,
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "album": "첫 출근 전날 새벽 드립 헛스윙",
+     "setFlags": [
+      "daeun_contact"
+     ]
+    },
+    "reply": [
+     "새벽 맞아요.",
+     "…그거 좀 웃기네요. 내일 봐요."
+    ],
+    "failReply": [
+     "아침이에요.",
+     {
+      "who": "narr",
+      "text": "읽음 표시만 뜨고 더는 답이 없었다."
+     }
+    ]
+   },
+   {
+    "text": "미리 알아 둘 거 있어요?",
+    "require": {
+     "stats": {
+      "sense": 25
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "daeun_contact"
+     ]
+    },
+    "reply": [
+     "컵 위치요. 근데 외우지 마세요.",
+     "선반에 다 붙여 놨어요. 보고 하면 돼요."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "대화 끝에 사진이 한 장 붙어 있었다. 반듯하게 갠 앞치마 두 장."
+ },
+ {
+  "id": "daeun_r01",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    3,
+    100
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "포스트잇 지도",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "알바 첫날 오전 7시. 선반마다 노란 포스트잇이 붙어 있다."
+   },
+   {
+    "who": "them",
+    "text": "외우지 말고 보세요."
+   },
+   {
+    "who": "me",
+    "text": "이거 다 다은 씨가 붙인 거예요?"
+   },
+   {
+    "who": "them",
+    "text": "네. 어제 퇴근하고요."
+   },
+   {
+    "who": "narr",
+    "text": "글씨가 자로 잰 듯 반듯하다. 한 장에만 작은 고양이가 그려져 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "죄송해요, 제가 좀 느려서…",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "setFlags": [
+      "daeun_contact",
+      "daeun_first_shift"
+     ]
+    },
+    "reply": [
+     "사과할 일 아니에요.",
+     "첫날은 원래 느려요. 저도 그랬어요."
+    ]
+   },
+   {
+    "text": "고양이 그림은 뭐예요?",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "setFlags": [
+      "daeun_contact",
+      "daeun_first_shift"
+     ]
+    },
+    "reply": [
+     "…봤어요?",
+     "그건 서비스예요. 못 본 걸로 해요."
+    ]
+   },
+   {
+    "text": "내일은 포스트잇 없이 해 볼게요",
+    "require": {
+     "stats": {
+      "sense": 25
+     }
+    },
+    "chance": 75,
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "daeun_contact",
+      "daeun_first_shift"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "talk": -1
+     },
+     "setFlags": [
+      "daeun_contact",
+      "daeun_first_shift"
+     ]
+    },
+    "reply": [
+     "그래요. 내일 다 떼 놓을게요.",
+     "…하나만 남길게요. 고양이."
+    ],
+    "critReply": [
+     "좋아요. 틀리면 제가 말해 줄게요.",
+     "틀렸어요. 왼쪽이요. …미리 연습한 거예요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "10분 뒤, 시럽 대신 소금 통을 들었다."
+     },
+     "틀렸어요. 왼쪽이요."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "daeun_r02",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    6,
+    100
+   ],
+   "flags": [
+    "daeun_first_shift"
+   ]
+  },
+  "weight": 2,
+  "title": "3천 원이 빈다",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 정산. 3천 원이 빈다."
+   },
+   {
+    "who": "them",
+    "text": "영수증 같이 봐요. 제가 틀렸을 수도 있어요."
+   },
+   {
+    "who": "narr",
+    "text": "영수증 더미를 넘기다 손이 멈췄다. 뒷면에 누군가의 옆얼굴이 볼펜으로 그려져 있다."
+   },
+   {
+    "who": "them",
+    "text": "그거 이리 주세요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "(아무 말 없이 건넨다)",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "daeun_receipt"
+     ]
+    },
+    "reply": [
+     "…고마워요.",
+     {
+      "who": "narr",
+      "text": "다은이 영수증을 앞치마 주머니에 넣었다. 3천 원은 그 밑에 깔려 있었다."
+     }
+    ]
+   },
+   {
+    "text": "이거 손님 몰래 그린 거예요? 들키면 어떡해요",
+    "effects": {
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "daeun_receipt"
+     ]
+    },
+    "reply": [
+     "…정산부터 해요.",
+     {
+      "who": "narr",
+      "text": "다은이 영수증을 뺏듯이 가져갔다."
+     }
+    ]
+   },
+   {
+    "text": "3천 원 여기 있네요. 그림은 못 본 걸로 할게요",
+    "require": {
+     "stats": {
+      "sense": 28
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "daeun_receipt"
+     ]
+    },
+    "reply": [
+     "…봤잖아요.",
+     "그래도 못 본 걸로 해 줘서 고마워요."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "집에 와서야 생각났다. 그 옆얼굴의 셔츠 깃, 오늘 내가 입은 셔츠였다."
+ },
+ {
+  "id": "daeun_r03",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     45
+    ]
+   },
+   "day": [
+    9,
+    100
+   ],
+   "flags": [
+    "daeun_first_shift"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "떨리는 손",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "손님이 다은에게 소리친다. 샷을 두 번 넣으라고 하지 않았냐고."
+   },
+   {
+    "who": "narr",
+    "text": "다은은 표정 하나 바꾸지 않고 고개를 숙였다."
+   },
+   {
+    "who": "them",
+    "text": "다시 만들어 드릴게요."
+   },
+   {
+    "who": "narr",
+    "text": "잠시 뒤 창고. 컵 박스를 드는 다은의 손이 떨리고 있다."
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   }
+  ],
+  "choices": [
+   {
+    "text": "(창고로 따라가서) 박스는 제가 들게요",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…괜찮아요.",
+     {
+      "who": "narr",
+      "text": "다은이 박스를 내려놓고 손을 앞치마에 문질렀다."
+     },
+     "…조금만 여기 있어 줄래요?"
+    ],
+    "critReply": [
+     "…봤어요?",
+     "안 떨리는 척은 잘하는데. 오늘은 안 됐네요.",
+     "고마워요. 아무것도 안 물어봐 줘서."
+    ]
+   },
+   {
+    "text": "(못 본 척 카운터로 돌아간다)",
+    "effects": {
+     "stats": {
+      "stress": 12
+     },
+     "affection": {
+      "*": -6
+     },
+     "trust": {
+      "*": -4
+     },
+     "album": "떨리는 손을 못 본 척"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "창고 문은 한참 뒤에야 열렸다."
+     },
+     "카운터 봐 줬네요. 됐어요."
+    ]
+   },
+   {
+    "text": "손님한테 가서 한마디 한다",
+    "chance": 40,
+    "effects": {
+     "stats": {
+      "stress": 10,
+      "reputation": -2
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "fail": {
+     "stats": {
+      "reputation": -4
+     },
+     "affection": {
+      "*": -3
+     },
+     "album": "손님과 언성 높이다 점장 호출"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "손님이 영수증을 다시 보더니 조용히 나갔다."
+     },
+     "…그런 거 안 해도 돼요.",
+     "근데 조금 시원했어요."
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "text": "둘 다 잠깐 창고로 와요.",
+      "name": "점장"
+     },
+     "…저 괜찮았는데요."
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날 마감 때, 다은이 처음으로 먼저 \"수고했어요\"라고 했다."
+ },
+ {
+  "id": "daeun_r04",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    12,
+    100
+   ],
+   "flags": [
+    "daeun_receipt"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 3,
+  "title": "이어폰 한쪽",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 청소. 가게 음악이 꺼지자 걸레 소리만 남았다."
+   },
+   {
+    "who": "narr",
+    "text": "다은이 말없이 이어폰 한쪽을 내밀었다."
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "이 노래 좋아하죠."
+   },
+   {
+    "who": "them",
+    "text": "아까 가게에서 나올 때, 걸레질 박자가 바뀌었어요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "아닌데요? 전혀요",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…그래요?",
+     {
+      "who": "narr",
+      "text": "다은은 이어폰을 도로 가져가지 않았다. 노래는 끝까지 나왔다."
+     }
+    ]
+   },
+   {
+    "text": "맞아요. 어떻게 알았어요?",
+    "effects": {
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "봤어요.",
+     "다음 곡도 맞힐 수 있어요. 해 볼래요?"
+    ]
+   },
+   {
+    "text": "다음 곡은 제가 골라도 돼요?",
+    "require": {
+     "stats": {
+      "talk": 40
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "daeun_playlist"
+     ]
+    },
+    "reply": [
+     "…네.",
+     "대신 틀리면 쓰레기 당번이에요."
+    ],
+    "critReply": [
+     "…좋아요.",
+     {
+      "who": "narr",
+      "text": "다은이 한쪽 입꼬리만 올렸다. 손님한테는 안 하는 웃음이다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "daeun_r05",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    16,
+    100
+   ],
+   "flags": [
+    "daeun_receipt"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "픽셀 강아지",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "밤 11시. 다은의 첫 개인톡이다."
+   },
+   {
+    "who": "them",
+    "photo": {
+     "icon": "pet",
+     "caption": "눈이 네모난 픽셀 강아지"
+    }
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   },
+   {
+    "who": "them",
+    "text": "알아요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "(짤로 받아친다)",
+    "minigame": "pick_meme",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 6
+     }
+    },
+    "fail": {
+     "stats": {
+      "talk": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "같은 시절의 픽셀 고양이 짤을 보냈다."
+     },
+     "…통과.",
+     "이거 아는 사람 처음이에요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "요즘 유행하는 짤을 보냈다."
+     },
+     "…그거 아니에요. 잘 자요."
+    ]
+   },
+   {
+    "text": "이게 뭐예요?",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "옛날 거예요.",
+     "몰라도 돼요. 잘 자요."
+    ]
+   },
+   {
+    "text": "눈 네모난 거 보니까 그 시절 폰 배경이네요",
+    "require": {
+     "stats": {
+      "sense": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…시절까지 맞혔네요.",
+     "다음 거 보낼게요. 시험 아니에요. 아마도."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그날부터 자정마다 픽셀 짤이 한 장씩 왔다. 설명은 한 번도 없었다."
+ },
+ {
+  "id": "daeun_r06",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    20,
+    100
+   ],
+   "flags": [
+    "daeun_receipt"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "봤어요.",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "퇴근길 버스 정류장. 다은이 먼저 입을 열었다."
+   },
+   {
+    "who": "them",
+    "text": "봤어요."
+   },
+   {
+    "who": "me",
+    "text": "뭘요?"
+   },
+   {
+    "who": "them",
+    "text": "3시쯤. 할머니 손님한테 우산 씌워서 정류장까지 모셔다 드린 거."
+   },
+   {
+    "who": "them",
+    "text": "그리고 아침에 신발끈 두 번 묶었죠. 긴장했어요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "그걸 다 봤어요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "네. 보는 게 일이라서요.",
+     "…알바 말고요."
+    ]
+   },
+   {
+    "text": "그럼 저도 하나. 다은 씨 오늘 볼펜 세 번 바꿨어요",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": 3
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…봤어요?",
+     "잉크가 번져서요. 들켰네요."
+    ]
+   },
+   {
+    "text": "…네. 그걸 알아채는 사람이 있을 줄 몰랐어요",
+    "require": {
+     "stats": {
+      "sense": 35
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "알아요.",
+     "그래서 오늘 컵 떨어뜨릴까 봐 계속 옆에 있었어요."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "daeun_r07",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    25,
+    100
+   ],
+   "flags": [
+    "daeun_receipt"
+   ]
+  },
+  "weight": 2,
+  "title": "두고 간 스케치북",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "휴게실 의자 위에 검은 스케치북이 놓여 있다. 다은 거다."
+   },
+   {
+    "who": "narr",
+    "text": "창문 바람에 표지가 들렸다. 앞치마를 맨 사람의 뒷모습이 보인다."
+   },
+   {
+    "who": "narr",
+    "text": "…앞치마 끈을 한 번만 감아 묶은 사람. 나다."
+   },
+   {
+    "who": "sys",
+    "wait": 8
+   }
+  ],
+  "choices": [
+   {
+    "text": "(덮어 두고 톡한다) 스케치북 두고 갔어요",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "daeun_sketch"
+     ]
+    },
+    "reply": [
+     "…봤어요?",
+     "봤네요. 괜찮아요.",
+     "…이제 말 놔도 돼요? …돼?"
+    ]
+   },
+   {
+    "text": "(몰래 끝까지 넘겨 본다)",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "daeun_sketch"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "절반이 나였다. 등 뒤에서 문이 열렸다."
+     },
+     "…다 봤어요?",
+     "그럼 말 놓을게. 이제 숨길 것도 없네."
+    ]
+   },
+   {
+    "text": "(직접 들고 간다) 이거, 저예요?",
+    "require": {
+     "stats": {
+      "sense": 42
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "daeun_sketch"
+     ]
+    },
+    "reply": [
+     "네. 그렸어요. 계속 그려도 돼요?",
+     "…그리고 이제 말 놔도 돼요? …돼?"
+    ],
+    "critReply": [
+     "네. 그렸어요.",
+     "허락부터 받고 싶었는데 순서가 바뀌었네.",
+     "…계속 그려도 돼? 말도 놓고."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그날 밤 다은에게서 첫 반말 톡이 왔다. \"잘 자.\" 마침표까지 찍혀 있었다."
+ },
+ {
+  "id": "daeun_r08",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    35,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "사람이 없는 그림",
+  "lines": [
+   {
+    "who": "them",
+    "text": "나 원래 미대 다녔어. 서양화과."
+   },
+   {
+    "who": "them",
+    "text": "3학년 때 교수님이 그랬어. 기술은 좋은데 그림에 사람이 없대."
+   },
+   {
+    "who": "them",
+    "text": "그래서 휴학했어. 붓도 놨고."
+   },
+   {
+    "who": "sys",
+    "wait": 12
+   },
+   {
+    "who": "them",
+    "text": "영수증은 연습이야. 사람 그리는 연습."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그래서 손님들을 그렸구나",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "esteem": 1
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "daeun_school"
+     ]
+    },
+    "reply": [
+     "응. 손님들. 그리고…",
+     "…요즘은 한 사람만 그려. 알잖아."
+    ]
+   },
+   {
+    "text": "나 때문에 다시 그리는 거면… 부담 주기 싫은데",
+    "effects": {
+     "stats": {
+      "esteem": -3
+     },
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": 2
+     },
+     "album": "그림 속 주인공이 스스로 빠지겠다고 함",
+     "setFlags": [
+      "daeun_school"
+     ]
+    },
+    "reply": [
+     "…부담이면 내가 알아서 안 그려.",
+     "그런 말 들으려고 한 얘기 아니야."
+    ]
+   },
+   {
+    "text": "영수증 속 사람들, 다 표정이 있던데",
+    "require": {
+     "stats": {
+      "talk": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "daeun_school"
+     ]
+    },
+    "reply": [
+     "…그래?",
+     "나는 몰랐어. 그리는 사람이 제일 모르나 봐."
+    ],
+    "critReply": [
+     "…그 말, 교수님보다 먼저 듣고 싶었어.",
+     "영수증 하나 더 보여 줄게. 아무한테도 안 보여 준 거."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "daeun_r09",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    40,
+    100
+   ],
+   "flags": [
+    "daeun_sketch",
+    "daeun_school"
+   ]
+  },
+  "weight": 2,
+  "title": "동네 전시회",
+  "lines": [
+   {
+    "who": "them",
+    "text": "이번 주 일요일 쉬지."
+   },
+   {
+    "who": "them",
+    "text": "구민회관에서 작은 전시 해. 무료."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "…같이 갈래? 데이트 같은 거 아니고."
+   },
+   {
+    "who": "them",
+    "text": "아니다. 데이트 같은 거 맞고."
+   }
+  ],
+  "choices": [
+   {
+    "text": "좋아. 코스는 내가 짤게",
+    "minigame": "date_course",
+    "effects": {
+     "stats": {
+      "money": -30
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "fail": {
+     "stats": {
+      "money": -20,
+      "stress": 6
+     }
+    },
+    "reply": [
+     "응. 그림 앞에서 오래 서 있어도 재촉하지 마.",
+     {
+      "who": "narr",
+      "text": "재촉할 틈이 없었다. 다은은 그림마다 할 말이 있었다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "구민회관은 일요일 휴관이었다."
+     },
+     "…괜찮아. 걷자. 길에도 사람 많아."
+    ]
+   },
+   {
+    "text": "그림 설명해 줘. 네 말로",
+    "require": {
+     "stats": {
+      "sense": 48
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3,
+      "money": -30
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "reply": [
+     "…길어질 텐데.",
+     {
+      "who": "narr",
+      "text": "길어졌다. 다은이 이렇게 말이 많은 사람인 줄 몰랐다."
+     }
+    ],
+    "critReply": [
+     "…나 원래 말 많아. 그림 앞에서만.",
+     "끝나고 저 골목 가자. 담벼락에 그림 있어."
+    ]
+   },
+   {
+    "text": "전시 말고 비싼 데 가자. 내가 쏠게",
+    "effects": {
+     "stats": {
+      "money": -120
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": -3
+     },
+     "album": "전시 보자는 사람을 레스토랑으로 끌고 감"
+    },
+    "reply": [
+     "…전시 보자니까.",
+     "맛있네. 근데 여긴 그릴 게 없어."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "돌아오는 길, 다은이 스케치북을 꺼냈다. 이번엔 숨기지 않았다."
+ },
+ {
+  "id": "daeun_r10",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    55,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "한 시간 모델",
+  "lines": [
+   {
+    "who": "them",
+    "text": "부탁 하나 해도 돼?"
+   },
+   {
+    "who": "them",
+    "text": "한 번만 제대로 그려도 돼? 영수증 말고. 앞에 앉아서."
+   },
+   {
+    "who": "them",
+    "text": "한 시간. 움직이면 안 돼."
+   }
+  ],
+  "choices": [
+   {
+    "text": "좋아. 한 시간 버틸게",
+    "minigame": "nerve_gauge",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "daeun_model"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "setFlags": [
+      "daeun_model"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "코가 간지러웠다. 끝까지 버텼다."
+     },
+     "…다 됐어. 움직여도 돼.",
+     "눈 안 피한 사람은 네가 처음이야."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "40분째에 재채기가 터졌다."
+     },
+     "…괜찮아. 다시 하면 돼. 그 얼굴도 그렸어."
+    ],
+    "critReply": [
+     "…다 됐어. 보여 줄까? 내가 본 너.",
+     {
+      "who": "narr",
+      "text": "종이 속 나는 웃고 있었다. 웃은 기억은 없는데."
+     }
+    ]
+   },
+   {
+    "text": "지금은 좀 쑥스러워. 다음에 해도 돼?",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "daeun_model"
+     ]
+    },
+    "reply": [
+     "응. 다음에.",
+     "싫다고 안 해서 좋아. 기다릴게."
+    ]
+   },
+   {
+    "text": "그림 팔면 나도 지분 있는 거지?",
+    "effects": {
+     "stats": {
+      "stress": 10
+     },
+     "affection": {
+      "*": -6
+     },
+     "trust": {
+      "*": -4
+     },
+     "setFlags": [
+      "daeun_model"
+     ]
+    },
+    "reply": [
+     "…농담인 거 알아.",
+     "근데 오늘은 안 웃겨.",
+     {
+      "who": "narr",
+      "text": "다은이 스케치북을 가방에 넣었다."
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날 다은의 스케치북 마지막 장에 날짜가 적혔다. 처음으로 제목도 있었다."
+ },
+ {
+  "id": "daeun_r11",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    60,
+    100
+   ],
+   "flags": [
+    "daeun_sketch",
+    "daeun_school"
+   ]
+  },
+  "weight": 2,
+  "title": "마감 D-7",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "복학 신청 마감까지 일주일."
+   },
+   {
+    "who": "them",
+    "text": "포트폴리오 거의 다 됐어."
+   },
+   {
+    "who": "them",
+    "text": "근데 제일 잘 나온 그림에 네가 있어."
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "넣어도 돼? 싫으면 빼. 진짜 괜찮아."
+   }
+  ],
+  "choices": [
+   {
+    "text": "넣어. 마감 전까지 가게 마감은 내가 대신할게",
+    "effects": {
+     "stats": {
+      "stress": 12
+     },
+     "affection": {
+      "*": 9
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "daeun_permission"
+     ]
+    },
+    "reply": [
+     "…네가 마감을 대신?",
+     "고마워. 그 그림 제일 앞에 넣을게."
+    ],
+    "critReply": [
+     "…허락받는 게 이렇게 떨리는 거였네.",
+     "제일 앞에 넣을게. 네 얼굴이 제일 잘 나왔어."
+    ]
+   },
+   {
+    "text": "얼굴 나오는 건 좀. 뒷모습이면 괜찮아",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "daeun_permission"
+     ]
+    },
+    "reply": [
+     "응. 알았어.",
+     "뒷모습이 제일 처음 그린 거야. 그걸로 할게."
+    ]
+   },
+   {
+    "text": "내 허락보다 네 그림이 먼저야. 제일 좋은 걸 넣어",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "daeun_permission"
+     ]
+    },
+    "reply": [
+     "…그거 허락 맞지?",
+     "응. 넣을게. 고마워."
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "제출 시각은 새벽 3시 12분. 다은이 캡처 한 장만 보냈다."
+ },
+ {
+  "id": "daeun_r12",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    75,
+    100
+   ],
+   "flags": [
+    "daeun_sketch",
+    "daeun_permission"
+   ]
+  },
+  "weight": 2,
+  "title": "면접 전날",
+  "lines": [
+   {
+    "who": "them",
+    "text": "내일 면접."
+   },
+   {
+    "who": "them",
+    "text": "안 되면 이번엔 진짜 그만둘 거야."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "말리라는 거 아니야. 누구한테 말해 두고 싶었어."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그만둬도 돼. 넌 그림 말고도 너야",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "daeun_eve"
+     ]
+    },
+    "reply": [
+     "…그 말 들으니까 오히려 하고 싶어졌어.",
+     "이상하지. 그만둬도 된다니까."
+    ]
+   },
+   {
+    "text": "붙잡을래. 그만두지 마",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "daeun_eve"
+     ]
+    },
+    "reply": [
+     "…붙잡는 거야?",
+     "응. 붙잡혀 줄게. 내일만."
+    ]
+   },
+   {
+    "text": "내일 같이 갈게. 문 앞까지만",
+    "require": {
+     "stats": {
+      "esteem": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 4
+     },
+     "affection": {
+      "*": 9
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "daeun_eve"
+     ]
+    },
+    "reply": [
+     "…문 앞까지만?",
+     "응. 들어가다 뒤돌아보면 거기 있어 줘."
+    ],
+    "critReply": [
+     "…너 오면 떨려서 망칠 것 같은데.",
+     "그래도 와. 망쳐도 그려 줄 사람은 있어야지."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "새벽 1시, 다은이 사진을 한 장 보냈다. 깎아 놓은 연필 열두 자루."
+ },
+ {
+  "id": "daeun_r13",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "trust": {
+    "*": [
+     0,
+     49
+    ]
+   },
+   "day": [
+    14,
+    100
+   ],
+   "affection": {},
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "단골의 한마디",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "단골손님이 커피를 받아 가며 목소리를 낮췄다."
+   },
+   {
+    "who": "them",
+    "text": "저 알바생 얼굴은 괜찮은데 표정이 너무 없지 않아요?",
+    "name": "단골"
+   },
+   {
+    "who": "them",
+    "text": "좀 웃으면 좋을 텐데. 그쵸?",
+    "name": "단골"
+   },
+   {
+    "who": "narr",
+    "text": "스팀 소리 너머에서 다은이 이쪽을 보고 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그쵸, 좀 무섭긴 해요",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -4
+     },
+     "album": "단골 앞에서 동료 얼굴 품평"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "스팀 소리가 멈췄다."
+     },
+     "…다 들려.",
+     {
+      "who": "narr",
+      "text": "마감까지 다은은 한 번도 이쪽을 보지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "일 잘하는 사람이에요. 표정은 제가 말할 게 아니고요",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "손님이 머쓱하게 웃고 나갔다."
+     },
+     "…고마워.",
+     "근데 방금 네 표정 좀 무서웠어. 그거 좀 웃기네."
+    ]
+   },
+   {
+    "text": "(웃기만 하고 넘긴다)",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "trust": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "…웃었지.",
+     "괜찮아. 다들 그래."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "daeun_r14",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    22,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 2,
+  "title": "그림 그리는 알바",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "손님이 영수증 그림을 SNS에 올렸다. '이 카페 알바생 그림 실화?'"
+   },
+   {
+    "who": "narr",
+    "text": "오후 내내 그림 그려 달라는 손님이 줄을 섰다."
+   },
+   {
+    "who": "them",
+    "text": "…나 이런 거 싫어."
+   },
+   {
+    "who": "them",
+    "text": "근데 점장님은 좋아해."
+   }
+  ],
+  "choices": [
+   {
+    "text": "점장님한테 내가 말할게. 파는 그림 아니라고",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "reputation": -1
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…알았어요. 다은 씨가 싫으면 안 하는 거죠.",
+      "name": "점장"
+     },
+     "…대신 말해 줘서 고마워."
+    ]
+   },
+   {
+    "text": "이참에 한 장에 천 원 받자. 대박이잖아",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "*": -5
+     },
+     "trust": {
+      "*": -5
+     },
+     "album": "동료 그림으로 장사하자고 함"
+    },
+    "reply": [
+     "…장사?",
+     "나한텐 연습장이야. 가게 메뉴가 아니고."
+    ]
+   },
+   {
+    "text": "(카운터에 '그림 이벤트 없습니다' 안내문을 붙인다)",
+    "require": {
+     "stats": {
+      "sense": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "money": -2,
+      "reputation": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "줄이 조금씩 줄었다."
+     },
+     "…글씨 삐뚤어.",
+     "그래도 제일 좋은 안내문이야."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "daeun_r15",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    88,
+    100
+   ],
+   "flags": [
+    "daeun_sketch",
+    "daeun_school"
+   ]
+  },
+  "weight": 2,
+  "title": "마지막 오픈",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "다은의 마지막 출근. 다음 주부터 학교로 돌아간다."
+   },
+   {
+    "who": "narr",
+    "text": "오픈 준비를 마친 다은이 영수증 한 장을 내밀었다."
+   },
+   {
+    "who": "them",
+    "text": "이건 내가 본 너야."
+   },
+   {
+    "who": "narr",
+    "text": "뒷면에 그려진 사람이 웃고 있다."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   }
+  ],
+  "choices": [
+   {
+    "text": "나 이렇게 웃어?",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "응. 나 볼 때만.",
+     "…그거 좀 웃기지."
+    ],
+    "critReply": [
+     "응. 나 볼 때만.",
+     "그래서 백 장이나 그렸어. 한 장으론 안 믿을 것 같아서."
+    ]
+   },
+   {
+    "text": "고마워. 잘 가, 선임",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…이제 선임 아니야.",
+     "다은. 그렇게 불러."
+    ]
+   },
+   {
+    "text": "나도 하나 줄게",
+    "require": {
+     "stats": {
+      "esteem": 45
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "cafe",
+       "caption": "삐뚤빼뚤한 앞치마 끈"
+      },
+      "text": "네 거"
+     },
+     "…앞치마 끈. 두 번 감은 거.",
+     "이거 평생 가질게. 못 그려서 더 좋아."
+    ],
+    "critReply": [
+     "…나 이제 안 그릴 수가 없네.",
+     "전시하면 와. 벽에 누가 있는지 보러."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "mo_daeun_photo_receipt",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     10,
+     35
+    ]
+   },
+   "day": [
+    7,
+    100
+   ],
+   "flags": [
+    "daeun_receipt"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 3,
+  "title": "오늘 거.",
+  "lines": [
+   {
+    "who": "them",
+    "photo": {
+     "icon": "cafe",
+     "caption": "컵 세 번 떨어뜨린 사람"
+    },
+    "text": "오늘 거."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "세 번째 떨어뜨릴 때 표정이 제일 좋았어요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "네 번째는 안 떨어뜨리는 표정으로 부탁해요",
+    "chance": 65,
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 6
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 1
+     },
+     "album": "영수증 속 나, 컵 네 번째"
+    },
+    "reply": [
+     "…그거 좀 웃기네요.",
+     "내일 네 번째 표정 기대할게요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "다음 날 네 번째 컵이 떨어졌다. 다은이 볼펜을 꺼냈다."
+     },
+     "…오늘 거 추가요."
+    ],
+    "critReply": [
+     "좋아요. 약속이에요.",
+     "안 떨어뜨리면 그 표정도 그려 줄게요."
+    ]
+   },
+   {
+    "text": "저도 그렸어요",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "cafe",
+       "caption": "막대 인간과 앞치마"
+      },
+      "text": "답장이에요"
+     },
+     "…앞치마 끈을 한 번만 감았네요.",
+     "틀렸어요. 두 번이에요. 그래도 저장했어요."
+    ]
+   },
+   {
+    "text": "그거 버려 주세요. 창피해요",
+    "effects": {
+     "stats": {
+      "sense": -1
+     },
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…네.",
+     "버릴게요."
+    ]
+   },
+   {
+    "text": "고마워요. 내일 오픈 커피는 제가 내릴게요",
+    "effects": {
+     "stats": {
+      "money": -1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "좋아요. 연하게요.",
+     "틀리면 다시 하면 돼요."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_daeun_preview_hair",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     15,
+     45
+    ]
+   },
+   "day": [
+    12,
+    100
+   ],
+   "flags": [
+    "daeun_first_shift"
+   ],
+   "notFlags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 3,
+  "title": "뒤통수",
+  "preview": "퇴근할 때 뒤통수 봤어요. 뻗쳤어요.",
+  "lines": [
+   {
+    "who": "them",
+    "text": "퇴근할 때 뒤통수 봤어요. 뻗쳤어요."
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   },
+   {
+    "who": "them",
+    "text": "내일은 나가기 전에 말해 줄게요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그걸 퇴근하고 말해요?",
+    "require": {
+     "stats": {
+      "talk": 35
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "퇴근할 때 봤으니까요.",
+     "…사실 아침부터 뻗쳐 있었어요. 말할 타이밍을 놓쳤어요."
+    ]
+   },
+   {
+    "text": "(조금 있다가 답한다) 내일은 꼭 말해 줘요",
+    "minigame": "reply_timing",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "fail": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "네. 거울보다 먼저 볼게요.",
+     "…말이 좀 이상하네요. 잘 자요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "1초 만에 답장을 보냈다. 너무 빨랐다."
+     },
+     "…빠르네요. 잘 자요."
+    ]
+   },
+   {
+    "text": "머리 얘기는 좀 그렇네요",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "…그렇네요. 미안해요.",
+     "다음엔 안 할게요."
+    ]
+   },
+   {
+    "text": "(거울 사진을 찍어 보낸다)",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "selfie",
+       "caption": "거울에 비친 뒤통수"
+      },
+      "text": "이거요?"
+     },
+     "네. 그거요.",
+     "…지금도 뻗쳐 있네요."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "다음 날 오픈. 다은이 말없이 머리핀 하나를 내밀었다."
+ },
+ {
+  "id": "mo_daeun_call_pencil",
+  "layer": "route",
+  "character": "daeun",
+  "format": "call",
+  "trigger": {
+   "affection": {
+    "*": [
+     30,
+     60
+    ]
+   },
+   "day": [
+    26,
+    100
+   ],
+   "flags": [
+    "daeun_sketch"
+   ]
+  },
+  "weight": 4,
+  "title": "새벽 1시의 연필 소리",
+  "lines": [
+   {
+    "who": "them",
+    "text": "…자?"
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "아무 일 없어. 그리는 중이야."
+   },
+   {
+    "who": "narr",
+    "text": "사각, 사각. 연필 긁는 소리만 들린다."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "그냥… 켜 둬도 돼?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "거절",
+    "decline": true,
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "부재중 전화 1통."
+     },
+     "응. 잘 자."
+    ]
+   },
+   {
+    "text": "(말없이 켜 둔다)",
+    "minigame": "call_rhythm",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "fail": {
+     "stats": {
+      "stress": 2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…고마워.",
+     {
+      "who": "narr",
+      "text": "한 시간쯤 지나 연필 소리가 멈췄다. \"다 그렸어.\""
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "깜빡 졸았다. 숨소리가 먼저 새어 나갔다."
+     },
+     "…그 소리도 그렸어. 잘 자."
+    ],
+    "critReply": [
+     "…네 숨소리 들으니까 선이 안 떨려.",
+     "조금만 더. 끊지 마."
+    ]
+   },
+   {
+    "text": "뭘 그리는지 맞혀 볼게",
+    "chance": 60,
+    "effects": {
+     "stats": {
+      "stress": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "fail": {
+     "affection": {
+      "*": -2
+     },
+     "album": "새벽 1시 그림 맞히기 오답"
+    },
+    "reply": [
+     "…맞아. 너야.",
+     "어떻게 알았어."
+    ],
+    "failReply": [
+     "…틀렸어. 창가 화분이야.",
+     "너는 어제 그렸어."
+    ]
+   },
+   {
+    "text": "노래 틀어 줄까?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "응. 이어폰 한쪽 대신.",
+     "…선이 좀 부드러워졌어."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_daeun_photo_canvas",
+  "layer": "route",
+  "character": "daeun",
+  "trigger": {
+   "affection": {
+    "*": [
+     60,
+     100
+    ]
+   },
+   "day": [
+    50,
+    100
+   ],
+   "flags": [
+    "daeun_school"
+   ]
+  },
+  "weight": 3,
+  "title": "빈 캔버스",
+  "lines": [
+   {
+    "who": "them",
+    "text": "화방 다녀왔어."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "photo": {
+     "icon": "book",
+     "caption": "포장도 안 뜯은 빈 캔버스"
+    },
+    "text": "오랜만에 샀어."
+   },
+   {
+    "who": "them",
+    "text": "첫 장에 뭘 그릴지는 아직 몰라."
+   }
+  ],
+  "choices": [
+   {
+    "text": "포장 뜯는 거 같이 봐도 돼?",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…응. 뜯는 소리 좋아.",
+     "내일 마감 끝나고 와."
+    ]
+   },
+   {
+    "text": "이번엔 나 말고 다른 거 그려",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…왜?",
+     "다른 걸 그려도 결국 네 생각 나서 그리는 거야."
+    ]
+   },
+   {
+    "text": "첫 장에 나 그려 줘",
+    "minigame": "nerve_gauge",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "fail": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…들켰네.",
+     "원래 그러려고 했어."
+    ],
+    "failReply": [
+     "…먼저 말하니까 좀 쑥스럽네.",
+     "생각해 볼게."
+    ],
+    "critReply": [
+     "…그 말 기다렸어.",
+     "캔버스 크기도 재 놨어. 네 어깨 너비로."
+    ]
+   },
+   {
+    "text": "(빈 캔버스 사진을 몰래 저장한다)",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "저장했지. 읽음 표시가 한참 떠 있었어.",
+     "빈 칸 채우면 다시 보낼게."
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그 주 일요일, 휴게실 쓰레기통에 캔버스 포장 비닐이 버려져 있었다."
+ }
+]

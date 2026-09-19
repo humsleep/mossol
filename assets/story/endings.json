@@ -28,6 +28,26 @@
     "yeeun": [
      70,
      100
+    ],
+    "jeongwoo": [
+     70,
+     100
+    ],
+    "daeun": [
+     70,
+     100
+    ],
+    "seunghyun": [
+     70,
+     100
+    ],
+    "sohee": [
+     70,
+     100
+    ],
+    "geonwoo": [
+     70,
+     100
     ]
    },
    "affection": {
@@ -50,10 +70,30 @@
     "yeeun": [
      0,
      79
+    ],
+    "jeongwoo": [
+     0,
+     79
+    ],
+    "daeun": [
+     0,
+     79
+    ],
+    "seunghyun": [
+     0,
+     79
+    ],
+    "sohee": [
+     0,
+     79
+    ],
+    "geonwoo": [
+     0,
+     79
     ]
    }
   },
-  "epilogue": "여섯 명 모두가 당신을 믿는다. 연인은 없다. 그게 고수다.",
+  "epilogue": "모두가 당신을 믿는다. 연인은 없다. 그게 고수다.",
   "hint": "물러설 길을 스스로 끊고, 모두의 믿음만 남기면"
  },
  {
@@ -286,6 +326,192 @@
   "hint": "몸도 마음도 가벼워진 채 트레이너 곁에 남으면"
  },
  {
+  "id": "jeongwoo_happy",
+  "name": "정우 · 처음 하는 부탁",
+  "tier": "happy",
+  "priority": 200,
+  "character": "jeongwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "jeongwoo_lean"
+   ]
+  },
+  "epilogue": "세탁소 셔터 앞. \"오늘은 네가 나 좀 챙겨 줘.\" 늘 챙기던 사람이 처음으로 먼저 기댔다.",
+  "hint": "늘 챙기던 선배가 처음으로 부탁하게 되면"
+ },
+ {
+  "id": "daeun_happy",
+  "name": "다은 · 영수증 뒷면 전시회",
+  "tier": "happy",
+  "priority": 200,
+  "character": "daeun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "작은 갤러리 벽에 영수증 백 장. 전부 같은 사람이다. 그림 앞에서 다은이 한쪽 입꼬리를 올렸다.",
+  "hint": "다은의 그림 속에 끝까지 남으면"
+ },
+ {
+  "id": "seunghyun_happy",
+  "name": "승현 · 확실한 사람",
+  "tier": "happy",
+  "priority": 200,
+  "character": "seunghyun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "seunghyun_pace"
+   ]
+  },
+  "epilogue": "\"좋아해요.\" 백 번째도 처음처럼 확실했다. 산책 줄은 셋이 나눠 잡는다. 둘과 보리.",
+  "hint": "내 속도를 말로 알려 주면"
+ },
+ {
+  "id": "sohee_happy",
+  "name": "소희 · 루미의 새 대사",
+  "tier": "happy",
+  "priority": 200,
+  "character": "sohee",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "업데이트된 튜토리얼에서 루미가 말했다. \"듀오 신청은 용기예요.\" 녹음하던 날, 옆에 내가 있었다.",
+  "hint": "소희의 목소리 뒤에 있는 사람을 만나면"
+ },
+ {
+  "id": "geonwoo_happy",
+  "name": "건우 · 이번엔 인사하고",
+  "tier": "happy",
+  "priority": 200,
+  "character": "geonwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "geonwoo_stay"
+   ]
+  },
+  "epilogue": "건우 반 교실 뒤 게시판. 6학년 3반 사진 옆에 우리 사진이 붙었다.",
+  "hint": "떠나려는 동창을 이번엔 붙잡으면"
+ },
+ {
+  "id": "yuna_happy",
+  "name": "유나 · 기분 기록 100일",
+  "tier": "happy",
+  "priority": 200,
+  "character": "yuna",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "stress": [
+     0,
+     39
+    ]
+   },
+   "flags": [
+    "yuna_noticed"
+   ]
+  },
+  "epilogue": "일지 마지막 줄. \"오늘 기분: 떡볶이 2인분, 둘이서.\" 숫자는 하나도 없다.",
+  "hint": "늘 웃던 코치가 흔들릴 때 알아채면"
+ },
+ {
   "id": "seoyeon_friend",
   "name": "서연 · 선배는 선배로",
   "tier": "good",
@@ -418,6 +644,138 @@
   "hint": "트레이너의 믿음 아래 기록만 올리면"
  },
  {
+  "id": "jeongwoo_friend",
+  "name": "정우 · 든든한 부회장",
+  "tier": "good",
+  "priority": 150,
+  "character": "jeongwoo",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "다음 학기 동아리 공지 끝에 이름이 두 개 적혔다. 회장, 그리고 나.",
+  "hint": "선배 곁에서 동아리를 같이 지키면"
+ },
+ {
+  "id": "daeun_friend",
+  "name": "다은 · 좋은 모델",
+  "tier": "good",
+  "priority": 150,
+  "character": "daeun",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "졸업작품 제목은 〈동료〉. 그림 속 사람은 앞치마를 두 번 감아 묶고 웃고 있다.",
+  "hint": "다은의 붓을 옆에서 지켜보기만 하면"
+ },
+ {
+  "id": "seunghyun_some",
+  "name": "승현 · 다음 약속은 미정",
+  "tier": "good",
+  "priority": 150,
+  "character": "seunghyun",
+  "when": {
+   "affection": {
+    "*": [
+     60,
+     79
+    ]
+   }
+  },
+  "epilogue": "메모장 스물세 곳 중 한 곳을 같이 갔다. 나머지는 다음 회차에.",
+  "hint": "승현과 썸까지만 가고 멈추면"
+ },
+ {
+  "id": "sohee_friend",
+  "name": "소희 · 영원한 듀오",
+  "tier": "good",
+  "priority": 150,
+  "character": "sohee",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "길드가 다시 열렸다. 부길드장 칸에 내 닉네임.",
+  "hint": "소희와 밤새 듀오만 하는 사이로 남으면"
+ },
+ {
+  "id": "geonwoo_friend",
+  "name": "건우 · 선생님 친구",
+  "tier": "good",
+  "priority": 150,
+  "character": "geonwoo",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "건우 반 아이들이 나를 \"선생님 친구\"라고 부른다. 그걸로 충분했다.",
+  "hint": "건우와 옛 짝꿍으로만 남으면"
+ },
+ {
+  "id": "yuna_growth",
+  "name": "유나 · 최애 회원",
+  "tier": "good",
+  "priority": 150,
+  "character": "yuna",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "연애 대신 습관이 남았다. 하이파이브 소리는 헬스장에서 제일 크다.",
+  "hint": "코치의 믿음 아래 기분 기록만 쌓으면"
+ },
+ {
   "id": "seoyeon_bad",
   "name": "서연 · 존댓말 엔딩",
   "tier": "bad",
@@ -539,6 +897,129 @@
   },
   "epilogue": "3대 500이라고 적었다. 허리가 먼저 알았다.",
   "hint": "트레이너에게 운동 기록을 속이면"
+ },
+ {
+  "id": "jeongwoo_bad",
+  "name": "정우 · 방금 거 취소",
+  "tier": "bad",
+  "priority": 120,
+  "character": "jeongwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "마지막 톡은 \"방금 거 취소.\" 이번에는 정말로 취소됐다.",
+  "hint": "선배의 마음은 얻고 내 진심은 잃으면"
+ },
+ {
+  "id": "daeun_bad",
+  "name": "다은 · 사람이 없는 그림",
+  "tier": "bad",
+  "priority": 120,
+  "character": "daeun",
+  "when": {
+   "affection": {
+    "*": [
+     50,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "다은이 스케치북을 덮었다. 마지막 장은 비어 있었다.",
+  "hint": "다은의 마음은 얻고 믿음은 잃으면"
+ },
+ {
+  "id": "seunghyun_bad",
+  "name": "승현 · 확실한 끝",
+  "tier": "bad",
+  "priority": 120,
+  "character": "seunghyun",
+  "when": {
+   "flags": [
+    "seunghyun_intro"
+   ],
+   "affection": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "엄마가 새 사진을 보냈다. 승현은 \"좋은 분 만나세요\"라고 확실하게 끝냈다.",
+  "hint": "엄마가 준 번호를 흐지부지 끝내면"
+ },
+ {
+  "id": "sohee_bad",
+  "name": "소희 · 음성 채널 퇴장",
+  "tier": "bad",
+  "priority": 120,
+  "character": "sohee",
+  "when": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     34
+    ]
+   }
+  },
+  "epilogue": "\"게임에서랑 너무 다른데.\" 소희가 채널을 나갔다.",
+  "hint": "소희에게 부풀린 나를 보여 주면"
+ },
+ {
+  "id": "geonwoo_bad",
+  "name": "건우 · 또 말없이",
+  "tier": "bad",
+  "priority": 120,
+  "character": "geonwoo",
+  "when": {
+   "flags": [
+    "geonwoo_joke_1"
+   ],
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   }
+  },
+  "epilogue": "끝까지 농담으로 넘겼다. 건우도 웃으며 사라졌다. 13년 전처럼.",
+  "hint": "건우의 사과를 끝까지 농담으로 넘기면"
+ },
+ {
+  "id": "yuna_bad",
+  "name": "유나 · 숫자만 남았다",
+  "tier": "bad",
+  "priority": 120,
+  "character": "yuna",
+  "when": {
+   "flags": [
+    "yuna_body_comment"
+   ]
+  },
+  "epilogue": "유나가 다시 \"회원님\"이라고 불렀다. 일지엔 체중만 적혀 있었다.",
+  "hint": "트레이너의 몸을 두고 말을 보태면"
  },
  {
   "id": "fishing",
@@ -675,6 +1156,26 @@
     "yeeun": [
      5,
      39
+    ],
+    "jeongwoo": [
+     5,
+     39
+    ],
+    "daeun": [
+     5,
+     39
+    ],
+    "seunghyun": [
+     5,
+     39
+    ],
+    "sohee": [
+     5,
+     39
+    ],
+    "geonwoo": [
+     5,
+     39
     ]
    }
   },
@@ -723,6 +1224,30 @@
      29
     ],
     "doyun": [
+     0,
+     29
+    ],
+    "jeongwoo": [
+     0,
+     29
+    ],
+    "daeun": [
+     0,
+     29
+    ],
+    "seunghyun": [
+     0,
+     29
+    ],
+    "sohee": [
+     0,
+     29
+    ],
+    "geonwoo": [
+     0,
+     29
+    ],
+    "yuna": [
      0,
      29
     ]

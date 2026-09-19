@@ -19,7 +19,10 @@ const kSeeds = int.fromEnvironment('SEEDS', defaultValue: 200);
 const kMinigameSuccess = int.fromEnvironment("MG", defaultValue: 60) / 100;
 
 /// 스토리 데이터 위치. 전후 비교 때 같은 스냅샷을 쓰려고 바꿀 수 있게 둔다.
-const kStoryDir = String.fromEnvironment('STORY_DIR', defaultValue: 'assets/story');
+const kStoryDir = String.fromEnvironment(
+  'STORY_DIR',
+  defaultValue: 'assets/story',
+);
 
 /// 결과 파일 위치. 여러 실험을 동시에 돌릴 때 서로 덮어쓰지 않게 바꿀 수 있다.
 const kOutDir = String.fromEnvironment('SIM_OUT', defaultValue: 'tool/sim_out');
@@ -47,16 +50,19 @@ String _config() {
 }
 
 StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
-      config: _config(),
-      characters: File('$kStoryDir/characters.json').readAsStringSync(),
-      events: [
-        for (final f in StoryBundle.eventFiles) File('$kStoryDir/$f').readAsStringSync(),
-      ],
-      endings: File('$kStoryDir/endings.json').readAsStringSync(),
-      signals: File('$kStoryDir/signals.json').existsSync() ? File('$kStoryDir/signals.json').readAsStringSync() : null,
-      knownMinigames: minigameIds,
-      requireEndingHints: true,
-    );
+  config: _config(),
+  characters: File('$kStoryDir/characters.json').readAsStringSync(),
+  events: [
+    for (final f in StoryBundle.eventFiles)
+      File('$kStoryDir/$f').readAsStringSync(),
+  ],
+  endings: File('$kStoryDir/endings.json').readAsStringSync(),
+  signals: File('$kStoryDir/signals.json').existsSync()
+      ? File('$kStoryDir/signals.json').readAsStringSync()
+      : null,
+  knownMinigames: minigameIds,
+  requireEndingHints: true,
+);
 
 // ---------- 전략 ----------
 
@@ -79,7 +85,9 @@ double sumMap(Map<String, int> m, {String? only, String? self}) {
 
 double pSuccess(GameState s, Choice c, EventEngine e) {
   if (c.minigame != null) return kMinigameSuccess;
-  if (c.chance != null) return (c.chance! + e.chanceBonus(s)).clamp(0, 100) / 100;
+  if (c.chance != null) {
+    return (c.chance! + e.chanceBonus(s)).clamp(0, 100) / 100;
+  }
   return 1;
 }
 
@@ -102,7 +110,13 @@ DayAction byId(List<DayAction> a, String id) => a.firstWhere((x) => x.id == id);
 abstract class Strategy {
   String get name;
   DayAction action(GameState s, List<DayAction> acts, Random r, StoryBundle b);
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e);
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  );
 }
 
 /// 1. 항상 첫 번째(열린) 선택지, 아침 행동도 첫 번째(헬스장).
@@ -110,13 +124,27 @@ class FirstStrategy extends Strategy {
   @override
   String get name => 'first';
   @override
-  DayAction action(GameState s, List<DayAction> acts, Random r, StoryBundle b) => acts.first;
+  DayAction action(
+    GameState s,
+    List<DayAction> acts,
+    Random r,
+    StoryBundle b,
+  ) => acts.first;
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) =>
-      open.first.index;
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) => open.first.index;
 }
 
-DayAction sensibleAction(GameState s, List<DayAction> acts, List<String> rotate) {
+DayAction sensibleAction(
+  GameState s,
+  List<DayAction> acts,
+  List<String> rotate,
+) {
   if (s.stat(Stat.stress) >= 65) return byId(acts, 'rest');
   if (s.stat(Stat.money) < 15) return byId(acts, 'work');
   return byId(acts, rotate[s.day % rotate.length]);
@@ -127,18 +155,36 @@ class MaxAffectionStrategy extends Strategy {
   @override
   String get name => 'maxAff';
   @override
-  DayAction action(GameState s, List<DayAction> acts, Random r, StoryBundle b) =>
-      sensibleAction(s, acts, ['read', 'style', 'friends', 'gym']);
+  DayAction action(
+    GameState s,
+    List<DayAction> acts,
+    Random r,
+    StoryBundle b,
+  ) => sensibleAction(s, acts, ['read', 'style', 'friends', 'gym']);
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
       final c = v.choice;
       final p = pSuccess(s, c, e);
       final self = ev.character;
-      final score = p * (sumMap(c.effects.affection, self: self) + 0.5 * sumMap(c.effects.trust, self: self) + 0.1 * statSum(c.effects.stats)) +
-          (1 - p) * (sumMap(c.fail.affection, self: self) + 0.5 * sumMap(c.fail.trust, self: self) + 0.1 * statSum(c.fail.stats) - (c.fail.album != null ? 1 : 0)) -
+      final score =
+          p *
+              (sumMap(c.effects.affection, self: self) +
+                  0.5 * sumMap(c.effects.trust, self: self) +
+                  0.1 * statSum(c.effects.stats)) +
+          (1 - p) *
+              (sumMap(c.fail.affection, self: self) +
+                  0.5 * sumMap(c.fail.trust, self: self) +
+                  0.1 * statSum(c.fail.stats) -
+                  (c.fail.album != null ? 1 : 0)) -
           (c.effects.album != null ? 1 : 0);
       if (score > bestScore) {
         bestScore = score;
@@ -148,6 +194,17 @@ class MaxAffectionStrategy extends Strategy {
     return best!.index;
   }
 }
+
+/// [target] 의 해피 엔딩(`<id>_happy`)이 요구하는 플래그. 집중 플레이어는 그걸 세우는 선택을 안다
+/// (서연 반말 `seoyeon_banmal`, 건우 `geonwoo_stay`, 유나 `yuna_noticed` 등). 12명 모두 같은 규칙.
+Set<String> happyFlags(StoryBundle b, String target) => _happyFlags.putIfAbsent(
+  '${identityHashCode(b)}:$target',
+  () => {
+    for (final e in b.endings)
+      if (e.id == '${target}_happy') ...e.when.flags,
+  },
+);
+final _happyFlags = <String, Set<String>>{};
 
 /// 3. 한 캐릭터 집중. 그 캐릭터의 호감·신뢰, 진정성을 최대화.
 class FocusStrategy extends Strategy {
@@ -164,7 +221,8 @@ class FocusStrategy extends Strategy {
     final likes = b.characterById[target]!.likes;
     final like = likes.isEmpty ? 'talk' : likes[s.day % likes.length];
     return switch (like) {
-      'charm' => s.stat(Stat.money) >= 30 ? byId(acts, 'style') : byId(acts, 'gym'),
+      'charm' =>
+        s.stat(Stat.money) >= 30 ? byId(acts, 'style') : byId(acts, 'gym'),
       'talk' => byId(acts, 'read'),
       'sense' => byId(acts, 'read'),
       'esteem' => byId(acts, 'friends'),
@@ -175,8 +233,16 @@ class FocusStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
-    if (useHint && ev.hint != null && open.any((v) => v.index == ev.hint)) return ev.hint!;
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
+    if (useHint && ev.hint != null && open.any((v) => v.index == ev.hint)) {
+      return ev.hint!;
+    }
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
@@ -189,8 +255,10 @@ class FocusStrategy extends Strategy {
           0.4 * (f.stats[Stat.sincerity] ?? 0) +
           0.15 * statSum(f.stats) +
           (f.album != null ? -1.5 : 0) +
-          (target == 'seoyeon' && f.setFlags.contains('seoyeon_banmal') ? 6 : 0) +
-          (f.setFlags.contains('fishing_mind') || f.setFlags.contains('greedy') ? -3 : 0);
+          (f.setFlags.any(happyFlags(e.bundle, target).contains) ? 6 : 0) +
+          (f.setFlags.contains('fishing_mind') || f.setFlags.contains('greedy')
+              ? -3
+              : 0);
       final score = p * val(c.effects) + (1 - p) * val(c.fail);
       if (score > bestScore) {
         bestScore = score;
@@ -206,11 +274,20 @@ class RandomStrategy extends Strategy {
   @override
   String get name => 'random';
   @override
-  DayAction action(GameState s, List<DayAction> acts, Random r, StoryBundle b) =>
-      acts[r.nextInt(acts.length)];
+  DayAction action(
+    GameState s,
+    List<DayAction> acts,
+    Random r,
+    StoryBundle b,
+  ) => acts[r.nextInt(acts.length)];
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) =>
-      open[r.nextInt(open.length)].index;
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) => open[r.nextInt(open.length)].index;
 }
 
 /// 5. 스탯 성장 우선.
@@ -225,15 +302,26 @@ class StatGrowthStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
       final c = v.choice;
       final p = pSuccess(s, c, e);
       final self = ev.character;
-      final score = p * (statSum(c.effects.stats) + 0.2 * sumMap(c.effects.affection, self: self)) +
-          (1 - p) * (statSum(c.fail.stats) + 0.2 * sumMap(c.fail.affection, self: self));
+      final score =
+          p *
+              (statSum(c.effects.stats) +
+                  0.2 * sumMap(c.effects.affection, self: self)) +
+          (1 - p) *
+              (statSum(c.fail.stats) +
+                  0.2 * sumMap(c.fail.affection, self: self));
       if (score > bestScore) {
         bestScore = score;
         best = v;
@@ -256,7 +344,13 @@ class AvoidantStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     // 호감·신뢰 총합(전 캐릭터)이 가장 낮은, 즉 누구와도 안 엮이는 선택지.
     // 동점(대개 0점, 연애와 무관한 이벤트)이면 무작위로 골라 특정 선택지로 쏠리지 않게 한다.
     var bestScore = double.infinity;
@@ -281,9 +375,13 @@ class AvoidantStrategy extends Strategy {
 
 /// 6b. 결혼식 하객: 회피형과 비슷하지만 평판만 조금씩 챙기고, 눈에 띄는 "나쁜 플래그"는
 /// 피해서 jiwoo_bad/doyun_bad/album_master 같은 다른 엔딩에 잡아먹히지 않게 한다.
+/// 남성 쪽 짝(승현 소개팅 `seunghyun_intro` ↔ 지우, 유나 `yuna_body_comment` ↔ 도윤 `fake_record`)도 같이 피한다.
 /// wedding_guest / friend_wedding 도달 시험용.
 class WallflowerStrategy extends Strategy {
-  static const _avoidFlags = {'jiwoo_intro', 'fake_record', 'overtraining', 'greedy'};
+  static const _avoidFlags = {
+    'jiwoo_intro', 'fake_record', 'overtraining', 'greedy', //
+    'seunghyun_intro', 'yuna_body_comment',
+  };
 
   @override
   String get name => 'wallflower';
@@ -298,7 +396,13 @@ class WallflowerStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     var bestScore = double.infinity;
     final tied = <ChoiceView>[];
     for (final v in open) {
@@ -336,7 +440,13 @@ class ToxicStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
@@ -346,7 +456,8 @@ class ToxicStrategy extends Strategy {
       // 진정성은 아예 점수에서 빼서, 즉시 pickup_fall(진정성 0)로 끝나기보단
       // 100일까지 버티며 고호감·저진정성 상태로 도착하게 한다.
       double val(Effects f) =>
-          sumMap(f.affection, only: target, self: self) - 1.1 * sumMap(f.trust, only: target, self: self);
+          sumMap(f.affection, only: target, self: self) -
+          1.1 * sumMap(f.trust, only: target, self: self);
       final score = p * val(c.effects) + (1 - p) * val(c.fail);
       if (score > bestScore) {
         bestScore = score;
@@ -371,7 +482,13 @@ class ChaoticStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     // album 이 남는 선택지가 있으면 그걸 고른다(성공/실패 양쪽 다 확인).
     // 단, 진정성이 바닥이면 pickup_fall 로 즉시 끝나 album_master 를 못 보므로,
     // 진정성이 낮을 땐 진정성을 깎지 않는 album 선택지만 받아들인다.
@@ -393,7 +510,8 @@ class ChaoticStrategy extends Strategy {
       if (lowSincerity && (c.effects.stats[Stat.sincerity] ?? 0) < 0) continue;
       final p = pSuccess(s, c, e);
       final self = ev.character;
-      double val(Effects f) => sumMap(f.affection, self: self) + 0.5 * sumMap(f.trust, self: self);
+      double val(Effects f) =>
+          sumMap(f.affection, self: self) + 0.5 * sumMap(f.trust, self: self);
       final score = p * val(c.effects) + (1 - p) * val(c.fail);
       if (score < bestScore - 1e-9) {
         bestScore = score;
@@ -424,7 +542,13 @@ class DoubleTimerStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     // 진정성이 바닥나면 pickup_fall 로 즉시 끝나 fishing/양다리를 못 보므로,
     // 진정성이 낮을 땐 그걸 더 깎는 선택지를 후보에서 뺀다.
     final lowSincerity = s.stat(Stat.sincerity) <= 8;
@@ -462,7 +586,13 @@ class HarmonizerStrategy extends Strategy {
   }
 
   @override
-  int pick(GameState s, StoryEvent ev, List<ChoiceView> open, Random r, EventEngine e) {
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
     for (final v in open) {
       if (v.choice.effects.setFlags.contains('hardcore')) return v.index;
     }
@@ -473,7 +603,9 @@ class HarmonizerStrategy extends Strategy {
       final p = pSuccess(s, c, e);
       final self = ev.character;
       double val(Effects f) =>
-          sumMap(f.trust, self: self) - 0.4 * sumMap(f.affection, self: self) + 0.1 * statSum(f.stats);
+          sumMap(f.trust, self: self) -
+          0.4 * sumMap(f.affection, self: self) +
+          0.1 * statSum(f.stats);
       final score = p * val(c.effects) + (1 - p) * val(c.fail);
       if (score > bestScore) {
         bestScore = score;
@@ -541,13 +673,29 @@ class RunResult {
   RunResult(this.strategy, this.seed, this.target);
 }
 
-RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String? pref}) {
+RunResult simulate(
+  StoryBundle b,
+  Strategy strat,
+  int seed, {
+  int run = 1,
+  String? pref,
+}) {
   final engine = EventEngine(b);
   final resolver = EndingResolver(b.endings, characters: b.characters);
-  final s = GameState.fresh(b.config, b.characters, seed: seed, run: run, preference: pref ?? simPreference());
+  final s = GameState.fresh(
+    b.config,
+    b.characters,
+    seed: seed,
+    run: run,
+    preference: pref ?? simPreference(),
+  );
   simAbsent = engine.absentFor(s);
   final r = Random(seed * 7919 + strat.name.hashCode);
-  final res = RunResult(strat.name, seed, strat is FocusStrategy ? strat.target : null);
+  final res = RunResult(
+    strat.name,
+    seed,
+    strat is FocusStrategy ? strat.target : null,
+  );
   Ending? ending;
 
   while (!engine.isFinished(s)) {
@@ -559,8 +707,13 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
     engine.applyAction(s, strat.action(s, b.config.actions, r, b));
 
     if (const [4, 11, 21].contains(s.day)) {
-      res.topAffAfter[s.day - 1] = s.relations.values.fold(0, (a, x) => max(a, x.affection));
-      if (res.target != null) res.targetAffAfter[s.day - 1] = s.affectionOf(res.target!);
+      res.topAffAfter[s.day - 1] = s.relations.values.fold(
+        0,
+        (a, x) => max(a, x.affection),
+      );
+      if (res.target != null) {
+        res.targetAffAfter[s.day - 1] = s.affectionOf(res.target!);
+      }
     }
     final dailyCandList = engine.candidates(s, EventLayer.daily);
     final dailyCand = dailyCandList.length;
@@ -569,8 +722,12 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
       res.dailyExhaustDay ??= s.day;
     }
     if (const [10, 20, 40, 60, 80, 100].contains(s.day)) {
-      final onceDaily = b.events.where((e) => e.layer == EventLayer.daily && e.once);
-      res.onceDailyUnseenAt[s.day] = onceDaily.where((e) => !s.seen.contains(e.id)).length;
+      final onceDaily = b.events.where(
+        (e) => e.layer == EventLayer.daily && e.once,
+      );
+      res.onceDailyUnseenAt[s.day] = onceDaily
+          .where((e) => !s.seen.contains(e.id))
+          .length;
       res.onceDailyAvailAt[s.day] = dailyCandList.where((e) => e.once).length;
       res.statAt[s.day] = {for (final k in Stat.all) k: s.stat(k)};
     }
@@ -589,7 +746,8 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
         if (!e.once) res.dailyRepeatPicked++;
       }
       if (e.layer == EventLayer.route) {
-        res.routeByChar[e.character ?? '?'] = (res.routeByChar[e.character ?? '?'] ?? 0) + 1;
+        res.routeByChar[e.character ?? '?'] =
+            (res.routeByChar[e.character ?? '?'] ?? 0) + 1;
       }
       if (e.layer == EventLayer.hidden) res.hiddenSeen++;
       if (e.layer == EventLayer.main) res.mainSeen++;
@@ -605,7 +763,13 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
           res.estSeconds += l.wait;
           s.stats[Stat.esteem] = (s.stat(Stat.esteem) - 1).clamp(0, 100);
         } else {
-          res.estSeconds += switch (l.who) { 'me' => 0.45, 'narr' => 0.35, _ => 0.8 } + l.text.length / 25.0;
+          res.estSeconds +=
+              switch (l.who) {
+                'me' => 0.45,
+                'narr' => 0.35,
+                _ => 0.8,
+              } +
+              l.text.length / 25.0;
         }
       }
       res.estSeconds += 5; // 선택 고민
@@ -648,12 +812,24 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
         }
       });
       final core = [Stat.charm, Stat.talk, Stat.esteem, Stat.sense];
-      if (core.every((k) => s.stat(k) >= 60)) res.firstDay.putIfAbsent('core60', () => s.day);
-      if (core.any((k) => s.stat(k) >= 100)) res.firstDay.putIfAbsent('anyStat100', () => s.day);
-      if (core.every((k) => s.stat(k) >= 100)) res.firstDay.putIfAbsent('allStat100', () => s.day);
-      if (s.relations.values.any((x) => x.affection >= 80)) res.firstDay.putIfAbsent('aff80', () => s.day);
-      if (s.relations.values.any((x) => x.trust >= 70)) res.firstDay.putIfAbsent('trust70', () => s.day);
-      if (s.stat(Stat.sincerity) >= 100) res.firstDay.putIfAbsent('sinc100', () => s.day);
+      if (core.every((k) => s.stat(k) >= 60)) {
+        res.firstDay.putIfAbsent('core60', () => s.day);
+      }
+      if (core.any((k) => s.stat(k) >= 100)) {
+        res.firstDay.putIfAbsent('anyStat100', () => s.day);
+      }
+      if (core.every((k) => s.stat(k) >= 100)) {
+        res.firstDay.putIfAbsent('allStat100', () => s.day);
+      }
+      if (s.relations.values.any((x) => x.affection >= 80)) {
+        res.firstDay.putIfAbsent('aff80', () => s.day);
+      }
+      if (s.relations.values.any((x) => x.trust >= 70)) {
+        res.firstDay.putIfAbsent('trust70', () => s.day);
+      }
+      if (s.stat(Stat.sincerity) >= 100) {
+        res.firstDay.putIfAbsent('sinc100', () => s.day);
+      }
       if (!out.success && c.minigame == null) res.chanceFails++;
       if (out.critical) res.crits++;
       final next = out.nextEventId;
@@ -667,7 +843,9 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
     if (st > res.stressMax) res.stressMax = st;
     if (st >= 70) res.stressHighDays++;
     res.daysPlayed++;
-    res.decayTotal += s.relations.values.where((x) => !x.contactedToday && x.affection > 0).length;
+    res.decayTotal += s.relations.values
+        .where((x) => !x.contactedToday && x.affection > 0)
+        .length;
     engine.endDay(s);
     final imm = resolver.immediate(s);
     if (imm != null) {
@@ -691,7 +869,8 @@ RunResult simulate(StoryBundle b, Strategy strat, int seed, {int run = 1, String
 
 // ---------- 집계 ----------
 
-String pct(num a, num b) => b == 0 ? '-' : '${(100 * a / b).toStringAsFixed(1)}%';
+String pct(num a, num b) =>
+    b == 0 ? '-' : '${(100 * a / b).toStringAsFixed(1)}%';
 
 class Dist {
   final List<num> xs;
@@ -710,7 +889,10 @@ class Dist {
         }
       }
     }
-    return [for (var i = 0; i < edges.length; i++) '${edges[i]}+:${pct(counts[i], xs.length)}'].join(' ');
+    return [
+      for (var i = 0; i < edges.length; i++)
+        '${edges[i]}+:${pct(counts[i], xs.length)}',
+    ].join(' ');
   }
 }
 
@@ -739,28 +921,44 @@ void main() {
       'focus': (seed) => FocusStrategy(targets[seed % targets.length]),
       'random': (_) => RandomStrategy(),
       'statGrow': (_) => StatGrowthStrategy(),
-      'focus+hint': (seed) => FocusStrategy(targets[seed % targets.length], useHint: true),
+      'focus+hint': (seed) =>
+          FocusStrategy(targets[seed % targets.length], useHint: true),
       'avoidant': (_) => AvoidantStrategy(),
       'wallflower': (_) => WallflowerStrategy(),
       'toxic': (seed) => ToxicStrategy(targets[seed % targets.length]),
       'worst': (_) => ChaoticStrategy(),
-      'doubleTimer': (seed) => DoubleTimerStrategy(chars[seed % chars.length], chars[(seed + 2) % chars.length]),
+      'doubleTimer': (seed) => DoubleTimerStrategy(
+        chars[seed % chars.length],
+        chars[(seed + 2) % chars.length],
+      ),
     };
 
     final all = <RunResult>[];
-    final csv = StringBuffer('strategy,seed,target,ending,tier,endDay,album,events,emptyDays,crisisDays,'
-        '${Stat.all.join(',')},${chars.map((c) => 'aff_$c').join(',')},${chars.map((c) => 'trust_$c').join(',')}\n');
+    final csv = StringBuffer(
+      'strategy,seed,target,ending,tier,endDay,album,events,emptyDays,crisisDays,'
+      '${Stat.all.join(',')},${chars.map((c) => 'aff_$c').join(',')},${chars.map((c) => 'trust_$c').join(',')}\n',
+    );
     for (final entry in strategies.entries) {
       for (var seed = 1; seed <= kSeeds; seed++) {
         final res = simulate(bundle, entry.value(seed), seed);
         all.add(res);
-        csv.writeln([
-          res.strategy, res.seed, res.target ?? '', res.ending, res.tier, res.endDay, res.album,
-          res.eventsTotal, res.emptyDays, res.crisisDays,
-          ...Stat.all.map((k) => res.stats[k]),
-          ...chars.map((c) => res.aff[c]),
-          ...chars.map((c) => res.trust[c]),
-        ].join(','));
+        csv.writeln(
+          [
+            res.strategy,
+            res.seed,
+            res.target ?? '',
+            res.ending,
+            res.tier,
+            res.endDay,
+            res.album,
+            res.eventsTotal,
+            res.emptyDays,
+            res.crisisDays,
+            ...Stat.all.map((k) => res.stats[k]),
+            ...chars.map((c) => res.aff[c]),
+            ...chars.map((c) => res.trust[c]),
+          ].join(','),
+        );
       }
     }
 
@@ -769,7 +967,9 @@ void main() {
       byStrat.putIfAbsent(r.strategy, () => []).add(r);
     }
 
-    p('=== 시뮬레이션: 선호 $pref(${chars.join(' ')}), 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===');
+    p(
+      '=== 시뮬레이션: 선호 $pref(${chars.join(' ')}), 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===',
+    );
     for (final e in byStrat.entries) {
       final rs = e.value;
       final n = rs.length;
@@ -781,9 +981,14 @@ void main() {
         endCount[r.ending] = (endCount[r.ending] ?? 0) + 1;
         tierCount[r.tier] = (tierCount[r.tier] ?? 0) + 1;
       }
-      final sortedEnd = endCount.entries.toList()..sort((a, b) => b.value - a.value);
-      p('[a] 엔딩 분포: ${sortedEnd.map((x) => '${x.key} ${x.value}(${pct(x.value, n)})').join(', ')}');
-      p('    티어: ${tierCount.entries.map((x) => '${x.key} ${pct(x.value, n)}').join(', ')}');
+      final sortedEnd = endCount.entries.toList()
+        ..sort((a, b) => b.value - a.value);
+      p(
+        '[a] 엔딩 분포: ${sortedEnd.map((x) => '${x.key} ${x.value}(${pct(x.value, n)})').join(', ')}',
+      );
+      p(
+        '    티어: ${tierCount.entries.map((x) => '${x.key} ${pct(x.value, n)}').join(', ')}',
+      );
       p('    평균 종료일 ${Dist(rs.map((r) => r.endDay)).mean.toStringAsFixed(1)}');
       if (e.key.startsWith('focus')) {
         final byT = <String, Map<String, int>>{};
@@ -793,8 +998,11 @@ void main() {
         }
         for (final t in byT.entries) {
           final tn = t.value.values.fold(0, (a, b) => a + b);
-          final items = t.value.entries.toList()..sort((a, b) => b.value - a.value);
-          p('    대상 ${t.key} (n=$tn): ${items.map((x) => '${x.key} ${x.value}').join(', ')}');
+          final items = t.value.entries.toList()
+            ..sort((a, b) => b.value - a.value);
+          p(
+            '    대상 ${t.key} (n=$tn): ${items.map((x) => '${x.key} ${x.value}').join(', ')}',
+          );
         }
       }
       // (c) 호감·신뢰
@@ -812,15 +1020,27 @@ void main() {
       // 해피 조건 부분 충족
       final aff80 = rs.where((r) => r.aff.values.any((v) => v >= 80)).length;
       final tr70 = rs.where((r) => r.trust.values.any((v) => v >= 70)).length;
-      final both = rs.where((r) => chars.any((c) => r.aff[c]! >= 80 && r.trust[c]! >= 70)).length;
+      final both = rs
+          .where((r) => chars.any((c) => r.aff[c]! >= 80 && r.trust[c]! >= 70))
+          .length;
       final sinc50 = rs.where((r) => r.stats[Stat.sincerity]! >= 50).length;
       for (final d in [3, 10, 20]) {
-        final top = Dist(rs.where((r) => r.topAffAfter[d] != null).map((r) => r.topAffAfter[d]!));
-        final tgt = rs.where((r) => r.targetAffAfter[d] != null).map<num>((r) => r.targetAffAfter[d]!);
-        p('    [early] D$d 마감 최고 호감 ${top.summary}'
-            '${tgt.isEmpty ? '' : ' | 대상 호감 ${Dist(tgt).summary}'} | 15~25 ${pct(top.xs.where((x) => x >= 15 && x <= 25).length, top.xs.length)}');
+        final top = Dist(
+          rs
+              .where((r) => r.topAffAfter[d] != null)
+              .map((r) => r.topAffAfter[d]!),
+        );
+        final tgt = rs
+            .where((r) => r.targetAffAfter[d] != null)
+            .map<num>((r) => r.targetAffAfter[d]!);
+        p(
+          '    [early] D$d 마감 최고 호감 ${top.summary}'
+          '${tgt.isEmpty ? '' : ' | 대상 호감 ${Dist(tgt).summary}'} | 15~25 ${pct(top.xs.where((x) => x >= 15 && x <= 25).length, top.xs.length)}',
+        );
       }
-      p('    누군가 호감≥80: ${pct(aff80, n)} · 신뢰≥70: ${pct(tr70, n)} · 같은 사람 둘 다: ${pct(both, n)} · 진정성≥50: ${pct(sinc50, n)}');
+      p(
+        '    누군가 호감≥80: ${pct(aff80, n)} · 신뢰≥70: ${pct(tr70, n)} · 같은 사람 둘 다: ${pct(both, n)} · 진정성≥50: ${pct(sinc50, n)}',
+      );
       // (d) 스탯
       p('[d] 최종 스탯');
       for (final k in Stat.all) {
@@ -829,26 +1049,45 @@ void main() {
       // (e) 잠긴 선택지
       final seen = rs.fold(0, (a, r) => a + r.lockedSeen);
       final open = rs.fold(0, (a, r) => a + r.lockedOpen);
-      p('[e] require 선택지 조우 ${(seen / n).toStringAsFixed(1)}회/회차, 열린 비율 ${pct(open, seen)}, 전부 잠긴 이벤트(소프트락) ${rs.fold(0, (a, r) => a + r.stuckEvents)}건');
+      p(
+        '[e] require 선택지 조우 ${(seen / n).toStringAsFixed(1)}회/회차, 열린 비율 ${pct(open, seen)}, 전부 잠긴 이벤트(소프트락) ${rs.fold(0, (a, r) => a + r.stuckEvents)}건',
+      );
       // (f) 이벤트 수
       final evPerDay = Dist(rs.map((r) => r.eventsTotal / r.daysPlayed));
-      p('[f] 하루 평균 이벤트 ${evPerDay.summary}; 빈 날 평균 ${Dist(rs.map((r) => r.emptyDays)).mean.toStringAsFixed(2)}; 일상 후보 0인 날 평균 ${Dist(rs.map((r) => r.daysWithNoDailyCandidate)).mean.toStringAsFixed(1)}; 일상 고갈 첫날 ${Dist(rs.where((r) => r.dailyExhaustDay != null).map((r) => r.dailyExhaustDay!)).summary} (고갈 발생 ${pct(rs.where((r) => r.dailyExhaustDay != null).length, n)})');
-      p('    일상 중 반복(once:false) 비율 ${pct(rs.fold(0, (a, r) => a + r.dailyRepeatPicked), rs.fold(0, (a, r) => a + r.dailyPicked))}; 읽씹 대기 줄 ${Dist(rs.map((r) => r.waitLines)).mean.toStringAsFixed(1)}회/회차; 히든 ${Dist(rs.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차');
-      final routeTot = <String, num>{for (final c in chars) c: Dist(rs.map((r) => r.routeByChar[c] ?? 0)).mean};
-      p('    루트 이벤트/회차: ${routeTot.entries.map((x) => '${x.key} ${x.value.toStringAsFixed(1)}').join(', ')} (합 ${routeTot.values.reduce((a, b) => a + b).toStringAsFixed(1)})');
+      p(
+        '[f] 하루 평균 이벤트 ${evPerDay.summary}; 빈 날 평균 ${Dist(rs.map((r) => r.emptyDays)).mean.toStringAsFixed(2)}; 일상 후보 0인 날 평균 ${Dist(rs.map((r) => r.daysWithNoDailyCandidate)).mean.toStringAsFixed(1)}; 일상 고갈 첫날 ${Dist(rs.where((r) => r.dailyExhaustDay != null).map((r) => r.dailyExhaustDay!)).summary} (고갈 발생 ${pct(rs.where((r) => r.dailyExhaustDay != null).length, n)})',
+      );
+      p(
+        '    일상 중 반복(once:false) 비율 ${pct(rs.fold(0, (a, r) => a + r.dailyRepeatPicked), rs.fold(0, (a, r) => a + r.dailyPicked))}; 읽씹 대기 줄 ${Dist(rs.map((r) => r.waitLines)).mean.toStringAsFixed(1)}회/회차; 히든 ${Dist(rs.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차',
+      );
+      final routeTot = <String, num>{
+        for (final c in chars)
+          c: Dist(rs.map((r) => r.routeByChar[c] ?? 0)).mean,
+      };
+      p(
+        '    루트 이벤트/회차: ${routeTot.entries.map((x) => '${x.key} ${x.value.toStringAsFixed(1)}').join(', ')} (합 ${routeTot.values.reduce((a, b) => a + b).toStringAsFixed(1)})',
+      );
       // (g) 흑역사
       final alb = Dist(rs.map((r) => r.album));
       p('[g] 흑역사 ${alb.summary} | ${alb.hist([0, 5, 10, 20])}');
       // (h)(i)
-      p('[h] 진정성 0 즉시 종료(pickup_fall) ${pct(endCount['pickup_fall'] ?? 0, n)}; 진정성 최종 ${Dist(rs.map((r) => r.stats[Stat.sincerity]!)).summary}');
-      p('[i] 번아웃 엔딩 ${pct(endCount['burnout'] ?? 0, n)}; c_burnout 발생 ${Dist(rs.map((r) => r.burnoutEvents)).mean.toStringAsFixed(2)}회/회차; 스트레스 max ${Dist(rs.map((r) => r.stressMax)).summary}; 스트레스≥70 일수 ${Dist(rs.map((r) => r.stressHighDays)).mean.toStringAsFixed(1)}');
+      p(
+        '[h] 진정성 0 즉시 종료(pickup_fall) ${pct(endCount['pickup_fall'] ?? 0, n)}; 진정성 최종 ${Dist(rs.map((r) => r.stats[Stat.sincerity]!)).summary}',
+      );
+      p(
+        '[i] 번아웃 엔딩 ${pct(endCount['burnout'] ?? 0, n)}; c_burnout 발생 ${Dist(rs.map((r) => r.burnoutEvents)).mean.toStringAsFixed(2)}회/회차; 스트레스 max ${Dist(rs.map((r) => r.stressMax)).summary}; 스트레스≥70 일수 ${Dist(rs.map((r) => r.stressHighDays)).mean.toStringAsFixed(1)}',
+      );
       final cid = <String, int>{};
       for (final r in rs) {
         r.crisisIds.forEach((k, v) => cid[k] = (cid[k] ?? 0) + v);
       }
       final cidSorted = cid.entries.toList()..sort((a, b) => b.value - a.value);
-      p('    위기 일수 ${Dist(rs.map((r) => r.crisisDays)).mean.toStringAsFixed(1)}/회차; 위기별 총발생: ${cidSorted.map((x) => '${x.key} ${x.value}').join(', ')}');
-      p('    미니게임 ${Dist(rs.map((r) => r.minigamePlays)).mean.toStringAsFixed(1)}판/회차, 확률실패 ${Dist(rs.map((r) => r.chanceFails)).mean.toStringAsFixed(1)}, 크리티컬 ${Dist(rs.map((r) => r.crits)).mean.toStringAsFixed(1)}, 물오름 중 선택 ${Dist(rs.map((r) => r.onFireChoices)).mean.toStringAsFixed(1)}');
+      p(
+        '    위기 일수 ${Dist(rs.map((r) => r.crisisDays)).mean.toStringAsFixed(1)}/회차; 위기별 총발생: ${cidSorted.map((x) => '${x.key} ${x.value}').join(', ')}',
+      );
+      p(
+        '    미니게임 ${Dist(rs.map((r) => r.minigamePlays)).mean.toStringAsFixed(1)}판/회차, 확률실패 ${Dist(rs.map((r) => r.chanceFails)).mean.toStringAsFixed(1)}, 크리티컬 ${Dist(rs.map((r) => r.crits)).mean.toStringAsFixed(1)}, 물오름 중 선택 ${Dist(rs.map((r) => r.onFireChoices)).mean.toStringAsFixed(1)}',
+      );
       final flagCount = <String, int>{};
       for (final r in rs) {
         for (final f in r.flags) {
@@ -856,7 +1095,9 @@ void main() {
         }
       }
       final fs = flagCount.entries.toList()..sort((a, b) => b.value - a.value);
-      p('    플래그 상위: ${fs.take(14).map((x) => '${x.key} ${pct(x.value, n)}').join(', ')}');
+      p(
+        '    플래그 상위: ${fs.take(14).map((x) => '${x.key} ${pct(x.value, n)}').join(', ')}',
+      );
       // 추가 지표
       final gl = <String, num>{};
       for (final r in rs) {
@@ -866,35 +1107,79 @@ void main() {
       for (final r in rs) {
         r.lossByLayer.forEach((k, v) => ll[k] = (ll[k] ?? 0) + v);
       }
-      p('[j] 호감 공급(전 캐릭터 합, 회차 평균): 증가 ${gl.entries.map((x) => '${x.key} ${(x.value / n).toStringAsFixed(0)}').join(', ')} | 감소 ${ll.entries.map((x) => '${x.key} ${(x.value / n).toStringAsFixed(0)}').join(', ')} | 일일 -1 감소 합 ${Dist(rs.map((r) => r.decayTotal)).mean.toStringAsFixed(0)}');
+      p(
+        '[j] 호감 공급(전 캐릭터 합, 회차 평균): 증가 ${gl.entries.map((x) => '${x.key} ${(x.value / n).toStringAsFixed(0)}').join(', ')} | 감소 ${ll.entries.map((x) => '${x.key} ${(x.value / n).toStringAsFixed(0)}').join(', ')} | 일일 -1 감소 합 ${Dist(rs.map((r) => r.decayTotal)).mean.toStringAsFixed(0)}',
+      );
       String fd(String k) {
-        final xs = rs.where((r) => r.firstDay[k] != null).map((r) => r.firstDay[k]!);
-        return xs.isEmpty ? '$k 없음' : '$k ${Dist(xs).q(0.5)}일(med) ${pct(xs.length, n)}';
+        final xs = rs
+            .where((r) => r.firstDay[k] != null)
+            .map((r) => r.firstDay[k]!);
+        return xs.isEmpty
+            ? '$k 없음'
+            : '$k ${Dist(xs).q(0.5)}일(med) ${pct(xs.length, n)}';
       }
-      p('[k] 최초 도달일: ${['core60', 'anyStat100', 'allStat100', 'aff80', 'trust70', 'sinc100'].map(fd).join(' · ')}');
+
+      p(
+        '[k] 최초 도달일: ${['core60', 'anyStat100', 'allStat100', 'aff80', 'trust70', 'sinc100'].map(fd).join(' · ')}',
+      );
       for (final d in [10, 20, 40, 60, 80, 100]) {
-        final st = [Stat.charm, Stat.talk, Stat.esteem, Stat.sense, Stat.money, Stat.stress, Stat.sincerity].map((k) => '${Stat.label(k)} ${Dist(rs.where((r) => r.statAt[d] != null).map((r) => r.statAt[d]![k]!)).mean.toStringAsFixed(0)}').join(' ');
-        p('    D$d 스탯 평균: $st | once 일상 미열람 ${Dist(rs.where((r) => r.onceDailyUnseenAt[d] != null).map((r) => r.onceDailyUnseenAt[d]!)).mean.toStringAsFixed(1)}/56, 그날 once 후보 ${Dist(rs.where((r) => r.onceDailyAvailAt[d] != null).map((r) => r.onceDailyAvailAt[d]!)).mean.toStringAsFixed(1)}');
+        final st =
+            [
+                  Stat.charm,
+                  Stat.talk,
+                  Stat.esteem,
+                  Stat.sense,
+                  Stat.money,
+                  Stat.stress,
+                  Stat.sincerity,
+                ]
+                .map(
+                  (k) =>
+                      '${Stat.label(k)} ${Dist(rs.where((r) => r.statAt[d] != null).map((r) => r.statAt[d]![k]!)).mean.toStringAsFixed(0)}',
+                )
+                .join(' ');
+        p(
+          '    D$d 스탯 평균: $st | once 일상 미열람 ${Dist(rs.where((r) => r.onceDailyUnseenAt[d] != null).map((r) => r.onceDailyUnseenAt[d]!)).mean.toStringAsFixed(1)}/56, 그날 once 후보 ${Dist(rs.where((r) => r.onceDailyAvailAt[d] != null).map((r) => r.onceDailyAvailAt[d]!)).mean.toStringAsFixed(1)}',
+        );
       }
-      p('[l] 챕터별 require 열린 비율: ${List.generate(5, (i) => '${i + 1}장 ${pct(rs.fold(0, (a, r) => a + r.lockOpenByCh[i]), rs.fold(0, (a, r) => a + r.lockSeenByCh[i]))}').join(', ')}');
-      p('[m] 추정 플레이 시간: 회차 ${Dist(rs.map((r) => r.estSeconds / 60)).mean.toStringAsFixed(0)}분, 하루 ${Dist(rs.map((r) => r.estSeconds / r.daysPlayed)).summary}초 (읽씹 대기 포함), 대기 제외 하루 ${Dist(rs.map((r) => (r.estSeconds - r.waitLines * 0) / r.daysPlayed)).mean.toStringAsFixed(0)}초');
+      p(
+        '[l] 챕터별 require 열린 비율: ${List.generate(5, (i) => '${i + 1}장 ${pct(rs.fold(0, (a, r) => a + r.lockOpenByCh[i]), rs.fold(0, (a, r) => a + r.lockSeenByCh[i]))}').join(', ')}',
+      );
+      p(
+        '[m] 추정 플레이 시간: 회차 ${Dist(rs.map((r) => r.estSeconds / 60)).mean.toStringAsFixed(0)}분, 하루 ${Dist(rs.map((r) => r.estSeconds / r.daysPlayed)).summary}초 (읽씹 대기 포함), 대기 제외 하루 ${Dist(rs.map((r) => (r.estSeconds - r.waitLines * 0) / r.daysPlayed)).mean.toStringAsFixed(0)}초',
+      );
       final dseen = <String, int>{};
       for (final r in rs) {
         for (final id in r.dailySeen) {
           dseen[id] = (dseen[id] ?? 0) + 1;
         }
       }
-      final dailyIds = bundle.events.where((e) => e.layer == EventLayer.daily).map((e) => e.id);
-      final neverDaily = dailyIds.where((id) => !dseen.containsKey(id)).toList();
-      final rareDaily = dailyIds.where((id) => dseen.containsKey(id) && dseen[id]! < n * 0.1).toList();
-      p('[n] 일상 ${dailyIds.length}개 중 한 번도 안 나온 것 ${neverDaily.length}: ${neverDaily.join(' ')} | 10% 미만 ${rareDaily.length}: ${rareDaily.join(' ')}');
+      final dailyIds = bundle.events
+          .where((e) => e.layer == EventLayer.daily)
+          .map((e) => e.id);
+      final neverDaily = dailyIds
+          .where((id) => !dseen.containsKey(id))
+          .toList();
+      final rareDaily = dailyIds
+          .where((id) => dseen.containsKey(id) && dseen[id]! < n * 0.1)
+          .toList();
+      p(
+        '[n] 일상 ${dailyIds.length}개 중 한 번도 안 나온 것 ${neverDaily.length}: ${neverDaily.join(' ')} | 10% 미만 ${rareDaily.length}: ${rareDaily.join(' ')}',
+      );
     }
 
     // 2회차 실험: focus (도윤 포함) run=2
     p('\n##### 2회차(run=2) focus 실험 (n=$kSeeds)');
     final run2 = <RunResult>[];
     for (var seed = 1; seed <= kSeeds; seed++) {
-      run2.add(simulate(bundle, FocusStrategy(targets[seed % targets.length]), seed, run: 2));
+      run2.add(
+        simulate(
+          bundle,
+          FocusStrategy(targets[seed % targets.length]),
+          seed,
+          run: 2,
+        ),
+      );
     }
     {
       final ec = <String, int>{};
@@ -910,18 +1195,26 @@ void main() {
       }
       for (final t in byT.entries) {
         final it = t.value.entries.toList()..sort((a, b) => b.value - a.value);
-        p('    대상 ${t.key}: ${it.map((x) => '${x.key} ${x.value}').join(', ')}');
+        p(
+          '    대상 ${t.key}: ${it.map((x) => '${x.key} ${x.value}').join(', ')}',
+        );
       }
       // 히든 캐릭터(트레이너)는 선호 쪽에 있을 때만 본다.
       final h = hiddenId;
       if (h != null) {
         final d = Dist(run2.map((r) => r.aff[h]!));
         final dt = Dist(run2.map((r) => r.trust[h]!));
-        p('    히든 $h 호감 ${d.summary} | 신뢰 ${dt.summary} | 히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차');
+        p(
+          '    히든 $h 호감 ${d.summary} | 신뢰 ${dt.summary} | 히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차',
+        );
         final dd = run2.where((r) => r.target == h).toList();
-        p('    $h 집중 시 $h 호감 ${Dist(dd.map((r) => r.aff[h]!)).summary} 신뢰 ${Dist(dd.map((r) => r.trust[h]!)).summary} $h 루트 이벤트 ${Dist(dd.map((r) => r.routeByChar[h] ?? 0)).mean.toStringAsFixed(1)}개');
+        p(
+          '    $h 집중 시 $h 호감 ${Dist(dd.map((r) => r.aff[h]!)).summary} 신뢰 ${Dist(dd.map((r) => r.trust[h]!)).summary} $h 루트 이벤트 ${Dist(dd.map((r) => r.routeByChar[h] ?? 0)).mean.toStringAsFixed(1)}개',
+        );
       } else {
-        p('    히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차 (선호 $pref 쪽에 히든 캐릭터 없음)');
+        p(
+          '    히든 이벤트 ${Dist(run2.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차 (선호 $pref 쪽에 히든 캐릭터 없음)',
+        );
       }
     }
     all.addAll(run2);
@@ -947,15 +1240,25 @@ void main() {
 
     // (b) 한 번도 안 나온 엔딩
     final reached = all.map((r) => r.ending).toSet();
-    final possible = bundle.endings.where((e) => bundle.endingInPreference(e, pref)).toList();
-    final never = possible.where((e) => !reached.contains(e.id)).map((e) => '${e.id}(${e.tier})').toList();
-    p('\n[b] 전 전략 통틀어 한 번도 안 나온 엔딩 ${never.length}/${possible.length} (선호 $pref 에서 가능한 엔딩 기준): ${never.join(', ')}');
-    final leaked = reached.where((id) => !possible.any((e) => e.id == id)).toList();
+    final possible = bundle.endings
+        .where((e) => bundle.endingInPreference(e, pref))
+        .toList();
+    final never = possible
+        .where((e) => !reached.contains(e.id))
+        .map((e) => '${e.id}(${e.tier})')
+        .toList();
+    p(
+      '\n[b] 전 전략 통틀어 한 번도 안 나온 엔딩 ${never.length}/${possible.length} (선호 $pref 에서 가능한 엔딩 기준): ${never.join(', ')}',
+    );
+    final leaked = reached
+        .where((id) => !possible.any((e) => e.id == id))
+        .toList();
     expect(leaked, isEmpty, reason: '선호 $pref 밖 엔딩이 나왔다');
     p('    나온 엔딩: ${reached.join(', ')}');
 
     final dir = Directory(kOutDir)..createSync(recursive: true);
-    File('${dir.path}/sim_balance_report.txt').writeAsStringSync(out.toString());
+    File('${dir.path}/sim_balance_report.txt')
+        .writeAsStringSync(out.toString());
     File('${dir.path}/sim_balance_runs.csv').writeAsStringSync(csv.toString());
     p('\n저장: ${dir.path}/sim_balance_report.txt, sim_balance_runs.csv');
   }, timeout: const Timeout(Duration(minutes: 10)));

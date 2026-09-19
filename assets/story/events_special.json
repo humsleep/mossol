@@ -552,7 +552,12 @@
       "haneul": 2,
       "jiwoo": 2,
       "minjae": 2,
-      "yeeun": 2
+      "yeeun": 2,
+      "jeongwoo": 2,
+      "daeun": 2,
+      "seunghyun": 2,
+      "sohee": 2,
+      "geonwoo": 2
      },
      "setFlags": [
       "pickup_confessed"
@@ -610,7 +615,12 @@
       "haneul": -4,
       "jiwoo": -4,
       "minjae": -4,
-      "yeeun": -4
+      "yeeun": -4,
+      "jeongwoo": -4,
+      "daeun": -4,
+      "seunghyun": -4,
+      "sohee": -4,
+      "geonwoo": -4
      },
      "album": "들키고도 계속하기"
     },
@@ -692,7 +702,12 @@
       "haneul": -2,
       "jiwoo": -2,
       "minjae": -2,
-      "yeeun": -2
+      "yeeun": -2,
+      "jeongwoo": -2,
+      "daeun": -2,
+      "seunghyun": -2,
+      "sohee": -2,
+      "geonwoo": -2
      },
      "trust": {
       "@top": 2,
@@ -700,7 +715,12 @@
       "haneul": 1,
       "jiwoo": 1,
       "minjae": 1,
-      "yeeun": 1
+      "yeeun": 1,
+      "jeongwoo": 1,
+      "daeun": 1,
+      "seunghyun": 1,
+      "sohee": 1,
+      "geonwoo": 1
      },
      "clearFlags": [
       "fishing_mind"
@@ -740,7 +760,12 @@
       "haneul": -4,
       "jiwoo": -4,
       "minjae": -4,
-      "yeeun": -4
+      "yeeun": -4,
+      "jeongwoo": -4,
+      "daeun": -4,
+      "seunghyun": -4,
+      "sohee": -4,
+      "geonwoo": -4
      },
      "album": "카페 앞에서 도망"
     },
@@ -768,7 +793,12 @@
       "haneul": -3,
       "jiwoo": -3,
       "minjae": -3,
-      "yeeun": -3
+      "yeeun": -3,
+      "jeongwoo": -3,
+      "daeun": -3,
+      "seunghyun": -3,
+      "sohee": -3,
+      "geonwoo": -3
      },
      "setFlags": [
       "chose_one"
@@ -1670,6 +1700,26 @@
      5
     ],
     "yeeun": [
+     0,
+     5
+    ],
+    "jeongwoo": [
+     0,
+     5
+    ],
+    "daeun": [
+     0,
+     5
+    ],
+    "seunghyun": [
+     0,
+     5
+    ],
+    "sohee": [
+     0,
+     5
+    ],
+    "geonwoo": [
      0,
      5
     ]
@@ -2701,6 +2751,26 @@
     "yeeun": [
      65,
      100
+    ],
+    "jeongwoo": [
+     65,
+     100
+    ],
+    "daeun": [
+     65,
+     100
+    ],
+    "seunghyun": [
+     65,
+     100
+    ],
+    "sohee": [
+     65,
+     100
+    ],
+    "geonwoo": [
+     65,
+     100
     ]
    }
   },
@@ -3092,6 +3162,123 @@
   "hint": 1
  },
  {
+  "id": "h_geonwoo_junho",
+  "layer": "hidden",
+  "trigger": {
+   "day": [
+    60,
+    100
+   ],
+   "flags": [
+    "told_junho"
+   ],
+   "affection": {
+    "geonwoo": [
+     45,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "title": "셋이 마주 앉다",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호가 잡은 자리다. 준호, 건우, 나. 셋이 한 테이블에 앉았다."
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "나 여친 기다리게 하고 왔다. 빨리 끝내라"
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "그래서 누가 먼저 말할 건데"
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   }
+  ],
+  "choices": [
+   {
+    "text": "내가 먼저 말한다",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "reputation": -2
+     },
+     "affection": {
+      "geonwoo": 6
+     },
+     "trust": {
+      "geonwoo": 5
+     }
+    },
+    "reply": [
+     "…너 6학년 때도 이랬어. 발표는 맨날 네가 먼저",
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…됐다. 내 할 일은 여기까지네 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "건우가 정하게 한다",
+    "effects": {
+     "stats": {
+      "sense": 4,
+      "reputation": 3
+     },
+     "affection": {
+      "geonwoo": 8
+     },
+     "trust": {
+      "geonwoo": 6
+     }
+    },
+    "reply": [
+     "나한테 고르라고? …야 그건 반칙이지. 그렇게 물어봐 준 사람, 네가 처음이다"
+    ],
+    "critReply": [
+     "그럼 내가 정한다",
+     {
+      "who": "narr",
+      "text": "건우가 테이블 아래로 내 손을 잡았다. \"…농담 아니고.\""
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…아 됐다. 나 먼저 일어난다 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "준호에게 대신 말해달라고 한다",
+    "effects": {
+     "stats": {
+      "reputation": 5,
+      "esteem": -3
+     },
+     "affection": {
+      "geonwoo": -5
+     }
+    },
+    "reply": [
+     "…그걸 왜 준호가 말해? 이번엔 네 입으로 들어야지",
+     {
+      "who": "narr",
+      "text": "건우는 빨대만 오래 저었다."
+     }
+    ]
+   }
+  ],
+  "character": "geonwoo",
+  "hint": 1
+ },
+ {
   "id": "h_full_stats",
   "layer": "hidden",
   "trigger": {
@@ -3127,7 +3314,7 @@
    },
    {
     "who": "narr",
-    "text": "3월의 나라면 지금의 나를 부러워할 것이다."
+    "text": "첫날의 나라면 지금의 나를 부러워할 것이다."
    },
    {
     "who": "narr",
@@ -3168,7 +3355,7 @@
     ]
    },
    {
-    "text": "3월의 나를 부러워한다",
+    "text": "첫날의 나를 부러워한다",
     "effects": {
      "stats": {
       "esteem": 5,
@@ -3179,7 +3366,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "3월의 나는 아무것도 몰라서 전부 설렜다."
+      "text": "첫날의 나는 아무것도 몰라서 전부 설렜다."
      },
      {
       "who": "narr",

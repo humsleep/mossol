@@ -505,10 +505,20 @@ void main() {
         }
       });
 
-      test('히든(도윤)은 호감 0 이면 신호가 없고, 생기면 있다', () {
-        final hidden = b.characters.firstWhere((c) => c.hidden).id;
-        expect(b.signals.signalFor(hidden, 0, seed: 9, day: 3), isNull);
-        expect(b.signals.signalFor(hidden, 1, seed: 9, day: 3), isNotNull);
+      test('히든(도윤·유나)은 호감 0 이면 신호가 없고, 생기면 있다', () {
+        final hidden = [
+          for (final c in b.characters)
+            if (c.hidden) c.id,
+        ];
+        expect(hidden, unorderedEquals(['doyun', 'yuna']));
+        for (final h in hidden) {
+          expect(b.signals.signalFor(h, 0, seed: 9, day: 3), isNull, reason: h);
+          expect(
+            b.signals.signalFor(h, 1, seed: 9, day: 3),
+            isNotNull,
+            reason: h,
+          );
+        }
       });
 
       test('주인공 성별을 정하는 호칭·실존 브랜드가 없다', () {

@@ -404,12 +404,17 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   `onSurfaceVariant`) + 안내 `bodySmall`.
 - 카드 순서·아바타·소개는 전부 characters.json 에서 나온다(캐스트 3+3 이든 6+6 이든 그대로).
   아바타 줄은 characters.json 순, 히든은 맨 뒤 실루엣. 소개는 히든이 아닌 사람들의 역할 이름
-  (`선배 · 소개팅 상대 · 초등 동창`), 최대 2줄.
+  (6+6 에서는 두 카드 모두 `선배 · 알바 동료 · 소개팅 상대 · 온라인 친구 · 초등 동창`), 최대 2줄.
+- 아바타 크기: 카드 안쪽 폭에 한 줄로 들어가면 40, 아니면 32(`PreferenceCard.avatarSizeFor`).
+  6명이면 320pt 에서 32(한 줄 6×32 + 5×8 = 232 ≤ 안쪽 폭), 375pt 이상에서 40. 32 로도 모자라면
+  `Wrap` 으로 접히지만 지금 캐스트에서는 접히지 않는다(테스트 고정: 320×568 · 1.3배에서 카드마다
+  아바타 한 줄).
 - 한쪽 캐릭터가 0명이면 그 카드는 비활성: 화살표 대신 `'준비 중'`(`labelSmall`), 제목은
   `onSurfaceVariant`, 탭되지 않는다.
 - 색: 카드 바탕은 `AppCard` 기본(neutral). `primaryContainer`·로즈를 쓰지 않는다 — 두 선택지의
   무게가 같아야 한다. 캐릭터 강조색은 아바타에만. 노란색 없음.
-- 높이 예산: 320×568 · 1.3배에서 두 카드가 스크롤 없이 첫 화면에 들어온다(테스트 고정).
+- 높이 예산: 320×568 · 1.3배에서 두 카드가 스크롤 없이 첫 화면에 들어온다(테스트 고정, 라이트·다크).
+  6+6 에서 40 아바타가 두 줄로 접히면 남성 카드 하단이 608 로 넘쳤다. 32 한 줄로 496.
 
 ### 2.10 선호 표기 (홈 · 앨범)
 - 홈 이어하기 카드: 회차 줄 `'1회차 · 2장'` 단일 Text 뒤에 별도 Text `' · 여성 캐릭터'`
@@ -1000,8 +1005,9 @@ Future<T?> showAppDialog<T>(BuildContext context, {required WidgetBuilder builde
 
 ```dart
 /// widgets.dart — 선호 선택 카드 한 장. AppCard(onTap, 최소 높이 56) 안에
-/// [제목 titleMedium + 우측 chevron_right 20] → md → 아바타 Wrap(CharacterAvatar 40,
-/// 간격 sm, 강조색 accentFor(id), 히든은 mystery) → sm → 소개 bodySmall(onSurfaceVariant, 2줄).
+/// [제목 titleMedium + 우측 chevron_right 20] → md → 아바타 Wrap(CharacterAvatar 40, 한 줄에
+/// 안 들어가면 32 — avatarSizeFor, 간격 sm, 강조색 accentFor(id), 히든은 mystery)
+/// → sm → 소개 bodySmall(onSurfaceVariant, 2줄).
 /// Semantics(button, enabled, label: '제목. 이름들(히든은 "숨은 인물 N명"). 소개') 한 덩어리.
 /// onTap == null 이면 비활성: chevron 자리에 unavailableNote(labelSmall), 제목 onSurfaceVariant.
 class PreferenceCard extends StatelessWidget {
@@ -1019,6 +1025,9 @@ class PreferenceCard extends StatelessWidget {
     this.onTap,
     this.unavailableNote = '준비 중',
   });
+
+  /// 아바타 n개가 폭 width 한 줄에 들어가는 가장 큰 크기(40, 안 되면 32).
+  static double avatarSizeFor(int n, double width);
 }
 
 /// album_screen.dart — 엔딩 목록 필터 칩 줄. Wrap(간격 sm) + ChoiceChip(테마 chipTheme 그대로).

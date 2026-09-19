@@ -930,6 +930,36 @@ final AppTokens _lightTokens = AppTokens(
       container: Color(0xFFD8E4EA),
       onContainer: Color(0xFF16242B),
     ),
+    'jeongwoo': CharacterAccent(
+      base: Color(0xFF7F553C),
+      container: Color(0xFFFFE2D2),
+      onContainer: Color(0xFF411F06),
+    ),
+    'daeun': CharacterAccent(
+      base: Color(0xFF8B3C78),
+      container: Color(0xFFFCE0F3),
+      onContainer: Color(0xFF44163A),
+    ),
+    'seunghyun': CharacterAccent(
+      base: Color(0xFF6A5779),
+      container: Color(0xFFF1E3FC),
+      onContainer: Color(0xFF31213F),
+    ),
+    'sohee': CharacterAccent(
+      base: Color(0xFF005A82),
+      container: Color(0xFFD0ECFF),
+      onContainer: Color(0xFF002E50),
+    ),
+    'geonwoo': CharacterAccent(
+      base: Color(0xFF874957),
+      container: Color(0xFFFFDFE5),
+      onContainer: Color(0xFF4B1323),
+    ),
+    'yuna': CharacterAccent(
+      base: Color(0xFF1D6A53),
+      container: Color(0xFFCEF0E2),
+      onContainer: Color(0xFF00311E),
+    ),
   },
   neutralAccent: const CharacterAccent(
     base: AppPalette.inkTextSoft,
@@ -1035,6 +1065,36 @@ final AppTokens _darkTokens = AppTokens(
       base: AppPalette.doyunDark,
       container: Color(0xFF2C4250),
       onContainer: Color(0xFFD8E4EA),
+    ),
+    'jeongwoo': CharacterAccent(
+      base: Color(0xFFEFC7B0),
+      container: Color(0xFF5F3921),
+      onContainer: Color(0xFFFFE2D2),
+    ),
+    'daeun': CharacterAccent(
+      base: Color(0xFFF1B0DE),
+      container: Color(0xFF603354),
+      onContainer: Color(0xFFFCE0F3),
+    ),
+    'seunghyun': CharacterAccent(
+      base: Color(0xFFD6C2E5),
+      container: Color(0xFF4D3B5B),
+      onContainer: Color(0xFFF1E3FC),
+    ),
+    'sohee': CharacterAccent(
+      base: Color(0xFF84CCF9),
+      container: Color(0xFF00486A),
+      onContainer: Color(0xFFD0ECFF),
+    ),
+    'geonwoo': CharacterAccent(
+      base: Color(0xFFF7B9C4),
+      container: Color(0xFF6A2F3D),
+      onContainer: Color(0xFFFFDFE5),
+    ),
+    'yuna': CharacterAccent(
+      base: Color(0xFF9BD5BF),
+      container: Color(0xFF004C38),
+      onContainer: Color(0xFFCEF0E2),
     ),
   },
   neutralAccent: const CharacterAccent(

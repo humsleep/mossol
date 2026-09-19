@@ -65,10 +65,10 @@ void main() {
       expect(find.byType(HeartsRow), findsNothing);
       expect(findText('광고로 +1'), findsNothing);
 
-      // 사람들: 수치 없이 이름만, 히든은 맨 뒤 '???'.
+      // 사람들: 수치 없이 이름만, 히든(도윤·유나)은 맨 뒤 '???'.
       expect(findText('등장인물'), findsOneWidget);
       expect(findText('호감 순'), findsNothing);
-      expect(findText('???'), findsOneWidget);
+      expect(findText('???'), findsNWidgets(2));
       expect(findTextContaining('♥'), findsNothing);
       final strip = tester.widget<CastStrip>(find.byType(CastStrip));
       expect(strip.entries.last.mystery, isTrue);
@@ -129,7 +129,8 @@ void main() {
       expect(strip.entries[1].name, '하늘');
       expect(strip.entries.last.mystery, isTrue);
       expect(findText('♥42'), findsOneWidget);
-      expect(findText('???'), findsOneWidget);
+      // 전원 등장(all) 세이브라 히든 두 명(도윤·유나)이 잠겨 있다.
+      expect(findText('???'), findsNWidgets(2));
       await unmount(tester);
     });
 
@@ -138,7 +139,8 @@ void main() {
       await c.save.save(c.state!);
       c.goHome();
       await showHome(tester);
-      expect(findText('???'), findsNothing);
+      // 도윤만 풀리고 호감 0 인 유나는 그대로 잠겨 있다.
+      expect(findText('???'), findsOneWidget);
       expect(findText('도윤'), findsOneWidget);
       expect(findText('♥3'), findsOneWidget);
       await unmount(tester);

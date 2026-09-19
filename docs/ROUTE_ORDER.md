@@ -22,6 +22,30 @@
 `route_order_report_m.txt`), `--dart-define=ROUTE_PREF=all` 이면 예전과 같은 전원 등장 회차(`route_order_report.txt`).
 캐릭터가 없는 쪽은 건너뛰고, 그 선호에서 나올 수 없는 이벤트가 걸린 쌍(예: 남성 쪽의 `m10 ← jiwoo_r01`)은 세지 않는다.
 
+### 12명 병합 (2026-09-19)
+신규 6명(정우·다은·승현·소희·건우·유나)의 `tool/new_content/<id>_order.json`을 병합해 필수 선행 147쌍,
+순서만 29쌍을 더했다(합계 264쌍 / 46쌍). f·m 각각 1200시드 × 6전략에서 순서 위반 0회.
+
+- **히든 트레이너 상한 규칙**: 루트 이벤트의 "다른 캐릭터 호감 ≤70/≤55" 상한 목록에는 히든 트레이너(도윤·유나)를
+  넣지 않는다(도윤의 원래 규칙). 히든 루트는 누구를 집중하든 거의 다 열려 호감이 50~75까지 쌓이므로, 넣으면
+  다른 캐릭터의 r09 이후가 막힌다. 기존 루트에 들어가 있던 `yuna`, 신규 루트의 `doyun`·`yuna`를 모두 뺐다(150곳).
+- **선택적 장면**(`optionalScenes`): `seunghyun_r02`(소개팅 당일, 지우 r02와 같은 구조), `yuna_r14`(반말 전 장면),
+  그리고 루트 이벤트 플래그로 열리는 모먼트 6개(`mo_jeongwoo_photo_shutter`, `mo_jeongwoo_call_iron`,
+  `mo_daeun_call_pencil`, `mo_daeun_photo_canvas`, `mo_sohee_photo_skewer`, `mo_geonwoo_photo_note`).
+  선택적 장면은 어떤 이벤트의 필수 선행도 아니다(테스트가 확인).
+- **분기 플래그**(`branchFlags`): `sohee_script`(r10 대본 상대역을 거절하면 r11·r12가 안 열린다). 작가가 보고한
+  나머지(`daeun_playlist`, `geonwoo_joke_1`, `sohee_met`, `sohee_told`, `yuna_noticed`, `yuna_body_comment`)는
+  루트 트리거가 `flags`로 요구하지 않아(엔딩·notFlags·모먼트 전용) 필요 없었다.
+- `daeun_r07`(스케치북)의 다른 캐릭터 ≤70 상한을 풀었다. r13·r14·모먼트가 r07의 `daeun_sketch`만 요구하고 상한이
+  없어서, 다른 캐릭터가 먼저 70을 넘으면 영영 막혔다.
+- 막다른 길 검사 보강: 앞 이벤트를 막는 notFlags 플래그 x가 있어도, 뒤 이벤트 자신도 x 이후엔 나오지 않게 되어
+  있으면(소희 r11·r12가 둘 다 r15의 `sohee_final`을 notFlags로 가짐) 의도된 마감으로 본다.
+- 양쪽 밸런스 숫자 조정(대사·구조 그대로): `geonwoo_r13` 호감/신뢰 +5/+5·+7/+6 → +2/+2·+4/+3(예은 r13과 달리
+  조건 없이 나오는 장면), `geonwoo_r03·r06·r08·r14` 스탯 게이트 선택지 신뢰 −2(예은 짝은 자존감 게이트라 초반에 잠김),
+  `seunghyun_r09·r10` 다른 캐릭터 상한 55 → 60(해피가 r10의 `seunghyun_pace`를 요구), `yuna_r12·r13·r14` 신뢰 축소
+  (9→6, 4/6→2/3, 3/3→1/1: 유나 루트는 누구를 집중하든 다 열려 신뢰가 70을 넘어 `yuna_growth`로 새던 것).
+  f·m 3600시드 전략별 등급 차이는 모두 5%p 이내, 짝별 focus 해피 차이는 10%p 이내.
+
 ### 보장 방법
 - **진행 플래그**: 앞 이벤트의 모든 선택지 `effects`에 `setFlags`로 넣고, 미니게임·확률 선택지는 `fail`에도 넣는다.
   뒤 이벤트는 트리거 `flags`로 요구한다.

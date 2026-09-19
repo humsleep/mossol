@@ -11,17 +11,19 @@ import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 
 StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
-      config: File('assets/story/config.json').readAsStringSync(),
-      characters: File('assets/story/characters.json').readAsStringSync(),
-      events: [
-        for (final f in StoryBundle.eventFiles)
-          File('assets/story/$f').readAsStringSync(),
-      ],
-      endings: File('assets/story/endings.json').readAsStringSync(),
-      signals: File('assets/story/signals.json').existsSync() ? File('assets/story/signals.json').readAsStringSync() : null,
-      knownMinigames: minigameIds,
-      requireEndingHints: true,
-    );
+  config: File('assets/story/config.json').readAsStringSync(),
+  characters: File('assets/story/characters.json').readAsStringSync(),
+  events: [
+    for (final f in StoryBundle.eventFiles)
+      File('assets/story/$f').readAsStringSync(),
+  ],
+  endings: File('assets/story/endings.json').readAsStringSync(),
+  signals: File('assets/story/signals.json').existsSync()
+      ? File('assets/story/signals.json').readAsStringSync()
+      : null,
+  knownMinigames: minigameIds,
+  requireEndingHints: true,
+);
 
 void main() {
   late StoryBundle bundle;
@@ -43,26 +45,40 @@ void main() {
     // 분량 고정 검사에서 뺀다. 모먼트 규칙은 test/moments_test.dart 가 본다.
     bool isMomentFile(StoryEvent e) => e.id.startsWith('mo_');
     List<StoryEvent> baseEvents() => [
-          for (final e in bundle.events)
-            if (!isMomentFile(e)) e,
-        ];
+      for (final e in bundle.events)
+        if (!isMomentFile(e)) e,
+    ];
 
     test('스토리 파일 전체가 검증을 통과한다', () {
-      expect(bundle.characters.length, 6);
-      expect(baseEvents().length, 262);
-      expect(bundle.endings.length, 30);
+      expect(bundle.characters.length, 12);
+      expect(baseEvents().length, 377);
+      expect(bundle.endings.length, 48);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
 
-    test('엔딩 30개 전부에 사람이 쓴 한 줄 힌트가 있고, 검증기가 누락을 잡는다', () {
+    test('엔딩 48개 전부에 사람이 쓴 한 줄 힌트가 있고, 검증기가 누락을 잡는다', () {
       for (final e in bundle.endings) {
         final h = (e.hint ?? '').trim();
         expect(h, isNotEmpty, reason: '${e.id} hint 없음');
-        expect(h.length, inInclusiveRange(8, 30), reason: '${e.id}: "$h" 는 한 줄 힌트 길이가 아니다');
-        expect(h, isNot(matches(RegExp(r'[0-9]'))), reason: '${e.id}: 수치("호감 60") 금지 → "$h"');
+        expect(
+          h.length,
+          inInclusiveRange(8, 30),
+          reason: '${e.id}: "$h" 는 한 줄 힌트 길이가 아니다',
+        );
+        expect(
+          h,
+          isNot(matches(RegExp(r'[0-9]'))),
+          reason: '${e.id}: 수치("호감 60") 금지 → "$h"',
+        );
         expect(h, isNot(contains('이상')), reason: '${e.id}: 기계 문장 금지 → "$h"');
       }
-      expect(() => bundle.validate(knownMinigames: minigameIds, requireEndingHints: true), returnsNormally);
+      expect(
+        () => bundle.validate(
+          knownMinigames: minigameIds,
+          requireEndingHints: true,
+        ),
+        returnsNormally,
+      );
       final broken = StoryBundle(
         config: bundle.config,
         characters: bundle.characters,
@@ -70,12 +86,26 @@ void main() {
         endings: [
           for (final e in bundle.endings)
             e.id == 'forever_solo'
-                ? Ending(id: e.id, name: e.name, tier: e.tier, priority: e.priority, when: e.when, isDefault: true)
+                ? Ending(
+                    id: e.id,
+                    name: e.name,
+                    tier: e.tier,
+                    priority: e.priority,
+                    when: e.when,
+                    isDefault: true,
+                  )
                 : e,
         ],
       );
-      expect(() => broken.validate(requireEndingHints: true), throwsA(isA<StateError>()));
-      expect(() => broken.validate(), returnsNormally, reason: '기본값은 합성 번들을 위해 끈다');
+      expect(
+        () => broken.validate(requireEndingHints: true),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => broken.validate(),
+        returnsNormally,
+        reason: '기본값은 합성 번들을 위해 끈다',
+      );
     });
 
     test('레이어별 분량이 기획대로다', () {
@@ -84,16 +114,19 @@ void main() {
         byLayer[e.layer] = byLayer[e.layer]! + 1;
       }
       expect(byLayer, {
-        EventLayer.main: 40,
-        EventLayer.route: 94,
-        EventLayer.daily: 98,
+        EventLayer.main: 51,
+        EventLayer.route: 189,
+        EventLayer.daily: 105,
         EventLayer.crisis: 16,
-        EventLayer.hidden: 14,
+        EventLayer.hidden: 16, // h_* 15 + 유나 첫 만남(yuna_r00)
       });
     });
 
-    test('캐릭터마다 루트 이벤트가 15개씩, 오프닝 r00 이 있는 4명은 16개', () {
-      const withR00 = {'seoyeon', 'haneul', 'minjae', 'yeeun'};
+    test('캐릭터마다 루트 이벤트가 15개씩, 오프닝 r00 이 있는 9명은 16개', () {
+      const withR00 = {
+        'seoyeon', 'haneul', 'minjae', 'yeeun', //
+        'jeongwoo', 'daeun', 'sohee', 'geonwoo', 'seunghyun',
+      };
       for (final c in bundle.characters) {
         final n = baseEvents()
             .where((e) => e.layer == EventLayer.route && e.character == c.id)
@@ -103,15 +136,20 @@ void main() {
     });
 
     test('메인 이벤트가 1일부터 100일까지 고르게 깔려 있다', () {
-      final days = bundle.events
-          .where((e) => e.layer == EventLayer.main)
-          .map((e) => e.day!)
-          .toList()
-        ..sort();
+      final days =
+          bundle.events
+              .where((e) => e.layer == EventLayer.main)
+              .map((e) => e.day!)
+              .toList()
+            ..sort();
       expect(days.first, 1);
       expect(days.last, 100);
       for (var i = 1; i < days.length; i++) {
-        expect(days[i] - days[i - 1], lessThanOrEqualTo(4), reason: '${days[i]}일 앞이 빔');
+        expect(
+          days[i] - days[i - 1],
+          lessThanOrEqualTo(4),
+          reason: '${days[i]}일 앞이 빔',
+        );
       }
     });
 
@@ -129,7 +167,8 @@ void main() {
           n++;
           expect(c.chance, isNull, reason: '${e.id}: 확률과 미니게임이 겹침');
           final f = c.fail;
-          final hasFail = f.stats.isNotEmpty ||
+          final hasFail =
+              f.stats.isNotEmpty ||
               f.affection.isNotEmpty ||
               f.trust.isNotEmpty ||
               f.album != null;
@@ -152,8 +191,11 @@ void main() {
 
     test('한 이벤트에 미니게임은 최대 하나', () {
       for (final e in bundle.events) {
-        expect(e.choices.where((c) => c.minigame != null).length, lessThanOrEqualTo(1),
-            reason: e.id);
+        expect(
+          e.choices.where((c) => c.minigame != null).length,
+          lessThanOrEqualTo(1),
+          reason: e.id,
+        );
       }
     });
 
@@ -165,9 +207,7 @@ void main() {
             ...c.fail.setFlags,
           ],
       }..addAll(['album_10', 'album_20', 'burnout_x3']);
-      final required = {
-        for (final e in bundle.endings) ...e.when.flags,
-      };
+      final required = {for (final e in bundle.endings) ...e.when.flags};
       expect(required.difference(produced), isEmpty);
     });
 
@@ -175,7 +215,7 @@ void main() {
       final s = fresh();
       expect(s.stat(Stat.esteem), 15);
       expect(s.stat(Stat.sincerity), 50);
-      expect(s.relations.length, 6);
+      expect(s.relations.length, 12);
       expect(s.hearts, 5);
     });
   });
@@ -222,7 +262,11 @@ void main() {
       final s = fresh();
       final plan = engine.planDay(s);
       expect(plan.first.id, 'm01');
-      expect(plan.map((e) => e.id).toSet().length, plan.length, reason: '중복 없음');
+      expect(
+        plan.map((e) => e.id).toSet().length,
+        plan.length,
+        reason: '중복 없음',
+      );
     });
 
     test('같은 시드·같은 날이면 계획이 같다', () {
@@ -242,7 +286,9 @@ void main() {
     test('호감도가 가장 높은 캐릭터의 루트가 우선한다', () {
       final s = fresh()..day = 30;
       s.rel('yeeun').affection = 30;
-      final route = engine.planDay(s).firstWhere((e) => e.layer == EventLayer.route);
+      final route = engine
+          .planDay(s)
+          .firstWhere((e) => e.layer == EventLayer.route);
       expect(route.character, 'yeeun');
     });
 
@@ -293,7 +339,10 @@ void main() {
       expect(engine.candidates(s, EventLayer.hidden), isEmpty);
       final s2 = fresh(run: 2)..day = 10;
       s2.stats[Stat.charm] = 70;
-      expect(engine.candidates(s2, EventLayer.hidden).map((e) => e.id), contains('h_doyun_intro'));
+      expect(
+        engine.candidates(s2, EventLayer.hidden).map((e) => e.id),
+        contains('h_doyun_intro'),
+      );
     });
   });
 
@@ -308,23 +357,37 @@ void main() {
       expect(out.delta.affection['haneul'], 1, reason: '실제 변화량만 기록');
       expect(s.affectionOf('jiwoo'), 0, reason: '0 아래로 내려가지 않음');
       expect(s.seen, contains('m01'));
-      expect(s.rel('haneul').contactedToday, isFalse, reason: '캐릭터 없는 이벤트는 접촉 아님');
+      expect(
+        s.rel('haneul').contactedToday,
+        isFalse,
+        reason: '캐릭터 없는 이벤트는 접촉 아님',
+      );
     });
 
     test('미니게임 결과가 확률을 대신한다', () {
       final ev = bundle.events.firstWhere(
-          (e) => e.choices.any((c) => c.minigame != null));
+        (e) => e.choices.any((c) => c.minigame != null),
+      );
       final idx = ev.choices.indexWhere((c) => c.minigame != null);
 
       final win = fresh();
-      final okOut = engine.applyChoice(win, ev, ev.choices[idx],
-          forcedSuccess: true, forcedCritical: true);
+      final okOut = engine.applyChoice(
+        win,
+        ev,
+        ev.choices[idx],
+        forcedSuccess: true,
+        forcedCritical: true,
+      );
       expect(okOut.success, isTrue);
       expect(okOut.critical, isTrue);
 
       final lose = fresh();
-      final badOut =
-          engine.applyChoice(lose, ev, ev.choices[idx], forcedSuccess: false);
+      final badOut = engine.applyChoice(
+        lose,
+        ev,
+        ev.choices[idx],
+        forcedSuccess: false,
+      );
       expect(badOut.success, isFalse);
       expect(badOut.critical, isFalse);
     });
@@ -332,9 +395,11 @@ void main() {
     test('확률 선택지는 대략 명시된 확률만큼 성공한다', () {
       // 미니게임이 붙지 않은, 확률이 남아 있는 선택지를 하나 찾는다.
       final ev = bundle.events.firstWhere(
-          (e) => e.choices.any((c) => c.chance != null && c.minigame == null));
-      final choice =
-          ev.choices.firstWhere((c) => c.chance != null && c.minigame == null);
+        (e) => e.choices.any((c) => c.chance != null && c.minigame == null),
+      );
+      final choice = ev.choices.firstWhere(
+        (c) => c.chance != null && c.minigame == null,
+      );
       final p = choice.chance!;
       var successes = 0;
       for (var i = 0; i < 400; i++) {
@@ -346,10 +411,14 @@ void main() {
     });
 
     test('확률 선택지가 실패하면 fail 효과만 적용된다', () {
-      final ev = bundle.events.firstWhere((e) => e.choices.any(
-          (c) => c.chance != null && c.minigame == null && c.fail.album != null));
-      final choice = ev.choices.firstWhere((c) =>
-          c.chance != null && c.minigame == null && c.fail.album != null);
+      final ev = bundle.events.firstWhere(
+        (e) => e.choices.any(
+          (c) => c.chance != null && c.minigame == null && c.fail.album != null,
+        ),
+      );
+      final choice = ev.choices.firstWhere(
+        (c) => c.chance != null && c.minigame == null && c.fail.album != null,
+      );
       for (var i = 0; i < 200; i++) {
         final s = fresh();
         final out = engine.applyChoice(s, ev, choice, random: Random(i));
@@ -370,7 +439,12 @@ void main() {
       for (var seed = 0; seed < 500; seed++) {
         final probe = Random(seed);
         if (probe.nextInt(100) < engine.critChance(s)) {
-          final out = engine.applyChoice(s, ev, ev.choices[0], random: Random(seed));
+          final out = engine.applyChoice(
+            s,
+            ev,
+            ev.choices[0],
+            random: Random(seed),
+          );
           expect(out.critical, isTrue);
           expect(s.affectionOf('seoyeon'), 4);
           return;
@@ -422,9 +496,15 @@ void main() {
     test('실패하면 콤보가 끊긴다', () {
       final s = fresh()..combo = 4;
       final ev = bundle.events.firstWhere(
-          (e) => e.choices.any((c) => c.minigame != null));
+        (e) => e.choices.any((c) => c.minigame != null),
+      );
       final idx = ev.choices.indexWhere((c) => c.minigame != null);
-      final out = engine.applyChoice(s, ev, ev.choices[idx], forcedSuccess: false);
+      final out = engine.applyChoice(
+        s,
+        ev,
+        ev.choices[idx],
+        forcedSuccess: false,
+      );
       expect(s.combo, 0);
       expect(out.comboBroken, isTrue);
     });
@@ -454,7 +534,10 @@ void main() {
         expect(slot, inInclusiveRange(0, EventEngine.rouletteSlots.length - 1));
         final before = Map.of(s.stats);
         final d = engine.applyRoulette(s, slot);
-        expect(d.stats.isNotEmpty || before.toString() == s.stats.toString(), isTrue);
+        expect(
+          d.stats.isNotEmpty || before.toString() == s.stats.toString(),
+          isTrue,
+        );
       }
     });
 
@@ -480,7 +563,11 @@ void main() {
         ..affection = 85
         ..trust = 75;
       s.stats[Stat.sincerity] = 60;
-      expect(resolver.resolve(s).id, isNot('seoyeon_happy'), reason: '반말 플래그 없으면 해피 불가');
+      expect(
+        resolver.resolve(s).id,
+        isNot('seoyeon_happy'),
+        reason: '반말 플래그 없으면 해피 불가',
+      );
       s.flags.add('seoyeon_banmal');
       expect(resolver.resolve(s).id, 'seoyeon_happy');
     });

@@ -135,7 +135,7 @@ void main() {
         return;
       }
       // 상호배타 게이트가 엔딩 도달을 막지 않는지 확인.
-      expect(bundle.endings.length, 30);
+      expect(bundle.endings.length, 48);
       final resolver = EndingResolver(
         bundle.endings,
         characters: bundle.characters,

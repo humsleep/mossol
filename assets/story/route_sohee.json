@@ -1,0 +1,2862 @@
+[
+ {
+  "id": "sohee_r00",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ],
+   "notFlags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 5,
+  "title": "랭크 끝, 귓속말 한 줄",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "랭크 게임이 끝났다. 졌다. 귓속말 알림이 뜬다."
+   },
+   {
+    "who": "them",
+    "text": "님 아까 서폿 좀 치던데?"
+   },
+   {
+    "who": "them",
+    "text": "듀오 ㄱ? 아 나 소희. 샷콜하던 그 시끄러운 목소리 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "text": "목소리 들으면 알겠지만 ㅋㅋ 님 닉 좋다"
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㄱㄱ 오늘 몇 시까지 함?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "오 답장 속도 좋고 ㅋㅋ",
+     "새벽 2시까지. 초대 보냄. 도망 금지"
+    ]
+   },
+   {
+    "text": "(박수 짤로 답한다)",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "album": "길드장에게 보낸 첫 짤이 아재 짤",
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 이거지",
+     "짤 센스 합격. 듀오 확정"
+    ],
+    "failReply": [
+     "…ㅋㅋ 이거 우리 아빠 폰에 있는 짤인데",
+     "괜찮아. 실력으로 만회하면 됨"
+    ],
+    "critReply": [
+     "ㅋㅋㅋㅋㅋ 아 배 아파",
+     "이 짤 길드 공지에 박는다. 허락은 안 받음"
+    ]
+   },
+   {
+    "text": "혹시 진짜 여자예요?",
+    "effects": {
+     "affection": {
+      "*": -1
+     },
+     "trust": {
+      "*": -1
+     },
+     "album": "듀오 신청에 성별부터 확인",
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 그게 첫 질문이구나",
+     "게임 얘기 하자. 서폿 할 거야 말 거야"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "친구 목록에 소희가 추가됐다. 상태 메시지: \"샷콜 받습니다. 불만도 받습니다.\""
+ },
+ {
+  "id": "sohee_r01",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    3,
+    100
+   ],
+   "notFlags": [
+    "sohee_met"
+   ]
+  },
+  "weight": 2,
+  "title": "음성 채널 첫날",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "음성 채널에 들어가자마자 귀가 먹먹해졌다."
+   },
+   {
+    "who": "them",
+    "text": "드래곤 ㄱㄱ!! 탑 빠져! 거기 서지 마!!"
+   },
+   {
+    "who": "them",
+    "text": "…아 들어왔구나 ㅋㅋ 헤드셋 볼륨 줄여. 나 원래 이럼"
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㅋㅋ 샷콜 듣다가 귀 터질 뻔",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "stress": 5
+     },
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 이거지. 첫날엔 다들 그 말 함",
+     "근데 너 내 콜 한 번도 안 놓침. 합격"
+    ],
+    "failReply": [
+     "…어? 방금 뭐라고? 볼륨 너무 줄였나 ㅋㅋ",
+     "괜찮아. 콜은 내가 두 번 말해 줄게"
+    ],
+    "critReply": [
+     "ㅋㅋ 너 타이밍 뭐야. 콜 하기도 전에 움직임",
+     "이런 듀오 오랜만이다 진짜"
+    ]
+   },
+   {
+    "text": "여자 샷콜러는 처음 봐",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     },
+     "album": "첫 음성 채팅에서 \"여자 샷콜러\"",
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 샷콜러면 샷콜러지",
+     "탑 빠지라는 말에 성별 없어. 다음 콜이나 들어"
+    ]
+   },
+   {
+    "text": "콜 믿고 들어갈게. 틀리면 같이 죽지 뭐",
+    "require": {
+     "stats": {
+      "talk": 45
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "sohee_friend"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 오케 그 말 책임져",
+     "같이 죽는 거 좋아. 근데 안 죽게 해 줄게"
+    ],
+    "critReply": [
+     "…야 그거 길드 모집 문구로 써도 됨?",
+     "너 오늘부터 내 고정 듀오"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "sohee_r02",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    6,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "길마 목소리 튜토리얼 같지 않냐",
+  "lines": [
+   {
+    "who": "them",
+    "text": "길드 초대 보냄. 수락 ㄱ"
+   },
+   {
+    "who": "narr",
+    "text": "길드 이름 [샷콜은 내가 받는다]. 길드원 23명. 길드장 소희."
+   },
+   {
+    "who": "them",
+    "name": "길드원 감자",
+    "text": "신입 ㅎㅇ ㅋㅋ 근데 길마 목소리 튜토리얼 같지 않냐"
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ 조용. 신입 인사나 받아"
+   }
+  ],
+  "choices": [
+   {
+    "text": "매일 접속하겠습니다. 잘 부탁해요",
+    "effects": {
+     "stats": {
+      "stress": 5
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "sohee_guild"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋ 매일이면 부길마 후보임",
+     "이번 시즌 같이 올리자. 도망 금지"
+    ]
+   },
+   {
+    "text": "(단톡에 드립 한 줄 친다)",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "sohee_guild"
+     ]
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "reputation": -1
+     },
+     "setFlags": [
+      "sohee_guild"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 신입이 판 읽네",
+     "길드원들이 벌써 네 닉 줄여서 부름"
+    ],
+    "failReply": [
+     "…단톡 3초 정적 ㅋㅋ",
+     "괜찮아. 나도 첫날 공지에 오타 냄"
+    ]
+   },
+   {
+    "text": "난 들어가서 캐리만 받을게",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": -1
+     },
+     "setFlags": [
+      "sohee_guild"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 캐리는 해 줌. 근데 공짜 아님",
+     "콜 한 번 놓칠 때마다 딜량 보고서 제출"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "길드원 목록 맨 아래에 내 닉네임이 올라갔다. 맨 위엔 \"길마 소희\"."
+ },
+ {
+  "id": "sohee_r03",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     45
+    ]
+   },
+   "day": [
+    10,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "새벽 3시의 낮은 톤",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 3시. 음성 채널에 소희 혼자 남아 있다."
+   },
+   {
+    "who": "them",
+    "text": "…아직 안 잤어?"
+   },
+   {
+    "who": "narr",
+    "text": "샷콜할 때랑 다른 목소리다. 한 톤 낮다."
+   },
+   {
+    "who": "them",
+    "text": "나 오늘 오디션 떨어졌다. 네 번째"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "…아 게임이나 하자. 한 판만 더"
+   }
+  ],
+  "choices": [
+   {
+    "text": "게임 말고. 무슨 오디션인데",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_audition"
+     ]
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "esteem": -3,
+      "stress": 8
+     },
+     "setFlags": [
+      "sohee_audition"
+     ]
+    },
+    "reply": [
+     "성우 공채. 목소리는 좋은데 연기가 안 보인대",
+     "…처음 말해 본다. 길드엔 비밀"
+    ],
+    "failReply": [
+     "…ㅋㅋ 너도 말 막혔구나",
+     "괜찮아. 채널에 같이 있어 준 걸로 됨"
+    ],
+    "critReply": [
+     "…야 그렇게 물어보면 울 것 같잖아",
+     "성우 공채. 네 번째. 이제 너만 앎"
+    ]
+   },
+   {
+    "text": "그래 한 판 하자",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -3
+     },
+     "setFlags": [
+      "sohee_audition"
+     ]
+    },
+    "reply": [
+     "…ㅇㅋ 오케 내가 받을게",
+     {
+      "who": "narr",
+      "text": "그 판, 소희는 콜을 한 번도 하지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "한 판 하면서 얘기해. 오늘은 내가 콜 할게",
+    "require": {
+     "stats": {
+      "sense": 32
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_audition"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 네가 샷콜? 오늘만 봐준다",
+     "얼굴 안 보이니까 말하기가 좀 쉽네"
+    ],
+    "critReply": [
+     "너 콜 은근 괜찮은데? ㅋㅋ",
+     "…고마워. 오늘 처음 웃었다"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그날 밤 소희의 상태 메시지가 바뀌었다. \"한 판만 더.\""
+ },
+ {
+  "id": "sohee_r04",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    14,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "내 듀오한테 말 그렇게 하지 마",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "연패 중. 팀 채팅이 빨갛다."
+   },
+   {
+    "who": "them",
+    "name": "팀원",
+    "text": "서폿 뭐함? 손 없음? 그냥 접어라"
+   },
+   {
+    "who": "them",
+    "text": "내 듀오한테 말 그렇게 하지 마."
+   },
+   {
+    "who": "them",
+    "text": "콜은 내가 했어. 할 말 있으면 나한테 해"
+   }
+  ],
+  "choices": [
+   {
+    "text": "…괜찮아. 신경 안 써",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "네가 괜찮은 거 아는데 내가 안 괜찮아 ㅋㅋ",
+     "신고 눌렀다. 다음 판 ㄱ"
+    ]
+   },
+   {
+    "text": "나도 한마디 받아친다",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     },
+     "album": "트롤이랑 전체 채팅 설전"
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 이거지. 욕 없이 팩트만",
+     "너 말발 좋다? 부샷콜 줄까"
+    ],
+    "failReply": [
+     "…야 그건 좀 셌다 ㅋㅋ",
+     "우리가 똑같이 하면 지는 거야. 뮤트 ㄱ"
+    ]
+   },
+   {
+    "text": "고마워. 근데 너도 방금 좀 떨렸지",
+    "require": {
+     "stats": {
+      "sincerity": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…티 났어? ㅋㅋ",
+     "내 듀오 건드리면 목소리가 먼저 나가더라"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "sohee_r05",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    19,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ],
+   "notFlags": [
+    "sohee_met"
+   ]
+  },
+  "weight": 2,
+  "title": "이번 주 토요일 야시장",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 이번 주 토요일 야시장 가자"
+   },
+   {
+    "who": "them",
+    "text": "강변 야시장. 꼬치 줄 20분 서야 됨. 같이 서자"
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "narr",
+    "text": "손가락이 멈췄다. 게임 밖에서 만나는 건 다른 문제다."
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ 왜 조용해. 부담되면 말해"
+   }
+  ],
+  "choices": [
+   {
+    "text": "…요즘 좀 바빠서",
+    "effects": {
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "sohee_asked"
+     ]
+    },
+    "reply": [
+     "ㅇㅋ ㅋㅋ 바쁘면 어쩔 수 없지",
+     "초대장은 유효함. 유통기한 없음"
+    ]
+   },
+   {
+    "text": "좋아. 꼬치 줄은 내가 설게",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "sohee_asked"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 오케 콜",
+     "근데 줄은 같이 서. 그게 재밌는 거임"
+    ]
+   },
+   {
+    "text": "솔직히 좀 떨려. 그래도 갈래",
+    "require": {
+     "stats": {
+      "talk": 38
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_asked"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 떨린다고 말해 주는 거 좋다",
+     "나도 좀 떨림. 근데 먼저 말한 사람이 이긴 거"
+    ]
+   },
+   {
+    "text": "사실 나 프로필이랑 좀 달라",
+    "require": {
+     "flags": [
+      "fake_profile"
+     ]
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "sohee_asked"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 그게 뭐. 나 콜 받는 너 보고 부른 건데",
+     "부풀린 거 빼고 그대로 와. 그게 제일 나음"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그 주 내내 소희의 상태 메시지는 \"토요일 꼬치 ㄱㄱ\"였다."
+ },
+ {
+  "id": "sohee_r06",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    24,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "목 나간 샷콜러",
+  "lines": [
+   {
+    "who": "them",
+    "text": "콜록"
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ 목 나감. 샷콜 너무 해서"
+   },
+   {
+    "who": "them",
+    "text": "오늘은 채팅으로만 콜함. 오타 나도 알아서 읽어"
+   },
+   {
+    "who": "narr",
+    "text": "음성 채널에 소희의 마이크 아이콘만 꺼져 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "따뜻한 차 쿠폰을 보낸다",
+    "effects": {
+     "stats": {
+      "money": -5
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "오 ㅋㅋ 고마워. 바로 씀",
+     "목 아플 때 이런 거 은근 감동임"
+    ]
+   },
+   {
+    "text": "목캔디 한 통이랑 메모를 선물로 보낸다",
+    "effects": {
+     "stats": {
+      "money": -22,
+      "talk": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "메모에 \"오늘 콜은 내가 할게\" ㅋㅋㅋㅋ",
+     "…목캔디 통 목에 걸고 다닐 거임. 이제 내 부적"
+    ]
+   },
+   {
+    "text": "목소리 쉬어도 예뻐. 걱정 마",
+    "effects": {
+     "affection": {
+      "*": -4
+     },
+     "album": "목 아픈 사람한테 목소리 칭찬만"
+    },
+    "reply": [
+     "…ㅋㅋ 고마워",
+     "근데 난 목소리 말고 콜로 칭찬받고 싶음",
+     {
+      "who": "narr",
+      "text": "그날 소희는 채팅으로도 콜을 하지 않았다."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "새벽, 소희의 마이크 아이콘이 한 번 켜졌다 꺼졌다."
+ },
+ {
+  "id": "sohee_r07",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    31,
+    59
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "루미 흉내, 켜져 있던 마이크",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새 캐릭터를 만들었다. 튜토리얼 안내원 루미가 나온다."
+   },
+   {
+    "who": "me",
+    "text": "\"모험가님, 겁내지 마세요! 첫걸음은 늘 용기예요!\""
+   },
+   {
+    "who": "narr",
+    "text": "음성 채널이 켜져 있다는 걸 그제야 알았다."
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ"
+   },
+   {
+    "who": "narr",
+    "text": "소희는 5분 동안 웃었다. 그리고 이상하게 조용해졌다."
+   },
+   {
+    "who": "sys",
+    "wait": 8
+   },
+   {
+    "who": "them",
+    "text": "…그 대사 좋아해?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "응. 힘들 때 틀어 놓고 자",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "sohee_lumi_hint"
+     ]
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "stress": 5
+     },
+     "setFlags": [
+      "sohee_lumi_hint"
+     ]
+    },
+    "reply": [
+     "…진짜?",
+     "아 아니야 ㅋㅋ 그냥 물어본 거"
+    ],
+    "failReply": [
+     "…ㅋㅋ 뭐라고? 웃느라 못 들었어",
+     "다시 해 봐. 아니다 하지 마"
+    ]
+   },
+   {
+    "text": "들은 거 잊어 줘. 제발",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "sohee_lumi_hint"
+     ]
+    },
+    "reply": [
+     "ㄴㄴ 녹음함 ㅋㅋ",
+     "…근데 너 그 대사 끝까지 외우고 있네"
+    ]
+   },
+   {
+    "text": "그 목소리 들으면 이상하게 힘이 나",
+    "require": {
+     "stats": {
+      "sincerity": 52
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_lumi_hint"
+     ]
+    },
+    "reply": [
+     "…",
+     "ㅋㅋ 그 성우한테 전해 주고 싶다",
+     "아마 되게 좋아할 거야"
+    ],
+    "critReply": [
+     "…야 그만. 이상하게 얼굴 뜨거움",
+     "그 성우 오늘 잠 못 잔다. 아마"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그날 이후 소희는 튜토리얼 얘기만 나오면 말을 돌렸다."
+ },
+ {
+  "id": "sohee_r08",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    37,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "음소거 너머",
+  "lines": [
+   {
+    "who": "them",
+    "text": "ㄱㄱ 오늘 다섯 판"
+   },
+   {
+    "who": "narr",
+    "text": "소희 쪽에서 방문이 열리는 소리가 들린다. \"또 게임이야? 그만하고 취직 준비 좀 해.\""
+   },
+   {
+    "who": "narr",
+    "text": "소희의 마이크가 음소거됐다."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "…들었지 ㅋㅋ 우리 엄마"
+   },
+   {
+    "who": "them",
+    "text": "나 게임만 하는 거 아닌데. 설명하기 귀찮아서 그냥 둠"
+   }
+  ],
+  "choices": [
+   {
+    "text": "뭘 하든 대충 하는 사람 아닌 거 알아",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…ㅋㅋ 뭘 아는데",
+     "아 몰라. 그 말 좀 좋다"
+    ],
+    "critReply": [
+     "…야",
+     "그거 우리 집에선 아무도 안 해 준 말이다"
+    ]
+   },
+   {
+    "text": "부모님 말도 일리는 있지",
+    "effects": {
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "…ㅇㅋ",
+     "너까지 그러면 할 말 없네. 게임이나 하자"
+    ]
+   },
+   {
+    "text": "나한테 설명해 줘. 귀찮아도 들을게",
+    "require": {
+     "stats": {
+      "esteem": 45
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "sohee_told"
+     ]
+    },
+    "reply": [
+     "…긴데 괜찮아?",
+     "나 녹음 알바 해. 몇 마디짜리. 엄마는 그걸 일로 안 쳐줘"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "sohee_r09",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    44,
+    100
+   ],
+   "flags": [
+    "sohee_friend",
+    "sohee_asked"
+   ]
+  },
+  "weight": 2,
+  "title": "야시장, 목소리에 얼굴 맞추기",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "토요일 저녁, 강변 야시장. 꼬치 줄 맨 끝."
+   },
+   {
+    "who": "them",
+    "text": "야!!! 여기!!!"
+   },
+   {
+    "who": "narr",
+    "text": "목소리와 얼굴을 맞춰 보는 데 3초. 후드티 소매가 손등까지 덮여 있다."
+   },
+   {
+    "who": "them",
+    "text": "꼬치 두 개 벌써 주문함. 하나는 네 거. 도망 금지 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "야시장 한 바퀴 코스를 짠다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "sohee_met"
+     ]
+    },
+    "minigame": "date_course",
+    "fail": {
+     "stats": {
+      "esteem": -4
+     },
+     "affection": {
+      "*": -4
+     },
+     "album": "야시장에서 같은 골목 세 바퀴",
+     "setFlags": [
+      "sohee_met"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 이거지. 코스 완벽",
+     "너 게임에서도 동선 잘 짜더니 여기서도 그러네"
+    ],
+    "failReply": [
+     "…우리 여기 세 번째 지나감 ㅋㅋ",
+     "괜찮아. 꼬치는 세 번 먹어도 맛있음"
+    ],
+    "critReply": [
+     "야 내가 먹고 싶은 거 어떻게 다 알았어?",
+     "…오늘 좀 반칙이다"
+    ]
+   },
+   {
+    "text": "…진짜 목소리 그대로네",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "sohee_met"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 당연하지 한 사람인데",
+     "너는 음성 채널보다 조용하다? 긴장했지"
+    ]
+   },
+   {
+    "text": "꼬치 값은 내가 낼게",
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "sohee_met"
+     ]
+    },
+    "reply": [
+     "ㄴㄴ 내가 부른 거니까 내가 냄",
+     "대신 다음엔 네가 불러. 그땐 네가 내"
+    ]
+   },
+   {
+    "text": "(프로필처럼 활발한 척한다)",
+    "require": {
+     "flags": [
+      "fake_profile"
+     ]
+    },
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": -2
+     },
+     "setFlags": [
+      "sohee_met"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 너 오늘 좀 이상하다?",
+     "게임에서랑 너무 다른데. 그냥 편하게 해"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "집에 오는 길, 소희의 상태 메시지가 바뀌었다. \"오늘 게임 안 함. 여운 중\""
+ },
+ {
+  "id": "sohee_r10",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    61,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "대본 상대역",
+  "lines": [
+   {
+    "who": "them",
+    "text": "부탁 하나만"
+   },
+   {
+    "who": "them",
+    "text": "이번 공채 대본에 상대역 대사가 여섯 줄 있어"
+   },
+   {
+    "who": "them",
+    "text": "루미 목소리 말고. 진짜 연기로 붙고 싶어"
+   },
+   {
+    "who": "them",
+    "text": "길드 애들한텐 못 하겠고… 너한테만"
+   },
+   {
+    "who": "narr",
+    "text": "파일이 왔다. 〈공채 대본_최종_진짜최종〉"
+   }
+  ],
+  "choices": [
+   {
+    "text": "통화로 맞춰 보자. 지금",
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_script"
+     ]
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "stress": 5
+     },
+     "setFlags": [
+      "sohee_script"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 너 대사 치는 거 은근 괜찮은데?",
+     "한 번 더. 이번엔 나도 진짜로 갈게"
+    ],
+    "failReply": [
+     "…ㅋㅋㅋ 대사 읽다가 웃으면 어떡해",
+     "괜찮아. 나도 처음엔 그랬어. 다시"
+    ],
+    "critReply": [
+     "…방금 나 진짜 몰입했다",
+     "네 앞에서 하니까 연기가 보이는 것 같아"
+    ]
+   },
+   {
+    "text": "여섯 줄 다 외워서 갈게",
+    "require": {
+     "stats": {
+      "talk": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3
+     },
+     "affection": {
+      "*": 9
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "sohee_script"
+     ]
+    },
+    "reply": [
+     "…다 외운다고? ㅋㅋ",
+     "아니 그게 아니라… 고마워. 진짜로"
+    ]
+   },
+   {
+    "text": "나 연기 못 해… 다른 사람 찾아 봐",
+    "effects": {
+     "stats": {
+      "stress": 10
+     },
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "아 ㅋㅋ 그래 부담 줬다",
+     "괜찮아. 거울 보고 혼자 하지 뭐"
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "sohee_r11",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    66,
+    100
+   ],
+   "flags": [
+    "sohee_friend",
+    "sohee_guild",
+    "sohee_script"
+   ],
+   "notFlags": [
+    "sohee_final"
+   ]
+  },
+  "weight": 5,
+  "title": "[공지] 길드 해체합니다",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "[공지] 길드 해체합니다. 그동안 콜 받아 줘서 고마웠어요. — 길마"
+   },
+   {
+    "who": "them",
+    "name": "길드원 감자",
+    "text": "?? 길마 무슨 일임"
+   },
+   {
+    "who": "narr",
+    "text": "소희의 접속 표시가 회색으로 바뀌었다."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "이번에 떨어지면 목소리 쓰는 일 다 그만둘 거야"
+   },
+   {
+    "who": "them",
+    "text": "그래서 게임도 정리하는 중. 미안. 너한텐 말하고 가려고"
+   }
+  ],
+  "choices": [
+   {
+    "text": "길드는 내가 지키고 있을게. 다녀와",
+    "effects": {
+     "stats": {
+      "esteem": 4
+     },
+     "affection": {
+      "*": 10
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "sohee_quit"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 23명을 네가?",
+     "그럼 부탁해. 나 진짜 잠수한다"
+    ],
+    "critReply": [
+     "…왜 그런 말을 해. 나가기 힘들게",
+     "다녀올게. 진짜로"
+    ]
+   },
+   {
+    "text": "다들 두고 가는 거 무책임하다",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "affection": {
+      "*": -8
+     },
+     "trust": {
+      "*": -6
+     },
+     "album": "잠수하는 길드장에게 \"무책임하다\"",
+     "setFlags": [
+      "sohee_quit"
+     ]
+    },
+    "reply": [
+     "…응. 알아",
+     "그래서 너한테만 말한 건데",
+     {
+      "who": "narr",
+      "text": "소희가 로그아웃했다."
+     }
+    ]
+   },
+   {
+    "text": "그만두려는 게 아니라, 한 번 제대로 해 보려는 거잖아",
+    "require": {
+     "stats": {
+      "sense": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 12
+     },
+     "trust": {
+      "*": 10
+     },
+     "setFlags": [
+      "sohee_quit"
+     ]
+    },
+    "reply": [
+     "…너는 그걸 왜 알아",
+     "맞아. 마지막으로 제대로 하려고 끊는 거야"
+    ],
+    "critReply": [
+     "…ㅋㅋ 들켰다",
+     "다 끝나면 제일 먼저 너한테 말할게"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "그날 밤, 소희의 접속 표시는 한 번도 초록이 되지 않았다."
+ },
+ {
+  "id": "sohee_r12",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    74,
+    100
+   ],
+   "flags": [
+    "sohee_friend",
+    "sohee_quit"
+   ],
+   "notFlags": [
+    "sohee_final"
+   ]
+  },
+  "weight": 2,
+  "title": "사흘째 오프라인",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "사흘째 오프라인. 읽음 표시도 없다."
+   },
+   {
+    "who": "them",
+    "name": "길드원 감자",
+    "text": "길마 복구 영상 만들자는데 너도 할래? 명장면 모음"
+   },
+   {
+    "who": "narr",
+    "text": "메신저 맨 위에 소희 이름이 고정되어 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "음성 메시지를 남긴다",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "sohee_back"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다음 날 새벽 4시, 답이 왔다."
+     },
+     "…목소리 듣고 싶어서 네 번 들었어",
+     "아직 못 돌아가. 근데 고마워"
+    ]
+   },
+   {
+    "text": "길드원들이랑 복구 영상을 만든다",
+    "require": {
+     "stats": {
+      "sense": 48
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "sohee_back"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "영상 제목 〈샷콜은 네가 받는다〉. 조회수 23."
+     },
+     "…ㅋㅋㅋㅋ 이거 누가 편집했어",
+     "울다가 웃었다. 너지?"
+    ]
+   },
+   {
+    "text": "연락하지 않고 기다린다",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "sohee_back"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "아무것도 보내지 않았다. 나흘이 더 지났다."
+     },
+     "…너도 조용하네 ㅋㅋ",
+     "그래. 내가 끊은 건데 뭐"
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "sohee_r13",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "trust": {
+    "*": [
+     0,
+     54
+    ]
+   },
+   "day": [
+    19,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "5연패 복기",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "5연패. 방금 판은 정글이 세 번 죽었다."
+   },
+   {
+    "who": "them",
+    "text": "하 ㅋㅋ 오늘 안 풀리네"
+   },
+   {
+    "who": "them",
+    "text": "그 판 내 탓도 있어. 콜 늦었음. 같이 복기하자"
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   },
+   {
+    "who": "them",
+    "text": "너는 어디서 꼬인 것 같아?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "나도 두 번째 한타 늦게 들어갔어",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "ㅋㅋ 오 인정 빠르다",
+     "그럼 다음 판 둘 다 반 박자 빨리. ㄱㄱ"
+    ]
+   },
+   {
+    "text": "정글이 다 망쳤지. 팀운이 없었어",
+    "effects": {
+     "stats": {
+      "sincerity": -4
+     },
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -6
+     },
+     "album": "연패를 전부 정글 탓"
+    },
+    "reply": [
+     "…정글도 이 채널 듣고 있어",
+     "난 팀운 얘기 안 해. 그거 하는 순간 다음 판도 짐",
+     {
+      "who": "narr",
+      "text": "소희가 대기열을 혼자 돌렸다."
+     }
+    ]
+   },
+   {
+    "text": "…나 때문인가",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "ㄴㄴ 누구 하나 때문에 지는 게임 아님",
+     "근데 그렇게 말해 주는 건 좋다. 다음 판 ㄱ"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "sohee_r14",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    29,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 2,
+  "title": "새벽반장과 듀오",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "접속했다. 소희가 이미 게임 중이다. 듀오 상대는 길드원 \"새벽반장\"."
+   },
+   {
+    "who": "narr",
+    "text": "음성 채널에 둘의 웃음소리가 들린다."
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   },
+   {
+    "who": "them",
+    "text": "어 왔네? ㅋㅋ 잠깐만 이 판만"
+   }
+  ],
+  "choices": [
+   {
+    "text": "관전하면서 콜을 거든다",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "stress": 5
+     }
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 관전 샷콜 뭐임",
+     "…근데 맞는 콜이라 할 말 없음"
+    ],
+    "failReply": [
+     "야 관전 딜레이 있어서 콜이 다 늦음 ㅋㅋ",
+     "끝나고 둘이 ㄱ"
+    ]
+   },
+   {
+    "text": "조용히 접속을 끊는다",
+    "effects": {
+     "stats": {
+      "stress": 12
+     },
+     "affection": {
+      "*": -2
+     },
+     "album": "듀오 뺏긴 줄 알고 로그아웃"
+    },
+    "reply": [
+     "어? 나갔네",
+     "…아 오해했나. 새벽반장이랑 대본 맞춰 보던 건데"
+    ]
+   },
+   {
+    "text": "무슨 판인데? 나도 끼워 줘",
+    "require": {
+     "stats": {
+      "sense": 42
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "reputation": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "ㅋㅋ 사실 게임 아니고 대본 연습 중이었음",
+     "새벽반장이 연기 전공이라… 너한텐 아직 좀 부끄러워서"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "sohee_r15",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    91,
+    100
+   ],
+   "flags": [
+    "sohee_friend",
+    "sohee_guild"
+   ]
+  },
+  "weight": 2,
+  "title": "대기실에서 온 음성 메시지",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "오전 9시 40분. 음성 메시지 1개."
+   },
+   {
+    "who": "them",
+    "text": "나야. 대기실. 번호표 17번"
+   },
+   {
+    "who": "them",
+    "text": "들어가기 전에 네 목소리 듣고 싶어서"
+   },
+   {
+    "who": "sys",
+    "wait": 8
+   },
+   {
+    "who": "them",
+    "text": "…아무 말이나 해 줘. 콜 하듯이"
+   }
+  ],
+  "choices": [
+   {
+    "text": "소희 ㄱㄱ. 오케 내가 받을게",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "sohee_final"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 내 대사 뺏어 감",
+     "…오케. 받았다. 들어간다"
+    ]
+   },
+   {
+    "text": "붙든 떨어지든 끝나고 한 판 더 하자",
+    "effects": {
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "sohee_final"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 떨어져도 한 판",
+     "그 말 들으니까 떨어지는 게 덜 무섭다"
+    ]
+   },
+   {
+    "text": "끝나면 전화해. 결과 말고 네 얘기 들으러",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 9
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "sohee_final"
+     ]
+    },
+    "reply": [
+     "…ㅋㅋ 결과 말고 나?",
+     "알았어. 제일 먼저 너한테 걸게"
+    ],
+    "critReply": [
+     "…야 대기실에서 웃었다. 다들 쳐다봄",
+     "다녀올게. 콜 받아 줘서 고마워"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "대기실 문이 열렸다. \"17번 들어오세요.\""
+ },
+ {
+  "id": "mo_sohee_photo_mic",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     10,
+     35
+    ]
+   },
+   "day": [
+    5,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 3,
+  "title": "한 줄 녹음",
+  "lines": [
+   {
+    "who": "them",
+    "photo": {
+     "icon": "music",
+     "caption": "녹음 부스 속 마이크"
+    },
+    "text": "오늘 한 줄 녹음함 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "text": "진짜 한 줄. \"여기요!\" 한 마디"
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "근데 그 한 마디를 40번 함"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네 목소리면 한 번에 됐겠는데",
+    "effects": {
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -3
+     },
+     "album": "40번 녹음한 사람에게 \"목소리 좋잖아\""
+    },
+    "reply": [
+     "…ㅋㅋ 목소리가 좋으면 한 번에 끝났겠지",
+     "40번은 목소리 문제가 아니었음. 암튼 한 판 ㄱ"
+    ]
+   },
+   {
+    "text": "나도 오늘 한 줄 인증",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "book",
+       "caption": "한 줄 쓴 자기소개서"
+      },
+      "text": "나는 이거"
+     },
+     "ㅋㅋㅋㅋ 한 줄 동지",
+     "우리 둘 다 오늘 한 줄씩 했다. 이거 규칙으로 하자"
+    ]
+   },
+   {
+    "text": "40번째가 제일 좋았겠네",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "…어떻게 알았어? 진짜 40번째 씀",
+     "너 판 읽는 거 게임 밖에서도 되네"
+    ],
+    "failReply": [
+     "ㅋㅋ 아니 38번째 씀",
+     "근데 그렇게 말해 주는 건 고맙다"
+    ]
+   },
+   {
+    "text": "(박수 짤로 답한다)",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "ㅋㅋㅋㅋ 이거지. 박수 소리 들림",
+     "이 짤 녹음실 단톡에 퍼 감"
+    ],
+    "failReply": [
+     "…그 짤 박수가 아니라 물개 아님? ㅋㅋ",
+     "물개 박수도 박수지 뭐"
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_sohee_preview_tutorial",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     25,
+     100
+    ]
+   },
+   "day": [
+    45,
+    59
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 3,
+  "title": "튜토리얼 켜 봐",
+  "preview": "야 튜토리얼 켜 봐. 지금 당장",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 튜토리얼 켜 봐. 지금 당장"
+   },
+   {
+    "who": "them",
+    "text": "새 캐릭 만들고 첫 화면. 소리 켜고"
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   },
+   {
+    "who": "narr",
+    "text": "루미가 말한다. \"모험가님, 겁내지 마세요!\""
+   },
+   {
+    "who": "them",
+    "text": "…어때?"
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "아 아니다 ㅋㅋ 그냥 물어봄"
+   }
+  ],
+  "choices": [
+   {
+    "text": "루미 목소리? 늘 듣던 거지",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…늘 듣는구나 ㅋㅋ",
+     "알았어. 조만간 얘기해 줄게. 뭔지는 비밀"
+    ]
+   },
+   {
+    "text": "길드 단톡에 루미 성우가 누군지 물어본다",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "stats": {
+      "reputation": -2
+     }
+    },
+    "reply": [
+     "야야야 ㅋㅋㅋㅋ 그거 지워",
+     "…아 아니다. 답 달리는 거 좀 보자"
+    ],
+    "failReply": [
+     "단톡에 \"루미 성우 찾는 사람 = 루미 덕후\" 박제됨 ㅋㅋ",
+     "…너 이제 공식 루미 덕후임"
+    ]
+   },
+   {
+    "text": "근데 이 목소리 어디서 들었더라",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…ㅋㅋ 어디서 들었을까",
+     "곧 알려 줌. 아마도"
+    ]
+   },
+   {
+    "text": "튜토리얼은 스킵하는 거 아님?",
+    "effects": {
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "…ㅋㅋ 스킵 버튼 누르는 사람 제일 싫어",
+     "농담. 반만 농담"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤 소희의 상태 메시지가 바뀌었다. \"겁내지 마세요.\""
+ },
+ {
+  "id": "mo_sohee_call_lowtone",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     35,
+     65
+    ]
+   },
+   "day": [
+    26,
+    100
+   ],
+   "flags": [
+    "sohee_friend"
+   ]
+  },
+  "weight": 4,
+  "title": "새벽 3시의 전화",
+  "format": "call",
+  "lines": [
+   {
+    "who": "them",
+    "text": "…어 받았네"
+   },
+   {
+    "who": "them",
+    "text": "음성 채널 말고 전화로 해도 돼?"
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "샷콜 톤 말고. 그냥 이 목소리로"
+   },
+   {
+    "who": "them",
+    "text": "새벽 3시엔 이 톤이 나와 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "거절",
+    "decline": true,
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "부재중 전화 1통."
+     },
+     "ㅋㅋ 오케 내일 한 판."
+    ]
+   },
+   {
+    "text": "응. 이 목소리는 처음 들어",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…ㅋㅋ 길드 애들은 몰라. 이 톤",
+     "너만 아는 거다. 비밀"
+    ],
+    "failReply": [
+     "…어 ㅋㅋ 너 졸리구나",
+     "그럼 5분만. 아니 10분"
+    ],
+    "critReply": [
+     "…한 시간째 게임 얘기 안 했다",
+     "샷콜 없이도 대화가 되네. 우리"
+    ]
+   },
+   {
+    "text": "나도 이 시간엔 말이 느려져",
+    "require": {
+     "stats": {
+      "sincerity": 30
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "ㅋㅋ 그럼 느리게 하자",
+     "…오늘은 콜 안 해도 되는 날"
+    ]
+   },
+   {
+    "text": "샷콜 톤이 더 좋은데?",
+    "effects": {
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…ㅋㅋ 그래? 톤 다시 올릴까",
+     "아냐. 그냥 끊자. 내일 봐"
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_sohee_photo_skewer",
+  "layer": "route",
+  "character": "sohee",
+  "trigger": {
+   "affection": {
+    "*": [
+     50,
+     100
+    ]
+   },
+   "day": [
+    55,
+    100
+   ],
+   "flags": [
+    "sohee_met"
+   ]
+  },
+  "weight": 3,
+  "title": "대기 20분 컷",
+  "lines": [
+   {
+    "who": "them",
+    "photo": {
+     "icon": "street",
+     "caption": "야시장 꼬치 두 개"
+    },
+    "text": "대기 20분 컷"
+   },
+   {
+    "who": "them",
+    "text": "하나는 네 거."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "…라고 보내 놓고 둘 다 먹는 중 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "text": "다음 주에 또 올래? 이번엔 네가 부르는 걸로"
+   }
+  ],
+  "choices": [
+   {
+    "text": "간다. 이번엔 내가 줄 선다",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "ticket",
+       "caption": "토요일 칸에 \"꼬치\""
+      },
+      "text": "적어 뒀어"
+     },
+     "ㅋㅋㅋㅋ 이거지",
+     "초대 받았다. 이번엔 네가 부른 거다"
+    ]
+   },
+   {
+    "text": "사진에 손만 나왔네. 소매 또 덮었지",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…그걸 봄? ㅋㅋ",
+     "손 시려서 그래. 핑계 아님"
+    ]
+   },
+   {
+    "text": "다음엔 꼬치 말고 다른 것도 먹자",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "다른 거 뭐. 말해 봐",
+     "…아 이거 데이트 신청이야? ㅋㅋ"
+    ],
+    "failReply": [
+     "…어? 꼬치 싫었어? ㅋㅋ",
+     "아 아니구나. 알았어 다음엔 떡볶이"
+    ],
+    "critReply": [
+     "…야 이거 데이트 신청이지",
+     "대답은 \"콜\". 번복 없음"
+    ]
+   },
+   {
+    "text": "음… 다음 주는 좀",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "ㅇㅋ ㅋㅋ 초대장은 유효",
+     "그럼 사진이라도 계속 보낼게. 약 올리려고"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날 밤 소희의 프로필 사진이 꼬치 두 개로 바뀌었다."
+ }
+]

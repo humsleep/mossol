@@ -1,0 +1,77 @@
+[
+ {
+  "id": "sohee_happy",
+  "name": "소희 · 루미의 새 대사",
+  "tier": "happy",
+  "priority": 200,
+  "character": "sohee",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "업데이트된 튜토리얼에서 루미가 말했다. \"듀오 신청은 용기예요.\" 녹음하던 날, 옆에 내가 있었다.",
+  "hint": "소희의 목소리 뒤에 있는 사람을 만나면"
+ },
+ {
+  "id": "sohee_friend",
+  "name": "소희 · 영원한 듀오",
+  "tier": "good",
+  "priority": 150,
+  "character": "sohee",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "길드가 다시 열렸다. 부길드장 칸에 내 닉네임.",
+  "hint": "소희와 밤새 듀오만 하는 사이로 남으면"
+ },
+ {
+  "id": "sohee_bad",
+  "name": "소희 · 음성 채널 퇴장",
+  "tier": "bad",
+  "priority": 120,
+  "character": "sohee",
+  "when": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     34
+    ]
+   }
+  },
+  "epilogue": "\"게임에서랑 너무 다른데.\" 소희가 채널을 나갔다.",
+  "hint": "소희에게 부풀린 나를 보여 주면"
+ }
+]

@@ -1,0 +1,77 @@
+[
+ {
+  "id": "geonwoo_happy",
+  "name": "건우 · 이번엔 인사하고",
+  "tier": "happy",
+  "priority": 200,
+  "character": "geonwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "geonwoo_stay"
+   ]
+  },
+  "epilogue": "건우 반 교실 뒤 게시판. 6학년 3반 사진 옆에 우리 사진이 붙었다.",
+  "hint": "떠나려는 동창을 이번엔 붙잡으면"
+ },
+ {
+  "id": "geonwoo_friend",
+  "name": "건우 · 선생님 친구",
+  "tier": "good",
+  "priority": 150,
+  "character": "geonwoo",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "건우 반 아이들이 나를 \"선생님 친구\"라고 부른다. 그걸로 충분했다.",
+  "hint": "건우와 옛 짝꿍으로만 남으면"
+ },
+ {
+  "id": "geonwoo_bad",
+  "name": "건우 · 또 말없이",
+  "tier": "bad",
+  "priority": 120,
+  "character": "geonwoo",
+  "when": {
+   "flags": [
+    "geonwoo_joke_1"
+   ],
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   }
+  },
+  "epilogue": "끝까지 농담으로 넘겼다. 건우도 웃으며 사라졌다. 13년 전처럼.",
+  "hint": "건우의 사과를 끝까지 농담으로 넘기면"
+ }
+]

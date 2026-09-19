@@ -1,0 +1,2646 @@
+[
+ {
+  "id": "seunghyun_r00",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    5,
+    25
+   ],
+   "flags": [
+    "seunghyun_intro"
+   ],
+   "notFlags": [
+    "seunghyun_contact"
+   ]
+  },
+  "weight": 5,
+  "title": "부담되시면 거절하셔도 됩니다",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "저장 안 된 번호. 프로필 사진은 강아지 뒤통수다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요. 승현입니다. 어머님께 번호 받았습니다."
+   },
+   {
+    "who": "them",
+    "text": "부담되시면 거절하셔도 됩니다."
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   },
+   {
+    "who": "them",
+    "text": "이 말을 제일 먼저 하고 싶었어요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "안녕하세요. 거절 안 할게요",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "seunghyun_contact"
+     ]
+    },
+    "reply": [
+     "다행이다.",
+     "아, 이건 속으로 할 말이었는데 보내 버렸네요."
+    ],
+    "critReply": [
+     "좋아요. 확실히 들었어요.",
+     "저도 좋아서 연락한 거예요. 엄마 핑계는 반만이에요."
+    ]
+   },
+   {
+    "text": "음… 네 ㅎㅎ 뭐 그래요",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "seunghyun_contact"
+     ]
+    },
+    "reply": [
+     "네. 그럼 편하실 때 연락 주세요.",
+     {
+      "who": "narr",
+      "text": "답장은 정확히 그 한 줄이었다. 온도가 없다."
+     }
+    ]
+   },
+   {
+    "text": "솔직히 엄마 등쌀에 받았어요. 그래도 반가워요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "seunghyun_contact"
+     ]
+    },
+    "reply": [
+     "저도요. 똑같이 엄마 등쌀이에요.",
+     "솔직하게 말해 줘서 좋네요. 출발선이 같아졌어요."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "승현: \"날짜는 제가 후보를 추려서 보낼게요. 고르는 건 그쪽이 해요.\""
+ },
+ {
+  "id": "seunghyun_r01",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "flags": [
+    "seunghyun_intro"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    5,
+    25
+   ]
+  },
+  "weight": 5,
+  "title": "후보 세 개",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "승현에게서 톡이 왔다. 인사는 한 줄, 용건은 세 줄이다."
+   },
+   {
+    "who": "them",
+    "text": "토요일 2시로 들었어요. 장소 후보 세 개 추렸어요."
+   },
+   {
+    "who": "them",
+    "text": "공원 옆 브런치 카페, 호수 산책로 입구, 전망대 카페."
+   },
+   {
+    "who": "them",
+    "text": "고르기 어려우면 네 번째 안도 만들어 올게요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "코스를 보고 하나 고른다",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "seunghyun_contact",
+      "seunghyun_texted"
+     ]
+    },
+    "minigame": "date_course",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "setFlags": [
+      "seunghyun_contact",
+      "seunghyun_texted"
+     ]
+    },
+    "reply": [
+     "좋아요. 확실히 적어 둘게요.",
+     "그날 제가 10분 먼저 가 있을게요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "고민하다 세 개를 전부 골랐다."
+     },
+     "…세 개 다요? 하루에요? 체력은 자신 있는데요."
+    ]
+   },
+   {
+    "text": "전망대 카페요. 경치 보느라 덜 떨릴 것 같아서요",
+    "require": {
+     "stats": {
+      "sense": 30
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "seunghyun_contact",
+      "seunghyun_texted"
+     ]
+    },
+    "reply": [
+     "솔직해서 좋네요.",
+     "그럼 저도 말할게요. 저도 떨려요."
+    ],
+    "critReply": [
+     "좋아요. 확실히.",
+     "…덜 떨리게 해 드리고 싶은데, 그건 자신이 없네요."
+    ]
+   },
+   {
+    "text": "아무 데나요. 그날 봐서 정해요",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "seunghyun_contact",
+      "seunghyun_texted"
+     ]
+    },
+    "reply": [
+     "알겠어요. 그럼 제가 정할게요.",
+     {
+      "who": "narr",
+      "text": "그 뒤로 승현의 답장에서 물음표가 사라졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "마지막 주 토요일이 캘린더에 들어갔다. 승현 이름 옆에 발바닥 이모티콘이 붙었다."
+ },
+ {
+  "id": "seunghyun_r02",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    27,
+    28
+   ],
+   "flags": [
+    "seunghyun_texted"
+   ]
+  },
+  "weight": 2,
+  "title": "첫 만남 3분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "약속 10분 전. 승현이 먼저 와 있다. 셔츠 소매에 강아지 털이 붙어 있다."
+   },
+   {
+    "who": "them",
+    "text": "일찍 오셨네요. 저는 오전 진료 끝나고 바로 왔어요."
+   },
+   {
+    "who": "them",
+    "text": "저도 엄마가 나가라 해서 나왔어요. 그래도 나오길 잘한 것 같아요."
+   },
+   {
+    "who": "narr",
+    "text": "첫 3분이 전부라고 태현이 말했다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "날씨 얘기",
+    "effects": {
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "seunghyun_met"
+     ]
+    },
+    "reply": [
+     "네. 산책하기 좋은 날이에요.",
+     {
+      "who": "narr",
+      "text": "승현이 눈을 맞췄다가 2초 뒤에 살짝 피했다. 할 말을 고르는 얼굴이다."
+     }
+    ]
+   },
+   {
+    "text": "소매에 털 붙었어요",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "seunghyun_met"
+     ]
+    },
+    "reply": [
+     "아. 오늘 아침에 수술한 골든 리트리버 거예요.",
+     "…떼고 올 걸 그랬네요. 첫인상인데."
+    ]
+   },
+   {
+    "text": "나오길 잘했다는 말, 저도 할게요",
+    "require": {
+     "stats": {
+      "talk": 35
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_met"
+     ]
+    },
+    "reply": [
+     "…먼저 말하려고 했는데 뺏겼네요.",
+     "좋아요. 확실히 기분 좋아요."
+    ],
+    "critReply": [
+     "그 말 오늘 제일 듣고 싶었던 거예요.",
+     "벌써 다음 약속 잡고 싶은데, 이상한가요?"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "seunghyun_r03",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     45
+    ]
+   },
+   "day": [
+    30,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "30분 전의 문자",
+  "lines": [
+   {
+    "who": "them",
+    "text": "정말 미안해요. 응급 수술이 잡혔어요."
+   },
+   {
+    "who": "them",
+    "text": "교통사고 난 강아지예요. 지금 들어가야 해요."
+   },
+   {
+    "who": "sys",
+    "wait": 30
+   },
+   {
+    "who": "them",
+    "text": "다른 날짜 세 개 보낼게요. 목요일 저녁, 토요일 오전, 일요일 오후."
+   }
+  ],
+  "choices": [
+   {
+    "text": "괜찮아요. 수술 잘 하세요",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": "고마워요. 끝나면 제일 먼저 연락할게요. 약속해요."
+   },
+   {
+    "text": "아… 네. 뭐 나중에 봐요",
+    "effects": {
+     "stats": {
+      "sense": -1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "나중에가 언제인지는 정해 두고 싶어요.",
+     "…수술 끝나고 다시 물어볼게요."
+    ]
+   },
+   {
+    "text": "토요일 오전이요. 끝나면 목소리만 들려줘요",
+    "effects": {
+     "stats": {
+      "charm": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "chance": 55,
+    "fail": {
+     "affection": {
+      "*": -4
+     },
+     "album": "수술 끝나길 기다리다 먼저 잠듦"
+    },
+    "reply": [
+     "토요일 오전. 확실히 적었어요.",
+     "…목소리 얘기는 반칙이에요. 들어가기 싫어지잖아요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "수술은 새벽 4시에 끝났다. 휴대폰을 쥔 채 먼저 잠들었다."
+     },
+     "미안해요. 이제 끝났어요. 기다리게 한 거죠?"
+    ],
+    "critReply": [
+     "좋아요. 확실히.",
+     "나오면 바로 걸게요. 그 생각으로 버틸게요."
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "seunghyun_r04",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    30,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "제가 먼저 말할게요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "두 번째 만남. 브런치 접시가 비자 승현이 포크를 내려놓았다."
+   },
+   {
+    "who": "them",
+    "text": "제가 먼저 말할게요. 1년 전에 파혼했어요."
+   },
+   {
+    "who": "them",
+    "text": "나중에 알게 되면 공정하지 않으니까요."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "듣고 불편하면 오늘로 끝내도 괜찮아요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "말없이 표정을 살핀다",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "seunghyun_past"
+     ]
+    },
+    "minigame": "read_emotion",
+    "fail": {
+     "stats": {
+      "talk": -1
+     },
+     "setFlags": [
+      "seunghyun_past"
+     ]
+    },
+    "reply": [
+     "…표정이 안 변하네요. 다행이에요.",
+     "궁금한 거 있으면 물어봐요. 다 대답할게요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "무슨 표정인지 읽기 전에 눈을 피해 버렸다."
+     },
+     "…불편하죠. 괜찮아요. 그럴 수 있어요."
+    ]
+   },
+   {
+    "text": "먼저 말해 줘서 고마워요. 저도 하나 말할게요",
+    "require": {
+     "stats": {
+      "esteem": 38
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3,
+      "esteem": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_past"
+     ]
+    },
+    "reply": [
+     "네. 들을게요.",
+     "…이렇게 받아 준 사람 처음이에요. 확실히 기억할게요."
+    ],
+    "critReply": [
+     "먼저 말한 보람이 있네요.",
+     "오늘 즐거웠어요. 진짜로. 다음 약속 잡아도 될까요?"
+    ]
+   },
+   {
+    "text": "왜 파혼했는데요?",
+    "effects": {
+     "stats": {
+      "stress": 5
+     },
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "seunghyun_past"
+     ]
+    },
+    "reply": [
+     "…\"너는 너무 확실해서 숨이 막혀.\" 그 말을 들었어요.",
+     "오늘은 거기까지만 할게요."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "헤어지기 전, 승현은 역시 다음 약속부터 물었다. \"괜찮은지 먼저 물어볼게요.\""
+ },
+ {
+  "id": "seunghyun_r05",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    30,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "보호견 산책",
+  "lines": [
+   {
+    "who": "them",
+    "text": "이번 주말에 병원 보호견 산책 봉사가 있어요."
+   },
+   {
+    "who": "them",
+    "text": "같이 갈래요? 데이트라고 불러도 되면 데이트로요."
+   },
+   {
+    "who": "narr",
+    "text": "보호견 셋, 리드 줄 셋. 손은 둘."
+   }
+  ],
+  "choices": [
+   {
+    "text": "걷기 좋은 옷으로 맞춰 입고 간다",
+    "effects": {
+     "stats": {
+      "money": -20
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "minigame": "outfit",
+    "fail": {
+     "stats": {
+      "money": -20,
+      "stress": 6
+     }
+    },
+    "reply": "좋아요. 신발 보자마자 알았어요. 제대로 걸을 사람이구나.",
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "흰 바지를 입고 갔다. 진돗개 보리가 제일 먼저 알아봤다."
+     },
+     "…괜찮아요? 병원에 여벌 수술복 있어요. 진짜로."
+    ]
+   },
+   {
+    "text": "보호견 간식이랑 배변 봉투를 챙겨 간다",
+    "require": {
+     "stats": {
+      "sense": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "money": -40,
+      "sense": 3
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     }
+    },
+    "reply": [
+     "…이건 봉사 다녀 본 사람 가방인데요.",
+     "좋아요. 확실히 반했어요. 아, 가방한테요."
+    ],
+    "critReply": [
+     "간식 성분표까지 보고 샀어요?",
+     "…오늘 좀 많이 설레도 되는 거죠. 저는 이미 그래요."
+    ]
+   },
+   {
+    "text": "끝나고 호텔 브런치를 예약해 둔다",
+    "effects": {
+     "stats": {
+      "money": -180
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": -2
+     },
+     "album": "봉사 끝나고 호텔 브런치 영수증"
+    },
+    "reply": [
+     "고마워요. 맛있었어요. 진짜로.",
+     "…근데 다음엔 공원 벤치도 좋아요. 그게 더 오래 앉아 있게 돼요."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "seunghyun_r06",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    31,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "손 잡아도 돼요?",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "산책로 끝. 가로등이 켜졌다. 승현이 걸음을 늦췄다."
+   },
+   {
+    "who": "them",
+    "text": "하나 물어봐도 돼요?"
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   },
+   {
+    "who": "them",
+    "text": "손 잡아도 돼요? 싫으면 싫다고 해도 돼요. 진짜로."
+   }
+  ],
+  "choices": [
+   {
+    "text": "대답 대신 손을 내민다",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_asked"
+     ]
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "sense": -1
+     },
+     "setFlags": [
+      "seunghyun_asked"
+     ]
+    },
+    "reply": [
+     "…좋아요. 확실히.",
+     {
+      "who": "narr",
+      "text": "승현의 손은 따뜻했다. 손등에 고양이 발톱 자국이 있었다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "손을 내밀려다 휴대폰을 떨어뜨렸다."
+     },
+     "괜찮아요. 대답은 다음에 해도 돼요. 물어본 걸로 충분해요."
+    ]
+   },
+   {
+    "text": "아직은요. 근데 물어봐 줘서 좋아요",
+    "require": {
+     "stats": {
+      "esteem": 42
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_asked"
+     ]
+    },
+    "reply": [
+     "알겠어요. 물어봐서 다행이다.",
+     "다음에 또 물어볼게요. 그때도 대답은 그쪽 거예요."
+    ],
+    "critReply": [
+     "…그 대답이 제일 좋네요. 진짜로.",
+     "물어봐서 다행이다. 오늘 제일 잘한 일이에요."
+    ]
+   },
+   {
+    "text": "그런 걸 왜 물어봐요. 그냥 잡지",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     },
+     "setFlags": [
+      "seunghyun_asked"
+     ]
+    },
+    "reply": [
+     "…물어보는 게 저한텐 중요해서요.",
+     {
+      "who": "narr",
+      "text": "승현이 손을 주머니에 넣었다. 산책은 조금 일찍 끝났다."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "집에 오니 톡이 와 있었다. \"오늘 즐거웠어요. 진짜로. 다음 약속 잡아도 될까요?\""
+ },
+ {
+  "id": "seunghyun_r07",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    36,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "새벽 3시, 한 줄",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 3시 7분. 알림이 한 번 울렸다."
+   },
+   {
+    "who": "them",
+    "text": "살렸어요."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "…아, 미안해요. 자는 시간인데. 제일 먼저 말하고 싶어서요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "바로 답한다",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "reply": [
+     "안 자고 있었어요? 다행이다.",
+     "여섯 시간 걸렸어요. 코기예요. 이름은 콩이."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "알림을 본 건 아침 7시였다."
+     },
+     "잘 잤어요? 콩이도 잘 잤어요. 아, 어제 그 코기요."
+    ]
+   },
+   {
+    "text": "병원 앞으로 따뜻한 거 배달 보낼게요",
+    "require": {
+     "stats": {
+      "sense": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "money": -18
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "reply": [
+     "…진짜요? 이 시간에?",
+     "좋아요. 확실히 받을게요. 오늘은 이걸로 버틸게요."
+    ],
+    "critReply": [
+     "…방금 간호사 선생님이 누구냐고 물어봤어요.",
+     "좋아하는 사람이라고 했어요. 확실하게."
+    ]
+   },
+   {
+    "text": "수고했어요. 얼른 자요",
+    "effects": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": "네. 그쪽도 푹 자요. 깨워서 미안해요."
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "아침 8시, 사진 한 장이 와 있었다. 붕대 감은 코기가 담요 위에서 자고 있다."
+ },
+ {
+  "id": "seunghyun_r08",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "jeongwoo": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    40,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "두 엄마의 전화",
+  "lines": [
+   {
+    "who": "them",
+    "text": "너 그 수의사 선생님이랑 어떻게 돼 가니",
+    "name": "엄마"
+   },
+   {
+    "who": "them",
+    "text": "아주머니가 벌써 날을 잡자고 하셔. 너는 어떤데",
+    "name": "엄마"
+   },
+   {
+    "who": "narr",
+    "text": "같은 시각, 승현도 같은 전화를 받고 있을 것이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그냥 만나는 중이야",
+    "effects": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그냥이 뭐야 그냥이. 확실히 좀 말해 봐",
+      "name": "엄마"
+     },
+     "저희 엄마도 방금 전화하셨어요. 제가 먼저 정리할게요."
+    ]
+   },
+   {
+    "text": "승현에게 먼저 전화한다",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "talk": -1,
+      "stress": 5
+     }
+    },
+    "reply": [
+     "받았어요? 저도요.",
+     "\"저희 속도는 저희가 정할게요, 어머니.\" 방금 그렇게 말했어요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "동시에 전화를 걸어 서로 통화 중만 두 번 떴다."
+     },
+     "통화 중이던데… 어머님이죠? 저도 방금 끊었어요."
+    ],
+    "critReply": [
+     "엄마한테 말했어요. 우리 속도는 우리가 정한다고요.",
+     "…우리라고 해도 됐죠? 확실히 하고 싶어서요."
+    ]
+   },
+   {
+    "text": "거의 사귄다고 부풀려 말한다",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -4
+     },
+     "album": "엄마한테 부풀린 말이 승현 귀에 들어감"
+    },
+    "reply": [
+     "어머님 말씀 들었어요. 저희 거의 사귄다고요.",
+     "…그건 제가 직접 묻고 싶었던 말이에요.",
+     {
+      "who": "narr",
+      "text": "그 뒤로 한참 답장이 없었다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "seunghyun_r09",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     60
+    ],
+    "haneul": [
+     0,
+     60
+    ],
+    "jiwoo": [
+     0,
+     60
+    ],
+    "minjae": [
+     0,
+     60
+    ],
+    "yeeun": [
+     0,
+     60
+    ],
+    "jeongwoo": [
+     0,
+     60
+    ],
+    "daeun": [
+     0,
+     60
+    ],
+    "sohee": [
+     0,
+     60
+    ],
+    "geonwoo": [
+     0,
+     60
+    ]
+   },
+   "day": [
+    46,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "브레이크",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "요즘 승현의 답장이 한 박자 늦다. 다음 약속도 먼저 묻지 않는다."
+   },
+   {
+    "who": "them",
+    "text": "요즘 제가 연락 덜 하죠."
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "제가 너무 빠른가 싶어서요. 예전에 그 말을 들은 적이 있어서."
+   }
+  ],
+  "choices": [
+   {
+    "text": "무슨 말이요?",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_brake"
+     ]
+    },
+    "reply": [
+     "\"너는 너무 확실해서 숨이 막혀.\" 그 사람이 마지막에 한 말이에요.",
+     "…그 뒤로 브레이크 밟는 연습을 했어요."
+    ]
+   },
+   {
+    "text": "저 숨 안 막혀요. 오히려 편해요",
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "esteem": 2
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "seunghyun_brake"
+     ]
+    },
+    "reply": [
+     "…진짜요?",
+     "그 말 확실히 믿어도 돼요? 믿으면 저 또 달려요."
+    ],
+    "critReply": [
+     "…",
+     "브레이크 밟던 발이 좀 풀리네요.",
+     "고마워요. 진짜로."
+    ]
+   },
+   {
+    "text": "싫으면 제가 말할게요. 그 전엔 걱정 말아요",
+    "require": {
+     "stats": {
+      "talk": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "seunghyun_brake"
+     ]
+    },
+    "reply": "…그런 말은 반칙이에요. 브레이크를 어디 둬야 할지 모르겠잖아요."
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤, 승현의 대화창에 \"입력 중…\"이 떴다가 사라졌다. 세 번."
+ },
+ {
+  "id": "seunghyun_r10",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     60
+    ],
+    "haneul": [
+     0,
+     60
+    ],
+    "jiwoo": [
+     0,
+     60
+    ],
+    "minjae": [
+     0,
+     60
+    ],
+    "yeeun": [
+     0,
+     60
+    ],
+    "jeongwoo": [
+     0,
+     60
+    ],
+    "daeun": [
+     0,
+     60
+    ],
+    "sohee": [
+     0,
+     60
+    ],
+    "geonwoo": [
+     0,
+     60
+    ]
+   },
+   "day": [
+    56,
+    100
+   ],
+   "flags": [
+    "seunghyun_brake"
+   ]
+  },
+  "weight": 2,
+  "title": "속도 얘기",
+  "lines": [
+   {
+    "who": "them",
+    "text": "지난번 얘기, 계속 생각했어요."
+   },
+   {
+    "who": "them",
+    "text": "제 속도 말고 그쪽 속도를 알고 싶어요."
+   },
+   {
+    "who": "them",
+    "text": "빠르면 빠르다고, 느리면 느리다고. 말해 줄래요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "지금 속도 좋아요. 그대로 와요",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "seunghyun_pace"
+     ]
+    },
+    "reply": [
+     "…그대로요?",
+     "좋아요. 확실히 들었어요. 이제 브레이크 안 밟을게요."
+    ]
+   },
+   {
+    "text": "저는 좀 천천히요. 대신 멈추진 말아요",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "seunghyun_pace"
+     ]
+    },
+    "reply": "알겠어요. 천천히, 멈추지 않고. …그 말이 제일 고마워요."
+   },
+   {
+    "text": "우리 말 놓을래요? 그게 제 속도예요",
+    "require": {
+     "stats": {
+      "sense": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 10
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "seunghyun_pace"
+     ]
+    },
+    "reply": [
+     "좋아요. …좋아.",
+     "어색하다. 근데 확실히 좋아. 한동안은 섞여도 봐줘요."
+    ],
+    "critReply": [
+     "좋아요. …좋아.",
+     "방금 거 녹음해 둘 걸 그랬다. 첫 반말이야."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "승현이 메모장 한 줄을 캡처해 보냈다. \"속도: 같이 정함.\""
+ },
+ {
+  "id": "seunghyun_r11",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    66,
+    100
+   ],
+   "flags": [
+    "seunghyun_past"
+   ]
+  },
+  "weight": 2,
+  "title": "그 사람이 왔어요",
+  "lines": [
+   {
+    "who": "them",
+    "text": "오늘 병원에 그 사람이 왔어요. 반려견 예방접종으로요."
+   },
+   {
+    "who": "them",
+    "text": "우연이었어요. 진료는 다른 선생님이 봤고요."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "숨길 이유가 없어서 바로 말하는 거예요. 기분이 어떤지 말해 줄래요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "말해 줘서 고마워요",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": "고마운 건 저예요. 그날 바로 말할 수 있는 사람이 있어서요."
+   },
+   {
+    "text": "솔직히 좀 질투 나요. 말해도 되죠?",
+    "require": {
+     "stats": {
+      "talk": 52
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "reply": [
+     "…네. 확실히 말해 줘서 좋아요.",
+     "그 질투는 제가 받을게요. 제가 더 확실하게 할게요."
+    ],
+    "critReply": [
+     "…질투한다는 말이 이렇게 좋은 줄 몰랐어요.",
+     "지금 가도 될까요? 얼굴 보고 말하고 싶어요."
+    ]
+   },
+   {
+    "text": "뭐 그럴 수도 있죠. 신경 안 써요",
+    "effects": {
+     "stats": {
+      "sense": -1
+     },
+     "affection": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "…정말 괜찮은 거면 다행이에요.",
+     "근데 괜찮은 척이면, 그건 좀 쓸쓸하네요."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "seunghyun_r12",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    81,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "같이 가고 싶은 곳 23",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "야경 카페를 나서자 승현이 휴대폰 메모장을 내밀었다."
+   },
+   {
+    "who": "them",
+    "text": "'같이 가고 싶은 곳.' 두 번째 만난 날부터 적었어요."
+   },
+   {
+    "who": "them",
+    "text": "스물세 개. 하나도 안 지웠어요. 방금 한 줄 그었고요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "처음 적은 게 뭐예요?",
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "1번. 보호견 산책. 적고 나서 좀 웃었어요.",
+     "그땐 같이 갈 수 있을지 확실하지 않았거든요."
+    ]
+   },
+   {
+    "text": "저도 목록 만들래요. 24번부터 제가 쓸게요",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "chance": 65,
+    "fail": {
+     "stats": {
+      "charm": -1,
+      "esteem": -1
+     }
+    },
+    "reply": [
+     "…좋아요. 확실히.",
+     "24번 뭐 쓸 거예요? 벌써 궁금해서 큰일이에요."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "24번 칸에 '아무 데나'라고 쳤다가 황급히 지웠다."
+     },
+     "…방금 그거 봤어요. 아무 데나는 목록에 못 넣어요."
+    ],
+    "critReply": [
+     "…그 말 기다렸어요. 스물세 개 적는 내내.",
+     "24번은 같이 정해요. 오늘 밤 안에."
+    ]
+   },
+   {
+    "text": "저랑 갈 곳이 스물세 개밖에 안 돼요?",
+    "require": {
+     "stats": {
+      "esteem": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "reply": "…이건 1차 목록이에요. 2차는 부끄러워서 아직 못 보여 줘요."
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "메모장 맨 아래에 새 줄이 생겼다. \"24. 정하는 중.\""
+ },
+ {
+  "id": "seunghyun_r13",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "trust": {
+    "*": [
+     0,
+     49
+    ]
+   },
+   "day": [
+    30,
+    100
+   ],
+   "affection": {}
+  },
+  "weight": 2,
+  "title": "떠보는 문자",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 승현 씨가 너 진짜 좋아하는지 알고 싶지?",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "\"저 요즘 소개 하나 더 들어왔어요\" 이렇게 보내 봐. 반응 보면 딱 나와",
+    "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "입력창에 태현이 불러 준 문장이 그대로 들어가 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "지우고 평소처럼 \"뭐 해요?\"",
+    "effects": {
+     "stats": {
+      "stress": 8
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "저녁 진료 끝나고 정리 중이에요. 그쪽은요?",
+     {
+      "who": "narr",
+      "text": "태현에게서 \"겁쟁이\" 톡이 세 번 더 왔다."
+     }
+    ]
+   },
+   {
+    "text": "지우고 \"보고 싶어서 연락했어요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…좋아요. 확실히 기분 좋아요.",
+     "저도 보고 싶었어요. 먼저 말해 줘서 고마워요."
+    ]
+   },
+   {
+    "text": "그대로 보낸다",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "trust": {
+      "*": -5
+     },
+     "album": "태현 코치대로 떠보는 문자 발송"
+    },
+    "reply": [
+     "떠보신 거면, 확실하게 말할게요. 좋아해요.",
+     "그러니까 떠볼 필요 없어요.",
+     "…다음엔 그냥 물어봐 줘요. 이런 건 좀 쓸쓸해요."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "seunghyun_r14",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    41,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "간호사의 증언",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "병원에 들른 날, 접수대 간호사가 슬쩍 말을 걸었다."
+   },
+   {
+    "who": "them",
+    "text": "혹시 부원장님이 말한 그분이세요?",
+    "name": "간호사"
+   },
+   {
+    "who": "them",
+    "text": "부원장님 요즘 퇴근을 칼같이 하세요. 1년 내내 야근만 하던 분이.",
+    "name": "간호사"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "…아, 이거 말하면 안 되는 거였나",
+    "name": "간호사"
+   }
+  ],
+  "choices": [
+   {
+    "text": "저 때문인지는 몰라도, 좋은 일이네요",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그분 맞네요 ㅎㅎ",
+      "name": "간호사"
+     },
+     "…간호사 선생님이 뭐라고 했어요? 표정이 이상한데요."
+    ]
+   },
+   {
+    "text": "그 전엔 왜 야근만 했대요?",
+    "effects": {
+     "stats": {
+      "esteem": -2
+     },
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "아… 그건 제가 말할 게 아니라서요",
+      "name": "간호사"
+     },
+     "뭐 물어봤어요? 궁금한 건 저한테 직접 물어봐도 돼요."
+    ]
+   },
+   {
+    "text": "그 얘기, 승현 씨한테 직접 들을게요",
+    "require": {
+     "stats": {
+      "talk": 48
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "오 멋있다. 저 방금 반했어요 ㅋㅋ",
+      "name": "간호사"
+     },
+     "…들었어요. 칼퇴 얘기. 맞아요. 이유도 확실히 있어요."
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "seunghyun_r15",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     40,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "jeongwoo": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    86,
+    100
+   ],
+   "flags": [
+    "seunghyun_pace"
+   ]
+  },
+  "weight": 2,
+  "title": "브레이크 없이",
+  "lines": [
+   {
+    "who": "them",
+    "text": "오늘은 제가 먼저 말할게요."
+   },
+   {
+    "who": "them",
+    "text": "이번엔 브레이크 안 걸게요. 대신 당신 속도로 갈게요."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "…사귈래요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네. 사귀어요",
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "좋아요. 확실히.",
+     "…오늘 즐거웠어요. 진짜로. 앞으로 백 번은 더 말할게요."
+    ]
+   },
+   {
+    "text": "대답 전에 하나만요. 좋아해요",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 3
+     },
+     "affection": {
+      "*": 8
+     }
+    },
+    "reply": [
+     "…먼저 말하는 건 제 몫이었는데.",
+     "좋아해요. 저도. 확실히."
+    ],
+    "critReply": [
+     "…방금 심장 소리 들렸죠.",
+     "좋아해요. 이건 처음부터 확실했어요."
+    ]
+   },
+   {
+    "text": "네. 그리고 메모장 24번, 지금 가요",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "money": -60
+     },
+     "affection": {
+      "*": 9
+     },
+     "trust": {
+      "*": 8
+     }
+    },
+    "reply": [
+     "지금요? 좋아요. …좋아.",
+     "산책 줄은 제가 챙길게요. 보리도 데려갈까요?"
+    ],
+    "critReply": [
+     "…이 대답을 스물세 번쯤 상상했어요.",
+     "상상보다 확실하네요. 지금 갈게요."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_seunghyun_photo_kitten",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     10,
+     35
+    ]
+   },
+   "day": [
+    8,
+    100
+   ],
+   "flags": [
+    "seunghyun_intro"
+   ]
+  },
+  "weight": 3,
+  "title": "이름 지어 줄래요?",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "점심시간. 승현이 사진을 보냈다."
+   },
+   {
+    "who": "them",
+    "photo": {
+     "icon": "pet",
+     "caption": "담요 속 새끼 고양이 셋"
+    },
+    "text": "오늘 입원한 아이들이에요."
+   },
+   {
+    "who": "them",
+    "text": "구조된 지 이틀 됐어요."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "이름 지어 줄래요? 셋 다요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "호떡, 붕어빵, 군밤",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "chance": 70,
+    "fail": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…전부 겨울 간식이네요.",
+     "좋아요. 확실히 기억에 남아요. 차트에 그대로 적을게요."
+    ],
+    "failReply": [
+     "…셋째가 군밤이면 좀 서운해할 것 같은데요.",
+     "다시 생각해 줘요. 내일까지 기다릴게요."
+    ],
+    "critReply": [
+     "방금 간호사 선생님이 웃다가 사레들렸어요.",
+     "호떡, 붕어빵, 군밤. 차트에 확실히 적었어요."
+    ]
+   },
+   {
+    "text": "승현 씨 목소리 올라간 거 여기까지 들려요",
+    "require": {
+     "stats": {
+      "charm": 30
+     }
+    },
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…사진인데 어떻게 알았어요.",
+     "맞아요. 두 단계쯤 올라가 있어요. 비밀로 해 줘요."
+    ]
+   },
+   {
+    "text": "둘은 승현 씨가 지어요. 저는 제일 작은 애만",
+    "effects": {
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": "좋아요. 제일 작은 애는 그쪽 담당이에요. 오늘 안에 알려 줘요."
+   },
+   {
+    "text": "아이들 상태는 괜찮아요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "네. 셋 다 우유 잘 먹어요.",
+     "…그걸 먼저 물어봐 줘서 고마워요."
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "mo_seunghyun_preview_sure",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     25,
+     55
+    ]
+   },
+   "day": [
+    30,
+    100
+   ],
+   "flags": [
+    "seunghyun_intro"
+   ]
+  },
+  "weight": 3,
+  "title": "확실히 해 두고 싶어서요",
+  "preview": "오늘 한 말, 확실히 해 두고 싶어서요.",
+  "lines": [
+   {
+    "who": "them",
+    "text": "오늘 한 말, 확실히 해 두고 싶어서요."
+   },
+   {
+    "who": "them",
+    "text": "헤어질 때 제가 \"또 봬요\"라고 했잖아요."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "그거 인사 아니었어요. 약속이었어요."
+   },
+   {
+    "who": "them",
+    "text": "다음 주 토요일 어때요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "토요일 좋아요. 저도 약속으로 들었어요",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "좋아요. 확실히.",
+     "토요일 11시. 이번엔 제가 기다리는 쪽 할게요."
+    ]
+   },
+   {
+    "text": "그럼 저도 확실히 할게요. 오늘 즐거웠어요",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…그거 제 대사인데요.",
+     "좋아요. 뺏긴 걸로 할게요. 대신 토요일엔 제가 먼저 말할게요."
+    ]
+   },
+   {
+    "text": "확실한 거 좋아하시네요. 계약서 쓸까요?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "…도장은 발바닥으로 찍어도 돼요?",
+     "좋아요. 확실히 웃었어요."
+    ],
+    "failReply": [
+     "…농담인 거 알아요. 근데 좀 부끄러워졌어요.",
+     "제가 너무 앞서갔나 봐요."
+    ],
+    "critReply": [
+     "계약 조건: 매주 토요일. 위약금은 산책 한 번.",
+     "…방금 병원에서 혼자 웃었어요."
+    ]
+   },
+   {
+    "text": "토요일은 확인해 보고 말해 줄게요",
+    "effects": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": "네. 확인되면 말해 줘요. 기다리는 거 잘해요."
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_seunghyun_call_surgery",
+  "layer": "route",
+  "character": "seunghyun",
+  "format": "call",
+  "trigger": {
+   "affection": {
+    "*": [
+     40,
+     70
+    ]
+   },
+   "day": [
+    32,
+    100
+   ],
+   "flags": [
+    "seunghyun_intro"
+   ]
+  },
+  "weight": 4,
+  "title": "수술 끝난 새벽",
+  "lines": [
+   {
+    "who": "them",
+    "text": "…받았네요."
+   },
+   {
+    "who": "them",
+    "text": "방금 수술 끝났어요. 새벽 3시예요."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "목소리 한 번만 듣고 잘게요."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "…뭐든 괜찮아요. 오늘 있었던 일이라도."
+   }
+  ],
+  "choices": [
+   {
+    "text": "거절",
+    "decline": true,
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "부재중 전화 1통."
+     },
+     "알겠어요. 푹 자요.",
+     "깨웠으면 미안해요. 내일 연락할게요."
+    ]
+   },
+   {
+    "text": "오늘 있었던 일 하나씩 말해요. 저부터",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "stress": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…좋아요. 계속 말해 줘요.",
+     "목소리 들으니까 손 떨리던 게 멈췄어요."
+    ],
+    "failReply": [
+     "아, 또 동시에 말했다.",
+     "…괜찮아요. 목소리 들었으니까 됐어요. 잘게요."
+    ],
+    "critReply": [
+     "…방금 대기실에서 혼자 웃었어요.",
+     "잠이 다 깼어요. 이건 그쪽 책임이에요. 확실히."
+    ]
+   },
+   {
+    "text": "기다렸어요. 끝나면 걸 것 같아서",
+    "require": {
+     "stats": {
+      "charm": 40
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…기다렸다고요?",
+     "좋아요. 확실히 들었어요. 다음에도 걸어도 될까요?"
+    ]
+   },
+   {
+    "text": "집에 가서 씻고 바로 자요. 도착하면 톡 하고요",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "네. 도착하면 보낼게요.",
+     "…이런 말 들으니까 집에 가고 싶어지네요."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "새벽 3시 40분, 승현의 톡이 왔다. \"집이에요. 내일 봬요.\""
+ },
+ {
+  "id": "mo_seunghyun_photo_list",
+  "layer": "route",
+  "character": "seunghyun",
+  "trigger": {
+   "affection": {
+    "*": [
+     60,
+     100
+    ]
+   },
+   "day": [
+    60,
+    100
+   ],
+   "flags": [
+    "seunghyun_intro"
+   ]
+  },
+  "weight": 4,
+  "title": "하나 골라 줘요",
+  "lines": [
+   {
+    "who": "them",
+    "photo": {
+     "icon": "book",
+     "caption": "메모장 '같이 가고 싶은 곳 23'"
+    },
+    "text": "제 메모장이에요."
+   },
+   {
+    "who": "them",
+    "text": "하나 골라 줘요. 이번 주에 갈게요."
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "…몇 개는 좀 부끄러운 것도 있어요. 그건 못 본 척해 줘요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "목록을 보고 코스를 짠다",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "minigame": "date_course",
+    "fail": {
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "좋아요. 확실히.",
+     "7번이랑 15번을 한 번에 묶을 줄은 몰랐어요. 토요일에 가요."
+    ],
+    "failReply": [
+     "…세 곳을 하루에요? 좋아요. 대신 운동화 신고 와요.",
+     "마지막 한 곳은 다음 주로 미뤄요."
+    ],
+    "critReply": [
+     "…이 코스, 제가 짠 것보다 좋네요.",
+     "메모장에 한 줄 추가했어요. \"이 사람이 짠 코스.\""
+    ]
+   },
+   {
+    "text": "부끄러운 거 어떤 거요? 그거 할래요",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…19번이요. 비 오는 날 우산 하나.",
+     "확실히 말했으니까 이제 비 오길 기다릴게요."
+    ]
+   },
+   {
+    "text": "스물세 곳 다 가요. 하나씩, 천천히",
+    "require": {
+     "stats": {
+      "sincerity": 40
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…다요?",
+     "좋아요. 천천히. 그 말이 제일 좋네요."
+    ]
+   },
+   {
+    "text": "아무 데나 좋아요",
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…아무 데나는 목록에 없어요.",
+     "고르기 싫으면 싫다고 해도 돼요. 그게 더 좋아요."
+    ]
+   }
+  ],
+  "hint": 2
+ }
+]

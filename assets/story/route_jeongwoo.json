@@ -1,0 +1,2841 @@
+[
+ {
+  "id": "jeongwoo_r00",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     15
+    ]
+   },
+   "day": [
+    1,
+    100
+   ],
+   "notFlags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 5,
+  "title": "회비 공지와 개인톡",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리 신입 단톡. 공지가 하나 올라왔다."
+   },
+   {
+    "who": "them",
+    "text": "[공지] 이번 학기 회비는 2만 원입니다. 이달 말일까지 총무에게 입금 바랍니다. 질문은 개인톡으로. — 회장 정우"
+   },
+   {
+    "who": "narr",
+    "text": "1분 뒤, 개인톡 알림이 떴다."
+   },
+   {
+    "who": "them",
+    "text": "아까 공지 딱딱했지. 하하. 반가워."
+   },
+   {
+    "who": "sys",
+    "wait": 6
+   }
+  ],
+  "choices": [
+   {
+    "text": "반가워요! 회비는 오늘 보낼게요",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "reputation": -2
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ],
+     "album": "회비 답장을 신입 단톡에 올림"
+    },
+    "reply": [
+     "하하. 급한 거 아니야.",
+     "천천히 해. 모르는 건 여기로 물어봐."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "답장이 단톡방으로 갔다. '회비 오늘 보낼게요!'"
+     },
+     "하하. 괜찮아. 총무가 제일 좋아하겠다."
+    ]
+   },
+   {
+    "text": "공지보다 개인톡이 더 딱딱한데요?",
+    "require": {
+     "stats": {
+      "esteem": 20
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "reply": [
+     "…그래?",
+     "다시 해 볼게.",
+     "반가워!"
+    ]
+   },
+   {
+    "text": "신입한테 전부 이렇게 보내세요?",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "reply": [
+     "응. 신입 전원한테 보냈어.",
+     "회장이 할 일이라서."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "정우 선배의 프로필 사진은 열쇠 꾸러미 한 장이다. 상태 메시지는 비어 있다."
+ },
+ {
+  "id": "jeongwoo_r01",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    3,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "여섯 문단짜리 개인톡",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "정우 선배에게서 개인톡이 왔다. 스크롤이 끝나지 않는다."
+   },
+   {
+    "who": "them",
+    "text": "동아리 소개를 제대로 못 한 것 같아서. 첫째, 모임은 매주 목요일 저녁 7시. 둘째, 발표회는 한 학기에 두 번."
+   },
+   {
+    "who": "narr",
+    "text": "문단이 여섯 개다. 넷째 문단은 비상 연락망이다."
+   },
+   {
+    "who": "them",
+    "text": "여섯째. 모르는 게 있으면 언제든 물어봐. 이상."
+   },
+   {
+    "who": "sys",
+    "wait": 10
+   }
+  ],
+  "choices": [
+   {
+    "text": "끝까지 다 읽고 답한다",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "reply": [
+     "다 읽었어? 하하.",
+     "사실 쓰는 데 40분 걸렸어. 이건 비밀."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "넷째 문단쯤에서 잠들었다. 답장은 아침에 갔다."
+     },
+     "괜찮아. 길었지. 여섯째 문단만 기억해 줘."
+    ]
+   },
+   {
+    "text": "세 줄 요약 부탁드려도 돼요?",
+    "require": {
+     "stats": {
+      "esteem": 25
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "reply": [
+     "목요일 7시. 회비 2만 원. 모르면 나한테.",
+     "…세 줄이 되네. 여섯 문단은 왜 썼지."
+    ],
+    "critReply": [
+     "목요일. 7시. 나한테 물어봐.",
+     "…줄여 보니까 마지막 게 제일 중요하네. 하하."
+    ]
+   },
+   {
+    "text": "이모티콘 하나만 보낸다",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "jeongwoo_met"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "엄지 든 토끼 이모티콘을 보냈다."
+     },
+     "…응.",
+     "읽었으면 됐어."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "jeongwoo_r02",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    6,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "발표 준비",
+  "lines": [
+   {
+    "who": "them",
+    "text": "발표 자료 다 됐어?"
+   },
+   {
+    "who": "me",
+    "text": "아직요…"
+   },
+   {
+    "who": "them",
+    "text": "가져와. 봐줄게."
+   },
+   {
+    "who": "them",
+    "text": "커피는 됐어, 내가 살게."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그래도 커피는 제가 살게요",
+    "effects": {
+     "stats": {
+      "money": -6
+     },
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "jeongwoo_presentation"
+     ]
+    },
+    "reply": [
+     "그럼 따뜻한 거. 제일 작은 걸로.",
+     "대신 너는 밥부터 먹고 와. 밥은?"
+    ]
+   },
+   {
+    "text": "그럼 다음엔 제가 살게요. 약속이에요",
+    "require": {
+     "stats": {
+      "esteem": 25
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_presentation"
+     ]
+    },
+    "reply": [
+     "…약속까지 해?",
+     "알았어. 다음 거 기다릴게."
+    ],
+    "critReply": [
+     "…약속은 지켜야 되는 거 알지.",
+     "달력에 적었어. 방금."
+    ]
+   },
+   {
+    "text": "죄송해요, 아직 한 장도 없어요",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "jeongwoo_presentation"
+     ],
+     "album": "발표 이틀 전 빈 슬라이드 공개"
+    },
+    "reply": [
+     "…한 장도?",
+     "그럼 오늘 밤은 길겠다. 파일부터 보내."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "jeongwoo_r03",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    11,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_presentation"
+   ]
+  },
+  "weight": 3,
+  "title": "방금 거 취소",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "발표가 끝난 밤. 동아리 SNS에 발표 사진이 올라왔다."
+   },
+   {
+    "who": "them",
+    "text": "오늘 발표 잘했어. 준비한 게 보였어."
+   },
+   {
+    "who": "them",
+    "text": "귀엽다."
+   },
+   {
+    "who": "sys",
+    "wait": 30
+   },
+   {
+    "who": "them",
+    "text": "방금 거 취소."
+   },
+   {
+    "who": "them",
+    "text": "취소가 안 되네. 하하."
+   }
+  ],
+  "choices": [
+   {
+    "text": "(못 본 척) 감사해요! 선배 덕분이에요",
+    "effects": {
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "응. 수고했어.",
+     {
+      "who": "narr",
+      "text": "'귀엽다.' 아래에 읽음 표시만 남았다."
+     }
+    ]
+   },
+   {
+    "text": "캡처했어요. 취소 안 돼요",
+    "require": {
+     "stats": {
+      "esteem": 40
+     }
+    },
+    "chance": 75,
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "reply": [
+     "…그건 반칙인데.",
+     "알았어. 취소 안 할게."
+    ],
+    "critReply": [
+     "…하하. 캡처까지.",
+     "그럼 그냥 둘게. 틀린 말도 아니라서."
+    ],
+    "failReply": [
+     "…아, 포스터 얘기였어.",
+     "발표 포스터. 곰 그려진 거. 그게 귀엽다고."
+    ]
+   },
+   {
+    "text": "뭐가 귀여운데요?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "reply": [
+     "…발표할 때 손 떨던 거.",
+     "아니, 이것도 취소."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "답장을 썼다 지웠다 하다 20분이 지났다."
+     },
+     "…자는구나. 잘 자."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤 정우 선배 쪽 '입력 중…'이 세 번 떴다가 사라졌다."
+ },
+ {
+  "id": "jeongwoo_r04",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    16,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "우산 두 개",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "갑자기 비가 쏟아졌다. 우산이 없다."
+   },
+   {
+    "who": "narr",
+    "text": "동아리방 우산꽂이에 우산이 두 개. 하나에 이름표가 붙어 있다. 내 이름이다."
+   },
+   {
+    "who": "me",
+    "text": "선배, 우산에 제 이름이 붙어 있는데요?"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "아. 그거. 남는 거야."
+   }
+  ],
+  "choices": [
+   {
+    "text": "잘 쓸게요. 내일 돌려드릴게요",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "안 돌려줘도 돼. 원래 네 거야.",
+     "…남는 거라니까."
+    ]
+   },
+   {
+    "text": "선배는요? 선배 우산은 있어요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "응. 하나 더 있어. 늘 있어.",
+     "도착하면 말해 줘."
+    ]
+   },
+   {
+    "text": "이름표 글씨, 공지 글씨랑 똑같던데요",
+    "require": {
+     "stats": {
+      "sense": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…들켰네.",
+     "도착하면 말해 줘. 그건 꼭."
+    ],
+    "critReply": [
+     "…그걸 알아봐?",
+     "하하. 오늘은 내가 졌다. 조심히 가."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "jeongwoo_r05",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     45
+    ]
+   },
+   "day": [
+    18,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "MT 장보기",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "MT 장보기. 정우 선배가 서른 명 몫의 명단을 들고 마트를 돈다."
+   },
+   {
+    "who": "them",
+    "text": "간식 빠진 사람 없지? 알레르기 있는 사람 건 따로 챙겼어."
+   },
+   {
+    "who": "narr",
+    "text": "점심때부터 선배가 뭘 먹는 걸 한 번도 못 봤다. 아무도 모르는 것 같다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "선배 몫 김밥을 몰래 산다",
+    "effects": {
+     "affection": {
+      "*": 3
+     }
+    },
+    "minigame": "read_emotion",
+    "fail": {
+     "stats": {
+      "stress": 12,
+      "esteem": -2
+     },
+     "album": "몰래 산 김밥이 단체 간식이 됨"
+    },
+    "reply": [
+     "…나 먹으라고?",
+     "하하. 들켰네. 잘 먹을게.",
+     "너는? 밥은?"
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "김밥을 내밀기도 전에 신입들이 몰려들었다."
+     },
+     "오, 간식 추가네. 고마워. 다들 먹어."
+    ]
+   },
+   {
+    "text": "바빠 보여서 먼저 간다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "응. 수고했어. 조심히 가.",
+     {
+      "who": "narr",
+      "text": "선배는 끝까지 명단만 보고 있었다."
+     }
+    ]
+   },
+   {
+    "text": "\"선배 밥 먹기 전엔 저도 안 도와요\"",
+    "require": {
+     "stats": {
+      "esteem": 30
+     }
+    },
+    "chance": 75,
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "fail": {
+     "stats": {
+      "stress": 12,
+      "esteem": -2
+     },
+     "album": "회장님 앞에서 파업 선언"
+    },
+    "reply": [
+     "…그런 협박은 처음 받아 봐.",
+     "알았어. 먹을게. 옆에 앉아."
+    ],
+    "critReply": [
+     "…하하. 너한테 졌다.",
+     "근데 나 밥 챙긴 사람, 네가 처음이야."
+    ],
+    "failReply": [
+     "…어? 그럼 저 박스 좀 들어 줄래?",
+     {
+      "who": "narr",
+      "text": "농담으로 들렸나 보다. 박스만 여섯 개 날랐다."
+     }
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "MT 가는 버스에서 정우 선배가 처음으로 졸았다."
+ },
+ {
+  "id": "jeongwoo_r06",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    21,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "셔츠 칼각의 비밀",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "모임 날. 정우 선배 셔츠 소매는 오늘도 칼같이 두 번 접혀 있다."
+   },
+   {
+    "who": "me",
+    "text": "선배 셔츠는 어떻게 매일 그렇게 빳빳해요?"
+   },
+   {
+    "who": "them",
+    "text": "우리 집 세탁소야."
+   },
+   {
+    "who": "them",
+    "text": "다림질은 초등학생 때부터 했어. 하하."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   }
+  ],
+  "choices": [
+   {
+    "text": "제 셔츠도 좀 다려 주세요",
+    "chance": 70,
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "jeongwoo_laundry"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "affection": {
+      "*": -2
+     },
+     "setFlags": [
+      "jeongwoo_laundry"
+     ],
+     "album": "회장님께 구겨진 셔츠 내밀기"
+    },
+    "reply": [
+     "하하. 가져와. 한 장에 오천 원.",
+     "…농담이야. 공짜로 해 줄게. 너만."
+    ],
+    "critReply": [
+     "가져와.",
+     "다림질하는 거 아무한테도 안 보여 줬는데. 네가 처음이다."
+    ],
+    "failReply": [
+     "…어?",
+     {
+      "who": "narr",
+      "text": "선배가 웃긴 했는데, 한 박자 늦었다."
+     }
+    ]
+   },
+   {
+    "text": "아 그렇구나",
+    "effects": {
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "jeongwoo_laundry"
+     ]
+    },
+    "reply": [
+     "응.",
+     {
+      "who": "narr",
+      "text": "선배가 소매를 한 번 더 접었다. 대화는 거기서 끝났다."
+     }
+    ]
+   },
+   {
+    "text": "그 동네 분식집 가요. 제가 살게요",
+    "require": {
+     "stats": {
+      "esteem": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "money": -20,
+      "talk": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "setFlags": [
+      "jeongwoo_laundry"
+     ]
+    },
+    "reply": [
+     "…우리 동네 떡볶이집 알아?",
+     "좋아. 거기 사장님이 나 어릴 때부터 봤어."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "jeongwoo_r07",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    26,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "나는 좀 늦었어",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 2시. 선배 동기들의 졸업사진이 스토리에 줄줄이 올라왔다."
+   },
+   {
+    "who": "them",
+    "text": "안 자?"
+   },
+   {
+    "who": "them",
+    "text": "나는 좀 늦었어. 아버지 허리 수술하실 때 2년 동안 가게를 봤거든. 그사이 동기들은 다 졸업했고. 그래서 4학년에 회장이야. 하하. 이상하지."
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "이런 얘기 처음 해."
+   }
+  ],
+  "choices": [
+   {
+    "text": "늦은 게 아니라 다른 길로 온 거죠",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "setFlags": [
+      "jeongwoo_late"
+     ]
+    },
+    "reply": [
+     "…그런 말은 어디서 배웠어.",
+     "고마워. 저장해 둘게."
+    ]
+   },
+   {
+    "text": "그동안 선배는 누가 챙겼어요?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_late"
+     ]
+    },
+    "reply": [
+     "…아무도.",
+     "아니, 괜찮았어. 내가 하면 됐으니까."
+    ]
+   },
+   {
+    "text": "2년 버틴 거 대단해요. 선배도 좀 쉬어요",
+    "require": {
+     "stats": {
+      "esteem": 45
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "jeongwoo_late"
+     ]
+    },
+    "reply": [
+     "…쉬라는 말, 오랜만에 듣는다.",
+     "오늘은 그 말 듣고 잘게."
+    ],
+    "critReply": [
+     "…이상하다. 그 말이 듣고 싶었나 봐.",
+     "잘 자. 도착하면… 아, 집이지. 잘 자."
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "한참 뒤, 정우 선배가 하트 든 곰 이모티콘을 하나 보냈다. 새벽 3시였다."
+ },
+ {
+  "id": "jeongwoo_r08",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ],
+    "seoyeon": [
+     0,
+     70
+    ],
+    "haneul": [
+     0,
+     70
+    ],
+    "jiwoo": [
+     0,
+     70
+    ],
+    "minjae": [
+     0,
+     70
+    ],
+    "yeeun": [
+     0,
+     70
+    ],
+    "daeun": [
+     0,
+     70
+    ],
+    "seunghyun": [
+     0,
+     70
+    ],
+    "sohee": [
+     0,
+     70
+    ],
+    "geonwoo": [
+     0,
+     70
+    ]
+   },
+   "day": [
+    41,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "물을 자격은 없는데",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "과 동기와 찍은 사진을 SNS에 올렸다. 둘 다 크게 웃고 있다."
+   },
+   {
+    "who": "narr",
+    "text": "댓글이 하나 달렸다. 정우 선배다."
+   },
+   {
+    "who": "them",
+    "text": "친해? 아니, 물을 자격은 없는데. 그냥 궁금해서. 방금 거 취소."
+   }
+  ],
+  "choices": [
+   {
+    "text": "과 동기예요. 조별과제 같이 해요",
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "아. 그렇구나.",
+     "…사진 잘 나왔다. 둘 다."
+    ]
+   },
+   {
+    "text": "궁금하면 물어봐도 돼요. 취소 말고요",
+    "require": {
+     "stats": {
+      "sense": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "…그럼 취소 안 할게.",
+     "솔직히 좀 신경 쓰였어. 그게 다야."
+    ],
+    "critReply": [
+     "…신경 쓰였어.",
+     "그 말 하려고 댓글을 세 번 지웠어. 하하.",
+     "답은 안 해도 돼. 말한 걸로 됐어."
+    ]
+   },
+   {
+    "text": "그걸 선배가 왜 물어요?",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "…그러게.",
+     {
+      "who": "narr",
+      "text": "댓글이 삭제됐다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "jeongwoo_r09",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    46,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_laundry"
+   ]
+  },
+  "weight": 2,
+  "title": "반쯤 내린 셔터",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "밤 11시. 정우 선배에게서 사진 한 장. 반쯤 내린 세탁소 셔터다."
+   },
+   {
+    "who": "them",
+    "text": "아버지가 다시 입원하셨어."
+   },
+   {
+    "who": "sys",
+    "wait": 30
+   },
+   {
+    "who": "them",
+    "text": "괜찮아. 내가 하면 돼."
+   }
+  ],
+  "choices": [
+   {
+    "text": "내일 가게 여는 시간에 도우러 가도 돼요?",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_shutter"
+     ]
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "esteem": -3,
+      "stress": 8
+     },
+     "setFlags": [
+      "jeongwoo_shutter"
+     ]
+    },
+    "reply": [
+     "…와도 돼?",
+     "아침 8시에 열어. 앞치마 하나 더 있어."
+    ],
+    "critReply": [
+     "…응. 와 줘.",
+     "이런 말 해도 되는지 모르겠는데, 와 줬으면 좋겠어."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "보내기 버튼 앞에서 손가락이 멈췄다. 결국 '힘내세요'만 갔다."
+     },
+     "응. 고마워. 잘 자."
+    ]
+   },
+   {
+    "text": "'내가 하면 돼'는 금지예요. 같이 해요",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 5
+     },
+     "affection": {
+      "*": 10
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "jeongwoo_shutter"
+     ]
+    },
+    "reply": [
+     "…금지야?",
+     "알았어. 같이.",
+     "…처음 해 보는 말이라 좀 어색하다."
+    ],
+    "critReply": [
+     "…그 말 보고 셔터 앞에 한참 서 있었어.",
+     "같이. 알았어."
+    ]
+   },
+   {
+    "text": "선배라면 혼자서도 잘하실 거예요",
+    "effects": {
+     "stats": {
+      "stress": 12
+     },
+     "affection": {
+      "*": -4
+     },
+     "setFlags": [
+      "jeongwoo_shutter"
+     ]
+    },
+    "reply": [
+     "…응. 그렇지.",
+     {
+      "who": "narr",
+      "text": "선배의 톡은 거기서 끊겼다."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤 정우 선배의 마지막 접속은 새벽 3시였다."
+ },
+ {
+  "id": "jeongwoo_r10",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    51,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_shutter"
+   ]
+  },
+  "weight": 2,
+  "title": "처음 온 ㅋㅋ",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "세탁소 전단지를 같이 만드는 밤. 초안이 몇 번째 오간다."
+   },
+   {
+    "who": "me",
+    "text": "그럼 '다림질은 아들이 합니다' 어때요?"
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ"
+   },
+   {
+    "who": "narr",
+    "text": "정우 선배가 'ㅋㅋ'를 보냈다. 처음이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "너무 장난 같죠. 지울게요",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "jeongwoo_kk"
+     ]
+    },
+    "reply": [
+     "왜 지워. 좋았는데.",
+     "…너는 네 거를 너무 쉽게 지워."
+    ]
+   },
+   {
+    "text": "선배 방금 ㅋㅋ 썼어요. 저장했어요",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "jeongwoo_kk"
+     ]
+    },
+    "reply": [
+     "…썼네.",
+     "ㅋㅋ 이상하다. 너랑 얘기하면 그냥 나와."
+    ],
+    "critReply": [
+     "ㅋㅋ",
+     "두 번째다. 이것도 저장해.",
+     "…고마워. 전단지도, 이것도."
+    ]
+   },
+   {
+    "text": "이걸로 뽑아요. 아버님도 웃으시게",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_kk"
+     ]
+    },
+    "reply": [
+     "응. 이걸로 할게.",
+     "병원 가서 보여 드려야겠다. 웃으시겠다."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "jeongwoo_r11",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    56,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_late",
+    "jeongwoo_shutter"
+   ]
+  },
+  "weight": 2,
+  "title": "회장 인수인계",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리 공유 폴더에 못 보던 문서가 있다. '회장 인수인계(다음 학기)'."
+   },
+   {
+    "who": "narr",
+    "text": "작성자 정우. 마지막 줄: '본인 휴학 예정. 공지는 학기말에.'"
+   },
+   {
+    "who": "them",
+    "text": "…봤구나. 휴학할지도 모른다고 했던 거, 사실 거의 정해졌어."
+   },
+   {
+    "who": "them",
+    "text": "동아리엔 아직 아무한테도 말 안 했어. 내가 정리하면 되는 일이라서."
+   }
+  ],
+  "choices": [
+   {
+    "text": "말해 줄 때까지 기다릴게요",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "jeongwoo_leave"
+     ]
+    },
+    "reply": [
+     "…고마워.",
+     "학기말까지만. 그때는 꼭 말할게."
+    ]
+   },
+   {
+    "text": "'내가 하면 되는 일'은 없어요. 동아리도, 가게도",
+    "require": {
+     "stats": {
+      "esteem": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 4
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "jeongwoo_leave"
+     ]
+    },
+    "reply": [
+     "…너 요즘 나한테 금지하는 게 많다.",
+     "근데 맞는 말이라 할 말이 없네."
+    ],
+    "critReply": [
+     "…그 문서, 쓰면서 나도 싫었어.",
+     "누가 이렇게 말해 주길 기다렸나 봐."
+    ]
+   },
+   {
+    "text": "선배가 정한 거면 따를게요",
+    "effects": {
+     "stats": {
+      "esteem": -2
+     },
+     "affection": {
+      "*": -5
+     },
+     "trust": {
+      "*": -3
+     },
+     "setFlags": [
+      "jeongwoo_leave"
+     ],
+     "album": "인수인계 문서에 '확인했습니다' 댓글"
+    },
+    "reply": [
+     "…응. 그래.",
+     {
+      "who": "narr",
+      "text": "문서에 댓글이 하나 늘었다. '확인.' 선배가 단 것이다."
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 이후, 정우 선배의 톡은 다시 공지처럼 짧아졌다."
+ },
+ {
+  "id": "jeongwoo_r12",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     20,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    71,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_shutter"
+   ]
+  },
+  "weight": 2,
+  "title": "사흘째",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "사흘째 답이 없다. 읽음 표시도 뜨지 않는다."
+   },
+   {
+    "who": "narr",
+    "text": "단톡방에는 '이번 주 모임은 쉽니다. — 회장' 한 줄뿐이다."
+   },
+   {
+    "who": "narr",
+    "text": "세탁소 영업시간은 저녁 8시까지다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "임원들에게 알리고 같이 방법을 찾는다",
+    "effects": {
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "jeongwoo_found"
+     ]
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "임원 단톡에 조심스럽게 적었다. 답이 줄줄이 달렸다."
+     },
+     "…다들 알게 됐네.",
+     "근데 이상하다. 어깨가 좀 가벼워졌어."
+    ]
+   },
+   {
+    "text": "셔츠 한 장 들고, 영업시간에 손님으로 간다",
+    "chance": 75,
+    "effects": {
+     "stats": {
+      "charm": 2
+     },
+     "affection": {
+      "*": 10
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "jeongwoo_found"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "stress": 10
+     },
+     "affection": {
+      "*": -3
+     },
+     "setFlags": [
+      "jeongwoo_found"
+     ],
+     "album": "세탁소에 셔츠만 맡기고 나옴"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "카운터 뒤, 다리미 김 사이로 정우 선배가 고개를 들었다."
+     },
+     "…손님이면 받아야지.",
+     "셔츠 내일 찾으러 와. 그때 다 얘기할게."
+    ],
+    "critReply": [
+     "…왔네.",
+     "손님이라 돌려보낼 수도 없고. 하하.",
+     "보고 싶었어. 이건 취소 안 해."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "카운터엔 선배 어머니뿐이었다. 선배는 안에서 나오지 않았다."
+     },
+     "…와 줬는데 미안. 오늘은 얼굴을 못 보여 주겠어."
+    ]
+   },
+   {
+    "text": "선배가 연락할 때까지 모른 척한다",
+    "effects": {
+     "affection": {
+      "*": -8
+     },
+     "trust": {
+      "*": -5
+     },
+     "setFlags": [
+      "jeongwoo_found"
+     ],
+     "album": "사흘 내내 읽음 표시만 확인"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "나흘째 밤, 짧은 톡이 왔다."
+     },
+     "미안. 좀 바빴어. 이제 괜찮아.",
+     {
+      "who": "narr",
+      "text": "'괜찮아'가 공지처럼 딱딱했다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "jeongwoo_r13",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "trust": {
+    "*": [
+     0,
+     59
+    ]
+   },
+   "day": [
+    13,
+    100
+   ],
+   "affection": {},
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "환영회 사회",
+  "lines": [
+   {
+    "who": "them",
+    "text": "다음 달 신입 환영회 사회, 네가 봐 줬으면 해."
+   },
+   {
+    "who": "narr",
+    "text": "선배는 벌써 대본 초안을 써 두었다. 열한 쪽이다."
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   }
+  ],
+  "choices": [
+   {
+    "text": "해 볼게요. 틀리면 옆에서 수습해 주세요",
+    "require": {
+     "stats": {
+      "esteem": 35
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "esteem": 2
+     },
+     "trust": {
+      "*": 5
+     }
+    },
+    "reply": [
+     "응. 옆에 있을게.",
+     "대본은 줄여 올게. 열한 쪽은 나도 좀 그렇다. 하하."
+    ]
+   },
+   {
+    "text": "저 같은 게 무슨 도움이 돼요",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     },
+     "trust": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "그런 말 하지 마.",
+     "네가 너한테.",
+     {
+      "who": "narr",
+      "text": "그 뒤로 선배는 한동안 아무것도 보내지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "저 혼자 말고, 선배랑 둘이 보면요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "…둘이?",
+     "그건 생각 못 했다. 생각해 볼게."
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날 밤, 정우 선배 쪽 '입력 중…'이 한참 동안 떠 있었다."
+ },
+ {
+  "id": "jeongwoo_r14",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    19,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met"
+   ]
+  },
+  "weight": 2,
+  "title": "후배가 흘린 말",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "동아리방. 신입 후배가 과자 봉지를 뜯다가 말했다."
+   },
+   {
+    "who": "them",
+    "name": "후배",
+    "text": "근데 회장님이 선배 톡만 답이 늦대요. 오래 고민해서 쓴대요."
+   },
+   {
+    "who": "narr",
+    "text": "문 앞에 정우 선배가 서 있었다. 열쇠 꾸러미가 짤랑했다."
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   }
+  ],
+  "choices": [
+   {
+    "text": "에이, 바쁘셔서 그렇겠죠",
+    "effects": {
+     "stats": {
+      "stress": 5
+     },
+     "affection": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "…응. 바빠서 그래.",
+     {
+      "who": "narr",
+      "text": "선배는 열쇠만 챙겨서 다시 나갔다."
+     }
+    ]
+   },
+   {
+    "text": "모른 척하고 과자만 먹는다",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "그날 밤, 평소보다 한참 늦게 톡이 왔다."
+     },
+     "아까 들은 거. 못 들은 걸로 해 줘.",
+     "…아니다. 들은 걸로 해."
+    ]
+   },
+   {
+    "text": "\"진짜예요? 저한테만 오래 고민하세요?\"",
+    "effects": {
+     "stats": {
+      "talk": 3,
+      "esteem": 3
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": -4
+     },
+     "affection": {
+      "*": -5
+     },
+     "album": "후배 앞에서 회장님께 직진"
+    },
+    "minigame": "nerve_gauge",
+    "reply": [
+     "…진짜야.",
+     "너한테 보내는 건 세 번씩 고쳐 써."
+    ],
+    "critReply": [
+     "…응. 너한테만.",
+     "이건 고민 안 하고 바로 하는 말이야."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "목소리가 너무 컸다. 동아리방이 조용해졌다."
+     },
+     "…그건 나중에 얘기하자. 후배 있잖아."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "jeongwoo_r15",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     50,
+     100
+    ],
+    "seoyeon": [
+     0,
+     55
+    ],
+    "haneul": [
+     0,
+     55
+    ],
+    "jiwoo": [
+     0,
+     55
+    ],
+    "minjae": [
+     0,
+     55
+    ],
+    "yeeun": [
+     0,
+     55
+    ],
+    "daeun": [
+     0,
+     55
+    ],
+    "seunghyun": [
+     0,
+     55
+    ],
+    "sohee": [
+     0,
+     55
+    ],
+    "geonwoo": [
+     0,
+     55
+    ]
+   },
+   "day": [
+    86,
+    100
+   ],
+   "flags": [
+    "jeongwoo_met",
+    "jeongwoo_found"
+   ]
+  },
+  "weight": 2,
+  "title": "처음 해 보는 부탁",
+  "lines": [
+   {
+    "who": "them",
+    "text": "[공지] 다음 학기에도 회장은 저입니다. 대신 부회장을 한 명 두겠습니다. 혼자 하지 않겠습니다. — 회장 정우"
+   },
+   {
+    "who": "narr",
+    "text": "공지가 올라오고 1분 뒤, 개인톡이 왔다."
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "부탁 하나 해도 돼? 처음 해 보는 부탁이라."
+   }
+  ],
+  "choices": [
+   {
+    "text": "뭐든요. 말해요",
+    "effects": {
+     "stats": {
+      "esteem": 4
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "jeongwoo_lean"
+     ]
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "setFlags": [
+      "jeongwoo_lean"
+     ]
+    },
+    "reply": [
+     "부회장 해 줄래?",
+     "…그리고 가끔 나 좀 챙겨 줘. 이게 진짜 부탁이야."
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "답장이 너무 빨랐다. 오히려 선배가 멈칫했다."
+     },
+     "…천천히 해도 되는데. 부탁은 내일 할게."
+    ]
+   },
+   {
+    "text": "부탁 말고 기대요. 그게 더 쉬워요",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 7
+     },
+     "setFlags": [
+      "jeongwoo_lean"
+     ]
+    },
+    "reply": [
+     "…기대라니.",
+     "그럼 딱 한 번만. 오늘 가게 마감 같이 해 줘."
+    ],
+    "critReply": [
+     "…셔터 앞에서 기다릴게. 아니, 같이 내리자.",
+     "오늘은 네가 나 좀 챙겨 줘."
+    ]
+   },
+   {
+    "text": "부탁 전에, 밥은 먹었어요?",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "jeongwoo_lean"
+     ]
+    },
+    "reply": [
+     "…그거 내 대사인데.",
+     "아직. 같이 먹을래? 부탁은 먹으면서 할게."
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "mo_jeongwoo_preview_cancel",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     10,
+     35
+    ]
+   },
+   "day": [
+    4,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "알림에 뜬 한 줄",
+  "preview": "귀엽다.",
+  "lines": [
+   {
+    "who": "them",
+    "text": "귀엽다."
+   },
+   {
+    "who": "them",
+    "text": "방금 거 취소."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "프사 얘기였어. 강아지. 강아지가 귀엽다고."
+   }
+  ],
+  "choices": [
+   {
+    "text": "이모네 강아지예요. 이름은 콩이요",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "콩이. 이름도 귀엽다.",
+     "…이건 취소 안 해도 되지."
+    ]
+   },
+   {
+    "text": "강아지 사진 한 장 더 보낸다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "chance": 75,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "album": "강아지 대신 내 턱 사진 전송"
+    },
+    "reply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "pet",
+       "caption": "하품하는 콩이"
+      }
+     },
+     "…하품한다.",
+     "저장했어. 강아지라서."
+    ],
+    "critReply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "pet",
+       "caption": "콩이를 안은 나"
+      }
+     },
+     "…둘 다 나왔네.",
+     "이건 취소 못 하겠다. 하하."
+    ],
+    "failReply": [
+     {
+      "who": "me",
+      "photo": {
+       "icon": "selfie",
+       "caption": "흔들린 내 턱"
+      }
+     },
+     "…콩이는 어디 있어?",
+     "턱만 나왔어. 하하. 그것도 귀… 아니다."
+    ]
+   },
+   {
+    "text": "강아지는 프사 반만 나왔는데요?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "…그러게.",
+     "나머지 반 얘기였나 보다. 취소."
+    ]
+   },
+   {
+    "text": "(읽고 넘긴다)",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다음 날 아침, 톡이 하나 더 와 있었다."
+     },
+     "어제 거 전부 취소."
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_jeongwoo_photo_umbrella",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     25,
+     55
+    ]
+   },
+   "day": [
+    12,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "비 온대서",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "아침 7시. 정우 선배에게서 사진이 왔다."
+   },
+   {
+    "who": "them",
+    "photo": {
+     "icon": "street",
+     "caption": "우산 두 개, 이름표 하나"
+    },
+    "text": "비 온대서."
+   },
+   {
+    "who": "sys",
+    "wait": 8
+   },
+   {
+    "who": "them",
+    "text": "동아리방 우산꽂이. 이름표 붙여 놨어. 헷갈리지 말라고."
+   }
+  ],
+  "choices": [
+   {
+    "text": "이름표 붙은 게 제 거예요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "응. 그게 네 거.",
+     "…다른 사람 것도 붙일걸 그랬나."
+    ]
+   },
+   {
+    "text": "이름표는 왜 제 것만 있어요?",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "affection": {
+      "*": -3
+     },
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "reply": [
+     "…내 건 내가 알아보니까.",
+     "네 건 네가 알아봐야 하니까. 그뿐이야."
+    ],
+    "critReply": [
+     "…들켰네.",
+     "네 것만 챙기고 싶었어. 오늘은 그렇다고 할게."
+    ],
+    "failReply": [
+     "…다른 사람 건 이따 붙일 거야.",
+     {
+      "who": "narr",
+      "text": "그날 우산꽂이에 이름표가 열 개 붙었다."
+     }
+    ]
+   },
+   {
+    "text": "도착하면 말할게요. 선배 말투로",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…하하. 내 말투 따라 하지 마.",
+     "근데 꼭 말해 줘."
+    ]
+   },
+   {
+    "text": "우산은 저도 있어요",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "아. 그래.",
+     {
+      "who": "narr",
+      "text": "점심때 보니 이름표가 떼어져 있었다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "mo_jeongwoo_photo_shutter",
+  "layer": "route",
+  "character": "jeongwoo",
+  "trigger": {
+   "affection": {
+    "*": [
+     35,
+     65
+    ]
+   },
+   "day": [
+    18,
+    100
+   ],
+   "flags": [
+    "jeongwoo_laundry"
+   ]
+  },
+  "weight": 4,
+  "title": "오늘 마감",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "밤 10시 반. 사진이 한 장 왔다."
+   },
+   {
+    "who": "them",
+    "photo": {
+     "icon": "night",
+     "caption": "오늘 마감."
+    },
+    "text": "하하. 별거 아냐."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "셔터 내리다가 그냥 생각나서."
+   }
+  ],
+  "choices": [
+   {
+    "text": "(읽고 넘긴다)",
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다음 날, 선배는 평소처럼 단톡에 공지를 올렸다."
+     },
+     "어제 건 신경 쓰지 마. 하하."
+    ]
+   },
+   {
+    "text": "별거 아닌 얼굴이 아닐 것 같은데요",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "minigame": "read_emotion",
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "trust": {
+      "*": -1
+     }
+    },
+    "reply": [
+     "…사진에 얼굴은 안 나왔는데.",
+     "좀 피곤해. 그게 다야. 들켜서 좀 좋네."
+    ],
+    "critReply": [
+     "…어떻게 알았어.",
+     "오늘 손님이 많았어. 너한테만 하는 말이야."
+    ],
+    "failReply": [
+     "진짜 별거 아냐. 하하.",
+     {
+      "who": "narr",
+      "text": "오늘따라 '하하'가 딱딱했다."
+     }
+    ]
+   },
+   {
+    "text": "셔터 내리는 선배, 좀 멋있는데요",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…셔터가 멋있는 거겠지.",
+     "근데 기분은 좋다. 하하."
+    ]
+   },
+   {
+    "text": "도와드릴 거 있어요?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "없어. 다 끝났어.",
+     "도착하면 말해 줘. …아, 도착할 사람은 나구나."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤 정우 선배의 마지막 톡은 '잘 자.'였다."
+ },
+ {
+  "id": "mo_jeongwoo_call_iron",
+  "layer": "route",
+  "character": "jeongwoo",
+  "format": "call",
+  "trigger": {
+   "affection": {
+    "*": [
+     60,
+     100
+    ]
+   },
+   "day": [
+    72,
+    100
+   ],
+   "flags": [
+    "jeongwoo_shutter"
+   ]
+  },
+  "weight": 4,
+  "title": "밤 11시의 다리미",
+  "lines": [
+   {
+    "who": "them",
+    "text": "…자?"
+   },
+   {
+    "who": "narr",
+    "text": "뒤에서 치익, 다리미 김 소리가 난다."
+   },
+   {
+    "who": "them",
+    "text": "늦게 미안. 가게 정리하는 중이야."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "목소리 들으면 정리될 것 같아서."
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "…잠깐만 이대로 있어도 돼?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "거절",
+    "decline": true,
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "부재중 전화 1통."
+     },
+     "응. 내일 봐."
+    ]
+   },
+   {
+    "text": "다림질 소리 들으면서 얘기를 듣는다",
+    "effects": {
+     "stats": {
+      "stress": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "affection": {
+      "*": -1
+     },
+     "stats": {
+      "stress": 3
+     }
+    },
+    "reply": [
+     "…셔츠 세 장 남았어.",
+     "너랑 통화하면서 하니까 금방 끝나네."
+    ],
+    "critReply": [
+     "…다 다렸다.",
+     "이상하다. 오늘은 하나도 안 무거웠어."
+    ],
+    "failReply": [
+     "…졸리지? 하하. 끊을게.",
+     "목소리 들었으니까 됐어. 진짜로."
+    ]
+   },
+   {
+    "text": "남은 셔츠 같이 세요",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "하나, 둘… 일곱.",
+     "…일곱 장 다 할 때까지 안 끊을 거지?"
+    ]
+   },
+   {
+    "text": "내일 수업 있어요. 근데 10분만 더요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "응. 10분이면 충분해.",
+     "…고마워. 네 시간 나눠 줘서."
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤, 통화 목록 맨 위에 정우 선배 이름이 남았다."
+ }
+]

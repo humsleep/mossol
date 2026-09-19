@@ -164,5 +164,173 @@
    "야경"
   ],
   "budget": 45
+ },
+ {
+  "id": "jeongwoo",
+  "name": "정우",
+  "gender": "m",
+  "role": "senior",
+  "title": "동아리 선배",
+  "likes": [
+   "esteem",
+   "stress"
+  ],
+  "mines": [
+   "혼자 떠안기",
+   "자기 비하"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.4,
+   0.65
+  ],
+  "humor": "warm",
+  "tags": [
+   "산책",
+   "야경",
+   "분식",
+   "조용한"
+  ],
+  "budget": 35
+ },
+ {
+  "id": "daeun",
+  "name": "다은",
+  "gender": "f",
+  "role": "parttime",
+  "title": "알바 동료",
+  "likes": [
+   "sense",
+   "sincerity"
+  ],
+  "mines": [
+   "외모 평가",
+   "뒷담화"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.25,
+   0.5
+  ],
+  "humor": "meme",
+  "tags": [
+   "전시",
+   "조용한",
+   "사진",
+   "길거리"
+  ],
+  "budget": 30
+ },
+ {
+  "id": "seunghyun",
+  "name": "승현",
+  "gender": "m",
+  "role": "blinddate",
+  "title": "소개팅 상대",
+  "likes": [
+   "sincerity",
+   "talk"
+  ],
+  "mines": [
+   "밀당",
+   "애매한 대답"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.1,
+   0.35
+  ],
+  "humor": "dry",
+  "tags": [
+   "산책",
+   "브런치",
+   "야경",
+   "사진"
+  ],
+  "budget": 60
+ },
+ {
+  "id": "sohee",
+  "name": "소희",
+  "gender": "f",
+  "role": "online",
+  "title": "온라인 친구",
+  "likes": [
+   "talk",
+   "sense"
+  ],
+  "mines": [
+   "남 탓",
+   "목소리만 칭찬"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.05,
+   0.3
+  ],
+  "humor": "loud",
+  "tags": [
+   "게임",
+   "야시장",
+   "길거리",
+   "실내"
+  ],
+  "budget": 30
+ },
+ {
+  "id": "geonwoo",
+  "name": "건우",
+  "gender": "m",
+  "role": "classmate",
+  "title": "초등 동창",
+  "likes": [
+   "talk",
+   "charm"
+  ],
+  "mines": [
+   "말없이 사라지기",
+   "약속 번복"
+  ],
+  "hidden": false,
+  "replyZone": [
+   0.15,
+   0.4
+  ],
+  "humor": "witty",
+  "tags": [
+   "추억",
+   "운동",
+   "가성비",
+   "야시장"
+  ],
+  "budget": 35
+ },
+ {
+  "id": "yuna",
+  "name": "유나",
+  "gender": "f",
+  "role": "trainer",
+  "title": "헬스 트레이너",
+  "likes": [
+   "sense",
+   "esteem"
+  ],
+  "mines": [
+   "몸매 평가",
+   "무리한 다이어트"
+  ],
+  "hidden": true,
+  "replyZone": [
+   0.0,
+   0.22
+  ],
+  "humor": "loud",
+  "tags": [
+   "운동",
+   "분식",
+   "야시장",
+   "산책"
+  ],
+  "budget": 40
  }
 ]

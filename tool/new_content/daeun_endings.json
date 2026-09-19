@@ -1,0 +1,77 @@
+[
+ {
+  "id": "daeun_happy",
+  "name": "다은 · 영수증 뒷면 전시회",
+  "tier": "happy",
+  "priority": 200,
+  "character": "daeun",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   }
+  },
+  "epilogue": "작은 갤러리 벽에 영수증 백 장. 전부 같은 사람이다. 그림 앞에서 다은이 한쪽 입꼬리를 올렸다.",
+  "hint": "다은의 그림 속에 끝까지 남으면"
+ },
+ {
+  "id": "daeun_friend",
+  "name": "다은 · 좋은 모델",
+  "tier": "good",
+  "priority": 150,
+  "character": "daeun",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "졸업작품 제목은 〈동료〉. 그림 속 사람은 앞치마를 두 번 감아 묶고 웃고 있다.",
+  "hint": "다은의 붓을 옆에서 지켜보기만 하면"
+ },
+ {
+  "id": "daeun_bad",
+  "name": "다은 · 사람이 없는 그림",
+  "tier": "bad",
+  "priority": 120,
+  "character": "daeun",
+  "when": {
+   "affection": {
+    "*": [
+     50,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "다은이 스케치북을 덮었다. 마지막 장은 비어 있었다.",
+  "hint": "다은의 마음은 얻고 믿음은 잃으면"
+ }
+]

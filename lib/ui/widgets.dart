@@ -2138,6 +2138,12 @@ class PreferenceCard extends StatelessWidget {
     this.unavailableNote = '준비 중',
   });
 
+  /// 아바타 [n]개가 폭 [width] 한 줄에 들어가는 가장 큰 크기(40, 안 되면 32).
+  static double avatarSizeFor(int n, double width) {
+    double row(double s) => n * s + (n - 1) * AppSpace.sm;
+    return n <= 0 || row(40) <= width ? 40 : 32;
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -2192,17 +2198,25 @@ class PreferenceCard extends StatelessWidget {
             ),
             if (cast.isNotEmpty) ...[
               const SizedBox(height: AppSpace.md),
-              Wrap(
-                spacing: AppSpace.sm,
-                runSpacing: AppSpace.sm,
-                children: [
-                  for (final e in cast)
-                    CharacterAvatar(
-                      name: e.name,
-                      accent: e.mystery ? null : t.accentFor(e.id),
-                      mystery: e.mystery,
-                    ),
-                ],
+              // 한 줄에 다 들어가면 40, 아니면 32. 캐스트가 6명씩이라 320pt 에서는 32 로
+              // 한 줄이 된다(두 줄로 접히면 선택 화면 높이 예산을 넘는다). 그래도 모자라면 접힌다.
+              LayoutBuilder(
+                builder: (context, box) {
+                  final size = avatarSizeFor(cast.length, box.maxWidth);
+                  return Wrap(
+                    spacing: AppSpace.sm,
+                    runSpacing: AppSpace.sm,
+                    children: [
+                      for (final e in cast)
+                        CharacterAvatar(
+                          name: e.name,
+                          accent: e.mystery ? null : t.accentFor(e.id),
+                          mystery: e.mystery,
+                          size: size,
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
             if (intro.isNotEmpty) ...[

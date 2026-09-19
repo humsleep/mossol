@@ -1,0 +1,80 @@
+[
+ {
+  "id": "jeongwoo_happy",
+  "name": "정우 · 처음 하는 부탁",
+  "tier": "happy",
+  "priority": 200,
+  "character": "jeongwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     50,
+     100
+    ]
+   },
+   "flags": [
+    "jeongwoo_lean"
+   ]
+  },
+  "epilogue": "세탁소 셔터 앞. \"오늘은 네가 나 좀 챙겨 줘.\" 늘 챙기던 사람이 처음으로 먼저 기댔다.",
+  "hint": "늘 챙기던 선배가 처음으로 부탁하게 되면"
+ },
+ {
+  "id": "jeongwoo_friend",
+  "name": "정우 · 든든한 부회장",
+  "tier": "good",
+  "priority": 150,
+  "character": "jeongwoo",
+  "when": {
+   "trust": {
+    "*": [
+     70,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     59
+    ]
+   }
+  },
+  "epilogue": "다음 학기 동아리 공지 끝에 이름이 두 개 적혔다. 회장, 그리고 나.",
+  "hint": "선배 곁에서 동아리를 같이 지키면"
+ },
+ {
+  "id": "jeongwoo_bad",
+  "name": "정우 · 방금 거 취소",
+  "tier": "bad",
+  "priority": 120,
+  "character": "jeongwoo",
+  "when": {
+   "affection": {
+    "*": [
+     80,
+     100
+    ]
+   },
+   "stats": {
+    "sincerity": [
+     0,
+     29
+    ]
+   }
+  },
+  "epilogue": "마지막 톡은 \"방금 거 취소.\" 이번에는 정말로 취소됐다.",
+  "hint": "선배의 마음은 얻고 내 진심은 잃으면"
+ }
+]

@@ -1,0 +1,2421 @@
+[
+ {
+  "id": "yuna_r00",
+  "layer": "hidden",
+  "character": "yuna",
+  "trigger": {
+   "stats": {
+    "charm": [
+     60,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     0,
+     10
+    ]
+   },
+   "run": [
+    2,
+    99
+   ],
+   "notFlags": [
+    "yuna_met",
+    "yuna_known"
+   ]
+  },
+  "weight": 4,
+  "title": "포니테일 트레이너",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "헬스장. 스쿼트를 마치자 옆에서 박수 소리가 크게 울렸다."
+   },
+   {
+    "who": "narr",
+    "text": "손목에 형광 머리끈을 잔뜩 찬 트레이너가 엄지를 들고 있다."
+   },
+   {
+    "who": "them",
+    "text": "회원님 스쿼트 폼 좋은데요?"
+   },
+   {
+    "who": "them",
+    "text": "체험 한 번 해 보실래요? 무료예요!"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네, 해 볼게요",
+    "effects": {
+     "stats": {
+      "money": -20
+     },
+     "affection": {
+      "*": 5
+     },
+     "setFlags": [
+      "yuna_known"
+     ]
+    },
+    "reply": [
+     "좋아요!! 체험은 무료, 운동화는 새로 사 오기!",
+     "첫날은 무게 말고 기분부터 볼게요"
+    ],
+    "critReply": [
+     "좋아요!! 근데 방금 박수, 제가 헬스장에서 제일 컸죠?",
+     "그거 회원님 전용 박수예요. 체험 날 또 쳐 드림"
+    ]
+   },
+   {
+    "text": "돈이 없어서요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 1
+     },
+     "setFlags": [
+      "yuna_known"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 솔직해서 좋아요!",
+     "그럼 박수는 공짜로 계속 쳐 드릴게요. 그건 제 취미라"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "yuna_r01",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    5,
+    100
+   ],
+   "stats": {
+    "charm": [
+     40,
+     100
+    ]
+   }
+  },
+  "weight": 2,
+  "title": "첫 수업",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "무료 PT 체험 날. 포니테일이 뛰어오듯 다가왔다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요!! 오늘 담당 유나예요"
+   },
+   {
+    "who": "them",
+    "text": "스쿼트 한 세트만 볼게요. 편하게!"
+   },
+   {
+    "who": "narr",
+    "text": "열 개를 채웠다. 박수 소리가 헬스장을 울렸다."
+   },
+   {
+    "who": "them",
+    "text": "좋아요!! 방금 거 교과서!"
+   }
+  ],
+  "choices": [
+   {
+    "text": "감사합니다",
+    "effects": {
+     "affection": {
+      "*": 2
+     },
+     "setFlags": [
+      "yuna_met"
+     ]
+    },
+    "reply": [
+     "감사는 제가 하죠!",
+     "첫날부터 폼이 이러면 반칙이에요. 한 개만 더!"
+    ]
+   },
+   {
+    "text": "에이, 빈말이죠?",
+    "effects": {
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": -2
+     },
+     "setFlags": [
+      "yuna_met"
+     ]
+    },
+    "reply": [
+     "…빈말 아니에요",
+     "저 거짓 칭찬은 안 해요. 그건 제 원칙이라서요"
+    ]
+   },
+   {
+    "text": "쌤 박수가 더 교과서던데요",
+    "require": {
+     "stats": {
+      "sense": 35
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "yuna_met"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋ 들켰다",
+     "제 박수 헬스장 공식 소음이에요. 칭찬 받은 거죠?"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "yuna_r02",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    10,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "기분 일지",
+  "lines": [
+   {
+    "who": "them",
+    "text": "회원님 이거 선물!"
+   },
+   {
+    "who": "narr",
+    "text": "스티커가 덕지덕지 붙은 수첩. 칸은 두 개뿐이다. '날짜', '오늘 기분'."
+   },
+   {
+    "who": "them",
+    "text": "체중 칸은 없어요. 일부러요"
+   },
+   {
+    "who": "them",
+    "text": "숫자 말고 기분! 매일 10점 만점으로 적기"
+   }
+  ],
+  "choices": [
+   {
+    "text": "좋아요. 오늘은 7점",
+    "effects": {
+     "stats": {
+      "stress": -3
+     },
+     "affection": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_journal"
+     ]
+    },
+    "reply": [
+     "7점!! 첫날치고 높은데요?",
+     "내일은 7점 옆에 이유도 한 줄 적어 와요"
+    ]
+   },
+   {
+    "text": "체중은 안 재요?",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "yuna_journal"
+     ]
+    },
+    "reply": [
+     "재고 싶으면 재도 돼요. 근데 여기엔 안 적어요",
+     "숫자는 자꾸 기분을 이겨 먹거든요"
+    ]
+   },
+   {
+    "text": "쌤 일지엔 오늘 뭐라고 적어요?",
+    "require": {
+     "stats": {
+      "sense": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_journal"
+     ]
+    },
+    "reply": [
+     "…저요?",
+     "오늘은 9점. 회원님이 일지 받아 줘서요 ㅋㅋ"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "yuna_r03",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "notFlags": [
+    "yuna_banmal"
+   ],
+   "affection": {
+    "*": [
+     0,
+     45
+    ]
+   },
+   "day": [
+    15,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "하이파이브",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "세트가 끝날 때마다 유나가 손바닥을 내민다."
+   },
+   {
+    "who": "them",
+    "text": "하이파이브 가시죠!"
+   },
+   {
+    "who": "narr",
+    "text": "짝. 열 번째 하이파이브에서 손이 조금 오래 머물렀다."
+   },
+   {
+    "who": "them",
+    "text": "…아 손 차다! 물 마셔요 물!"
+   }
+  ],
+  "choices": [
+   {
+    "text": "하이파이브 한 번 더요",
+    "effects": {
+     "stats": {
+      "stress": -2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "ㅋㅋ 세트 안 했는데요?",
+     "…한 번만이에요. 짝!"
+    ]
+   },
+   {
+    "text": "하이파이브 좀 유치하지 않아요?",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "trust": {
+      "*": -4
+     },
+     "album": "트레이너의 하이파이브를 거절함"
+    },
+    "reply": [
+     "…유치해요?",
+     "그럼 다음부턴 목례로 할게요. 수고하셨습니다",
+     {
+      "who": "narr",
+      "text": "유나가 손을 등 뒤로 숨겼다."
+     }
+    ]
+   },
+   {
+    "text": "(손을 급히 뺀다)",
+    "effects": {
+     "stats": {
+      "charm": -1
+     },
+     "affection": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "앗 미안해요! 제가 너무 세게 쳤나?",
+     "…다음부턴 살살 칠게요"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "yuna_r04",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    20,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "떡볶이 2인분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "밤 10시. 헬스장 앞 분식집 창가."
+   },
+   {
+    "who": "narr",
+    "text": "유나 앞에 떡볶이 2인분이 있다. 맞은편 자리는 비어 있다."
+   },
+   {
+    "who": "them",
+    "text": "…회원님?"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "이거 혼자 먹는 거 아니에요. 아니 혼자 먹는 건데"
+   }
+  ],
+  "choices": [
+   {
+    "text": "저도 한 접시 시켜도 돼요?",
+    "effects": {
+     "stats": {
+      "stress": -8
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_tteok"
+     ]
+    },
+    "reply": [
+     "당연하죠!! 여기 앉아요",
+     "떡볶이는 영혼의 탄수예요. 회원님도 영혼 챙겨요"
+    ]
+   },
+   {
+    "text": "트레이너도 이런 거 먹어요?",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "setFlags": [
+      "yuna_tteok"
+     ]
+    },
+    "reply": [
+     "…먹으면 안 돼요?",
+     "트레이너도 사람이에요. 배고픈 사람"
+    ]
+   },
+   {
+    "text": "혼자 2인분 먹는 사람, 멋있는데요",
+    "require": {
+     "stats": {
+      "sincerity": 48
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "stress": -10
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_tteok"
+     ]
+    },
+    "reply": [
+     "…멋있어요? 이게?",
+     "다들 놀라거나 걱정하던데. 그 말은 처음 들어요"
+    ],
+    "critReply": [
+     "ㅋㅋㅋ 회원님 합격",
+     "앞으로 떡볶이 메이트 해요. 회비는 순대"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "분식집을 나서며 유나가 말했다. \"오늘 본 건 비밀이에요!\""
+ },
+ {
+  "id": "yuna_r05",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_known",
+    "yuna_banmal"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   },
+   "day": [
+    81,
+    100
+   ]
+  },
+  "weight": 4,
+  "title": "태현 오빠",
+  "lines": [
+   {
+    "who": "them",
+    "text": "태현 오빠가 네 얘기 엄청 해"
+   },
+   {
+    "who": "them",
+    "text": "연애 코치라며? ㅋㅋㅋ"
+   },
+   {
+    "who": "them",
+    "text": "…그 오빠 연애 못 하는 거 알지?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "알고 있었어",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "ㅋㅋㅋ 역시!! 오빠만 모르지",
+     "우리끼리 비밀. 하이파이브!"
+    ]
+   },
+   {
+    "text": "지금 알았어",
+    "effects": {
+     "stats": {
+      "stress": 8
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "taehyun_hint"
+     ]
+    },
+    "reply": [
+     "…헉 몰랐구나",
+     "내가 말한 거 오빠한텐 비밀이야. 진짜로!"
+    ]
+   },
+   {
+    "text": "그래도 태현이 나한텐 좋은 코치야",
+    "effects": {
+     "stats": {
+      "sincerity": 3,
+      "reputation": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 6
+     }
+    },
+    "reply": [
+     "…그 말 오빠한테 직접 해 줘",
+     "분명 울 거야. 떡볶이 사 주면서 ㅋㅋ"
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "yuna_r06",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_journal"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    30,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "명예의 전당",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "헬스장 벽 '명예의 전당'. 액자 속 스무 살 유나가 트로피를 들고 있다."
+   },
+   {
+    "who": "narr",
+    "text": "웃고 있는데, 눈은 웃지 않는다."
+   },
+   {
+    "who": "them",
+    "text": "아 그거… 관장님이 안 떼 주세요 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "text": "회원님, 저거 좀 떼 주면 안 돼요? 제 손으로는 못 떼겠어서"
+   }
+  ],
+  "choices": [
+   {
+    "text": "(이유를 묻지 않고 떼어서 건넨다)",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_photo"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "stress": 12,
+      "esteem": -2
+     },
+     "setFlags": [
+      "yuna_photo"
+     ]
+    },
+    "minigame": "read_emotion",
+    "reply": [
+     "…고마워요",
+     "이유 안 물어봐 줘서요. 그게 제일 고마워요"
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "표정을 살피다 액자를 놓쳤다. 모서리가 바닥에 찍혔다."
+     },
+     "ㅋㅋ 괜찮아요! 어차피 뗄 거였어요"
+    ]
+   },
+   {
+    "text": "왜요? 사진 잘 나왔는데",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -4
+     },
+     "setFlags": [
+      "yuna_photo"
+     ],
+     "album": "트레이너의 대회 사진을 칭찬했다가 정적"
+    },
+    "reply": [
+     "…잘 나왔죠. 다들 그 말만 해요",
+     {
+      "who": "narr",
+      "text": "유나가 액자를 뒤집어 벽에 기대 놓았다."
+     }
+    ]
+   },
+   {
+    "text": "트로피보다 지금 박수 소리가 더 좋아요",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "yuna_photo"
+     ]
+    },
+    "reply": [
+     "…그거 반칙이에요",
+     "근데 저도요. 지금의 제가 더 좋아요"
+    ],
+    "critReply": [
+     "…회원님 그 말, 제 일지에 적어도 돼요?",
+     "오늘 기분 10점. 10점은 처음이에요"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "빈 액자 자리에 유나가 포스트잇을 붙였다. '오늘의 기분 왕: 공석'"
+ },
+ {
+  "id": "yuna_r07",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    37,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "처음 본 정색",
+  "lines": [
+   {
+    "who": "me",
+    "text": "쌤, 한 달에 10kg 빼고 싶어요"
+   },
+   {
+    "who": "them",
+    "text": "…왜요?"
+   },
+   {
+    "who": "me",
+    "text": "다음 달에 중요한 약속이 있어서요"
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "안 돼요."
+   },
+   {
+    "who": "them",
+    "text": "그거 제가 해 봤어요. 안 돼요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그래도 해 주세요. 굶어서라도",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "stress": 18
+     },
+     "affection": {
+      "*": -5
+     },
+     "trust": {
+      "*": -6
+     },
+     "setFlags": [
+      "yuna_warned"
+     ]
+    },
+    "reply": [
+     "…그건 제가 안 가르쳐요",
+     "다른 트레이너 소개해 드릴게요. 저는 못 해요",
+     {
+      "who": "narr",
+      "text": "유나가 처음으로 하이파이브 없이 수업을 끝냈다."
+     }
+    ]
+   },
+   {
+    "text": "알겠어요. 천천히 할게요",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_warned"
+     ]
+    },
+    "reply": [
+     "좋아요!! 천천히가 제일 빨라요",
+     "그 약속 날은 숫자 말고 기분 좋은 얼굴로 가요"
+    ]
+   },
+   {
+    "text": "쌤은 해 봤는데 왜 안 됐어요?",
+    "require": {
+     "stats": {
+      "sense": 45
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3,
+      "charm": 2
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_warned"
+     ]
+    },
+    "reply": [
+     "…그걸 물어보는 사람은 처음이에요",
+     "스무 살 때요. 숫자 맞추다가 쓰러졌어요. 그게 다예요"
+    ],
+    "critReply": [
+     "…회원님한텐 말해도 될 것 같네요",
+     "대회 전날 쓰러졌어요. 그래서 제 일지엔 체중 칸이 없어요"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 밤 유나에게서 톡이 왔다. \"아까 정색해서 미안해요. 근데 말은 안 바꿀 거예요!\""
+ },
+ {
+  "id": "yuna_r08",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_journal",
+    "yuna_tteok",
+    "yuna_photo",
+    "yuna_warned",
+    "yuna_shoot"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    45,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "회원님 말고",
+  "lines": [
+   {
+    "who": "them",
+    "text": "회원님"
+   },
+   {
+    "who": "them",
+    "text": "아니다"
+   },
+   {
+    "who": "them",
+    "text": "회원님 말고 그냥 너라고 해도 돼?"
+   },
+   {
+    "who": "them",
+    "text": "너도 편하게 해. 쌤은 유지 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "응. 좋아",
+    "effects": {
+     "stats": {
+      "esteem": 5,
+      "charm": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_banmal"
+     ]
+    },
+    "reply": [
+     "좋아!! 방금 거 교과서 대답!",
+     "…아 반말 하니까 좀 떨린다"
+    ]
+   },
+   {
+    "text": "회원님도 나쁘지 않았는데",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "yuna_banmal"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 회원님이 더 좋았어?",
+     "아쉽지만 늦었어. 너는 이제 너야"
+    ]
+   },
+   {
+    "text": "기다렸어, 그 말",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "reputation": 2
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_banmal"
+     ]
+    },
+    "fail": {
+     "stats": {
+      "charm": -1,
+      "esteem": -1
+     },
+     "setFlags": [
+      "yuna_banmal"
+     ]
+    },
+    "minigame": "reply_timing",
+    "reply": [
+     "…기다렸어?",
+     "진작 말할걸. 괜히 회원님 회원님 했네"
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "답장 타이밍을 놓쳤다. '기다'까지 치다가 지웠다."
+     },
+     "…읽었지? 읽은 거 다 봤어 ㅋㅋ"
+    ],
+    "critReply": [
+     "…와 심장",
+     "잠깐만. 하이파이브 한 번. 이건 운동 아니고"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날부터 유나의 톡에서 '요'가 사라졌다. 느낌표는 두 배가 됐다."
+ },
+ {
+  "id": "yuna_r09",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_banmal"
+   ],
+   "affection": {
+    "*": [
+     20,
+     100
+    ]
+   },
+   "day": [
+    50,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "새벽 5시",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 5시. 편의점 가는 길에 헬스장 불이 켜져 있다."
+   },
+   {
+    "who": "narr",
+    "text": "러닝머신 위에 유나 혼자다. 어젯밤 10시에도 여기 있었다."
+   },
+   {
+    "who": "them",
+    "text": "…어? 너 왜 이 시간에"
+   },
+   {
+    "who": "sys",
+    "wait": 25
+   },
+   {
+    "who": "them",
+    "text": "아 나 그냥 몸 좀 풀어. 새벽 공기 좋잖아!"
+   }
+  ],
+  "choices": [
+   {
+    "text": "나도 옆에서 걸을게",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "yuna_dawn"
+     ]
+    },
+    "reply": [
+     "…진짜?",
+     "그럼 속도는 네 거에 맞출게. 천천히"
+    ]
+   },
+   {
+    "text": "그렇구나. 수고해",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "yuna_dawn"
+     ]
+    },
+    "reply": [
+     "응!! 너도 조심히 가",
+     {
+      "who": "narr",
+      "text": "돌아보니 러닝머신 속도가 다시 올라가 있었다."
+     }
+    ]
+   },
+   {
+    "text": "어젯밤에도 있었잖아. 몇 시간 잤어?",
+    "require": {
+     "stats": {
+      "talk": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 3
+     },
+     "affection": {
+      "*": 11
+     },
+     "trust": {
+      "*": 9
+     },
+     "setFlags": [
+      "yuna_dawn"
+     ]
+    },
+    "reply": [
+     "…봤어?",
+     "세 시간. 아 이거 말하면 안 되는데"
+    ],
+    "critReply": [
+     "…너 눈치 진짜 좋다",
+     "잠깐 내려갈게. 같이 물 마시자"
+    ]
+   }
+  ],
+  "hint": 2,
+  "cliffhanger": "해가 뜰 때까지 헬스장 불은 꺼지지 않았다."
+ },
+ {
+  "id": "yuna_r10",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_warned"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    55,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "복귀 제안",
+  "lines": [
+   {
+    "who": "them",
+    "text": "이거 봐 봐"
+   },
+   {
+    "who": "narr",
+    "text": "캡처 한 장. 옛 코치의 메시지다. '대회 복귀 어때. 헬스장 홍보 모델도 같이.'"
+   },
+   {
+    "who": "them",
+    "text": "해 볼까 봐"
+   },
+   {
+    "who": "them",
+    "text": "…나 그때보다 잘할 수 있을 것 같거든"
+   }
+  ],
+  "choices": [
+   {
+    "text": "쌤은 하고 싶어?",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_offer"
+     ]
+    },
+    "reply": [
+     "…하고 싶냐고?",
+     "그건 아무도 안 물어봤다. 생각해 볼게"
+    ]
+   },
+   {
+    "text": "축하해! 대단하다",
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     },
+     "setFlags": [
+      "yuna_offer"
+     ]
+    },
+    "reply": [
+     "고마워!! 역시 너밖에 없어",
+     {
+      "who": "narr",
+      "text": "느낌표가 평소보다 하나 많았다."
+     }
+    ]
+   },
+   {
+    "text": "그때처럼은 하지 마. 그건 내가 말릴 거야",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 3
+     },
+     "affection": {
+      "*": 7
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "yuna_offer"
+     ]
+    },
+    "reply": [
+     "…네가 날 말린다고?",
+     "코치가 코칭받는 거네. 좀 웃긴데 싫지 않다"
+    ],
+    "critReply": [
+     "…방금 그 말 캡처해 둘게",
+     "나중에 내가 잊으면 꼭 보여 줘"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "그날 밤 유나의 상태 메시지가 바뀌었다. '다시, 처음부터.'"
+ },
+ {
+  "id": "yuna_r11",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_offer"
+   ],
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    60,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "오늘은 패스",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "분식집 앞. 유나가 간판을 한참 올려다본다."
+   },
+   {
+    "who": "them",
+    "text": "오늘은 패스!"
+   },
+   {
+    "who": "them",
+    "text": "나 요즘 떡볶이 끊었어 ㅋㅋ 대회 준비 모드"
+   },
+   {
+    "who": "narr",
+    "text": "웃는데 얼굴이 핼쑥하다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "쌤 요즘 얼굴이 안 좋아. 잠은 자?",
+    "require": {
+     "stats": {
+      "sense": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": -5
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 8
+     },
+     "setFlags": [
+      "yuna_noticed"
+     ]
+    },
+    "reply": [
+     "…티 나?",
+     "아무도 몰랐는데. 너만 알아챘네"
+    ],
+    "critReply": [
+     "…너 진짜 눈치 너무 좋다",
+     "새벽에도 운동해. 하루 두 번. 아무한테도 말 안 했는데"
+    ]
+   },
+   {
+    "text": "그럼 나도 오늘은 패스할게",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "ㅋㅋ 의리 좋다!",
+     "대신 대회 끝나면 3인분 먹자. 약속"
+    ]
+   },
+   {
+    "text": "대회 모드 멋있다. 화이팅!",
+    "effects": {
+     "stats": {
+      "stress": 5
+     },
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -3
+     }
+    },
+    "reply": [
+     "…응 고마워",
+     {
+      "who": "narr",
+      "text": "유나가 먼저 돌아섰다. 오늘은 하이파이브가 없었다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "yuna_r12",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_offer"
+   ],
+   "affection": {
+    "*": [
+     30,
+     100
+    ]
+   },
+   "day": [
+    70,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "주저앉은 코치",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "수업 중. 시범을 보이던 유나가 봉을 내려놓고 그대로 주저앉았다."
+   },
+   {
+    "who": "them",
+    "text": "…괜찮아. 잠깐 어지러워서"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   },
+   {
+    "who": "them",
+    "text": "…나 옛날처럼 하고 있었어"
+   },
+   {
+    "who": "them",
+    "text": "새벽에 두 번 하고, 떡볶이 끊고. 숫자 맞추려고"
+   }
+  ],
+  "choices": [
+   {
+    "text": "대회 나가지 마. 이건 아니야",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 5
+     },
+     "setFlags": [
+      "yuna_choice"
+     ]
+    },
+    "reply": [
+     "…응. 오늘은 쉴게. 진짜로",
+     "대회는… 내가 정할게. 조금만 기다려 줘"
+    ]
+   },
+   {
+    "text": "쌤 방식으로 해. 옛날 방식 말고",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "stress": -5
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_choice"
+     ]
+    },
+    "reply": [
+     "…내 방식",
+     "숫자 말고 기분. 내가 회원들한테 맨날 하던 말이네"
+    ]
+   },
+   {
+    "text": "일단 좀 쉬고, 떡볶이 먹으러 가자",
+    "require": {
+     "stats": {
+      "sense": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "sense": 3,
+      "stress": -10
+     },
+     "affection": {
+      "*": 8
+     },
+     "trust": {
+      "*": 6
+     },
+     "setFlags": [
+      "yuna_choice"
+     ]
+    },
+    "reply": [
+     "…지금?",
+     "ㅋㅋ 2인분. 아니, 둘이서 2인분"
+    ],
+    "critReply": [
+     "…너 그거 알아?",
+     "나 지금 그 말이 제일 듣고 싶었어"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 유나는 처음으로 수업을 일찍 끝냈다. 일지 한 줄: '오늘 기분 3점. 그래도 말했다.'"
+ },
+ {
+  "id": "yuna_r13",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "affection": {
+    "*": [
+     0,
+     100
+    ]
+   },
+   "day": [
+    40,
+    100
+   ]
+  },
+  "weight": 4,
+  "title": "홍보 사진 촬영",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "헬스장 홍보 사진 촬영 날. 유나가 카메라 앞에 섰다."
+   },
+   {
+    "who": "narr",
+    "text": "뒤에서 회원 몇이 수군거린다. \"역시 몸이 되니까 모델 하네.\""
+   },
+   {
+    "who": "narr",
+    "text": "유나의 웃음이 한 박자 늦었다."
+   },
+   {
+    "who": "them",
+    "text": "…회원님도 왔네요"
+   },
+   {
+    "who": "sys",
+    "wait": 20
+   }
+  ],
+  "choices": [
+   {
+    "text": "(대화에 끼지 않고 쌤한테 물을 건넨다)",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 2
+     },
+     "setFlags": [
+      "yuna_shoot"
+     ]
+    },
+    "reply": [
+     "…고마워요",
+     "딱 이게 필요했어요. 물이랑, 딴 얘기"
+    ]
+   },
+   {
+    "text": "(맞장구친다) 하긴 쌤 몸이면 모델 할 만하죠",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "*": -6
+     },
+     "trust": {
+      "*": -8
+     },
+     "setFlags": [
+      "yuna_shoot",
+      "yuna_body_comment"
+     ]
+    },
+    "reply": [
+     "…네. 감사합니다, 회원님",
+     {
+      "who": "narr",
+      "text": "유나가 카메라 쪽으로 돌아섰다. 다시 이쪽을 보지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "저기요, 사람 앞에서 몸 얘기는 좀 아니죠",
+    "require": {
+     "stats": {
+      "esteem": 40
+     }
+    },
+    "effects": {
+     "stats": {
+      "sincerity": 4,
+      "esteem": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 3
+     },
+     "setFlags": [
+      "yuna_shoot"
+     ]
+    },
+    "reply": [
+     "…회원님",
+     "잘했어요. 진짜로."
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "yuna_r14",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met"
+   ],
+   "notFlags": [
+    "yuna_banmal"
+   ],
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   },
+   "day": [
+    25,
+    100
+   ]
+  },
+  "weight": 4,
+  "title": "담당 회원님",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "운동 중. 옆 기구의 회원이 유나에게 말을 건다."
+   },
+   {
+    "who": "them",
+    "text": "쌤, 끝나고 밥 한번 어때요? 제가 살게요",
+    "name": "다른 회원"
+   },
+   {
+    "who": "them",
+    "text": "앗 저 담당 회원님 있어요!"
+   },
+   {
+    "who": "them",
+    "text": "한 분만 특별히 챙기는 건 아닌데…"
+   },
+   {
+    "who": "them",
+    "text": "…아니 챙기는데요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "(못 들은 척 운동을 계속한다)",
+    "effects": {
+     "stats": {
+      "stress": -3
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "yuna_rival"
+     ]
+    },
+    "reply": [
+     "ㅋㅋ 못 들은 척한다",
+     "다 들은 거 알아요. 귀 빨개요"
+    ]
+   },
+   {
+    "text": "누구요? 그 담당 회원님",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 1
+     },
+     "setFlags": [
+      "yuna_rival"
+     ]
+    },
+    "reply": [
+     "ㅋㅋㅋ 몰라서 물어요?",
+     "…스쿼트 폼이 교과서인 사람이요"
+    ],
+    "critReply": [
+     "…회원님 지금 좀 신경 쓰였죠?",
+     "저도요. 방금 좀 신경 쓰였어요"
+    ]
+   },
+   {
+    "text": "쌤 인기 많네요. 밥 먹고 오세요",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -2
+     },
+     "setFlags": [
+      "yuna_rival"
+     ],
+     "album": "트레이너를 남에게 양보함"
+    },
+    "reply": [
+     "…아 네",
+     "원래 안 가려 했어요. 알려 줘서 고마워요"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "그날 유나는 하이파이브를 평소보다 한 번 더 했다."
+ },
+ {
+  "id": "yuna_r15",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "flags": [
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_choice"
+   ],
+   "affection": {
+    "*": [
+     20,
+     100
+    ]
+   },
+   "day": [
+    88,
+    100
+   ]
+  },
+  "weight": 2,
+  "title": "마지막 세트",
+  "lines": [
+   {
+    "who": "them",
+    "text": "마지막 세트야. 하나만 더!"
+   },
+   {
+    "who": "narr",
+    "text": "팔이 떨린다. 일지 첫 장엔 '오늘 기분 4점'이 적혀 있었다."
+   },
+   {
+    "who": "them",
+    "text": "나 대회 답장 보냈어. '안 나가요. 대신 제 클래스 열어요.'"
+   },
+   {
+    "who": "them",
+    "text": "기분 기록 클래스. 1호 회원은 너야"
+   }
+  ],
+  "choices": [
+   {
+    "text": "한 개 더 한다",
+    "effects": {
+     "stats": {
+      "charm": 3,
+      "esteem": 5
+     },
+     "affection": {
+      "*": 6
+     }
+    },
+    "fail": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "album": "마지막 세트 실패, 하이파이브는 성공"
+    },
+    "minigame": "nerve_gauge",
+    "reply": [
+     "됐다!! 봤지?",
+     "숫자 말고 기분. 지금 기분 몇 점이야?"
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "봉이 반쯤 올라가다 멈췄다. 유나가 같이 받쳤다."
+     },
+     "ㅋㅋ 괜찮아. 오늘 제일 좋은 실패였어"
+    ],
+    "critReply": [
+     "와아!!! 방금 거 뭐야",
+     "일지에 적어. 오늘 기분 10점. 숫자 하나는 허락할게"
+    ]
+   },
+   {
+    "text": "여기까지. 쌤이 가르쳐 준 거잖아",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "sense": 2
+     },
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…멈출 줄 아는 거",
+     "그거 내가 제일 늦게 배운 거야. 너한테 다시 배웠네"
+    ]
+   },
+   {
+    "text": "이번엔 쌤이 한 개 더 해. 내가 세 줄게",
+    "require": {
+     "stats": {
+      "esteem": 50
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 4
+     },
+     "affection": {
+      "*": 6
+     },
+     "trust": {
+      "*": 7
+     }
+    },
+    "reply": [
+     "…나?",
+     "좋아. 대신 무리하면 바로 말려 줘. 코치님"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "짝. 하이파이브 소리가 헬스장에서 제일 컸다. 이번엔 유나가 손을 놓지 않았다."
+ },
+ {
+  "id": "mo_yuna_photo_tteok",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "affection": {
+    "*": [
+     10,
+     35
+    ]
+   },
+   "day": [
+    8,
+    100
+   ],
+   "flags": [
+    "yuna_known",
+    "yuna_met",
+    "yuna_tteok"
+   ],
+   "notFlags": [
+    "yuna_banmal"
+   ]
+  },
+  "weight": 3,
+  "title": "기다리는 중",
+  "lines": [
+   {
+    "who": "them",
+    "text": "떡볶이 2인분 대기 중!!",
+    "photo": {
+     "icon": "food",
+     "caption": "혼자 아님. 기다리는 중"
+    }
+   },
+   {
+    "who": "them",
+    "text": "빨리 와요!!"
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   },
+   {
+    "who": "them",
+    "text": "…혹시 바빠요? 그럼 제가 2인분 다 먹어요 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "지금 뛰어갈게요",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "stress": -1
+     },
+     "affection": {
+      "*": 5
+     }
+    },
+    "chance": 55,
+    "fail": {
+     "affection": {
+      "*": 1
+     },
+     "stats": {
+      "esteem": -1
+     },
+     "album": "분식집 가다 신발 끈 밟고 넘어짐"
+    },
+    "reply": [
+     {
+      "who": "me",
+      "text": "도착!",
+      "photo": {
+       "icon": "street",
+       "caption": "분식집 앞 도착"
+      }
+     },
+     "ㅋㅋㅋ 4분 컷!! 뛰는 폼 좋았어요",
+     "순대는 사장님 서비스래요"
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "뛰다가 신발 끈을 밟았다. 분식집 앞에서 넘어졌다."
+     },
+     "헉 무릎 괜찮아요?? 떡볶이는 무사해요!!"
+    ],
+    "critReply": [
+     {
+      "who": "me",
+      "text": "도착!",
+      "photo": {
+       "icon": "street",
+       "caption": "분식집 앞 도착"
+      }
+     },
+     "…진짜 뛰어왔네요 ㅋㅋ",
+     "하이파이브 가시죠. 떡볶이 앞에서"
+    ]
+   },
+   {
+    "text": "기다리는 사람이 저예요?",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     "ㅋㅋ 그럼 누구겠어요",
+     "포크 두 개 받아 놨어요. 하나는 회원님 거"
+    ]
+   },
+   {
+    "text": "저 오늘은 좀 피곤해서요",
+    "effects": {
+     "stats": {
+      "stress": -2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "아 그럼 쉬어요!! 쉬는 것도 운동",
+     "2인분은 제가 책임질게요 ㅋㅋ"
+    ]
+   },
+   {
+    "text": "(읽고 답하지 않는다)",
+    "effects": {
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "답장은 두 시간 뒤에야 보냈다."
+     },
+     "ㅋㅋ 2인분 다 먹었어요. 후회 없음!!"
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "mo_yuna_preview_mood",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "affection": {
+    "*": [
+     25,
+     55
+    ]
+   },
+   "day": [
+    18,
+    100
+   ],
+   "flags": [
+    "yuna_known",
+    "yuna_met",
+    "yuna_journal",
+    "yuna_banmal"
+   ]
+  },
+  "weight": 3,
+  "title": "오늘 기분 몇 점",
+  "preview": "회원님 오늘 기분 몇 점?",
+  "lines": [
+   {
+    "who": "them",
+    "text": "회원님 오늘 기분 몇 점?"
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "아 맞다. 이제 회원님 아니지"
+   },
+   {
+    "who": "them",
+    "text": "너. 오늘 기분 몇 점?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "7점. 평범한 하루",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "7점 좋아!! 평범한 게 제일 어려워",
+     "일지에 이유도 한 줄 적기!"
+    ]
+   },
+   {
+    "text": "솔직히 3점. 좀 힘들었어",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 3
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "…말해 줘서 고마워",
+     "3점도 기록이야. 내일 하이파이브 두 배"
+    ]
+   },
+   {
+    "text": "쌤이 물어봐서 지금 9점",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 6
+     }
+    },
+    "fail": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "minigame": "nerve_gauge",
+    "reply": [
+     "…9점?",
+     "아 나 방금 11점 됐다. 만점 넘었어"
+    ],
+    "failReply": [
+     "ㅋㅋ 뭐야 그 멘트",
+     "…타이밍 3초 늦었어. 그래도 받아 줄게"
+    ],
+    "critReply": [
+     "…아 반칙",
+     "지금 내 기분도 적어 놔. 10점"
+    ]
+   },
+   {
+    "text": "그런 거 매일 물어볼 거야?",
+    "effects": {
+     "affection": {
+      "*": -3
+     },
+     "trust": {
+      "*": -4
+     }
+    },
+    "reply": [
+     "…귀찮았어?",
+     "알았어. 이제 안 물어볼게"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "다음 날, 유나가 일지 표지에 스티커를 하나 더 붙였다. '물어보기 담당'."
+ },
+ {
+  "id": "mo_yuna_call_offer",
+  "layer": "route",
+  "character": "yuna",
+  "format": "call",
+  "trigger": {
+   "affection": {
+    "*": [
+     35,
+     70
+    ]
+   },
+   "day": [
+    30,
+    100
+   ],
+   "flags": [
+    "yuna_known",
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_offer"
+   ]
+  },
+  "weight": 4,
+  "title": "해도 될까",
+  "lines": [
+   {
+    "who": "them",
+    "text": "…자?"
+   },
+   {
+    "who": "them",
+    "text": "아니 그냥. 목소리 들으면 정할 수 있을 것 같아서"
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "코치님이 답 달래. 이번 주까지"
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "…나 이거 해도 될까"
+   }
+  ],
+  "choices": [
+   {
+    "text": "거절",
+    "decline": true,
+    "effects": {
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "부재중 전화 1통."
+     },
+     "아 바쁘구나! 내일 봐!!"
+    ]
+   },
+   {
+    "text": "쌤이 하고 싶으면. 근데 옛날처럼은 말고",
+    "effects": {
+     "stats": {
+      "stress": -2
+     },
+     "affection": {
+      "*": 5
+     },
+     "trust": {
+      "*": 4
+     }
+    },
+    "fail": {
+     "affection": {
+      "*": 1
+     }
+    },
+    "minigame": "call_rhythm",
+    "reply": [
+     "…옛날처럼은 말고",
+     "응. 그 말이 듣고 싶었나 봐"
+    ],
+    "failReply": [
+     "…아 내가 말 끊었지. 미안",
+     "요즘 머리가 좀 멍해 ㅋㅋ 잠을 못 자서"
+    ],
+    "critReply": [
+     "…한 시간 넘게 떠들었다 ㅋㅋ",
+     "대회 얘기는 하나도 안 했네. 근데 기분 9점"
+    ]
+   },
+   {
+    "text": "쌤 오늘 기분은 몇 점이야?",
+    "require": {
+     "stats": {
+      "talk": 40
+     }
+    },
+    "effects": {
+     "affection": {
+      "*": 4
+     },
+     "trust": {
+      "*": 3
+     }
+    },
+    "reply": [
+     "…내가 묻던 걸 네가 묻네",
+     "4점. 아니 지금은 6점. 통화해서"
+    ]
+   },
+   {
+    "text": "떡볶이 먹으면서 얘기할래?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "벌써 닫았어 ㅋㅋ",
+      "photo": {
+       "icon": "night",
+       "caption": "셔터 내린 분식집"
+      }
+     },
+     "…요즘 안 가서 몰랐네. 몇 시에 닫는지도"
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "통화가 끝나고, 유나의 프로필 사진이 바뀌었다. 새벽 러닝머신 계기판이다."
+ },
+ {
+  "id": "mo_yuna_photo_journal",
+  "layer": "route",
+  "character": "yuna",
+  "trigger": {
+   "affection": {
+    "*": [
+     60,
+     100
+    ]
+   },
+   "day": [
+    55,
+    100
+   ],
+   "flags": [
+    "yuna_known",
+    "yuna_met",
+    "yuna_banmal",
+    "yuna_choice"
+   ]
+  },
+  "weight": 3,
+  "title": "스티커 일지",
+  "lines": [
+   {
+    "who": "them",
+    "text": "이번 주 전부 8점 이상 ㅋㅋ",
+    "photo": {
+     "icon": "gym",
+     "caption": "스티커로 꽉 찬 일지"
+    }
+   },
+   {
+    "who": "them",
+    "text": "나도 쓰기 시작했어. 내 거"
+   },
+   {
+    "who": "narr",
+    "text": "칸마다 이유가 적혀 있다. 목요일: '하이파이브 소리 제일 큼.'"
+   },
+   {
+    "who": "sys",
+    "wait": 4
+   },
+   {
+    "who": "them",
+    "text": "…코치가 자기 일지 자랑하는 거 좀 웃기지"
+   }
+  ],
+  "choices": [
+   {
+    "text": "내 일지도 보여 줄게",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "*": 2
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "me",
+      "text": "나도 전부 8점",
+      "photo": {
+       "icon": "book",
+       "caption": "내 일지, 이번 주"
+      }
+     },
+     "ㅋㅋ 이유 칸에 내 이름 너무 많은데?",
+     "…싫다는 거 아님"
+    ]
+   },
+   {
+    "text": "8점 기념으로 떡볶이 가자",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "reply": [
+     "콜!! 10분 뒤 분식집",
+     "오늘은 둘이서 3인분 간다"
+    ]
+   },
+   {
+    "text": "숫자 적는 거 괜찮아?",
+    "effects": {
+     "affection": {
+      "*": 1
+     },
+     "trust": {
+      "*": 1
+     }
+    },
+    "reply": [
+     "ㅋㅋ 이건 기분 숫자라 괜찮아",
+     "체중계엔 안 올라가. 이제 진짜로"
+    ]
+   },
+   {
+    "text": "스티커 너무 많은 거 아니야?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 4
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     "많아야 돼!! 회원들이 준 거야",
+     "여기 빈칸 하나 있다. 네가 붙여 줘"
+    ],
+    "failReply": [
+     "…많아?",
+     "아 그냥 몇 개 뗄까"
+    ],
+    "critReply": [
+     "ㅋㅋㅋ 이거 봐 하나 더 붙였어",
+     "네 이름 스티커. 방금 만들었어"
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "다음 날, 명예의 전당 빈 자리에 그 일지 사진이 붙었다."
+ }
+]

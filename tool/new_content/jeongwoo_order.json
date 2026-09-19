@@ -1,0 +1,117 @@
+{
+ "prerequisites": [
+  [
+   "jeongwoo_r02",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r03",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r04",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r05",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r06",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r07",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r08",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r09",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r10",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r11",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r12",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r13",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r14",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r15",
+   "jeongwoo_r00|jeongwoo_r01"
+  ],
+  [
+   "jeongwoo_r03",
+   "jeongwoo_r02"
+  ],
+  [
+   "jeongwoo_r09",
+   "jeongwoo_r06"
+  ],
+  [
+   "jeongwoo_r10",
+   "jeongwoo_r09"
+  ],
+  [
+   "jeongwoo_r11",
+   "jeongwoo_r09"
+  ],
+  [
+   "jeongwoo_r11",
+   "jeongwoo_r07"
+  ],
+  [
+   "jeongwoo_r12",
+   "jeongwoo_r09"
+  ],
+  [
+   "jeongwoo_r15",
+   "jeongwoo_r12"
+  ],
+  [
+   "mo_jeongwoo_photo_shutter",
+   "jeongwoo_r06"
+  ],
+  [
+   "mo_jeongwoo_call_iron",
+   "jeongwoo_r09"
+  ],
+  [
+   "jeongwoo_r11",
+   "m16"
+  ]
+ ],
+ "orderings": [
+  [
+   "jeongwoo_r01",
+   "jeongwoo_r00"
+  ]
+ ],
+ "_notes": {
+  "jeongwoo_r03 <- jeongwoo_r02": "\"오늘 발표 잘했어\" ← 발표 준비 (jeongwoo_presentation)",
+  "jeongwoo_r09 <- jeongwoo_r06": "세탁소 셔터 ← \"우리 집 세탁소야\" (jeongwoo_laundry)",
+  "jeongwoo_r10/r11/r12 <- jeongwoo_r09": "전단지·인수인계·잠수 ← 아버지 재입원 (jeongwoo_shutter)",
+  "jeongwoo_r11 <- jeongwoo_r07": "\"내가 정리하면 되는 일\" ← 2년 휴학 고백 (jeongwoo_late)",
+  "jeongwoo_r15 <- jeongwoo_r12": "가게 마감 같이 ← 사흘 잠수 뒤 다시 연결 (jeongwoo_found)",
+  "mo_jeongwoo_photo_shutter <- r06": "세탁소 셔터 사진 ← 세탁소 공개 (jeongwoo_laundry)",
+  "mo_jeongwoo_call_iron <- r09": "밤 11시 다림질 통화 ← 재입원 (jeongwoo_shutter)",
+  "jeongwoo_r11 <- m16": "\"휴학할지도 모른다고 했던 거\" ← m16 남성판(40일차). r11 day 하한 56으로 보장",
+  "main": "r09(46)·r11(56)은 m16 남성판(40일차, \"다시 휴학할지도\")보다 day 하한이 늦어 자연히 뒤에 온다. r15(86)는 m34(86)와 같은 날일 수 있으나 서로 전제하지 않는다."
+ }
+}
