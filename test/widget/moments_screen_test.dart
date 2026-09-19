@@ -1,10 +1,14 @@
 // 모먼트 화면: 전화(수신 → 받기/거절), 먼저 온 톡 알림, 사진 메시지. docs/MOMENTS_SPEC.md.
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/debug/debug_gallery.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/game_controller.dart';
 import 'package:mossol/ui/call_view.dart';
+import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/notification_card.dart';
 import 'package:mossol/ui/widgets.dart';
@@ -42,63 +46,63 @@ void main() {
       tester,
     ) async {
       await show(tester, call);
-      expect(find.text('전화가 왔어요'), findsOneWidget);
+      expect(findText('전화가 왔어요'), findsOneWidget);
       expect(find.byType(PulseAvatar), findsOneWidget);
-      expect(find.text('받기'), findsOneWidget);
-      expect(find.text('거절'), findsOneWidget);
+      expect(findText('받기'), findsOneWidget);
+      expect(findText('거절'), findsOneWidget);
       // 받기 전에는 대사가 흐르지 않는다.
       await tester.pump(const Duration(seconds: 2));
       expect(c.revealed, 0);
 
-      await tester.tap(find.text('받기'));
+      await tester.tap(findText('받기'));
       await tester.pump();
       expect(find.byType(IncomingCallView), findsNothing);
-      expect(find.text('통화 중'), findsOneWidget);
-      expect(find.text('00:00'), findsOneWidget);
+      expect(findText('통화 중'), findsOneWidget);
+      expect(findText('00:00'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 850));
       expect(c.revealed, 1);
-      expect(find.text('어… 자고 있었어?'), findsOneWidget);
+      expect(findText('어… 자고 있었어?'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('00:01'), findsOneWidget);
+      expect(findText('00:01'), findsOneWidget);
 
       await revealAll(tester, c);
       // 대기 줄은 카운트다운이 아니라 침묵. 벌점·광고 버튼 없음.
-      expect(find.text(CallSubtitle.silence), findsOneWidget);
-      expect(find.textContaining('초째 답이 없다'), findsNothing);
+      expect(findText(CallSubtitle.silence), findsOneWidget);
+      expect(findTextContaining('초째 답이 없다'), findsNothing);
       // 통화 중 선택지: decline 은 숨긴다.
       expect(
         find.byType(OutlinedButton),
         findsNWidgets(call.choices.length - 1),
       );
-      expect(find.widgetWithText(OutlinedButton, '거절'), findsNothing);
+      expect(findWidgetWithText(OutlinedButton, '거절'), findsNothing);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, '나도 마침 생각하고 있었어'));
+      await tester.tap(findWidgetWithText(OutlinedButton, '나도 마침 생각하고 있었어'));
       await tester.pump();
       expect(c.lastOutcome, isNotNull);
       expect(c.lastOutcome!.success, isTrue);
       // 내 말이 자막으로 남고, 반응은 자막으로 한 줄씩.
-      expect(find.text('나도 마침 생각하고 있었어'), findsOneWidget);
-      expect(find.text('계속'), findsNothing);
+      expect(findText('나도 마침 생각하고 있었어'), findsOneWidget);
+      expect(findText('계속'), findsNothing);
       await settleReplies(tester);
-      expect(find.text('진짜? 다행이다'), findsOneWidget);
+      expect(findText('진짜? 다행이다'), findsOneWidget);
       expect(
         find.byType(ChatBubble),
         findsNothing,
         reason: '통화 중 반응은 말풍선이 아니다',
       );
-      expect(find.text('계속'), findsOneWidget);
-      expect(find.text('통화 종료'), findsOneWidget);
+      expect(findText('계속'), findsOneWidget);
+      expect(findText('통화 종료'), findsOneWidget);
       // 결과 패널이 뜨면 통화 시간이 멈춘다.
       final t1 = tester
-          .widget<Text>(find.textContaining(RegExp(r'^\d\d:\d\d$')))
+          .widget<Text>(findTextContaining(RegExp(r'^\d\d:\d\d$')))
           .data;
       await tester.pump(const Duration(seconds: 3));
       final t2 = tester
-          .widget<Text>(find.textContaining(RegExp(r'^\d\d:\d\d$')))
+          .widget<Text>(findTextContaining(RegExp(r'^\d\d:\d\d$')))
           .data;
       expect(t2, t1);
 
-      await tester.tap(find.text('계속'));
+      await tester.tap(findText('계속'));
       await tester.pump();
       expect(c.phase, Phase.summary);
       await tester.pumpWidget(Container());
@@ -107,7 +111,7 @@ void main() {
     testWidgets('수신 → 거절 = decline 선택지. 반응은 채팅 말풍선', (tester) async {
       final affBefore = c.state!.affectionOf(call.character!);
       await show(tester, call);
-      await tester.tap(find.text('거절'));
+      await tester.tap(findText('거절'));
       await tester.pump();
       expect(c.lastOutcome, isNotNull);
       expect(c.lastReply.first.text, '바빠? 나중에 연락해');
@@ -116,17 +120,17 @@ void main() {
         lessThanOrEqualTo(affBefore),
       );
       expect(find.byType(ActiveCallView), findsNothing);
-      expect(find.textContaining('부재중 전화'), findsOneWidget);
+      expect(findTextContaining('부재중 전화'), findsOneWidget);
       // 대사는 보이지 않는다(받지 않은 전화).
-      expect(find.text('어… 자고 있었어?'), findsNothing);
+      expect(findText('어… 자고 있었어?'), findsNothing);
       await settleReplies(tester);
-      expect(find.widgetWithText(ChatBubble, '바빠? 나중에 연락해'), findsOneWidget);
-      expect(find.text('계속'), findsOneWidget);
+      expect(findWidgetWithText(ChatBubble, '바빠? 나중에 연락해'), findsOneWidget);
+      expect(findText('계속'), findsOneWidget);
       // 거절은 '성공' 이 아니다.
-      expect(find.text('전화를 넘겼다'), findsOneWidget);
-      expect(find.text('성공'), findsNothing);
+      expect(findText('전화를 넘겼다'), findsOneWidget);
+      expect(findText('성공'), findsNothing);
       // 결정한 선택지 문구('거절')를 내 말풍선으로 남기지 않는다.
-      expect(find.widgetWithText(ChatBubble, '거절'), findsNothing);
+      expect(findWidgetWithText(ChatBubble, '거절'), findsNothing);
 
       // 되돌리기(광고 보상)면 다시 울리는 화면으로.
       if (c.canOfferUndo) {
@@ -141,7 +145,7 @@ void main() {
       await show(tester, call, revealed: true);
       expect(find.byType(IncomingCallView), findsNothing);
       expect(find.byType(ActiveCallView), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, '거절'), findsNothing);
+      expect(findWidgetWithText(OutlinedButton, '거절'), findsNothing);
       await tester.pumpWidget(Container());
     });
   });
@@ -150,9 +154,9 @@ void main() {
     testWidgets('알림 카드가 뜨고 탭하면 대사가 시작된다', (tester) async {
       await show(tester, preview);
       expect(find.byType(NotificationCard), findsOneWidget);
-      expect(find.text(preview.preview!), findsOneWidget);
-      expect(find.text('지금'), findsOneWidget);
-      expect(find.text(c.characterName(preview.character)), findsOneWidget);
+      expect(findText(preview.preview!), findsOneWidget);
+      expect(findText('지금'), findsOneWidget);
+      expect(findText(c.characterName(preview.character)), findsOneWidget);
       // 알림이 떠 있는 동안 자동 공개 타이머는 돌지 않는다.
       await tester.pump(const Duration(milliseconds: 1000));
       expect(c.revealed, 0);
@@ -164,7 +168,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 850));
       expect(c.revealed, 1);
       expect(
-        find.widgetWithText(ChatBubble, preview.lines.first.text),
+        findWidgetWithText(ChatBubble, preview.lines.first.text),
         findsOneWidget,
       );
       await tester.pumpWidget(Container());
@@ -210,7 +214,7 @@ void main() {
       });
       await show(tester, named);
       expect(find.byType(NotificationCard), findsOneWidget);
-      expect(find.text('태현'), findsOneWidget);
+      expect(findText('태현'), findsOneWidget);
       await tester.pumpWidget(Container());
 
       final nameless = StoryEvent.fromJson({
@@ -248,9 +252,9 @@ void main() {
       expect(find.byIcon(Icons.face), findsOneWidget);
       expect(find.byIcon(Icons.photo), findsOneWidget, reason: '모르는 아이콘');
       // text 가 있으면 사진 아래 말풍선.
-      expect(find.text('여기 올래?'), findsOneWidget);
+      expect(findText('여기 올래?'), findsOneWidget);
       expect(
-        tester.getRect(find.text('여기 올래?')).top,
+        tester.getRect(findText('여기 올래?')).top,
         greaterThan(tester.getRect(find.byType(PhotoBubble).first).bottom),
       );
       // 내가 보낸 사진은 오른쪽.
@@ -260,7 +264,7 @@ void main() {
 
       // 반응 줄의 사진도 같은 경로로 그린다.
       await tester.tap(
-        find.widgetWithText(OutlinedButton, photo.choices.first.text),
+        findWidgetWithText(OutlinedButton, photo.choices.first.text),
       );
       await tester.pump();
       await settleReplies(tester);
@@ -275,6 +279,75 @@ void main() {
       expect(photoIcons.length, 14);
       expect(photoIconFor('???'), Icons.photo);
     });
+
+    testWidgets('폴라로이드: 폭 220 이하 · 기울기 ±1.5° · 탭하면 크게 보기와 닫기', (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(430, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await show(tester, photo, revealed: true);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // 채팅 흐름을 막지 않는 크기: 화면 60% 와 220 중 작은 쪽.
+      final frame = tester.getSize(find.byType(PolaroidFrame).first);
+      expect(frame.width, lessThanOrEqualTo(PhotoBubble.maxWidth));
+
+      // 기울기는 결정론적이고 범위 안.
+      for (final icon in [...Photo.icons, '???']) {
+        for (final cap in ['', '창가 자리 잡았어', '가나다라마바사아자차카타파하 한강 야경']) {
+          final p = Photo(icon: icon, caption: cap);
+          final d = photoTiltDegrees(p);
+          expect(d, inInclusiveRange(-1.5, 1.5));
+          expect(photoTiltDegrees(Photo(icon: icon, caption: cap)), d);
+        }
+      }
+
+      // 스크린리더에게는 버튼 + 힌트.
+      final data = tester
+          .getSemantics(find.byType(PhotoBubble).first)
+          .getSemanticsData();
+      expect(data.hint, '크게 보기');
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+      await tester.tap(find.byType(PhotoBubble).first);
+      await tester.pumpAndSettle();
+      expect(findText('닫기'), findsOneWidget);
+      expect(find.bySemanticsLabel('사진: 창가 자리 잡았어'), findsWidgets);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(textContrastGuideline));
+      await tester.tap(findText('닫기'));
+      await tester.pumpAndSettle();
+      expect(findText('닫기'), findsNothing);
+      handle.dispose();
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('캡션 잉크색은 모든 캐릭터·라이트/다크에서 인화지 위 4.5:1 이상', (tester) async {
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          wrapApp(
+            Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
+            mode: mode,
+          ),
+        );
+        final t = ctx.tokens;
+        final paper = PolaroidFrame.paperOf(ctx);
+        for (final a in [...t.characterAccents.values, t.neutralAccent]) {
+          final ink = PolaroidFrame.inkOf(ctx, a);
+          final l1 = ink.computeLuminance(), l2 = paper.computeLuminance();
+          final ratio = (math.max(l1, l2) + 0.05) / (math.min(l1, l2) + 0.05);
+          expect(ratio, greaterThanOrEqualTo(4.5), reason: '$mode $a');
+        }
+      }
+      await tester.pumpWidget(Container());
+    });
   });
 
   testWidgets('디버그 갤러리: 모먼트 미리보기 세 줄이 있고 전화를 바로 띄운다', (tester) async {
@@ -284,22 +357,22 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(DebugGalleryApp(bundle: testBundle()));
     await tester.pumpAndSettle();
-    expect(find.text('모먼트 미리보기'), findsOneWidget);
+    expect(findText('모먼트 미리보기'), findsOneWidget);
     for (final s in momentSamples(testBundle())) {
-      expect(find.text(s.$1), findsOneWidget);
+      expect(findText(s.$1), findsOneWidget);
     }
-    await tester.tap(find.text('전화 (수신 → 받기/거절)'));
+    await tester.tap(findText('전화 (수신 → 받기/거절)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(IncomingCallView), findsOneWidget);
-    await tester.tap(find.text('거절'));
+    await tester.tap(findText('거절'));
     await tester.pump();
     await settleReplies(tester);
-    await tester.tap(find.text('계속'));
+    await tester.tap(findText('계속'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(IncomingCallView), findsNothing);
-    expect(find.text('모먼트 미리보기'), findsOneWidget);
+    expect(findText('모먼트 미리보기'), findsOneWidget);
     await tester.pumpWidget(Container());
   });
 }

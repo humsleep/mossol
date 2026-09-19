@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 
 import '../engine/models.dart';
 import 'design_system.dart';
+import 'keep_all.dart';
 import 'widgets.dart';
 
 /// `mm:ss`. 한 시간을 넘으면 분이 60 을 넘어 그대로 센다(통화가 그렇게 길 일은 없다).
@@ -484,7 +485,7 @@ class CallSubtitle extends StatelessWidget {
             if (line.text.isNotEmpty) ...[
               const SizedBox(height: AppSpace.sm),
               Text(
-                line.text,
+                keepAll(line.text),
                 textAlign: me ? TextAlign.end : TextAlign.center,
                 style: (me ? text.bodyMedium : text.titleLarge)?.copyWith(
                   color: me ? scheme.onSurfaceVariant : scheme.onSurface,
@@ -515,7 +516,7 @@ class CallSubtitle extends StatelessWidget {
               maxWidth: MediaQuery.sizeOf(context).width * 0.72,
             ),
             child: Text(
-              line.text,
+              keepAll(line.text),
               textAlign: TextAlign.end,
               style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
@@ -525,7 +526,7 @@ class CallSubtitle extends StatelessWidget {
       case 'narr':
         return pad(
           Text(
-            line.text,
+            keepAll(line.text),
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(
               color: t.narration,
@@ -537,7 +538,7 @@ class CallSubtitle extends StatelessWidget {
       case 'sys':
         return pad(
           Text(
-            line.text.isEmpty ? '…' : line.text,
+            line.text.isEmpty ? '…' : keepAll(line.text),
             textAlign: TextAlign.center,
             style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
@@ -558,7 +559,7 @@ class CallSubtitle extends StatelessWidget {
                   ),
                 ),
               Text(
-                line.text,
+                keepAll(line.text),
                 textAlign: TextAlign.center,
                 style: text.titleLarge?.copyWith(color: scheme.onSurface),
               ),

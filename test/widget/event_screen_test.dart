@@ -29,35 +29,35 @@ void main() {
     await showEvent(tester, 'm02', revealed: true);
     final locked = c.choices.firstWhere((v) => v.locked);
     expect(locked.reason, '자존감 30↑');
-    expect(find.text('자존감 30↑'), findsOneWidget);
+    expect(findText('자존감 30↑'), findsOneWidget);
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     final btn = tester.widget<OutlinedButton>(
-        find.widgetWithText(OutlinedButton, locked.choice.text));
+        findWidgetWithText(OutlinedButton, locked.choice.text));
     expect(btn.onPressed, isNull);
     expect(btn.enabled, isFalse);
 
     // 눌러도 아무 일도 없다.
-    await tester.tap(find.widgetWithText(OutlinedButton, locked.choice.text),
+    await tester.tap(findWidgetWithText(OutlinedButton, locked.choice.text),
         warnIfMissed: false);
     await tester.pump();
     expect(c.lastOutcome, isNull);
 
     // 미니게임 선택지엔 라벨이 붙는다.
-    expect(find.text('표정 읽기'), findsOneWidget);
+    expect(findText('표정 읽기'), findsOneWidget);
     expect(find.byIcon(Icons.sports_esports_outlined), findsOneWidget);
   });
 
   testWidgets('대사가 시간에 따라 자동 공개되고 마지막에 선택지가 뜬다', (tester) async {
     await showEvent(tester, 'm02');
     expect(c.revealed, 0);
-    expect(find.text('…'), findsOneWidget);
+    expect(findText('…'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 850));
     expect(c.revealed, 1);
-    expect(find.text('야 프사 바꿨네 ㅋㅋ'), findsOneWidget);
-    expect(find.text('태현'), findsWidgets);
+    expect(findText('야 프사 바꿨네 ㅋㅋ'), findsOneWidget);
+    expect(findText('태현'), findsWidgets);
     await revealAll(tester, c);
     expect(find.byType(OutlinedButton), findsNWidgets(3));
-    expect(find.text('…'), findsNothing);
+    expect(findText('…'), findsNothing);
   });
 
   testWidgets('읽씹 대기: 카운트다운이 돌고 끝나면 자존감 -1, 다음 줄로 넘어간다', (tester) async {
@@ -74,27 +74,27 @@ void main() {
     }
     expect(c.revealed, waitIdx);
     await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('초째 답이 없다'), findsOneWidget);
-    expect(find.text('광고 보고 기다리지 않기'), findsOneWidget);
-    final t1 = tester.widget<Text>(find.textContaining('초째 답이 없다')).data!;
+    expect(findTextContaining('초째 답이 없다'), findsOneWidget);
+    expect(findText('광고 보고 기다리지 않기'), findsOneWidget);
+    final t1 = tester.widget<Text>(findTextContaining('초째 답이 없다')).data!;
     await tester.pump(const Duration(seconds: 3));
-    final t2 = tester.widget<Text>(find.textContaining('초째 답이 없다')).data!;
+    final t2 = tester.widget<Text>(findTextContaining('초째 답이 없다')).data!;
     expect(t1, isNot(t2), reason: '카운트다운이 움직여야 한다');
     expect(c.revealed, waitIdx, reason: '대기 중엔 줄이 넘어가지 않는다');
     expect(c.state!.stat(Stat.esteem), esteemBefore);
 
     // 광고 미지원 환경에서 건너뛰기를 누르면 스낵바만 뜨고 대기는 계속된다.
-    await tester.tap(find.text('광고 보고 기다리지 않기'));
+    await tester.tap(findText('광고 보고 기다리지 않기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('광고를 불러오지 못했어요.'), findsOneWidget);
+    expect(findText('광고를 불러오지 못했어요.'), findsOneWidget);
     expect(c.revealed, waitIdx);
 
     await tester.pump(const Duration(seconds: 20));
     await tester.pump();
     expect(c.revealed, greaterThan(waitIdx));
     expect(c.state!.stat(Stat.esteem), esteemBefore - 1);
-    expect(find.textContaining('초째 답이 없다'), findsNothing);
+    expect(findTextContaining('초째 답이 없다'), findsNothing);
     await revealAll(tester, c);
     expect(find.byType(OutlinedButton), findsNWidgets(3));
   });
@@ -102,13 +102,13 @@ void main() {
   testWidgets('선택 → 결과 패널 → 계속 → 다음 이벤트/정산', (tester) async {
     await showEvent(tester, 'm01', revealed: true);
     final idx = plainChoiceIndex(c);
-    await tester.tap(find.widgetWithText(OutlinedButton, c.current!.choices[idx].text));
+    await tester.tap(findWidgetWithText(OutlinedButton, c.current!.choices[idx].text));
     await tester.pump();
     expect(c.lastOutcome, isNotNull);
     await settleReplies(tester);
-    expect(find.text('계속'), findsOneWidget);
+    expect(findText('계속'), findsOneWidget);
     expect(find.byType(OutlinedButton), findsNothing);
-    await tester.tap(find.text('계속'));
+    await tester.tap(findText('계속'));
     await tester.pump();
     // 큐가 비어 있으니 정산으로.
     expect(c.phase, Phase.summary);
@@ -120,10 +120,10 @@ void main() {
     c.choose(0, minigameSuccess: false);
     await tester.pump();
     await settleReplies(tester);
-    expect(find.text('실패…'), findsOneWidget);
+    expect(findText('실패…'), findsOneWidget);
     expect(c.canOfferUndo, isTrue);
-    expect(find.text('10초 전으로 (광고)'), findsOneWidget);
-    await tester.tap(find.text('10초 전으로 (광고)'));
+    expect(findText('10초 전으로 (광고)'), findsOneWidget);
+    await tester.tap(findText('10초 전으로 (광고)'));
     await tester.pump();
     expect(c.lastOutcome, isNotNull, reason: '광고 미지원이면 되돌리기 안 됨');
     // 되돌리기가 실제로 동작하면 선택지로 돌아간다.
@@ -136,10 +136,10 @@ void main() {
   testWidgets('힌트 버튼은 hint 가 있는 이벤트에만 뜬다', (tester) async {
     final withHint = c.bundle.events.firstWhere((e) => e.hint != null);
     await showEvent(tester, withHint.id, revealed: true);
-    expect(find.text('태현에게 물어보기 (광고)'), findsOneWidget);
+    expect(findText('태현에게 물어보기 (광고)'), findsOneWidget);
     c.revealHint();
     await tester.pump();
-    expect(find.text('태현에게 물어보기 (광고)'), findsNothing);
+    expect(findText('태현에게 물어보기 (광고)'), findsNothing);
   });
 
   testWidgets('이벤트 화면을 내려도 타이머와 리스너가 남지 않는다', (tester) async {
@@ -174,24 +174,24 @@ void main() {
     await tester.pumpWidget(wrapApp(EventScreen(c: c)));
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(OutlinedButton, '너 생각'));
+    await tester.tap(findWidgetWithText(OutlinedButton, '너 생각'));
     await tester.pump();
     expect(c.lastReply.length, 2);
     // 내 말풍선은 바로, 상대 반응은 아직.
-    expect(find.text('너 생각'), findsOneWidget);
-    expect(find.text('헐'), findsNothing);
-    expect(find.text('…'), findsOneWidget);
+    expect(findText('너 생각'), findsOneWidget);
+    expect(findText('헐'), findsNothing);
+    expect(findText('…'), findsOneWidget);
     // 결과 패널은 반응이 끝난 뒤에.
-    expect(find.text('계속'), findsNothing);
+    expect(findText('계속'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 800));
-    expect(find.text('헐'), findsOneWidget);
-    expect(find.text('답장이 빨라졌다.'), findsNothing);
+    expect(findText('헐'), findsOneWidget);
+    expect(findText('답장이 빨라졌다.'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 800));
-    expect(find.text('답장이 빨라졌다.'), findsOneWidget);
-    expect(find.text('…'), findsNothing);
-    expect(find.text('계속'), findsOneWidget);
+    expect(findText('답장이 빨라졌다.'), findsOneWidget);
+    expect(findText('…'), findsNothing);
+    expect(findText('계속'), findsOneWidget);
     await tester.pumpWidget(Container());
   });
 }

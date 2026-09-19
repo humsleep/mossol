@@ -54,37 +54,37 @@ void main() {
   group('세이브 없음', () {
     testWidgets('소개 카드 · 새 게임 · 등장인물 · 앨범 0 / N · 힌트', (tester) async {
       await showHome(tester);
-      expect(find.text('모쏠 키우기'), findsOneWidget);
-      expect(find.text('100일 뒤, 이 남자는 달라져 있을까'), findsOneWidget);
-      expect(find.text('아침: 오늘 할 일 하나 고르기'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, '새 게임'), findsOneWidget);
-      expect(find.text('새 게임'), findsOneWidget);
-      expect(find.text('이어하기'), findsNothing);
+      expect(findText('모쏠 키우기'), findsOneWidget);
+      expect(findText('100일 뒤, 이 남자는 달라져 있을까'), findsOneWidget);
+      expect(findText('아침: 오늘 할 일 하나 고르기'), findsOneWidget);
+      expect(findWidgetWithText(FilledButton, '새 게임'), findsOneWidget);
+      expect(findText('새 게임'), findsOneWidget);
+      expect(findText('이어하기'), findsNothing);
 
       // 하트 줄은 세이브가 없으면 그리지 않는다.
       expect(find.byType(HeartsRow), findsNothing);
-      expect(find.text('광고로 +1'), findsNothing);
+      expect(findText('광고로 +1'), findsNothing);
 
       // 사람들: 수치 없이 이름만, 히든은 맨 뒤 '???'.
-      expect(find.text('등장인물'), findsOneWidget);
-      expect(find.text('호감 순'), findsNothing);
-      expect(find.text('???'), findsOneWidget);
-      expect(find.textContaining('♥'), findsNothing);
+      expect(findText('등장인물'), findsOneWidget);
+      expect(findText('호감 순'), findsNothing);
+      expect(findText('???'), findsOneWidget);
+      expect(findTextContaining('♥'), findsNothing);
       final strip = tester.widget<CastStrip>(find.byType(CastStrip));
       expect(strip.entries.last.mystery, isTrue);
       expect(strip.entries.length, c.bundle.characters.length);
 
       // 앨범 카드.
       final total = c.bundle.endings.length;
-      expect(find.textContaining('앨범  0 / $total'), findsOneWidget);
+      expect(findTextContaining('앨범  0 / $total'), findsOneWidget);
       expect(find.byType(EndingTierDots), findsOneWidget);
-      expect(find.textContaining('다음 엔딩 힌트 · '), findsOneWidget);
+      expect(findTextContaining('다음 엔딩 힌트 · '), findsOneWidget);
       await unmount(tester);
     });
 
     testWidgets('앨범 카드를 누르면 앨범으로 간다', (tester) async {
       await showHome(tester);
-      await tester.tap(find.textContaining('앨범  0 /'));
+      await tester.tap(findTextContaining('앨범  0 /'));
       await tester.pumpAndSettle();
       expect(find.byType(AlbumScreen), findsOneWidget);
       await unmount(tester);
@@ -108,28 +108,28 @@ void main() {
       final s = c.saveSummary!;
       expect(s.day, 37);
       expect(s.topCharacterId, 'seoyeon');
-      expect(find.text('1회차 · 2장'), findsOneWidget);
-      expect(find.text('D+37 / 100'), findsOneWidget);
-      expect(find.textContaining('어젯밤: 내일 서연이'), findsOneWidget);
-      expect(find.textContaining('서연 ♥42'), findsOneWidget);
+      expect(findText('1회차 · 2장'), findsOneWidget);
+      expect(findText('D+37 / 100'), findsOneWidget);
+      expect(findTextContaining('어젯밤: 내일 서연이'), findsOneWidget);
+      expect(findTextContaining('서연 ♥42'), findsOneWidget);
       // 숫자 대신 서사 신호가 주인공. '가장 가까운 사람' 꼬리표는 신호가 대신한다.
       expect(s.topSignal, isNotNull);
-      expect(find.textContaining(s.topSignal!), findsOneWidget);
-      expect(find.text('가장 가까운 사람'), findsNothing);
+      expect(findTextContaining(s.topSignal!), findsOneWidget);
+      expect(findText('가장 가까운 사람'), findsNothing);
 
-      expect(find.widgetWithText(FilledButton, '이어하기'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, '새 게임'), findsOneWidget);
-      expect(find.text('새 게임'), findsOneWidget);
-      expect(find.text('이어하기'), findsOneWidget);
+      expect(findWidgetWithText(FilledButton, '이어하기'), findsOneWidget);
+      expect(findWidgetWithText(TextButton, '새 게임'), findsOneWidget);
+      expect(findText('새 게임'), findsOneWidget);
+      expect(findText('이어하기'), findsOneWidget);
 
-      expect(find.text('사람들'), findsOneWidget);
-      expect(find.text('호감 순'), findsOneWidget);
+      expect(findText('사람들'), findsOneWidget);
+      expect(findText('호감 순'), findsOneWidget);
       final strip = tester.widget<CastStrip>(find.byType(CastStrip));
       expect(strip.entries.first.name, '서연');
       expect(strip.entries[1].name, '하늘');
       expect(strip.entries.last.mystery, isTrue);
-      expect(find.text('♥42'), findsOneWidget);
-      expect(find.text('???'), findsOneWidget);
+      expect(findText('♥42'), findsOneWidget);
+      expect(findText('???'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -138,9 +138,9 @@ void main() {
       await c.save.save(c.state!);
       c.goHome();
       await showHome(tester);
-      expect(find.text('???'), findsNothing);
-      expect(find.text('도윤'), findsOneWidget);
-      expect(find.text('♥3'), findsOneWidget);
+      expect(findText('???'), findsNothing);
+      expect(findText('도윤'), findsOneWidget);
+      expect(findText('♥3'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -150,8 +150,8 @@ void main() {
       expect(c.state, isNull);
       expect(c.saveSummary, isNotNull);
       await showHome(tester);
-      expect(find.text('D+37 / 100'), findsOneWidget);
-      expect(find.textContaining('서연 ♥42'), findsOneWidget);
+      expect(findText('D+37 / 100'), findsOneWidget);
+      expect(findTextContaining('서연 ♥42'), findsOneWidget);
       expect(find.byType(HeartsRow), findsOneWidget);
       await unmount(tester);
     });
@@ -162,30 +162,30 @@ void main() {
       c.saveSummary = null;
       await showHome(tester);
       expect(c.saveSummary, isNull);
-      expect(find.text('저장된 회차'), findsOneWidget);
-      expect(find.text('어젯밤: 불러오는 중…'), findsOneWidget);
+      expect(findText('저장된 회차'), findsOneWidget);
+      expect(findText('어젯밤: 불러오는 중…'), findsOneWidget);
       expect(find.byType(HeartsRow), findsNothing);
-      expect(find.text('이어하기'), findsOneWidget);
-      expect(find.text('새 게임'), findsOneWidget);
+      expect(findText('이어하기'), findsOneWidget);
+      expect(findText('새 게임'), findsOneWidget);
       await unmount(tester);
     });
 
     testWidgets('최애 신호: 같은 날 다시 그려도 같은 문장, 하트는 작은 보조 꼬리', (tester) async {
       await showHome(tester);
       final signal = c.saveSummary!.topSignal!;
-      final line = find.textContaining(signal);
+      final line = findTextContaining(signal);
       expect(line, findsOneWidget);
       // 신호와 '서연 ♥42' 는 한 덩어리 Text.rich. 신호가 주인공이라 글자가 더 크다.
       final spans = (tester.widget<Text>(line).textSpan! as TextSpan).children!;
       final sig = spans.whereType<TextSpan>().firstWhere(
-        (x) => x.text == signal,
+        (x) => x.text?.replaceAll('\u2060', '') == signal,
       );
       // 꼬리는 줄바꿈에 쪼개지지 않게 WidgetSpan 안의 Text 다.
-      final heart = tester.widget<Text>(find.text('서연 ♥42'));
+      final heart = tester.widget<Text>(findText('서연 ♥42'));
       expect(sig.style!.fontSize!, greaterThan(heart.style!.fontSize!));
       c.goHome();
       await tester.pump();
-      expect(find.textContaining(signal), findsOneWidget);
+      expect(findTextContaining(signal), findsOneWidget);
       expect(c.saveSummary!.topSignal, signal);
       await unmount(tester);
     });
@@ -205,8 +205,8 @@ void main() {
       expect(bare.saveSummary!.topSignal, isNull);
       await tester.pumpWidget(fullApp(bare));
       await tester.pump();
-      expect(find.text('서연 ♥42'), findsOneWidget);
-      expect(find.text('가장 가까운 사람'), findsOneWidget);
+      expect(findText('서연 ♥42'), findsOneWidget);
+      expect(findText('가장 가까운 사람'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -216,8 +216,8 @@ void main() {
       await c.save.save(c.state!);
       c.goHome();
       await showHome(tester);
-      expect(find.text('아직 아무와도 가까워지지 않았다'), findsOneWidget);
-      expect(find.text('가장 가까운 사람'), findsNothing);
+      expect(findText('아직 아무와도 가까워지지 않았다'), findsOneWidget);
+      expect(findText('가장 가까운 사람'), findsNothing);
       await unmount(tester);
     });
   });
@@ -225,24 +225,24 @@ void main() {
   group('출석 줄', () {
     testWidgets('미수령 → 받기 → 수령, 다시 들어오면 수령 상태', (tester) async {
       await showHome(tester);
-      expect(find.text('출석 보상 하트 +1'), findsOneWidget);
-      expect(find.text('연속 1일째'), findsOneWidget);
-      expect(find.text('받기'), findsOneWidget);
+      expect(findText('출석 보상 하트 +1'), findsOneWidget);
+      expect(findText('연속 1일째'), findsOneWidget);
+      expect(findText('받기'), findsOneWidget);
       // 보상은 홈 진입 때 이미 얹혔다. 세이브가 없으니 보류함으로.
       expect(c.pendingHearts, 1);
       expect(c.checkedInToday, isTrue);
 
-      await tester.tap(find.text('받기'));
+      await tester.tap(findText('받기'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('오늘 출석 완료'), findsOneWidget);
-      expect(find.text('받기'), findsNothing);
-      expect(find.text('하트 +1 은 새 게임을 시작하면 들어온다'), findsOneWidget);
+      expect(findText('오늘 출석 완료'), findsOneWidget);
+      expect(findText('받기'), findsNothing);
+      expect(findText('하트 +1 은 새 게임을 시작하면 들어온다'), findsOneWidget);
 
       // 같은 날 다시 홈에 오면 바로 수령 상태.
       await unmount(tester);
       await showHome(tester);
-      expect(find.text('오늘 출석 완료'), findsOneWidget);
-      expect(find.text('받기'), findsNothing);
+      expect(findText('오늘 출석 완료'), findsOneWidget);
+      expect(findText('받기'), findsNothing);
       expect(c.pendingHearts, 1, reason: '두 번 주면 안 된다');
       await unmount(tester);
     });
@@ -252,19 +252,19 @@ void main() {
       await c.newGame(seed: 1);
       c.goHome();
       await showHome(tester);
-      await tester.tap(find.text('받기'));
+      await tester.tap(findText('받기'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('오늘 출석 완료'), findsOneWidget);
+      expect(findText('오늘 출석 완료'), findsOneWidget);
 
       await c.resetAllData();
       expect(c.checkedInToday, isFalse);
       // 홈이 켜진 채라 다음 틱에서 새 메타를 알아채고 출석을 다시 돈다.
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
-      expect(find.text('출석 보상 하트 +1'), findsOneWidget);
-      expect(find.text('받기'), findsOneWidget);
-      expect(find.text('연속 1일째'), findsOneWidget);
-      expect(find.textContaining('연속 0일째'), findsNothing);
+      expect(findText('출석 보상 하트 +1'), findsOneWidget);
+      expect(findText('받기'), findsOneWidget);
+      expect(findText('연속 1일째'), findsOneWidget);
+      expect(findTextContaining('연속 0일째'), findsNothing);
       expect(c.checkedInToday, isTrue);
       expect(c.pendingHearts, 1, reason: '세이브가 없으니 보류함에 다시 쌓인다');
       await unmount(tester);
@@ -274,9 +274,9 @@ void main() {
       await c.newGame(seed: 1);
       c.goHome();
       await showHome(tester);
-      await tester.tap(find.text('받기'));
+      await tester.tap(findText('받기'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('연속 1일째 · 내일 또 +1'), findsOneWidget);
+      expect(findText('연속 1일째 · 내일 또 +1'), findsOneWidget);
       expect(c.hearts, c.config.maxHearts + 1, reason: '출석 하트는 세이브에 바로 얹힌다');
       await unmount(tester);
     });
@@ -306,18 +306,18 @@ void main() {
       await showHome(tester);
       // 출석 +1 로 4개. 아직 부족하니 타이머가 보인다.
       expect(c.saveSummary!.hearts, 4);
-      expect(find.text('다음 하트 15:00'), findsOneWidget);
+      expect(findText('다음 하트 15:00'), findsOneWidget);
       expect(find.byIcon(Icons.favorite_border), findsOneWidget);
 
       now += 1000;
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('다음 하트 14:59'), findsOneWidget);
+      expect(findText('다음 하트 14:59'), findsOneWidget);
 
       now += 899 * 1000;
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
       expect(c.saveSummary!.hearts, 5);
-      expect(find.textContaining('다음 하트'), findsNothing);
+      expect(findTextContaining('다음 하트'), findsNothing);
       expect(find.byIcon(Icons.favorite_border), findsNothing);
       await unmount(tester);
     });
@@ -332,8 +332,8 @@ void main() {
       c.endingAlbum = await c.save.loadEndings();
       c.goHome();
       await showHome(tester);
-      expect(find.textContaining('앨범  2 / ${all.length}'), findsOneWidget);
-      expect(find.textContaining('다음 엔딩 힌트 · '), findsOneWidget);
+      expect(findTextContaining('앨범  2 / ${all.length}'), findsOneWidget);
+      expect(findTextContaining('다음 엔딩 힌트 · '), findsOneWidget);
 
       // 해피·굿·솔로를 다 보면 남은 것을 말한다.
       for (final e in all) {
@@ -342,7 +342,7 @@ void main() {
       c.endingAlbum = await c.save.loadEndings();
       c.goHome();
       await tester.pump();
-      expect(find.text('남은 건 배드 엔딩과 히든뿐이다'), findsOneWidget);
+      expect(findText('남은 건 배드 엔딩과 히든뿐이다'), findsOneWidget);
 
       for (final e in all) {
         await c.save.addEnding(e.id);
@@ -351,10 +351,10 @@ void main() {
       c.goHome();
       await tester.pump();
       expect(
-        find.textContaining('앨범  ${all.length} / ${all.length}'),
+        findTextContaining('앨범  ${all.length} / ${all.length}'),
         findsOneWidget,
       );
-      expect(find.text('모든 엔딩을 봤다'), findsOneWidget);
+      expect(findText('모든 엔딩을 봤다'), findsOneWidget);
       await unmount(tester);
     });
   });
@@ -365,23 +365,23 @@ void main() {
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsScreen), findsOneWidget);
-      expect(find.text('설정'), findsOneWidget);
+      expect(findText('설정'), findsOneWidget);
       // 광고 미지원 환경(테스트)에서는 UMP 행이 없다.
-      expect(find.text('개인정보 설정'), findsNothing);
+      expect(findText('개인정보 설정'), findsNothing);
       final titles = ['개인정보처리방침', '오픈소스 라이선스', '서체', '앱 버전', '저장 데이터 초기화'];
       double lastTop = -1;
       for (final t in titles) {
-        final rect = tester.getRect(find.text(t));
+        final rect = tester.getRect(findText(t));
         expect(rect.top, greaterThan(lastTop), reason: '$t 순서');
         lastTop = rect.top;
       }
       expect(
-        find.text('Pretendard · SIL Open Font License 1.1'),
+        findText('Pretendard · SIL Open Font License 1.1'),
         findsOneWidget,
       );
-      expect(find.text('OFL'), findsOneWidget);
-      expect(find.text(AppMeta.versionLabel), findsOneWidget);
-      expect(find.text('© 2026 모쏠 키우기'), findsOneWidget);
+      expect(findText('OFL'), findsOneWidget);
+      expect(findText(AppMeta.versionLabel), findsOneWidget);
+      expect(findText('© 2026 모쏠 키우기'), findsOneWidget);
 
       // 서체·앱 버전 행은 눌리지 않는다.
       final rows = tester
@@ -400,14 +400,14 @@ void main() {
       final launcher = _NoBrowser();
       UrlLauncherPlatform.instance = launcher;
       await tester.pumpWidget(wrapApp(SettingsScreen(c: c)));
-      await tester.tap(find.text('개인정보처리방침'));
+      await tester.tap(findText('개인정보처리방침'));
       await tester.pumpAndSettle();
       expect(launcher.launched, [AppLinks.privacyPolicy]);
-      expect(find.text('링크를 열 수 없어요'), findsOneWidget);
-      expect(find.text(AppLinks.privacyPolicy), findsOneWidget);
-      await tester.tap(find.text('닫기'));
+      expect(findText('링크를 열 수 없어요'), findsOneWidget);
+      expect(findText(AppLinks.privacyPolicy), findsOneWidget);
+      await tester.tap(findText('닫기'));
       await tester.pumpAndSettle();
-      expect(find.text('링크를 열 수 없어요'), findsNothing);
+      expect(findText('링크를 열 수 없어요'), findsNothing);
     });
 
     testWidgets('저장 데이터 초기화: 취소는 그대로, 지우기는 홈을 첫 실행 상태로', (tester) async {
@@ -416,39 +416,39 @@ void main() {
       c.endingAlbum = await c.save.loadEndings();
       c.goHome();
       await showHome(tester);
-      expect(find.text('이어하기'), findsOneWidget);
+      expect(findText('이어하기'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('저장 데이터 초기화'));
+      await tester.tap(findText('저장 데이터 초기화'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('엔딩 앨범(1개)'), findsOneWidget);
-      await tester.tap(find.text('취소'));
+      expect(findTextContaining('엔딩 앨범(1개)'), findsOneWidget);
+      await tester.tap(findText('취소'));
       await tester.pumpAndSettle();
       expect(c.hasSave, isTrue);
       expect(find.byType(SettingsScreen), findsOneWidget);
 
-      await tester.tap(find.text('저장 데이터 초기화'));
+      await tester.tap(findText('저장 데이터 초기화'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('지우기'));
+      await tester.tap(findText('지우기'));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsScreen), findsNothing);
-      expect(find.text('저장 데이터를 지웠어요'), findsOneWidget);
+      expect(findText('저장 데이터를 지웠어요'), findsOneWidget);
       expect(c.hasSave, isFalse);
       expect(c.saveSummary, isNull);
       expect(c.endingAlbum, isEmpty);
       expect(await c.save.exists(), isFalse);
       expect(await c.save.loadEndings(), isEmpty);
-      expect(find.widgetWithText(FilledButton, '새 게임'), findsOneWidget);
-      expect(find.text('이어하기'), findsNothing);
-      expect(find.textContaining('앨범  0 /'), findsOneWidget);
+      expect(findWidgetWithText(FilledButton, '새 게임'), findsOneWidget);
+      expect(findText('이어하기'), findsNothing);
+      expect(findTextContaining('앨범  0 /'), findsOneWidget);
       // 첫 실행과 같아야 하므로 출석도 다시 돈다: 새 메타에 오늘 출석 1일째, 보류 하트 1.
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
       expect(c.streakDays, 1);
       expect(c.pendingHearts, 1);
-      expect(find.text('출석 보상 하트 +1'), findsOneWidget);
-      expect(find.textContaining('연속 0일째'), findsNothing);
+      expect(findText('출석 보상 하트 +1'), findsOneWidget);
+      expect(findTextContaining('연속 0일째'), findsNothing);
       await unmount(tester);
     });
 
@@ -480,7 +480,7 @@ void main() {
       await tester.pumpWidget(fullApp(c));
       await tester.pump();
       expect(find.byKey(const Key('overnight-seoyeon')), findsOneWidget);
-      expect(find.text(text), findsOneWidget);
+      expect(findText(text), findsOneWidget);
       await unmount(tester);
     });
 
@@ -491,7 +491,7 @@ void main() {
       c.goHome();
       await showHome(tester);
       expect(find.byKey(const Key('overnight-seoyeon')), findsOneWidget);
-      expect(find.text(c.overnightShifts['seoyeon']!), findsOneWidget);
+      expect(findText(c.overnightShifts['seoyeon']!), findsOneWidget);
 
       await c.continueGame();
       c.state!.rel('seoyeon').contactedToday = true;
@@ -519,7 +519,7 @@ void main() {
       c.goHome();
       await tester.pump();
       expect(c.saveSummary!.topSignal, card.text);
-      expect(find.textContaining(card.text), findsOneWidget);
+      expect(findTextContaining(card.text), findsOneWidget);
       await unmount(tester);
     });
   });

@@ -72,21 +72,27 @@ void main() {
         c.hasSave = false;
         await tester.pumpWidget(fullApp(c));
         await tester.pump();
-        final start = tester.getRect(find.text('새 게임'));
-        expect(start.bottom, lessThanOrEqualTo(568), reason: '스크롤 없이 시작 버튼이 보여야 한다');
+        final start = tester.getRect(findText('새 게임'));
+        expect(
+          start.bottom,
+          lessThanOrEqualTo(568),
+          reason: '스크롤 없이 시작 버튼이 보여야 한다',
+        );
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
         c.hasSave = true;
         c.notifyListeners();
         await tester.pump();
-        expect(find.text('이어하기'), findsOneWidget);
+        expect(findText('이어하기'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
       });
 
-      testWidgets('홈 v2: 세이브 있음(예고·최고 호감·하트 부족)에서 1차 버튼이 첫 화면 안에 있다', (tester) async {
+      testWidgets('홈 v2: 세이브 있음(예고·최고 호감·하트 부족)에서 1차 버튼이 첫 화면 안에 있다', (
+        tester,
+      ) async {
         apply(tester, env);
         c.state!
           ..day = 37
@@ -98,25 +104,34 @@ void main() {
         c.goHome();
         await tester.pumpWidget(fullApp(c));
         await tester.pump();
-        expect(find.textContaining('어젯밤:'), findsOneWidget);
-        expect(find.textContaining('서연 ♥42'), findsOneWidget);
+        expect(findTextContaining('어젯밤:'), findsOneWidget);
+        expect(findTextContaining('서연 ♥42'), findsOneWidget);
         // 홈 신호 줄: 최애의 서사 신호가 첫 화면 안에 넘치지 않고 보인다.
         final signal = c.saveSummary!.topSignal!;
-        expect(find.textContaining(signal), findsOneWidget);
-        expect(tester.getRect(find.textContaining(signal)).bottom, lessThanOrEqualTo(568));
-        expect(find.text('받기'), findsOneWidget);
+        expect(findTextContaining(signal), findsOneWidget);
+        expect(
+          tester.getRect(findTextContaining(signal)).bottom,
+          lessThanOrEqualTo(568),
+        );
+        expect(findText('받기'), findsOneWidget);
         // 배너 없는 조건. 예산표(HOME_REDESIGN §1.5)는 배너 포함 466 이라 더 여유롭다.
-        final primary = tester.getRect(find.widgetWithText(FilledButton, '이어하기'));
-        expect(primary.bottom, lessThanOrEqualTo(568), reason: '1차 버튼이 첫 화면 안에 있어야 한다');
+        final primary = tester.getRect(
+          findWidgetWithText(FilledButton, '이어하기'),
+        );
+        expect(
+          primary.bottom,
+          lessThanOrEqualTo(568),
+          reason: '1차 버튼이 첫 화면 안에 있어야 한다',
+        );
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
         // 출석 수령 뒤·스크롤 끝(앨범 카드)까지 넘침 없이.
-        await tester.tap(find.text('받기'));
+        await tester.tap(findText('받기'));
         await tester.pump(const Duration(milliseconds: 300));
         await tester.drag(find.byType(ListView), const Offset(0, -2000));
         await tester.pump();
-        expect(find.textContaining('앨범  '), findsOneWidget);
+        expect(findTextContaining('앨범  '), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await teardownScreen(tester);
@@ -124,25 +139,27 @@ void main() {
 
       testWidgets('설정 화면이 넘치지 않고 탭 타깃·대비를 지킨다', (tester) async {
         apply(tester, env);
-        await tester.pumpWidget(wrapApp(SettingsScreen(c: c), mode: modeOf(env)));
+        await tester.pumpWidget(
+          wrapApp(SettingsScreen(c: c), mode: modeOf(env)),
+        );
         await tester.pump();
-        expect(find.text('개인정보처리방침'), findsOneWidget);
+        expect(findText('개인정보처리방침'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await tester.drag(find.byType(ListView), const Offset(0, -2000));
         await tester.pump();
         expect(tester.takeException(), isNull);
-        expect(find.text('저장 데이터 초기화'), findsOneWidget);
-        expect(find.text('앱 버전'), findsOneWidget);
+        expect(findText('저장 데이터 초기화'), findsOneWidget);
+        expect(findText('앱 버전'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
         // 초기화 확인 다이얼로그(다크 표면 + 위험색 버튼)도 대비를 지킨다.
-        await tester.tap(find.text('저장 데이터 초기화'));
+        await tester.tap(findText('저장 데이터 초기화'));
         await tester.pumpAndSettle();
-        expect(find.text('저장 데이터를 지울까요?'), findsOneWidget);
+        expect(findText('저장 데이터를 지울까요?'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
-        await tester.tap(find.text('취소'));
+        await tester.tap(findText('취소'));
         await tester.pumpAndSettle();
         await teardownScreen(tester);
       });
@@ -156,12 +173,12 @@ void main() {
         c.state!.rel('haneul').trust = 100;
         await tester.pumpWidget(wrapApp(ActionScreen(c: c), mode: modeOf(env)));
         await tester.pumpAndSettle();
-        expect(find.text('오늘의 운'), findsOneWidget);
+        expect(findText('오늘의 운'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await spinRouletteSheet(tester);
 
         // 스탯 라벨은 가장 긴 '스트레스' 도 말줄임 없이 다 들어가야 한다.
-        final stress = tester.renderObject<RenderParagraph>(find.text('스트레스'));
+        final stress = tester.renderObject<RenderParagraph>(findText('스트레스'));
         expect(stress.didExceedMaxLines, isFalse, reason: '스탯 라벨이 잘렸다');
 
         await tester.drag(find.byType(ListView), const Offset(0, -2000));
@@ -176,7 +193,8 @@ void main() {
         // 잠긴 선택지는 작은 화면에서도 여전히 누를 수 없다.
         final locked = c.choices.firstWhere((v) => v.locked);
         final btn = tester.widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, locked.choice.text));
+          findWidgetWithText(OutlinedButton, locked.choice.text),
+        );
         expect(btn.onPressed, isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -186,14 +204,19 @@ void main() {
         c.choose(0, minigameSuccess: false);
         await tester.pump();
         await settleReplies(tester);
-        expect(find.text('실패…'), findsOneWidget);
+        expect(findText('실패…'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
         // 크리티컬 결과.
         c.undoChoice();
         await tester.pump();
         final idx = c.choices.indexWhere((v) => !v.locked);
-        c.choose(c.choices[idx].index, minigameSuccess: true, minigameCritical: true, note: '전부 맞췄다. 표정 읽기의 달인.');
+        c.choose(
+          c.choices[idx].index,
+          minigameSuccess: true,
+          minigameCritical: true,
+          note: '전부 맞췄다. 표정 읽기의 달인.',
+        );
         await tester.pump();
         await settleReplies(tester);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -209,13 +232,17 @@ void main() {
           await tester.pump(const Duration(milliseconds: 500));
         }
         await tester.pump(const Duration(seconds: 1));
-        expect(find.textContaining('초째 답이 없다'), findsOneWidget);
+        expect(findTextContaining('초째 답이 없다'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await teardownScreen(tester);
       });
 
       // 모먼트(docs/MOMENTS_SPEC.md): 전화 두 화면 · 알림 카드 · 사진 말풍선.
-      Future<void> showMoment(WidgetTester tester, StoryEvent ev, {bool revealed = false}) async {
+      Future<void> showMoment(
+        WidgetTester tester,
+        StoryEvent ev, {
+        bool revealed = false,
+      }) async {
         c.current = ev;
         c.revealed = revealed ? ev.lines.length : 0;
         c.lastOutcome = null;
@@ -233,20 +260,22 @@ void main() {
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
-        await tester.tap(find.text('받기'));
+        await tester.tap(findText('받기'));
         await tester.pump();
         await revealAll(tester, c);
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byType(ActiveCallView), findsOneWidget);
-        expect(find.text(CallSubtitle.silence), findsOneWidget);
+        expect(findText(CallSubtitle.silence), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
-        await tester.tap(find.widgetWithText(OutlinedButton, call.choices.first.text));
+        await tester.tap(
+          findWidgetWithText(OutlinedButton, call.choices.first.text),
+        );
         await tester.pump();
         await settleReplies(tester);
-        expect(find.text('계속'), findsOneWidget);
+        expect(findText('계속'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -256,10 +285,10 @@ void main() {
       testWidgets('모먼트: 거절 뒤 채팅(부재중 전화 · 반응 · 결과)', (tester) async {
         apply(tester, env);
         await showMoment(tester, momentSamples(c.bundle)[0].$3);
-        await tester.tap(find.text('거절'));
+        await tester.tap(findText('거절'));
         await tester.pump();
         await settleReplies(tester);
-        expect(find.textContaining('부재중 전화'), findsOneWidget);
+        expect(findTextContaining('부재중 전화'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -311,13 +340,29 @@ void main() {
             {'text': 'x', 'reply': 'ㅇㅇ'},
           ],
         });
-        expect(ev.lines.first.photo!.caption.length, lessThanOrEqualTo(Photo.maxCaption));
+        expect(
+          ev.lines.first.photo!.caption.length,
+          lessThanOrEqualTo(Photo.maxCaption),
+        );
         await showMoment(tester, ev, revealed: true);
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byType(PhotoBubble), findsNWidgets(2));
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
+        // 폴라로이드는 화면 60% 이하, 20자 캡션은 두 줄 안에서 끝난다.
+        for (final f in find.byType(PolaroidFrame).evaluate()) {
+          expect(f.size!.width, lessThanOrEqualTo(320 * 0.6 + 0.01));
+        }
+        // 크게 보기도 작은 화면·1.3배에서 넘치지 않는다.
+        await tester.tap(find.byType(PhotoBubble).first);
+        await tester.pumpAndSettle();
+        expect(findText('닫기'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await tester.tap(findText('닫기'));
+        await tester.pumpAndSettle();
         await teardownScreen(tester);
       });
 
@@ -337,7 +382,7 @@ void main() {
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await tester.drag(find.byType(ListView), const Offset(0, -3000));
         await tester.pumpAndSettle();
-        expect(find.text('다음 날로'), findsOneWidget);
+        expect(findText('다음 날로'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
@@ -357,12 +402,12 @@ void main() {
         await tester.pumpWidget(fullApp(c));
         await tester.pumpAndSettle();
         expect(find.byType(RelationShiftCard), findsNWidgets(2));
-        expect(find.text('가까워졌다'), findsNWidgets(2));
+        expect(findText('가까워졌다'), findsNWidgets(2));
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await tester.drag(find.byType(ListView), const Offset(0, -3000));
         await tester.pumpAndSettle();
-        expect(find.text('다음 날로'), findsOneWidget);
+        expect(findText('다음 날로'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
 
@@ -373,12 +418,14 @@ void main() {
         }
         await tester.pumpWidget(fullApp(c));
         await tester.pumpAndSettle();
-        expect(find.text('조금 멀어졌다'), findsOneWidget);
+        expect(findText('조금 멀어졌다'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
 
-      testWidgets('RelationShiftCard · ContinueCard: 40자 신호도 넘치지 않는다', (tester) async {
+      testWidgets('RelationShiftCard · ContinueCard: 40자 신호도 넘치지 않는다', (
+        tester,
+      ) async {
         apply(tester, env);
         final long = '가나다라마바사아자차' * 4;
         await tester.pumpWidget(
@@ -414,7 +461,7 @@ void main() {
         );
         await tester.pump();
         expect(tester.takeException(), isNull);
-        expect(find.textContaining('서연 ♥100'), findsOneWidget);
+        expect(findTextContaining('서연 ♥100'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
 
@@ -431,7 +478,7 @@ void main() {
         await tester.pumpWidget(wrapApp(AlbumScreen(c: c), mode: modeOf(env)));
         await tester.pumpAndSettle();
         await expectLater(tester, meetsGuideline(textContrastGuideline));
-        await tester.tap(find.text('엔딩'));
+        await tester.tap(findText('엔딩'));
         await tester.pumpAndSettle();
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
@@ -443,9 +490,12 @@ void main() {
         await c.endDay();
         await tester.pumpWidget(fullApp(c));
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -3000));
+        await tester.drag(
+          find.byType(SingleChildScrollView).first,
+          const Offset(0, -3000),
+        );
         await tester.pumpAndSettle();
-        expect(find.text('홈으로'), findsOneWidget);
+        expect(findText('홈으로'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(textContrastGuideline));
       });
@@ -454,10 +504,14 @@ void main() {
         apply(tester, env);
         for (final id in minigameRegistry.keys) {
           final builder = minigameRegistry[id]!;
-          await tester.pumpWidget(wrapApp(
-            Builder(builder: (_) => builder(ctxFor(c, partner: 'seoyeon'), (_) {})),
-            mode: modeOf(env),
-          ));
+          await tester.pumpWidget(
+            wrapApp(
+              Builder(
+                builder: (_) => builder(ctxFor(c, partner: 'seoyeon'), (_) {}),
+              ),
+              mode: modeOf(env),
+            ),
+          );
           await tester.pump(const Duration(milliseconds: 300));
           expect(tester.takeException(), isNull, reason: '미니게임 $id');
           expect(find.byType(MinigameScaffold), findsOneWidget, reason: id);
@@ -469,14 +523,18 @@ void main() {
 
   testWidgets('배너 틀은 bottomNavigationBar 에서 본문을 밀어내지 않는다', (tester) async {
     // 실기기에서 배너가 로드되면 Center 가 세로로 늘어나 본문 높이가 0 이 되던 회귀.
-    await tester.pumpWidget(wrapApp(const Scaffold(
-      body: SizedBox.expand(key: ValueKey('body')),
-      bottomNavigationBar: BannerFrame(
-        width: 320,
-        height: 50,
-        child: SizedBox.expand(),
+    await tester.pumpWidget(
+      wrapApp(
+        const Scaffold(
+          body: SizedBox.expand(key: ValueKey('body')),
+          bottomNavigationBar: BannerFrame(
+            width: 320,
+            height: 50,
+            child: SizedBox.expand(),
+          ),
+        ),
       ),
-    )));
+    );
     final body = tester.getSize(find.byKey(const ValueKey('body')));
     final banner = tester.getSize(find.byType(BannerFrame));
     expect(banner.height, lessThan(100));

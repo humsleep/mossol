@@ -6,6 +6,7 @@ import '../ads/ad_manager.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
+import 'keep_all.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 
@@ -518,7 +519,7 @@ class OvernightNote extends StatelessWidget {
           const SizedBox(width: AppSpace.sm),
           Expanded(
             child: Text(
-              text,
+              keepAll(text),
               style: context.text.bodySmall?.copyWith(color: muted),
             ),
           ),

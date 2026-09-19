@@ -14,6 +14,11 @@ import '../ads/ad_manager.dart';
 import '../engine/models.dart';
 import 'design_system.dart';
 
+import 'photo_card.dart';
+import 'keep_all.dart';
+
+export 'photo_card.dart';
+
 // ---------------------------------------------------------------------------
 // 0. 의미 톤
 // ---------------------------------------------------------------------------
@@ -890,7 +895,7 @@ class ChatBubble extends StatelessWidget {
             ),
           ),
           child: Text(
-            line.text,
+            keepAll(line.text),
             style: context.text.bodyMedium?.copyWith(
               color: t.narration,
               fontStyle: FontStyle.italic,
@@ -919,7 +924,7 @@ class ChatBubble extends StatelessWidget {
               borderRadius: AppRadius.rPill,
             ),
             child: Text(
-              line.text.isEmpty ? '읽음' : line.text,
+              line.text.isEmpty ? '읽음' : keepAll(line.text),
               textAlign: TextAlign.center,
               style: context.text.labelSmall?.copyWith(color: t.systemLine),
             ),
@@ -1000,7 +1005,7 @@ class ChatBubble extends StatelessWidget {
                           ),
                   ),
                   child: Text(
-                    line.text,
+                    keepAll(line.text),
                     style: t.bubbleText.copyWith(
                       color: me ? t.onBubbleMine : t.onBubbleTheirs,
                     ),
@@ -1014,127 +1019,7 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-/// 사진 아이콘 이름(docs/MOMENTS_SPEC.md §1.3) → Material 아이콘. 14종.
-const Map<String, IconData> photoIcons = {
-  'cafe': Icons.local_cafe,
-  'food': Icons.restaurant,
-  'sky': Icons.wb_cloudy,
-  'night': Icons.nightlight_round,
-  'sea': Icons.waves,
-  'selfie': Icons.face,
-  'pet': Icons.pets,
-  'book': Icons.menu_book,
-  'gym': Icons.fitness_center,
-  'game': Icons.sports_esports,
-  'music': Icons.music_note,
-  'flower': Icons.local_florist,
-  'street': Icons.location_city,
-  'ticket': Icons.confirmation_number,
-};
-
-/// 모르는 이름이면 기본 사진 아이콘.
-IconData photoIconFor(String name) => photoIcons[name] ?? Icons.photo;
-
-/// 사진 메시지 카드. 실제 이미지 없이 "사진처럼" 보이게 한다(§3.2).
-///
-/// 4:3, 모서리 `AppRadius.md`. 캐릭터 강조색 container → base 쪽으로 기우는 대각
-/// 그라데이션 위에 큰 아이콘, 아래쪽에 장면 설명(caption)을 표면색 띠에 얹는다.
-/// 설명 글자는 그라데이션이 아니라 불투명에 가까운 띠 위에 있으므로 대비가 흔들리지 않는다.
-/// 스크린리더는 카드 전체를 이미지 하나로 읽는다: "사진: {caption}".
-class PhotoBubble extends StatelessWidget {
-  final Photo photo;
-
-  /// 그라데이션 색. null 이면 tokens.neutralAccent.
-  final CharacterAccent? accent;
-
-  /// 카드 폭. null 이면 화면 폭의 72%(말풍선 최대 폭과 같다), 최대 280.
-  final double? width;
-
-  const PhotoBubble({super.key, required this.photo, this.accent, this.width});
-
-  static const maxWidth = 280.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.tokens;
-    final scheme = context.scheme;
-    final a = accent ?? t.neutralAccent;
-    final w =
-        width ?? (MediaQuery.sizeOf(context).width * 0.72).clamp(0.0, maxWidth);
-    final caption = photo.caption.trim();
-
-    return Semantics(
-      container: true,
-      image: true,
-      label: caption.isEmpty ? '사진' : '사진: $caption',
-      child: ExcludeSemantics(
-        child: SizedBox(
-          width: w,
-          child: AspectRatio(
-            aspectRatio: 4 / 3,
-            child: ClipRRect(
-              borderRadius: AppRadius.rMd,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      a.container,
-                      Color.lerp(a.container, a.base, 0.45)!,
-                    ],
-                  ),
-                  border: Border.all(
-                    color: t.bubbleBorder,
-                    width: AppBorderWidth.hairline,
-                  ),
-                  borderRadius: AppRadius.rMd,
-                ),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: LayoutBuilder(
-                          builder: (context, box) => Icon(
-                            photoIconFor(photo.icon),
-                            size: (box.maxHeight * 0.55).clamp(
-                              AppSpace.xl,
-                              AppSpace.huge * 2,
-                            ),
-                            color: a.onContainer,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (caption.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.md,
-                          vertical: AppSpace.sm,
-                        ),
-                        color: scheme.surfaceContainerLowest.withValues(
-                          alpha: 0.94,
-                        ),
-                        child: Text(
-                          caption,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.bodySmall?.copyWith(
-                            color: scheme.onSurface,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// 사진 메시지 카드(PhotoBubble · photoIcons · photoIconFor)는 photo_card.dart.
 
 /// 한 번만 재생되는 등장 연출. 읽는 흐름을 끊지 않도록 6포인트 상승 + 페이드만.
 /// 동작 줄이기가 켜져 있으면 즉시 최종 상태로 둔다.
@@ -1528,7 +1413,7 @@ class CliffhangerCard extends StatelessWidget {
           const SizedBox(width: AppSpace.md),
           Expanded(
             child: Text(
-              text,
+              keepAll(text),
               style: emphasized
                   ? context.text.bodyLarge
                   : context.text.bodyMedium,
@@ -1803,7 +1688,7 @@ class ChoiceButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    text,
+                    keepAll(text),
                     style: context.text.labelLarge?.copyWith(
                       color: fg,
                       height: 1.35,
@@ -2231,7 +2116,7 @@ class _SignalLine extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: signal,
+                  text: keepAll(signal),
                   style: context.text.bodyMedium?.copyWith(
                     color: scheme.onSurface,
                   ),
@@ -2327,7 +2212,9 @@ class RelationShiftCard extends StatelessWidget {
 
     return MergeSemantics(
       child: AppCard(
-        accentStripe: up ? a.base : null,
+        // 하강 카드도 띠를 둔다(중립 색). 띠가 없으면 내용이 4pt 왼쪽으로 밀려
+        // 상승 카드와 나란히 놓였을 때 아바타·이름 줄이 어긋난다.
+        accentStripe: up ? a.base : scheme.outlineVariant,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2348,7 +2235,7 @@ class RelationShiftCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpace.xs),
                   Text(
-                    text,
+                    keepAll(text),
                     style: up
                         ? context.text.bodyLarge?.copyWith(
                             color: scheme.onSurface,

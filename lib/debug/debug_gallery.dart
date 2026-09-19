@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../engine/meta_service.dart';
 import '../engine/models.dart';
 import '../engine/save_service.dart';
+import '../engine/signals.dart';
 import '../engine/story_repository.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart';
 import '../minigames/registry.dart';
+import '../ui/action_screen.dart';
 import '../ui/design_system.dart';
 import '../ui/ending_screen.dart';
 import '../ui/event_screen.dart';
+import '../ui/home_screen.dart';
+import '../ui/summary_screen.dart';
 import '../ui/widgets.dart';
 
 /// QA 용 디버그 갤러리. 미니게임 12종과 엔딩 화면을 100일 플레이 없이 연다.
@@ -120,6 +125,162 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     );
   }
 
+  // ---- 정산·홈 미리보기 ----
+  //
+  // 컨트롤러·엔진은 건드리지 않고 공개 필드(state, dayDelta, cliffhanger, phase,
+  // hasSave, saveSummary)로 "그날 밤" 을 꾸민 뒤 실제 화면을 띄운다. 호감은 서사 신호
+  // 구간 경계를 넘도록 잡고, 그 캐릭터의 문장이 실제로 뽑히는지 shiftFor 로 먼저 확인한다.
+
+  /// 메모리 세이브·메모리 메타 컨트롤러. 기기 세이브와 출석 기록을 건드리지 않는다.
+  GameController _previewController(GameState s) =>
+      GameController(bundle: bundle, save: _MemorySave(), meta: _MemoryMeta())
+        ..state = s;
+
+  /// 룰렛 시트가 뜨지 않도록 오늘 룰렛을 이미 돈 샘플 상태.
+  GameState _previewState({int day = 23}) => _sampleState(day: day)
+    ..rouletteDay = day
+    ..lastCliffhanger = '(미리보기) 새벽 2시, 읽지 않은 메시지가 하나 남아 있다.';
+
+  /// [s] 에서 구간 경계를 넘는 호감 (전, 후)를 찾는다. 오르면 [up]. 없으면 null.
+  /// 문장 조건(when)이 안 맞아 신호가 비는 캐릭터·구간은 건너뛴다.
+  ({String id, int from, int to, String text})? _findShift(
+    GameState s, {
+    required bool up,
+    Set<String> exclude = const {},
+  }) {
+    final signals = bundle.signals;
+    final ctx = SignalContext.of(s);
+    for (final ch in bundle.characters) {
+      if (ch.hidden || exclude.contains(ch.id)) continue;
+      final bands = signals.byCharacter[ch.id]?.bands;
+      if (bands == null || bands.length < 2) continue;
+      // 가운데 구간부터: 첫 구간(0→처음 알게 됨)은 카드가 뜨지 않는다.
+      for (var k = bands.length ~/ 2; k < bands.length; k++) {
+        final lower = bands[k - 1].min;
+        final edge = bands[k].min;
+        final below = (edge - 3).clamp(lower, edge - 1);
+        final above = (edge + 2).clamp(edge, bands[k].max);
+        final (from, to) = up ? (below, above) : (above, below);
+        final shift = signals.shiftFor(
+          ch.id,
+          from,
+          to,
+          seed: s.seed,
+          day: s.day,
+          context: ctx,
+        );
+        if (shift != null) {
+          return (id: ch.id, from: from, to: to, text: shift.text);
+        }
+      }
+    }
+    return null;
+  }
+
+  /// 정산 화면. [ups] 장의 상승과 [downs] 장의 하강 카드가 나오도록 오늘 호감 변화를 꾸민다.
+  Future<void> _openSummary({required int ups, required int downs}) async {
+    final s = _previewState();
+    final c = _previewController(s);
+    final used = <String>{};
+    for (final up in [
+      for (var i = 0; i < ups; i++) true,
+      for (var i = 0; i < downs; i++) false,
+    ]) {
+      final f = _findShift(s, up: up, exclude: used);
+      if (f == null) continue;
+      used.add(f.id);
+      s.relations[f.id]?.affection = f.to;
+      c.dayDelta.affection[f.id] = f.to - f.from;
+    }
+    c.dayDelta.stats
+      ..[Stat.charm] = 2
+      ..[Stat.talk] = 1;
+    c
+      ..cliffhanger = '(미리보기) 내일 아침, 모르는 번호로 전화가 온다.'
+      ..phase = Phase.summary;
+    if (used.length < ups + downs) _warnShort(ups + downs, used.length);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _PhasePreview(
+          controller: c,
+          phase: Phase.summary,
+          builder: (c) => SummaryScreen(c: c),
+        ),
+      ),
+    );
+  }
+
+  /// 어젯밤 마감으로 구간이 내려간 사람 한 명을 세이브에 남긴 상태.
+  ({String id, String text})? _overnight(
+    GameState s, {
+    Set<String> exclude = const {},
+  }) {
+    final f = _findShift(s, up: false, exclude: exclude);
+    if (f == null) return null;
+    s.relations[f.id]?.affection = f.to;
+    s.overnightShifts[f.id] = f.text;
+    return (id: f.id, text: f.text);
+  }
+
+  /// 행동 화면: 어젯밤의 예고 아래 "밤사이 하락" 한 줄.
+  Future<void> _openOvernightAction() async {
+    final s = _previewState();
+    if (_overnight(s) == null) _warnShort(1, 0);
+    final c = _previewController(s)..phase = Phase.action;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _PhasePreview(
+          controller: c,
+          phase: Phase.action,
+          builder: (c) => ActionScreen(c: c),
+        ),
+      ),
+    );
+  }
+
+  /// 홈: 이어하기 카드의 서사 신호 줄 + 밤사이 하락 한 줄.
+  Future<void> _openHome() async {
+    final s = _previewState();
+    final top = _findShift(s, up: true);
+    if (top != null) s.relations[top.id]?.affection = top.to;
+    final night = _overnight(s, exclude: {?top?.id});
+    if (top == null || night == null) {
+      _warnShort(2, (top == null ? 0 : 1) + (night == null ? 0 : 1));
+    }
+    final c = GameController(
+      bundle: bundle,
+      save: _MemorySave(),
+      meta: _MemoryMeta(),
+    );
+    // 실제 홈 첫 프레임처럼 state 는 비우고 세이브 요약만 준다.
+    c
+      ..hasSave = true
+      ..saveSummary = SaveSummary.fromState(
+        s,
+        bundle.config,
+        bundle.characters,
+        signals: bundle.signals,
+      )
+      ..phase = Phase.home;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _PhasePreview(
+          controller: c,
+          phase: Phase.home,
+          builder: (c) => HomeScreen(c: c),
+        ),
+      ),
+    );
+  }
+
+  void _warnShort(int want, int got) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('신호 데이터가 모자라 $want개 중 $got개만 구성했다')),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final moments = momentSamples(bundle);
@@ -166,6 +327,36 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openMoment(ev),
             ),
+          // QA 실기기 확인용: 관계 변화 카드와 밤사이 하락 줄을 100일 플레이 없이 띄운다.
+          const _Header('정산·홈 미리보기'),
+          ListTile(
+            leading: const Icon(Icons.trending_up),
+            title: const Text('정산: 상승 카드 2장'),
+            subtitle: const Text('서로 다른 두 사람이 오늘 구간을 올라갔다'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openSummary(ups: 2, downs: 0),
+          ),
+          ListTile(
+            leading: const Icon(Icons.swap_vert),
+            title: const Text('정산: 상승 1장 + 하강 1장'),
+            subtitle: const Text('한 사람은 가까워지고 한 사람은 멀어졌다'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openSummary(ups: 1, downs: 1),
+          ),
+          ListTile(
+            leading: const Icon(Icons.nightlight_outlined),
+            title: const Text('행동: 밤사이 하락 한 줄'),
+            subtitle: const Text('어젯밤 마감으로 구간이 내려간 사람'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openOvernightAction,
+          ),
+          ListTile(
+            leading: const Icon(Icons.home_outlined),
+            title: const Text('홈: 서사 신호 줄 + 밤사이 줄'),
+            subtitle: const Text('이어하기 카드와 하락 한 줄'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openHome,
+          ),
           const _Header('엔딩 화면'),
           for (final t in byTier.keys)
             ExpansionTile(
@@ -399,6 +590,49 @@ class _MomentPreview extends StatelessWidget {
       },
     );
   }
+}
+
+/// 컨트롤러가 [phase] 에 있는 동안 [builder] 화면을 띄운다. 화면 안의 버튼(다음 날로,
+/// 홈으로, 이어하기 등)으로 phase 가 바뀌면 갤러리로 돌아온다.
+class _PhasePreview extends StatelessWidget {
+  final GameController controller;
+  final Phase phase;
+  final Widget Function(GameController c) builder;
+  const _PhasePreview({
+    required this.controller,
+    required this.phase,
+    required this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        if (controller.phase != phase) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) Navigator.of(context).maybePop();
+          });
+          return const Scaffold(body: SizedBox.shrink());
+        }
+        return builder(controller);
+      },
+    );
+  }
+}
+
+/// 기기의 출석·연속 기록을 건드리지 않는 메타. 홈 미리보기의 출석 처리가 여기로 간다.
+class _MemoryMeta extends MetaService {
+  PlayerMeta? _meta;
+
+  @override
+  Future<PlayerMeta> load() async => _meta ??= PlayerMeta();
+
+  @override
+  Future<void> save(PlayerMeta m) async => _meta = m;
+
+  @override
+  Future<void> clear() async => _meta = null;
 }
 
 /// 기기 SharedPreferences 를 건드리지 않는 세이브. 갤러리 안에서만 쓴다.

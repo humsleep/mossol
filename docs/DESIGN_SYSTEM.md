@@ -327,7 +327,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 탭하거나 1.8초 뒤 열린다. 동작 줄이기면 알림 없이 곧바로 대화. 대사 자동 공개는 알림이 닫힌 뒤 시작.
 - 이미 대사가 일부 공개된 상태로 들어오면(복원·디버그) 알림과 수신 화면은 건너뛴다.
 
-**사진 (`photo` 줄)** — `ChatBubble` 이 `line.photo` 가 있으면 말풍선 자리에 `PhotoBubble`(§3.2)을 그리고
+**사진 (`photo` 줄)** — `ChatBubble` 이 `line.photo` 가 있으면 말풍선 자리에 `PhotoBubble`(§3.2, 폴라로이드 한 장)을 그리고
 `text` 가 있으면 그 아래 `xs` 간격으로 평소 말풍선을 붙인다. `me` 면 오른쪽. 반응 줄도 같은 경로.
 통화 자막 안의 사진은 화면 폭 60% 로 가운데.
 
@@ -978,15 +978,25 @@ final AppTone tone;   // 기본 AppTone.neutral
 모먼트 컴포넌트(docs/MOMENTS_SPEC.md, 표현은 §2.3.1):
 
 ```dart
-/// widgets.dart — 사진 메시지 카드. 4:3, 모서리 AppRadius.md, 1px bubbleBorder.
-/// 배경: accent.container → lerp(container, base, 0.45) 대각 그라데이션.
-/// 가운데 아이콘(photoIconFor, 색 accent.onContainer, 높이의 55%).
-/// 아래 caption 띠: surfaceContainerLowest α0.94 위 bodySmall onSurface, 2줄까지.
-/// Semantics(container, image, label: '사진: {caption}').
+/// photo_card.dart (widgets.dart 가 export) — 사진 메시지 카드. "누군가 찍어 보낸 인화 사진".
+/// 폴라로이드: 인화지(라이트 paperBright / 다크 nightInverse) 안쪽 sm 여백, 아래 넓은 캡션 띠(최소 40),
+///   모서리 AppRadius.xs, 1px bubbleBorder, 그림자는 라이트에서만 tokens.shadowCard 한 겹.
+/// 크기: 폭 = min(화면 60%, 220). 사진 창 4:3(모서리 없음). width 를 주면 그 값(통화 자막 60%).
+/// 기울기: photoTiltDegrees(photo) = FNV-1a(icon|caption) → -1.5°~+1.5°(0.1° 단위), 결정론적.
+///   레이아웃 폭은 그대로(Transform), 위아래 xs 여백으로 모서리가 옆 줄에 닿지 않게 한다.
+/// 사진 창: PhotoScene(CustomPainter) — 아이콘별 장면(sceneFor): 바탕 그라데이션 + 선택적 아래 띠
+///   (수평선·탁자·바닥) + 빛 번짐 원 1~4개 + 옅은 렌즈 비네팅. 캐릭터 강조색이 늘 한 자리 들어간다.
+///   다크: 강조색을 photoAccentOf 로 "찍힌 색"(라이트 조합)으로 되돌린 뒤 night 쪽 28% 눌러 그린다.
+///   아이콘은 오른쪽 아래 작은 힌트(14pt, paperBright α0.9, inkText α0.28 pill 위). 노란색 없음.
+/// 캡션: bodyMedium 기울임 w500, 자간 0.4, 줄높이 1.35, 2줄까지 말줄임.
+///   잉크색 inkOf = lerp(inkText, accent.base, .45)(라이트) / lerp(nightText, accent.base, .4)(다크).
+///   인화지 위 대비 4.5:1 이상을 캐릭터 6명 + 기본 전부 테스트가 고정한다.
+/// 탭: 크게 보기(showAppDialog) — 폭 min(화면-80, 340) 폴라로이드(캡션 전체) + '닫기' 버튼, 스크림 탭으로도 닫힘.
+/// Semantics(container, image, button, label: '사진: {caption}', hint: '크게 보기', onTap).
 class PhotoBubble extends StatelessWidget {
   final Photo photo;
   final CharacterAccent? accent;   // tokens.accentFor(character)
-  final double? width;             // 기본: 화면 72%, 최대 280
+  final double? width;             // 기본: min(화면 60%, 220)
 }
 
 /// 아이콘 14종: cafe local_cafe · food restaurant · sky wb_cloudy · night nightlight_round ·

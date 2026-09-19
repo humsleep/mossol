@@ -92,14 +92,14 @@ int plainChoiceIndex(GameController c) => c.choices
 /// 룰렛 시트를 돌리고 시작을 눌러 닫는다.
 Future<void> spinRouletteSheet(WidgetTester tester) async {
   await tester.pumpAndSettle();
-  expect(find.text('오늘의 운'), findsOneWidget);
-  await tester.tap(find.text('돌리기'));
+  expect(findText('오늘의 운'), findsOneWidget);
+  await tester.tap(findText('돌리기'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 1500));
   await tester.pump();
-  await tester.tap(find.text('시작'));
+  await tester.tap(findText('시작'));
   await tester.pumpAndSettle();
-  expect(find.text('오늘의 운'), findsNothing);
+  expect(findText('오늘의 운'), findsNothing);
 }
 
 MinigameContext ctxFor(GameController c, {String? partner}) =>
@@ -109,3 +109,45 @@ GameState freshState() {
   final b = testBundle();
   return GameState.fresh(b.config, b.characters, seed: 7);
 }
+
+// ---------------------------------------------------------------------------
+// 화면 글자 찾기. 표시 문자열에는 한국어 단어 단위 줄바꿈을 위해 보이지 않는
+// WORD JOINER(U+2060)가 들어간다(lib/ui/keep_all.dart). flutter_test 의
+// find.text 는 문자열을 그대로 비교하므로, 이 문자를 지우고 비교하는 찾기를 쓴다.
+// ---------------------------------------------------------------------------
+
+String _plain(String? s) => (s ?? '').replaceAll('⁠', '');
+
+String? _textOf(Widget w) {
+  if (w is Text) return w.data ?? w.textSpan?.toPlainText();
+  if (w is EditableText) return w.controller.text;
+  return null;
+}
+
+/// find.text 와 같되 WORD JOINER 를 무시한다.
+Finder findText(String s, {bool skipOffstage = true}) => find.byWidgetPredicate(
+  (w) {
+    final t = _textOf(w);
+    return t != null && _plain(t) == s;
+  },
+  description: 'text "$s"',
+  skipOffstage: skipOffstage,
+);
+
+/// find.textContaining 과 같되 WORD JOINER 를 무시한다.
+Finder findTextContaining(Pattern p, {bool skipOffstage = true}) =>
+    find.byWidgetPredicate(
+      (w) {
+        final t = _textOf(w);
+        return t != null && _plain(t).contains(p);
+      },
+      description: 'text containing $p',
+      skipOffstage: skipOffstage,
+    );
+
+/// find.widgetWithText 와 같되 WORD JOINER 를 무시한다.
+Finder findWidgetWithText(Type type, String s, {bool skipOffstage = true}) =>
+    find.ancestor(
+      of: findText(s, skipOffstage: skipOffstage),
+      matching: find.byType(type, skipOffstage: skipOffstage),
+    );
