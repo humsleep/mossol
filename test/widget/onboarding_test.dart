@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/text_template.dart';
 import 'package:mossol/engine/meta_service.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
@@ -309,7 +310,8 @@ void main() {
       final r00 = b.eventById['seoyeon_r00']!;
       expect(
         b.firstLineOf('seoyeon'),
-        r00.lines.firstWhere((l) => l.who == 'them').text,
+        // 첫 메시지는 이름 자리표시자를 채운 결과다(이름이 없으면 대체어).
+        TextTemplate.fill(r00.lines.firstWhere((l) => l.who == 'them').text),
       );
       // 지우는 r00 이 없고 r01 에 them 대사가 없어 r02 로 내려간다.
       expect(
