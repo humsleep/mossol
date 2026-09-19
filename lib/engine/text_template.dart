@@ -105,15 +105,20 @@ class TextTemplate {
   /// `{name|아야|}, 자?` → `자?`, `잘 자, {name|아야|}.` → `잘 자.`
   static String _closeHoles(String s) {
     final out = s
-        // 문장 맨 앞: 뒤따르는 쉼표·느낌표·물결과 공백까지.
-        .replaceAll(RegExp('^\\s*$_hole[,!~]*\\s*'), '')
+        // 문장 맨 앞: 뒤따르는 쉼표·마침표·느낌표·물결·말줄임과 공백까지.
+        // `{name|아야}. 너 나…` 가 `. 너 나…` 로 남지 않게 마침표도 지운다.
+        .replaceAll(RegExp('^\\s*$_hole[,.!~…]*\\s*'), '')
         // 문장 끝이나 마침표 앞: 앞선 쉼표와 공백까지.
         .replaceAll(RegExp(',?\\s*$_hole(?=[.!?~…]|\$)'), '')
+        // 말줄임·물결 바로 뒤: 빈칸 없이 붙인다. `…{name|아야}, 자?` → `…자?`
+        .replaceAll(RegExp('(?<=[…~])\\s*$_hole,?\\s*'), '')
         // 가운데: 한 칸 공백으로.
         .replaceAll(RegExp('\\s*$_hole,?\\s*'), ' ')
         .replaceAll(RegExp(r' {2,}'), ' ')
         .trim();
-    return out.replaceAll(_hole, '');
+    final result = out.replaceAll(_hole, '');
+    // 이름만 부르던 줄(`{name|아야}.`)이 통째로 비면 빈 말풍선 대신 말줄임.
+    return result.isEmpty ? '…' : result;
   }
 
   /// 형식 오류 목록. 비어 있으면 정상. 검증기와 [fill] 의 로그가 쓴다.

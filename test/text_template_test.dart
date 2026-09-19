@@ -239,4 +239,16 @@ void main() {
       expect(PlayerName.validate('병신'), contains('쓸 수 없어요'));
     });
   });
+
+  test('문장 맨 앞 호격 뒤 마침표도 이름이 없으면 함께 지운다', () {
+    expect(TextTemplate.fill('{name|아야}. 너 나 좋아해?'), '너 나 좋아해?');
+    expect(TextTemplate.fill('{name|아야}. 너 나 좋아해?', name: '민수'), '민수야. 너 나 좋아해?');
+    expect(TextTemplate.fill('{name|아야}.'), '…');
+    expect(TextTemplate.fill('{name|아야}…'), '…');
+  });
+
+  test('말줄임 바로 뒤 호격이 빠지면 빈칸 없이 붙인다', () {
+    expect(TextTemplate.fill('…{name|아야}, 자?'), '…자?');
+    expect(TextTemplate.fill('…{name|아야}, 자?', name: '민석'), '…민석아, 자?');
+  });
 }
