@@ -147,7 +147,7 @@ Column(crossAxisAlignment: start)
   gap sm 8
   _Step(Icons.chat_bubble_outline,  '밤: 메신저로 대화하기')
   gap sm 8
-  _Step(Icons.auto_stories_outlined,'100일: 엔딩 30개 중 하나')
+  _Step(Icons.auto_stories_outlined,'100일: 엔딩 {총수}개 중 하나')
 ```
 
 - `_Step` = `Row` → `Icon(size 18, color: onPrimaryContainer)` → `sm` 8 → `Expanded(Text(bodyMedium,
@@ -356,7 +356,7 @@ AppCard(onTap:)
 | A 설정 툴팁 | `설정` |
 | B-1 눈썹 | `100일 프로젝트` |
 | B-1 헤드라인 | `100일 뒤, 나는 달라져 있을까` |
-| B-1 단계 1/2/3 | `아침: 오늘 할 일 하나 고르기` / `밤: 메신저로 대화하기` / `100일: 엔딩 30개 중 하나` |
+| B-1 단계 1/2/3 | `아침: 오늘 할 일 하나 고르기` / `밤: 메신저로 대화하기` / `100일: 엔딩 {총수}개 중 하나` (bundle.endings.length) |
 | B-2 회차 줄 | `{run}회차 · {chapter}장` |
 | B-2 진행 | `D+{day} / {totalDays}` |
 | B-2 예고 | `어젯밤: {lastCliffhanger}` / 첫날 `어젯밤: 아직 아무 일도 없었다. 오늘부터다.` / 대기 `어젯밤: 불러오는 중…` |

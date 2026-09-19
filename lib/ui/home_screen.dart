@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // B. 히어로 카드
             if (!hasSave)
-              const _IntroCard()
+              _IntroCard(endings: c.bundle.endings.length)
             else if (summary == null)
               const ContinueCard.placeholder()
             else
@@ -319,7 +319,9 @@ class _Header extends StatelessWidget {
 /// B-1. 소개 카드(세이브 없음). 화면에서 primaryContainer 를 쓰는 유일한 면.
 /// 3초 안에 "아침에 고르고, 밤에 톡 하고, 100일 뒤 엔딩" 이 읽혀야 한다.
 class _IntroCard extends StatelessWidget {
-  const _IntroCard();
+  /// 엔딩 총수. 캐릭터가 늘면 같이 는다(하드코딩 금지).
+  final int endings;
+  const _IntroCard({required this.endings});
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +347,7 @@ class _IntroCard extends StatelessWidget {
           const SizedBox(height: AppSpace.sm),
           const _Step(Icons.chat_bubble_outline, '밤: 메신저로 대화하기'),
           const SizedBox(height: AppSpace.sm),
-          const _Step(Icons.auto_stories_outlined, '100일: 엔딩 30개 중 하나'),
+          _Step(Icons.auto_stories_outlined, '100일: 엔딩 $endings개 중 하나'),
         ],
       ),
     );
@@ -429,7 +431,7 @@ class _AlbumCard extends StatelessWidget {
   const _AlbumCard({required this.c, required this.onTap});
 
   /// endings.json 순서로 훑어 미획득이면서 배드·히든이 아닌 첫 엔딩의 힌트.
-  /// 해피·굿·솔로를 다 봤으면 남은 것을, 30개를 다 봤으면 그 사실을 말한다.
+  /// 해피·굿·솔로를 다 봤으면 남은 것을, 전부 다 봤으면 그 사실을 말한다.
   String _hintLine() {
     final got = c.endingAlbum.toSet();
     final all = c.bundle.endings;
