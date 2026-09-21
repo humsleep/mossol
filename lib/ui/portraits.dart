@@ -103,6 +103,13 @@ class PortraitRegistry {
 /// 크기는 항상 [size]×[size] 라서 그림 유무로 레이아웃이 달라지지 않는다. 디코딩은
 /// 화면 크기(× 기기 배율)로 줄여 메모리를 아낀다(1024px 원본을 40pt 에 그리지 않게).
 class PortraitImage extends StatelessWidget {
+  /// 원에 담기 전 확대 배율. 초상화는 가슴 위 상반신이라 그대로 넣으면 32~40pt 에서
+  /// 얼굴이 너무 작다. 얼굴 쪽을 확대해 원의 대부분을 얼굴·머리로 채운다.
+  static const double zoom = 1.4;
+
+  /// 확대할 때 고정되는 점. 얼굴 중심이 대략 위에서 35% 높이에 있다.
+  static const Alignment focus = Alignment(0, -0.3);
+
   final String path;
   final double size;
   final String semanticLabel;
@@ -120,7 +127,7 @@ class PortraitImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final px = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+    final px = (size * zoom * MediaQuery.devicePixelRatioOf(context)).ceil();
     return ClipOval(
       child: SizedBox.square(
         dimension: size,
@@ -128,7 +135,7 @@ class PortraitImage extends StatelessWidget {
           path,
           bundle: bundle,
           // scale 을 주면 ExactAssetImage 가 된다. 해상도 변형(2.0x 폴더)을 찾느라
-          // 매니페스트를 다시 읽지 않는다. 초상화는 1024px 한 벌뿐이다.
+          // 매니페스트를 다시 읽지 않는다. 초상화는 한 벌뿐이다.
           scale: 1,
           cacheWidth: px,
           width: size,
@@ -137,8 +144,10 @@ class PortraitImage extends StatelessWidget {
           filterQuality: FilterQuality.medium,
           semanticLabel: semanticLabel,
           gaplessPlayback: true,
-          frameBuilder: (context, child, frame, sync) =>
-              frame == null && !sync ? fallback(context) : child,
+          // 확대는 그림에만 준다. 읽는 중·실패 때의 이니셜 원은 원래 크기 그대로.
+          frameBuilder: (context, child, frame, sync) => frame == null && !sync
+              ? fallback(context)
+              : Transform.scale(scale: zoom, alignment: focus, child: child),
           errorBuilder: (context, error, stack) => fallback(context),
         ),
       ),

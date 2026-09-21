@@ -788,5 +788,4 @@ sips -g pixelWidth -g pixelHeight ~/workspace/mossol/assets/portraits/*.jpg
 5. 실제 게임을 시작해 채팅 화면까지 한 번 본다.
 6. `flutter test test/widget/portrait_test.dart test/widget/layout_test.dart`로 넘침이 없는지 확인.
 
-알려진 한계: 채팅 화면 헤더의 작은 원(`event_screen.dart`의 `_AvatarDot`)은 아직 이니셜이다.
 `CharacterAvatar(name:, characterId: ev.character, accent:, size: 32)`로 바꾸면 같은 규칙으로 그림이 뜬다.

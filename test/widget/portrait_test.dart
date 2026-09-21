@@ -108,7 +108,11 @@ void main() {
       final img = tester.widget<Image>(portraitImage());
       expect(img.semanticLabel, '서연');
       expect(img.image, isA<ResizeImage>());
-      expect((img.image as ResizeImage).width, 56 * 3, reason: 'cacheWidth');
+      expect(
+        (img.image as ResizeImage).width,
+        (56 * PortraitImage.zoom * 3).ceil(),
+        reason: 'cacheWidth — 확대분까지 선명하게',
+      );
       final box = tester.widget<Container>(
         find
             .descendant(

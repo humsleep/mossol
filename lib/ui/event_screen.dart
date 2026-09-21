@@ -503,7 +503,14 @@ class _EventScreenState extends State<EventScreen> {
       title: Row(
         children: [
           if (hasPartner) ...[
-            _AvatarDot(name: partner, accent: accent),
+            ExcludeSemantics(
+              child: CharacterAvatar(
+                name: partner,
+                characterId: ev.character,
+                accent: accent,
+                size: AppSpace.xxxl,
+              ),
+            ),
             const SizedBox(width: AppSpace.sm),
           ],
           Expanded(
@@ -572,31 +579,6 @@ class _EventScreenState extends State<EventScreen> {
 }
 
 /// 상대 이니셜 원형. 사진 대신 강조색 한 글자로 누구인지 알린다(§4.3).
-class _AvatarDot extends StatelessWidget {
-  final String name;
-  final CharacterAccent accent;
-  const _AvatarDot({required this.name, required this.accent});
-
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: Container(
-      width: AppSpace.xxxl,
-      height: AppSpace.xxxl,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: accent.container,
-        borderRadius: AppRadius.rPill,
-        border: Border.all(color: accent.base, width: AppBorderWidth.hairline),
-      ),
-      child: Text(
-        name.substring(0, 1),
-        maxLines: 1,
-        style: context.text.labelMedium?.copyWith(color: accent.onContainer),
-      ),
-    ),
-  );
-}
-
 /// 거절한 전화 자리 표시. 시스템 줄과 같은 중립 pill 이되 아이콘을 붙이고 글자는
 /// 본문 2차색(`onSurfaceVariant`)으로 둔다 — 이 줄은 장식이 아니라 사건이라 읽혀야 한다.
 class _MissedCall extends StatelessWidget {
