@@ -8,6 +8,7 @@ import 'package:mossol/ui/action_screen.dart';
 import 'package:mossol/ui/ending_screen.dart';
 import 'package:mossol/ui/home_screen.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/summary_screen.dart';
 import 'package:mossol/ui/widgets.dart';
@@ -119,6 +120,9 @@ void main() {
       find.byType(ListView),
       const Offset(0, -300),
     );
+    // 목록 끝자락에서 반쯤 걸친 채 멈추면 탭이 빗나간다. 화면 안으로 끌어온다.
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
     await tester.tap(tile);
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsNothing, reason: '신호 데이터로 구성하지 못했다');
@@ -208,6 +212,27 @@ void main() {
     expect(find.byType(DebugGalleryScreen), findsOneWidget);
     expect(findTextContaining('나는: 남자'), findsOneWidget);
     expect(findTextContaining('(f)'), findsOneWidget);
+  });
+
+  testWidgets('MBTI 단계 미리보기 → ENFP → 미리보기 MBTI 로 캐스트 소개에 궁합 줄', (tester) async {
+    await openPreview(tester, 'MBTI 단계: 나의 MBTI는?');
+    expect(find.byType(OnboardingMbtiScreen), findsOneWidget);
+    for (final l in ['E', 'N', 'F', 'P']) {
+      await tester.tap(find.byKey(Key('mbti-$l')));
+      await tester.pump();
+    }
+    await tester.tap(find.byKey(const Key('mbti-submit')));
+    await tester.pumpAndSettle();
+    expect(find.byType(DebugGalleryScreen), findsOneWidget);
+    expect(findTextContaining('MBTI: ENFP'), findsOneWidget);
+    final tile = findText('2단계: 캐스트 소개 · 여성 캐릭터');
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    expect(find.byType(CompatRow), findsWidgets);
+    expect(findText('궁합 천생연분'), findsOneWidget, reason: '서연 INTJ × ENFP');
+    expect(tester.takeException(), isNull);
   });
 
   for (final (label, side) in [

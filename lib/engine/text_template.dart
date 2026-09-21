@@ -26,6 +26,13 @@
 /// (1 일·3 삼·6 육·7 칠·8 팔·0 영 받침 있음, 10 십·100 백·1000 천·10000 만).
 /// 영문은 발음 추정(아래 [_latinFinal]). 그 밖의 글자는 받침 없음으로 본다.
 ///
+/// 플레이어 MBTI(docs/MBTI_SPEC.md §1.4):
+///
+/// ```text
+/// {mbti}               플레이어 MBTI              INFP (모름이면 빈칸 — `mbti` 조건이 붙은 줄에서만 쓴다)
+/// {mbti|대체어}        모름이면 대체어            INFP / 대체어
+/// ```
+///
 /// 형식이 틀린 자리표시자(모르는 조사, 닫히지 않은 중괄호 등)는 **그대로 두고**
 /// 디버그 로그를 한 번 남긴다. 출시 데이터는 검증기(`StoryBundle.validate`)가 먼저 막는다.
 ///
@@ -44,6 +51,9 @@ class TextTemplate {
   /// 지금 플레이어 이름. `GameController` 가 기기 메타를 읽고 바꿀 때 맞춰 둔다.
   /// 컨트롤러를 받지 않는 화면(캐스트 소개의 첫 메시지, `StoryBundle.firstLineOf`)이 쓴다.
   static String? currentName;
+
+  /// 지금 플레이어 MBTI(캐스트 소개 등 컨트롤러를 받지 않는 화면용). [currentName] 과 같은 쓰임.
+  static String? currentMbti;
 
   /// 이름 최대 길이(글자). 입력창과 길이 검사가 같이 쓴다.
   static const maxName = 6;
@@ -77,8 +87,9 @@ class TextTemplate {
   static final Set<String> _logged = {};
 
   /// [s] 의 자리표시자를 [name] 으로 바꾼다. [name] 이 null·빈 문자열이면 대체어.
+  /// `{mbti}` 는 [mbti] 로(null 이면 대체어, 대체어도 없으면 지운다).
   /// 자리표시자가 없으면 [s] 를 그대로 돌려준다.
-  static String fill(String s, {String? name}) {
+  static String fill(String s, {String? name, String? mbti}) {
     if (!s.contains('{') && !s.contains('}')) return s;
     final n = (name ?? '').trim();
     final errors = problems(s);
@@ -94,7 +105,7 @@ class TextTemplate {
     final out = s.replaceAllMapped(_token, (m) {
       final spec = _parse(m[1]!);
       if (spec == null) return m[0]!;
-      final r = spec.render(n.isEmpty ? null : n);
+      final r = spec.render(n.isEmpty ? null : n, mbti);
       if (r.isEmpty) holes = true;
       return r.isEmpty ? _hole : r;
     });
@@ -137,6 +148,17 @@ class TextTemplate {
   /// 자리표시자가 있는지.
   static bool hasToken(String s) => _token.hasMatch(s);
 
+  /// 대체어 없는 `{mbti}` 가 있는지. 이런 문장은 `mbti` 조건이 붙은 줄·선택지에서만 쓸 수 있다
+  /// (MBTI 를 모르는 플레이어에게 빈칸이 보이지 않게, 검증기가 막는다).
+  static bool hasBareMbti(String s) => _token
+      .allMatches(s)
+      .any(
+        (m) => switch (_parse(m[1]!)) {
+          _MbtiSpec(fallback: null) => true,
+          _ => false,
+        },
+      );
+
   /// 길이 검사용: 가장 긴 치환 결과의 글자 수. 이름은 최대 길이([maxName])의
   /// 받침 있음·없음·ㄹ 세 경우와 이름 없음(대체어)을 모두 넣어 본다.
   static int maxLength(String s) {
@@ -144,14 +166,20 @@ class TextTemplate {
     const sample = '가나다라마';
     var best = 0;
     for (final n in ['$sample박', '$sample바', '$sample발', null]) {
-      final l = fill(s, name: n).length;
-      if (l > best) best = l;
+      for (final m in const ['INTJ', null]) {
+        final l = fill(s, name: n, mbti: m).length;
+        if (l > best) best = l;
+      }
     }
     return best;
   }
 
-  static _Spec? _parse(String body) {
+  static _Token? _parse(String body) {
     final parts = body.split('|');
+    if (parts.first == 'mbti') {
+      if (parts.length > 2) return null;
+      return _MbtiSpec(parts.length == 2 ? parts[1].trim() : null);
+    }
     if (parts.length > 3 || parts.first != 'name') return null;
     final mods = parts.length > 1 && parts[1].isNotEmpty
         ? parts[1].split('+')
@@ -234,8 +262,23 @@ class TextTemplate {
   }
 }
 
-/// 자리표시자 하나: 수식 목록 + 대체어(null 이면 기본값, '' 이면 지움).
-class _Spec {
+/// 자리표시자 하나. [render] 가 빈 문자열이면 그 자리를 지우고 쉼표·공백을 정리한다.
+sealed class _Token {
+  const _Token();
+  String render(String? name, String? mbti);
+}
+
+/// `{mbti}` · `{mbti|대체어}`.
+class _MbtiSpec extends _Token {
+  final String? fallback;
+  const _MbtiSpec(this.fallback);
+
+  @override
+  String render(String? name, String? mbti) => mbti ?? fallback ?? '';
+}
+
+/// 이름 자리표시자 하나: 수식 목록 + 대체어(null 이면 기본값, '' 이면 지움).
+class _Spec extends _Token {
   final List<String> mods;
   final String? fallback;
 
@@ -248,7 +291,8 @@ class _Spec {
 
   bool get _honorific => mods.contains('씨');
 
-  String render(String? name) {
+  @override
+  String render(String? name, String? mbti) {
     if (name != null) {
       var base = name;
       for (final m in mods) {

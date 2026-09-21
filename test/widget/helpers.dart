@@ -10,6 +10,7 @@ import 'package:mossol/main.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 import 'package:mossol/ui/design_system.dart';
+import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -72,10 +73,24 @@ void useDarkMode(WidgetTester tester) {
 
 /// 새 게임 이름 단계("뭐라고 불러 드릴까요?")가 떠 있으면 건너뛰기를 누른다. 없으면 아무것도 안 한다.
 /// 이름 단계는 이름이 없고 아직 한 번도 묻지 않았을 때만 뜬다(docs/NAME_GUIDE.md).
+///
+/// 이어서 MBTI 단계("나의 MBTI는?")가 떠 있으면 그것도 건너뛴다([skipMbtiStep]).
+/// 두 단계 모두 캐스트 소개 앞에 오고, 기존 흐름 테스트는 둘 다 건너뛴 경로를 본다.
 Future<void> skipNameStep(WidgetTester tester) async {
   await tester.pumpAndSettle();
-  if (find.byType(OnboardingNameScreen).evaluate().isEmpty) return;
-  await tester.tap(find.byKey(const Key('name-skip')));
+  if (find.byType(OnboardingNameScreen).evaluate().isNotEmpty) {
+    await tester.tap(find.byKey(const Key('name-skip')));
+    await tester.pumpAndSettle();
+  }
+  await skipMbtiStep(tester);
+}
+
+/// 새 게임 MBTI 단계가 떠 있으면 `건너뛰기` 를 누른다. 없으면 아무것도 안 한다.
+/// MBTI 단계는 MBTI 가 없고 아직 한 번도 묻지 않았을 때만 뜬다(docs/MBTI_SPEC.md §2.1).
+Future<void> skipMbtiStep(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  if (find.byType(OnboardingMbtiScreen).evaluate().isEmpty) return;
+  await tester.tap(find.byKey(const Key('mbti-skip')));
   await tester.pumpAndSettle();
 }
 

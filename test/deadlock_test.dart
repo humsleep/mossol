@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/conditions.dart';
 import 'package:mossol/engine/ending_resolver.dart';
 import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/mbti.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
@@ -135,7 +136,7 @@ void main() {
         return;
       }
       // 상호배타 게이트가 엔딩 도달을 막지 않는지 확인.
-      expect(bundle.endings.length, 48);
+      expect(bundle.endings.length, 60);
       final resolver = EndingResolver(
         bundle.endings,
         characters: bundle.characters,
@@ -143,7 +144,19 @@ void main() {
       for (final e in bundle.endings.where(
         (e) => e.tier == 'happy' && bundle.endingInPreference(e, pref),
       )) {
-        final s = fresh()..day = 101;
+        final id0 = e.character!;
+        // 천생연분 같은 MBTI 엔딩은 조건에 맞는 플레이어 MBTI 로 회차를 만든다.
+        final mbti = Mbti.playersFor(
+          e.when,
+          characterMbti: bundle.characterById[id0]?.mbti,
+        ).first;
+        final s = GameState.fresh(
+          bundle.config,
+          bundle.characters,
+          seed: 1,
+          preference: pref,
+          mbti: mbti,
+        )..day = 101;
         maxStats(s);
         s.stats[Stat.sincerity] = 60;
         for (final c in roster) {
@@ -154,8 +167,15 @@ void main() {
         s.rel(id).affection = 95;
         s.rel(id).trust = 85;
         if (e.when.flags.isNotEmpty) s.flags.addAll(e.when.flags);
+        final fc = e.when.flagsAtLeast;
+        if (fc != null) s.flags.addAll(fc.of.take(fc.n));
         expect(
-          e.when.matches(s, self: e.character, absent: engine.absentFor(s)),
+          e.when.matches(
+            s,
+            self: e.character,
+            selfMbti: bundle.characterById[id]?.mbti,
+            absent: engine.absentFor(s),
+          ),
           isTrue,
           reason: '${e.name} 조건을 직접 만족시켰는데 판정이 false',
         );

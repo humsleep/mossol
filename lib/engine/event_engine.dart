@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'conditions.dart';
 import 'effects.dart';
+import 'mbti.dart';
 import 'models.dart';
 import 'story_repository.dart';
 
@@ -110,8 +111,34 @@ class EventEngine {
     final absent = absentFor(s);
     // 선호 밖 캐릭터의 이벤트는 후보가 아니다. `trigger.pref` 는 matches 가 본다.
     if (e.character != null && absent.contains(e.character)) return false;
-    return e.trigger.matches(s, self: e.character, absent: absent);
+    return e.trigger.matches(
+      s,
+      self: e.character,
+      selfMbti: mbtiOf(e.character),
+      absent: absent,
+    );
   }
+
+  // ---- MBTI (docs/MBTI_SPEC.md) ----
+
+  /// 캐릭터 [id] 의 MBTI. 없으면 null.
+  String? mbtiOf(String? id) =>
+      id == null ? null : bundle.characterById[id]?.mbti;
+
+  /// 이 회차 플레이어와 캐릭터 [id] 의 궁합 점수(0~4). 어느 쪽이든 MBTI 가 없으면 2.
+  int compatWith(GameState s, String? id) => Mbti.compat(s.mbti, mbtiOf(id));
+
+  /// [ev] 를 볼 플레이어(MBTI + 이벤트 캐릭터와의 궁합).
+  MbtiView mbtiView(GameState s, StoryEvent ev) =>
+      MbtiView(s.mbti, compat: compatWith(s, ev.character));
+
+  /// [ev] 를 이 회차 플레이어에게 보이는 줄·선택지만 남긴 사본. 조건이 없으면 원본.
+  /// 선택지 인덱스·힌트는 거른 목록 기준이다. `GameController.current` 가 이것이다.
+  StoryEvent viewFor(GameState s, StoryEvent ev) => ev.forMbti(mbtiView(s, ev));
+
+  /// 캐릭터 [id] 호감이 오를 때 곱할 궁합 배율(config.mbti.compatMultiplier).
+  double compatMultiplier(GameState s, String id) =>
+      bundle.config.compatMultiplierFor(compatWith(s, id));
 
   List<StoryEvent> candidates(GameState s, EventLayer layer) =>
       bundle.eventsByLayer[layer]!.where((e) => _available(s, e)).toList();
@@ -235,17 +262,24 @@ class EventEngine {
 
   StoryEvent? byId(String id) => bundle.eventById[id];
 
-  List<ChoiceView> choicesFor(GameState s, StoryEvent ev) => [
-    for (var i = 0; i < ev.choices.length; i++)
-      () {
-        final c = ev.choices[i];
-        final req = c.require;
-        final ok =
-            req == null ||
-            req.satisfied(s, self: ev.character, absent: absentFor(s));
-        return ChoiceView(i, c, !ok, ok ? '' : req.describe());
-      }(),
-  ];
+  /// 보이는 선택지와 잠금 여부. MBTI·궁합 조건이 맞지 않는 선택지는 빠지고,
+  /// [ChoiceView.index] 는 [ev].choices 의 원래 인덱스다(거른 사본을 넘기면 그 사본 기준).
+  List<ChoiceView> choicesFor(GameState s, StoryEvent ev) {
+    final v = mbtiView(s, ev);
+    return [
+      for (var i = 0; i < ev.choices.length; i++)
+        if (v.allowsChoice(ev.choices[i])) _viewOf(s, ev, i),
+    ];
+  }
+
+  ChoiceView _viewOf(GameState s, StoryEvent ev, int i) {
+    final c = ev.choices[i];
+    final req = c.require;
+    final ok =
+        req == null ||
+        req.satisfied(s, self: ev.character, absent: absentFor(s));
+    return ChoiceView(i, c, !ok, ok ? '' : req.describe());
+  }
 
   /// 크리티컬 확률(%). 기본 5, 눈치 20당 +1, 물오름 상태면 두 배.
   int critChance(GameState s) {
@@ -289,7 +323,15 @@ class EventEngine {
     bool? forcedSuccess,
     bool? forcedCritical,
   }) {
+    if (!mbtiView(s, ev).allowsChoice(c)) {
+      throw ArgumentError.value(
+        c.text,
+        'choice',
+        '이 플레이어(MBTI ${s.mbti ?? '모름'})에게 보이지 않는 선택지: ${ev.id}',
+      );
+    }
     final r = random ?? rng(s, '${ev.id}:${c.text}');
+    double compat(String id) => compatMultiplier(s, id);
     s.seen.add(ev.id);
     // 모먼트를 본 날. 다음 모먼트 보정의 기준이 된다(거절한 전화도 본 것이다).
     if (isMoment(ev)) s.lastMomentDay = s.day;
@@ -309,6 +351,8 @@ class EventEngine {
         self: self,
         affectionMultiplier: affectionMultiplier(s),
         absent: absentFor(s),
+        compatMultiplier: compat,
+        random: r,
       );
       final had = s.combo;
       s.combo = 0;
@@ -333,6 +377,8 @@ class EventEngine {
       self: self,
       affectionMultiplier: affectionMultiplier(s, critical: crit),
       absent: absentFor(s),
+      compatMultiplier: compat,
+      random: r,
     );
     final wasOnFire = s.onFire;
     if (_isGoodChoice(d)) {
@@ -378,8 +424,12 @@ class EventEngine {
     return applyEffects(s, Effects(stats: e.$2));
   }
 
-  AppliedDelta applyAction(GameState s, DayAction a) =>
-      applyEffects(s, a.effects, absent: absentFor(s));
+  AppliedDelta applyAction(GameState s, DayAction a) => applyEffects(
+    s,
+    a.effects,
+    absent: absentFor(s),
+    compatMultiplier: (id) => compatMultiplier(s, id),
+  );
 
   /// 하루 마감. 접촉 없던 캐릭터 호감도 -1, 스트레스 자연 감소, 날짜 +1.
   void endDay(GameState s, {String? cliffhanger}) {

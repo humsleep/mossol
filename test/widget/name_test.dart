@@ -18,6 +18,7 @@ import 'package:mossol/ui/call_view.dart';
 import 'package:mossol/ui/ending_screen.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
@@ -112,6 +113,8 @@ void main() {
       expect(c.playerName, isNull);
       await tester.tap(find.byKey(const Key('name-submit')));
       await tester.pumpAndSettle();
+      // 이름 다음은 MBTI 단계(docs/MBTI_SPEC.md §2.1). 건너뛰면 캐스트 소개.
+      await skipMbtiStep(tester);
       expect(find.byType(PreferenceScreen), findsOneWidget);
       expect(c.playerName, isNull);
       await tester.tap(findText(PreferenceScreen.startLabel));
@@ -131,6 +134,12 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const Key('name-submit')));
       await tester.pumpAndSettle();
+      await skipMbtiStep(tester);
+      expect(find.byType(PreferenceScreen), findsOneWidget);
+      // 캐스트 소개 → MBTI → 이름 → 나는? → 홈.
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(OnboardingMbtiScreen), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.byType(OnboardingNameScreen), findsOneWidget);
@@ -149,6 +158,7 @@ void main() {
       await toNameStep(tester);
       await tester.tap(find.byKey(const Key('name-skip')));
       await tester.pumpAndSettle();
+      await skipMbtiStep(tester);
       await tester.tap(findText(PreferenceScreen.startLabel));
       await tester.pumpAndSettle();
       expect(c.phase, Phase.action);
@@ -171,6 +181,7 @@ void main() {
       await showHome(tester);
       await tapNewGame(tester);
       expect(find.byType(OnboardingNameScreen), findsNothing);
+      await skipMbtiStep(tester);
       expect(find.byType(PreferenceScreen), findsOneWidget);
       await unmount(tester);
     });
@@ -185,6 +196,7 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const Key('name-submit')));
       await tester.pumpAndSettle();
+      await skipMbtiStep(tester);
       expect(find.byKey(const Key('cast-side-f')), findsOneWidget);
       await tester.tap(findText(PreferenceScreen.startLabel));
       await tester.pumpAndSettle();

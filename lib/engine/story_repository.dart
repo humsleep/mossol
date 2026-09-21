@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'effects.dart';
+import 'mbti.dart';
 import 'models.dart';
 import 'signals.dart';
 import 'text_template.dart';
@@ -75,11 +76,16 @@ class StoryBundle {
   ///
   /// 자리표시자(`{name|아야}` 등)는 [TextTemplate.currentName] 으로 바꿔 돌려준다 — 캐스트
   /// 소개 화면은 컨트롤러를 받지 않으므로 여기서 치환한다. 원문은 [rawFirstLineOf].
+  /// MBTI 조건이 붙은 줄은 건너뛴다(누구에게나 같은 첫 메시지).
   String? firstLineOf(String id) {
     final raw = rawFirstLineOf(id);
     return raw == null
         ? null
-        : TextTemplate.fill(raw, name: TextTemplate.currentName);
+        : TextTemplate.fill(
+            raw,
+            name: TextTemplate.currentName,
+            mbti: TextTemplate.currentMbti,
+          );
   }
 
   /// [firstLineOf] 의 치환 전 원문.
@@ -95,7 +101,10 @@ class StoryBundle {
     ]..sort((a, b) => a.$1.compareTo(b.$1));
     for (final (_, e) in route) {
       for (final l in e.lines) {
-        if (l.who == 'them' && l.photo == null && l.text.trim().isNotEmpty) {
+        if (l.who == 'them' &&
+            l.photo == null &&
+            !l.isGated &&
+            l.text.trim().isNotEmpty) {
           return l.text.trim();
         }
       }
@@ -244,6 +253,16 @@ class StoryBundle {
       if (first != null) _checkTemplate(first, '${c.id}.firstLine');
       _checkNoTemplate(c.tagline, '${c.id}.tagline');
       _checkNoTemplate(c.name, '${c.id}.name');
+      final m = c.mbti;
+      if (m != null && !Mbti.isType(m)) {
+        throw StateError(
+          '캐릭터 mbti 는 대문자 4글자(E/I S/N T/F J/P): ${c.id} -> "$m"',
+        );
+      }
+    }
+    final cm = config.compatMultiplier;
+    if (cm.length != Mbti.maxCompat + 1 || cm.any((v) => v < 0.5 || v > 1.5)) {
+      throw StateError('mbti.compatMultiplier 는 0.5~1.5 값 5개: $cm');
     }
     for (final (where, text) in signals.allTexts) {
       _checkTemplate(text, 'signals $where');
@@ -278,9 +297,14 @@ class StoryBundle {
         throw StateError('main 이벤트는 day 가 필요: ${e.id}');
       }
       for (final (where, text) in e.displayTexts) {
-        _checkTemplate(text, where);
+        _checkTemplate(text, where, bareMbtiOk: true);
       }
-      _checkTrigger(e.trigger, '${e.id}.trigger');
+      _checkTrigger(
+        e.trigger,
+        '${e.id}.trigger',
+        hasCharacter: e.character != null,
+      );
+      _checkMbti(e);
       _checkMoment(e);
       _checkLines(e.lines, '${e.id}.lines');
       for (var i = 0; i < e.choices.length; i++) {
@@ -325,8 +349,29 @@ class StoryBundle {
       if (e.character != null && !characterById.containsKey(e.character)) {
         throw StateError('엔딩이 없는 캐릭터 참조: ${e.id} -> ${e.character}');
       }
-      _checkTrigger(e.when, 'ending ${e.id}');
-      _checkTemplate(e.epilogue, 'ending ${e.id}.epilogue');
+      _checkTrigger(
+        e.when,
+        'ending ${e.id}',
+        hasCharacter: e.character != null,
+      );
+      _checkTemplate(
+        e.epilogue,
+        'ending ${e.id}.epilogue',
+        bareMbtiOk: e.when.mbti != null,
+      );
+      for (final MapEntry(:key, :value) in e.epilogueMbti.entries) {
+        if (!Mbti.temperaments.contains(key)) {
+          throw StateError(
+            'epilogueMbti 키는 ${Mbti.temperaments.join('|')}: ending ${e.id} -> $key',
+          );
+        }
+        // 기질 문단은 기질을 아는(MBTI 가 있는) 플레이어에게만 붙으므로 {mbti} 를 써도 된다.
+        _checkTemplate(
+          value,
+          'ending ${e.id}.epilogueMbti.$key',
+          bareMbtiOk: true,
+        );
+      }
       if (e.hint != null) _checkTemplate(e.hint!, 'ending ${e.id}.hint');
       _checkNoTemplate(e.name, 'ending ${e.id}.name');
       if (requireEndingHints && (e.hint ?? '').trim().isEmpty) {
@@ -449,11 +494,143 @@ class StoryBundle {
   }
 
   /// 이름 자리표시자 형식(lib/engine/text_template.dart, docs/NAME_GUIDE.md).
-  /// 모르는 조사·닫히지 않은 중괄호는 오류.
-  void _checkTemplate(String text, String where) {
+  /// 모르는 조사·닫히지 않은 중괄호는 오류. 대체어 없는 `{mbti}` 는 [bareMbtiOk] 일 때만
+  /// (MBTI 조건이 붙어 플레이어 MBTI 가 반드시 있는 곳).
+  void _checkTemplate(String text, String where, {bool bareMbtiOk = false}) {
     final p = TextTemplate.problems(text);
     if (p.isNotEmpty) {
       throw StateError('자리표시자 오류: $where (${p.join(', ')}) "$text"');
+    }
+    if (!bareMbtiOk && TextTemplate.hasBareMbti(text)) {
+      throw StateError(
+        '{mbti} 는 mbti 조건이 붙은 줄·선택지에서만(아니면 {mbti|대체어}): $where "$text"',
+      );
+    }
+  }
+
+  // ---- MBTI (docs/MBTI_SPEC.md §2.5) ----
+
+  /// 줄·선택지 하나의 MBTI 조건 형식. [hasCharacter] 가 아니면 `compat` 금지.
+  void _checkGate(
+    String where, {
+    required String? mbti,
+    required bool noMbti,
+    required Range? compat,
+    required bool hasCharacter,
+  }) {
+    if (mbti != null) {
+      final p = Mbti.conditionProblem(mbti);
+      if (p != null) throw StateError('mbti 조건 오류: $where ($p) "$mbti"');
+      if (noMbti) throw StateError('mbti 와 noMbti 를 함께 쓸 수 없음: $where');
+    }
+    if (compat != null) {
+      if (!hasCharacter) {
+        throw StateError('compat 은 character 가 있는 이벤트·엔딩에서만: $where');
+      }
+      if (compat.min < 0 ||
+          compat.max > Mbti.maxCompat ||
+          compat.min > compat.max) {
+        throw StateError('compat 범위는 0~${Mbti.maxCompat}: $where $compat');
+      }
+    }
+  }
+
+  /// 이벤트 하나의 MBTI 규칙: 조건 형식, 대체어 없는 `{mbti}` 위치, 그리고 플레이어 17가지
+  /// (모름 + 16유형) 각각에서 거른 뒤에도 대사·선택지·반응이 비지 않는지.
+  void _checkMbti(StoryEvent e) {
+    final hasChar = e.character != null;
+    final t = e.trigger;
+    // 이벤트 전체가 MBTI 를 아는 플레이어에게만 열리면 어디서든 {mbti} 를 써도 된다.
+    final eventKnows = t.mbti != null;
+    void bare(String text, String where, bool known) {
+      if (!known && TextTemplate.hasBareMbti(text)) {
+        throw StateError(
+          '{mbti} 는 mbti 조건이 붙은 줄·선택지에서만(아니면 {mbti|대체어}): $where "$text"',
+        );
+      }
+    }
+
+    void lines(List<Line> ls, String where, bool known) {
+      for (var i = 0; i < ls.length; i++) {
+        final l = ls[i];
+        _checkGate(
+          '$where[$i]',
+          mbti: l.mbti,
+          noMbti: l.noMbti,
+          compat: l.compat,
+          hasCharacter: hasChar,
+        );
+        final k = known || l.mbti != null;
+        bare(l.text, '$where[$i]', k);
+        final p = l.photo;
+        if (p != null) bare(p.caption, '$where[$i].photo.caption', k);
+      }
+    }
+
+    bare(e.title, '${e.id}.title', eventKnows);
+    if (e.preview != null) bare(e.preview!, '${e.id}.preview', eventKnows);
+    if (e.cliffhanger != null) {
+      bare(e.cliffhanger!, '${e.id}.cliffhanger', eventKnows);
+    }
+    lines(e.lines, '${e.id}.lines', eventKnows);
+    for (var i = 0; i < e.choices.length; i++) {
+      final c = e.choices[i];
+      final where = '${e.id}.choices[$i]';
+      _checkGate(
+        where,
+        mbti: c.mbti,
+        noMbti: c.noMbti,
+        compat: c.compat,
+        hasCharacter: hasChar,
+      );
+      final known = eventKnows || c.mbti != null;
+      bare(c.text, '$where.text', known);
+      lines(c.reply, '$where.reply', known);
+      lines(c.failReply, '$where.failReply', known);
+      lines(c.critReply, '$where.critReply', known);
+    }
+    if (!e.hasMbtiGates) return;
+
+    final charMbti = hasChar ? characterById[e.character]?.mbti : null;
+    for (final p in Mbti.playerCases) {
+      final v = MbtiView.of(p, charMbti);
+      // 이벤트 트리거가 이 플레이어를 막으면 거른 결과는 볼 일이 없다.
+      if (t.mbti != null && !Mbti.matches(t.mbti!, p)) continue;
+      if (t.noMbti && p != null) continue;
+      if (t.compat != null && !t.compat!.contains(v.compat)) continue;
+      final who = p ?? '모름';
+      final f = e.forMbti(v);
+      if (e.lines.isNotEmpty && f.lines.isEmpty) {
+        throw StateError('MBTI $who 플레이어에게 대사가 0줄: ${e.id}');
+      }
+      final need = e.choices.length >= 2 ? 2 : 1;
+      if (f.choices.length < need) {
+        throw StateError(
+          'MBTI $who 플레이어에게 선택지가 ${f.choices.length}개(최소 $need): ${e.id}',
+        );
+      }
+      if (e.isCall && f.declineIndex == null) {
+        throw StateError('MBTI $who 플레이어에게 전화 거절 선택지가 없음: ${e.id}');
+      }
+      final orig = [
+        for (final c in e.choices)
+          if (v.allowsChoice(c)) c,
+      ];
+      for (var i = 0; i < orig.length; i++) {
+        final o = orig[i];
+        final c = f.choices[i];
+        for (final (name, a, b) in [
+          ('reply', o.reply, c.reply),
+          ('failReply', o.failReply, c.failReply),
+          ('critReply', o.critReply, c.critReply),
+        ]) {
+          if (a.isNotEmpty && b.isEmpty) {
+            throw StateError(
+              'MBTI $who 플레이어에게 반응이 0줄: ${e.id} "${o.text}".$name',
+            );
+          }
+        }
+      }
     }
   }
 
@@ -492,10 +669,23 @@ class StoryBundle {
     }
   }
 
-  void _checkTrigger(Trigger t, String where) {
+  void _checkTrigger(Trigger t, String where, {bool hasCharacter = false}) {
     final p = t.pref;
     if (p != null && !Preference.genders.contains(p)) {
       throw StateError('pref 는 f|m: $where -> $p');
+    }
+    _checkGate(
+      where,
+      mbti: t.mbti,
+      noMbti: t.noMbti,
+      compat: t.compat,
+      hasCharacter: hasCharacter,
+    );
+    final fc = t.flagsAtLeast;
+    if (fc != null && (fc.of.isEmpty || fc.n < 1 || fc.n > fc.of.length)) {
+      throw StateError(
+        'flagsAtLeast 는 1 ≤ n ≤ of 개수: $where (n ${fc.n}, of ${fc.of.length})',
+      );
     }
     _checkStatKeys(t.stats.keys, where);
     _checkCharKeys(t.affection.keys, '$where.affection');
@@ -521,6 +711,12 @@ class StoryBundle {
       for (final e in castGaps.entries)
         '$castLintPrefix ${Preference.label(e.key)} 쪽에 역할 없음: ${e.value.join(', ')}',
     ];
+    for (final e in events) {
+      final h = e.hint;
+      if (h != null && h >= 0 && h < e.choices.length && e.choices[h].isGated) {
+        out.add('${e.id}: hint 선택지에 MBTI 조건 (맞지 않는 플레이어에게는 힌트가 없음)');
+      }
+    }
     for (final e in events) {
       if (e.character != null) continue;
       bool star(Map<String, Object?> m) => m.containsKey('*');

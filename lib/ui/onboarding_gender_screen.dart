@@ -5,16 +5,20 @@ import '../engine/story_repository.dart';
 import '../engine/text_template.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
+import 'onboarding_mbti_screen.dart';
 import 'onboarding_name_screen.dart';
 import 'preference_screen.dart';
 import 'widgets.dart';
 
 /// 새 게임 흐름의 결과. [gender] 는 이번에 1단계에서 답했을 때만 있다(이미 답이 있으면 null).
 /// [nameStep] 은 이름 단계를 거쳤는지, [name] 은 거기서 입력한 이름(건너뛰었으면 null).
+/// [mbtiStep] 은 MBTI 단계를 거쳤는지, [mbti] 는 거기서 고른 유형(건너뛰었으면 null).
 typedef NewGamePick = ({
   String? gender,
   bool nameStep,
   String? name,
+  bool mbtiStep,
+  String? mbti,
   String preference,
 });
 
@@ -41,10 +45,12 @@ class OnboardingGenderScreen extends StatelessWidget {
     (PlayerGender.none, Icons.people_outline, '선택 안 할래요', '두 쪽을 비교해 보고 골라요'),
   ];
 
-  /// 새 게임 흐름 전체: 1단계 "나는?" → 이름 단계 → 2단계 캐스트 소개.
+  /// 새 게임 흐름 전체: 1단계 "나는?" → 이름 단계 → MBTI 단계 → 2단계 캐스트 소개.
   ///
-  /// [savedGender] 가 있으면 1단계를 건너뛴다. [askName] 이 true 일 때만 이름 단계를
-  /// 끼운다(홈은 `GameController.shouldAskName` — 이름이 없고 아직 묻지 않았을 때).
+  /// [savedGender] 가 있으면 1단계를 건너뛴다. [askName] 이 true 일 때만 이름 단계를,
+  /// [askMbti] 가 true 일 때만 MBTI 단계를 끼운다(홈은 `GameController.shouldAskName` ·
+  /// `shouldAskMbti` — 값이 없고 아직 묻지 않았을 때). [savedMbti] 는 MBTI 단계를 건너뛸 때
+  /// 캐스트 소개의 궁합 줄에 쓰는 지금 설정값.
   /// 뒤로 가면 앞 단계로 돌아간다. 끝까지 고르면 결과를, 도중에 나가면 null.
   /// 아무것도 저장하지 않는다 — 새 게임이 실제로 시작될 때 호출부가 저장한다.
   static Future<NewGamePick?> run(
@@ -52,6 +58,8 @@ class OnboardingGenderScreen extends StatelessWidget {
     StoryBundle bundle, {
     String? savedGender,
     bool askName = false,
+    bool askMbti = false,
+    String? savedMbti,
   }) async {
     // [newGender] 는 이번에 1단계에서 고른 값(결과에 싣는다), [gender] 는 기본 쪽을 정할 값.
     Future<NewGamePick?> afterGender(
@@ -60,44 +68,96 @@ class OnboardingGenderScreen extends StatelessWidget {
       String? newGender,
     ) async {
       final side = PlayerGender.sideFor(gender);
-      if (!askName) {
-        final pref = await PreferenceScreen.show(ctx, bundle, side: side);
+
+      // 마지막: 캐스트 소개. 첫 메시지·궁합도 방금 고른 이름·MBTI 로(저장 전이라 잠시만).
+      Future<NewGamePick?> cast(
+        BuildContext c, {
+        required bool nameStep,
+        String? name,
+        required bool mbtiStep,
+        String? mbti,
+      }) async {
+        final savedName = TextTemplate.currentName;
+        final savedM = TextTemplate.currentMbti;
+        final playerMbti = mbtiStep ? mbti : savedMbti;
+        if (nameStep) TextTemplate.currentName = name;
+        TextTemplate.currentMbti = playerMbti;
+        final String? pref;
+        try {
+          pref = await PreferenceScreen.show(
+            c,
+            bundle,
+            side: side,
+            playerMbti: playerMbti,
+          );
+        } finally {
+          TextTemplate.currentName = savedName;
+          TextTemplate.currentMbti = savedM;
+        }
         return pref == null
             ? null
             : (
                 gender: newGender,
-                nameStep: false,
-                name: null,
+                nameStep: nameStep,
+                name: name,
+                mbtiStep: mbtiStep,
+                mbti: mbti,
                 preference: pref,
               );
       }
-      return Navigator.of(ctx).push<NewGamePick>(
-        MaterialPageRoute(
-          builder: (nctx) {
-            Future<void> next(String? name) async {
-              // 캐스트 소개의 첫 메시지도 방금 고른 이름으로 보여 준다(저장 전이라 잠시만).
-              final saved = TextTemplate.currentName;
-              TextTemplate.currentName = name;
-              final String? pref;
-              try {
-                pref = await PreferenceScreen.show(nctx, bundle, side: side);
-              } finally {
-                TextTemplate.currentName = saved;
-              }
-              if (pref == null || !nctx.mounted) return;
-              Navigator.of(nctx).pop<NewGamePick>((
-                gender: newGender,
-                nameStep: true,
-                name: name,
-                preference: pref,
-              ));
-            }
 
-            return OnboardingNameScreen(
-              onSubmit: next,
-              onSkip: () => next(null),
-            );
-          },
+      // 한 단계 화면을 띄우고, 그 화면에서 다음 단계를 이어 가다 끝나면 결과를 들고 닫는다.
+      Future<NewGamePick?> step(
+        BuildContext c,
+        Widget Function(
+          BuildContext sctx,
+          Future<void> Function(Future<NewGamePick?> Function(BuildContext))
+          then,
+        )
+        build,
+      ) => Navigator.of(c).push<NewGamePick>(
+        MaterialPageRoute(
+          builder: (sctx) => build(sctx, (next) async {
+            final pick = await next(sctx);
+            if (pick == null || !sctx.mounted) return;
+            Navigator.of(sctx).pop<NewGamePick>(pick);
+          }),
+        ),
+      );
+
+      Future<NewGamePick?> mbtiThen(
+        BuildContext c, {
+        required bool nameStep,
+        String? name,
+      }) {
+        if (!askMbti) {
+          return cast(c, nameStep: nameStep, name: name, mbtiStep: false);
+        }
+        return step(
+          c,
+          (sctx, then) => OnboardingMbtiScreen(
+            onSubmit: (m) => then(
+              (x) => cast(
+                x,
+                nameStep: nameStep,
+                name: name,
+                mbtiStep: true,
+                mbti: m,
+              ),
+            ),
+            onSkip: () => then(
+              (x) => cast(x, nameStep: nameStep, name: name, mbtiStep: true),
+            ),
+          ),
+        );
+      }
+
+      if (!askName) return mbtiThen(ctx, nameStep: false);
+      return step(
+        ctx,
+        (sctx, then) => OnboardingNameScreen(
+          onSubmit: (n) => then((x) => mbtiThen(x, nameStep: true, name: n)),
+          onSkip: () => then((x) => mbtiThen(x, nameStep: true)),
         ),
       );
     }

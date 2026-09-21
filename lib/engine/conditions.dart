@@ -1,3 +1,4 @@
+import 'mbti.dart';
 import 'models.dart';
 
 extension TriggerMatch on Trigger {
@@ -6,8 +7,27 @@ extension TriggerMatch on Trigger {
   /// [absent] 는 이 회차 선호 밖이라 등장하지 않는 캐릭터 id. 그 캐릭터를 직접 가리키는
   /// 호감·신뢰 조건은 건너뛰고(없는 사람은 조건에서 빠진다), `anyAffection` 도 세지 않는다.
   /// `pref` 가 있으면 [GameState.preference] 쪽과 같아야 한다([Preference.allowsSide]).
-  bool matches(GameState s, {String? self, Set<String> absent = const {}}) {
+  ///
+  /// MBTI(docs/MBTI_SPEC.md §1.3): `mbti` 는 [GameState.mbti] 에 글자가 모두 있어야,
+  /// `noMbti` 는 [GameState.mbti] 가 null 이어야 참. `compat` 은 [self] 캐릭터의 MBTI
+  /// [selfMbti] 와의 궁합 점수 범위다([self] 가 없으면 거짓).
+  bool matches(
+    GameState s, {
+    String? self,
+    String? selfMbti,
+    Set<String> absent = const {},
+  }) {
     if (!Preference.allowsSide(s.preference, pref)) return false;
+    final m = mbti;
+    if (m != null && !Mbti.matches(m, s.mbti)) return false;
+    if (noMbti && s.mbti != null) return false;
+    final c = compat;
+    if (c != null &&
+        (self == null || !c.contains(Mbti.compat(s.mbti, selfMbti)))) {
+      return false;
+    }
+    final fc = flagsAtLeast;
+    if (fc != null && fc.of.where(s.flags.contains).length < fc.n) return false;
     if (day != null && !day!.contains(s.day)) return false;
     if (run != null && !run!.contains(s.run)) return false;
     for (final e in stats.entries) {

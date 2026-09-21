@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _startNewGame(context);
   }
 
-  /// 온보딩("나는?", 답이 없을 때만) → 이름(아직 안 물었을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
+  /// 온보딩("나는?", 답이 없을 때만) → 이름 · MBTI(아직 안 물었을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
   /// 하지 않는다. 1단계 답은 새 게임이 실제로 시작될 때 기기 메타에 저장한다.
   Future<void> _startNewGame(BuildContext context) async {
     final pick = await OnboardingGenderScreen.run(
@@ -299,6 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
       c.bundle,
       savedGender: c.playerGender,
       askName: c.shouldAskName,
+      askMbti: c.shouldAskMbti,
+      savedMbti: c.playerMbti,
     );
     if (pick == null) return;
     final g = pick.gender;
@@ -307,6 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (pick.nameStep) {
       final n = pick.name;
       n == null ? await c.skipPlayerName() : await c.setPlayerName(n);
+    }
+    // MBTI 단계: 골랐으면 저장, 건너뛰었으면 다음부터 묻지 않는다. 새 게임이 이 값을 복사한다.
+    if (pick.mbtiStep) {
+      final m = pick.mbti;
+      m == null ? await c.skipPlayerMbti() : await c.setPlayerMbti(m);
     }
     await c.newGame(preference: pick.preference);
   }

@@ -140,6 +140,19 @@ class CastRole {
   static String label(String role) => labels[role] ?? role;
 }
 
+/// MBTI 유형 문자열을 검사해 대문자 4글자로 돌려준다. 틀리거나 없으면 null.
+/// 축마다 한 글자(E/I, S/N, T/F, J/P). 자세한 도구는 lib/engine/mbti.dart.
+String? parseMbtiType(Object? v) {
+  if (v is! String) return null;
+  final t = v.trim().toUpperCase();
+  if (t.length != 4) return null;
+  const axes = ['EI', 'SN', 'TF', 'JP'];
+  for (var i = 0; i < 4; i++) {
+    if (!axes[i].contains(t[i])) return null;
+  }
+  return t;
+}
+
 class Range {
   final int min;
   final int max;
@@ -178,6 +191,20 @@ class CountCondition {
   const CountCondition(this.min, this.count);
 }
 
+/// `flagsAtLeast: {"n": 2, "of": ["a", "b", …]}` — [of] 중 [n]개 이상 플래그가 있으면 참.
+/// docs/MBTI_SPEC.md §1.3.
+class FlagCount {
+  final int n;
+  final List<String> of;
+  const FlagCount(this.n, this.of);
+
+  static FlagCount? parse(Object? j) {
+    if (j == null) return null;
+    if (j is! Map) throw FormatException('flagsAtLeast 형식 오류: $j');
+    return FlagCount(((j['n'] as num?) ?? 0).toInt(), _strList(j['of']));
+  }
+}
+
 /// 이벤트·엔딩 발생 조건. 키 `*` 는 이벤트가 속한 캐릭터 자신을 뜻한다.
 class Trigger {
   final Range? day;
@@ -194,6 +221,19 @@ class Trigger {
   /// [Preference.female] 쪽으로 본다([Preference.side]).
   final String? pref;
 
+  /// 플레이어 MBTI 글자 조건(`"I"`, `"NF"`, `"ESTJ"`). 적힌 글자가 모두 있어야 참,
+  /// 플레이어 MBTI 가 없으면 거짓. docs/MBTI_SPEC.md §1.3.
+  final String? mbti;
+
+  /// true 면 MBTI 를 모르는(null) 플레이어에게만 참.
+  final bool noMbti;
+
+  /// 이 조건이 속한 캐릭터(이벤트·엔딩의 `character`)와 플레이어의 궁합 점수 범위(0~4).
+  final Range? compat;
+
+  /// [FlagCount.of] 중 [FlagCount.n]개 이상 플래그.
+  final FlagCount? flagsAtLeast;
+
   const Trigger({
     this.day,
     this.run,
@@ -204,6 +244,10 @@ class Trigger {
     this.notFlags = const [],
     this.anyAffection,
     this.pref,
+    this.mbti,
+    this.noMbti = false,
+    this.compat,
+    this.flagsAtLeast,
   });
 
   static const always = Trigger();
@@ -226,6 +270,10 @@ class Trigger {
               (any['count'] as num).toInt(),
             ),
       pref: j['pref'] as String?,
+      mbti: j['mbti'] as String?,
+      noMbti: j['noMbti'] == true,
+      compat: Range.parse(j['compat']),
+      flagsAtLeast: FlagCount.parse(j['flagsAtLeast']),
     );
   }
 }
@@ -335,15 +383,29 @@ class Line {
   /// 사진 메시지. 있으면 말풍선 대신 사진 카드를 그리고 [text] 는 그 아래 말풍선이 된다.
   final Photo? photo;
 
+  /// MBTI 조건(docs/MBTI_SPEC.md §1.3). 맞지 않으면 화면에 내기 전에 걸러진다
+  /// (lib/engine/mbti.dart `MbtiFilter`).
+  final String? mbti;
+  final bool noMbti;
+
+  /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
+  final Range? compat;
+
   const Line({
     required this.who,
     this.text = '',
     this.wait = 0,
     this.name,
     this.photo,
+    this.mbti,
+    this.noMbti = false,
+    this.compat,
   });
 
   bool get isWait => who == 'sys' && wait > 0;
+
+  /// MBTI·궁합 조건이 붙은 줄인지.
+  bool get isGated => mbti != null || noMbti || compat != null;
 
   /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
   Line mapText(String Function(String) f) => Line(
@@ -352,6 +414,9 @@ class Line {
     wait: wait,
     name: name,
     photo: photo?.mapText(f),
+    mbti: mbti,
+    noMbti: noMbti,
+    compat: compat,
   );
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
@@ -362,6 +427,9 @@ class Line {
     photo: j['photo'] == null
         ? null
         : Photo.fromJson(j['photo'] as Map<String, dynamic>),
+    mbti: j['mbti'] as String?,
+    noMbti: j['noMbti'] == true,
+    compat: Range.parse(j['compat']),
   );
 }
 
@@ -389,6 +457,13 @@ class Choice {
   /// 통화 중 선택지 패널에는 보이지 않는다(docs/MOMENTS_SPEC.md §1.1).
   final bool decline;
 
+  /// MBTI 조건(docs/MBTI_SPEC.md §1.3). 맞지 않는 선택지는 보이지 않는다.
+  final String? mbti;
+  final bool noMbti;
+
+  /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
+  final Range? compat;
+
   const Choice({
     required this.text,
     this.require,
@@ -402,7 +477,13 @@ class Choice {
     this.failReply = const [],
     this.critReply = const [],
     this.decline = false,
+    this.mbti,
+    this.noMbti = false,
+    this.compat,
   });
+
+  /// MBTI·궁합 조건이 붙은 선택지인지.
+  bool get isGated => mbti != null || noMbti || compat != null;
 
   /// 문구와 반응 줄을 [f] 로 바꾼 사본. 효과·조건·다음 이벤트는 그대로.
   Choice mapText(String Function(String) f) => Choice(
@@ -418,6 +499,32 @@ class Choice {
     failReply: [for (final l in failReply) l.mapText(f)],
     critReply: [for (final l in critReply) l.mapText(f)],
     decline: decline,
+    mbti: mbti,
+    noMbti: noMbti,
+    compat: compat,
+  );
+
+  /// 반응 줄만 바꾼 사본(MBTI 줄 거르기).
+  Choice withReplies({
+    required List<Line> reply,
+    required List<Line> failReply,
+    required List<Line> critReply,
+  }) => Choice(
+    text: text,
+    require: require,
+    effects: effects,
+    next: next,
+    chance: chance,
+    fail: fail,
+    failNext: failNext,
+    minigame: minigame,
+    reply: reply,
+    failReply: failReply,
+    critReply: critReply,
+    decline: decline,
+    mbti: mbti,
+    noMbti: noMbti,
+    compat: compat,
   );
 
   /// 이 결과에 맞는 반응 줄.
@@ -442,6 +549,9 @@ class Choice {
     failReply: _replyLines(j['failReply']),
     critReply: _replyLines(j['critReply']),
     decline: (j['decline'] as bool?) ?? false,
+    mbti: j['mbti'] as String?,
+    noMbti: j['noMbti'] == true,
+    compat: Range.parse(j['compat']),
   );
 }
 
@@ -525,6 +635,28 @@ class StoryEvent {
     cliffhanger: cliffhanger == null ? null : f(cliffhanger!),
     format: format,
     preview: preview == null ? null : f(preview!),
+  );
+
+  /// 대사·선택지·힌트만 바꾼 사본(MBTI 거르기, lib/engine/mbti.dart).
+  StoryEvent withContent({
+    required List<Line> lines,
+    required List<Choice> choices,
+    required int? hint,
+  }) => StoryEvent(
+    id: id,
+    layer: layer,
+    character: character,
+    trigger: trigger,
+    weight: weight,
+    day: day,
+    once: once,
+    title: title,
+    lines: lines,
+    choices: choices,
+    hint: hint,
+    cliffhanger: cliffhanger,
+    format: format,
+    preview: preview,
   );
 
   /// 화면에 보이는 글 전부(위치, 문자열). 검증기가 자리표시자 형식을 본다.
@@ -630,6 +762,9 @@ class CharacterDef {
   /// 이벤트(`<id>_r00`, `<id>_r01` …)의 첫 `them` 대사를 꺼낸다.
   final String? firstLine;
 
+  /// 캐릭터 MBTI(대문자 4글자, docs/MBTI_SPEC.md §1.1). 없으면 null(궁합 점수 보통).
+  final String? mbti;
+
   static const maxTagline = 20;
 
   const CharacterDef({
@@ -647,6 +782,7 @@ class CharacterDef {
     this.budget = 40,
     this.tagline = '',
     this.firstLine,
+    this.mbti,
   });
 
   factory CharacterDef.fromJson(Map<String, dynamic> j) => CharacterDef(
@@ -669,6 +805,10 @@ class CharacterDef {
       final String v when v.isNotEmpty => v,
       _ => null,
     },
+    mbti: switch ((j['mbti'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
   );
 
   /// [pref] 회차에 등장하는지.
@@ -686,6 +826,10 @@ class Ending {
   final String? character;
   final Trigger when;
   final String epilogue;
+
+  /// 기질별 덧붙임 문단(`NT`·`NF`·`SJ`·`SP` → 문장). 플레이어 기질이 맞으면 [epilogue] 뒤에
+  /// 한 문단으로 붙는다([epilogueFor]). docs/MBTI_SPEC.md §1.6.
+  final Map<String, String> epilogueMbti;
 
   /// 앨범에서 아직 못 본 엔딩에 보여 줄 한 줄 힌트. 사람이 쓴 문장.
   /// 없으면 UI 가 조건으로 기계 문장을 만든다.
@@ -706,10 +850,20 @@ class Ending {
     this.character,
     this.when = Trigger.always,
     this.epilogue = '',
+    this.epilogueMbti = const {},
     this.hint,
     this.immediate = false,
     this.isDefault = false,
   });
+
+  /// [temperament](`NT`·`NF`·`SJ`·`SP`, 없으면 null) 플레이어에게 보여 줄 에필로그.
+  /// 맞는 기질 문단이 있으면 기본 에필로그 뒤에 빈 줄 하나를 두고 붙인다.
+  String epilogueForTemperament(String? temperament) {
+    final extra = temperament == null ? null : epilogueMbti[temperament];
+    if (extra == null || extra.trim().isEmpty) return epilogue;
+    if (epilogue.trim().isEmpty) return extra;
+    return '$epilogue\n\n$extra';
+  }
 
   factory Ending.fromJson(Map<String, dynamic> j) => Ending(
     id: j['id'] as String,
@@ -719,6 +873,11 @@ class Ending {
     character: j['character'] as String?,
     when: Trigger.fromJson(j['when'] as Map<String, dynamic>?),
     epilogue: (j['epilogue'] as String?) ?? '',
+    epilogueMbti: j['epilogueMbti'] == null
+        ? const {}
+        : (j['epilogueMbti'] as Map).map(
+            (k, v) => MapEntry(k as String, v as String),
+          ),
     hint: j['hint'] as String?,
     immediate: (j['immediate'] as bool?) ?? false,
     isDefault: (j['default'] as bool?) ?? false,
@@ -820,6 +979,11 @@ class GameConfig {
   /// 초반 호감 가속. 없으면 [EarlyAffection.none] (항상 1배).
   final EarlyAffection earlyAffection;
 
+  /// 궁합 점수(0~4)별 호감 상승 배율. `config.mbti.compatMultiplier`. docs/MBTI_SPEC.md §1.5.
+  final List<double> compatMultiplier;
+
+  static const defaultCompatMultiplier = [1.0, 1.0, 1.0, 1.03, 1.06];
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -828,7 +992,14 @@ class GameConfig {
     this.initialStats = const {},
     this.actions = const [],
     this.earlyAffection = EarlyAffection.none,
+    this.compatMultiplier = defaultCompatMultiplier,
   });
+
+  /// 궁합 점수 [score] 의 호감 상승 배율. 범위 밖이면 1.
+  double compatMultiplierFor(int score) =>
+      score >= 0 && score < compatMultiplier.length
+      ? compatMultiplier[score]
+      : 1;
 
   factory GameConfig.fromJson(Map<String, dynamic> j) => GameConfig(
     totalDays: ((j['totalDays'] as num?) ?? 100).toInt(),
@@ -840,6 +1011,10 @@ class GameConfig {
         .map((e) => DayAction.fromJson(e as Map<String, dynamic>))
         .toList(),
     earlyAffection: EarlyAffection.fromJson(j['earlyAffection']),
+    compatMultiplier: switch ((j['mbti'] as Map?)?['compatMultiplier']) {
+      final List l => [for (final v in l) (v as num).toDouble()],
+      _ => defaultCompatMultiplier,
+    },
   );
 }
 
@@ -873,6 +1048,10 @@ class GameState {
   /// 이 회차의 선호([Preference]). 새 게임에서 고르고 회차 내내 바뀌지 않는다.
   /// 필드가 없는 예전 세이브는 [Preference.all] 로 읽는다.
   final String preference;
+
+  /// 이 회차의 플레이어 MBTI(대문자 4글자). 새 게임 때 기기 설정(`PlayerMeta.mbti`)에서 복사해
+  /// 회차 내내 바뀌지 않는다(분기 일관성). 모름·건너뜀·예전 세이브는 null. docs/MBTI_SPEC.md §1.2.
+  final String? mbti;
   final Map<String, int> stats;
   final Map<String, Relation> relations;
   final Set<String> flags;
@@ -898,6 +1077,7 @@ class GameState {
     this.run = 1,
     required this.seed,
     this.preference = Preference.all,
+    this.mbti,
     required this.stats,
     required this.relations,
     Set<String>? flags,
@@ -922,12 +1102,14 @@ class GameState {
     required int seed,
     int run = 1,
     String preference = Preference.all,
+    String? mbti,
     List<String>? previousEndings,
     int? nowMs,
   }) => GameState(
     seed: seed,
     run: run,
     preference: Preference.parse(preference),
+    mbti: parseMbtiType(mbti),
     stats: {for (final k in Stat.all) k: cfg.initialStats[k] ?? 0},
     relations: {for (final c in characters) c.id: Relation()},
     hearts: cfg.maxHearts,
@@ -953,6 +1135,7 @@ class GameState {
     'run': run,
     'seed': seed,
     'preference': preference,
+    'mbti': mbti,
     'stats': Map.of(stats),
     'relations': relations.map((k, v) => MapEntry(k, v.toJson())),
     'flags': flags.toList(),
@@ -977,6 +1160,7 @@ class GameState {
           run: ((j['run'] as num?) ?? 1).toInt(),
           seed: (j['seed'] as num).toInt(),
           preference: Preference.parse(j['preference']),
+          mbti: parseMbtiType(j['mbti']),
           stats: _intMap(j['stats']),
           relations: ((j['relations'] as Map?) ?? const {}).map(
             (k, v) => MapEntry(

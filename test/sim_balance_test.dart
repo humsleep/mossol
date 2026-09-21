@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/ending_resolver.dart';
 import 'package:mossol/engine/effects.dart';
 import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/mbti.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
@@ -40,6 +41,23 @@ String simPreference() {
     throw ArgumentError('PREF 는 ${Preference.values.join('|')}: $kPref');
   }
   return kPref;
+}
+
+/// 플레이어 MBTI(`--dart-define=MBTI=INTJ|all|none`). docs/MBTI_SPEC.md §2.4.
+/// - `none`(기본): MBTI 모름(null). 도입 전 시뮬레이션과 같다.
+/// - `INTJ` 등: 그 유형으로 모든 전략을 돈다.
+/// - `all`: 전략 표는 모름으로 돌고, 추가로 16유형 + 모름 17회를 focus·focus+hint 로 돌려
+///   해피율·천생연분율 표를 만든다(tool/sim_out/mbti_table.txt).
+const kMbti = String.fromEnvironment('MBTI', defaultValue: 'none');
+
+/// [kMbti] 가 가리키는 한 가지 유형(`all`·`none` 은 null). 오타면 바로 실패한다.
+String? simMbti() {
+  if (kMbti == 'none' || kMbti == 'all') return null;
+  final t = Mbti.parse(kMbti);
+  if (t == null) {
+    throw ArgumentError('MBTI 는 INTJ 같은 네 글자 | all | none: $kMbti');
+  }
+  return t;
 }
 
 String _config() {
@@ -240,6 +258,13 @@ class FocusStrategy extends Strategy {
     Random r,
     EventEngine e,
   ) {
+    // 내 성향 전용 선택지(✦ X 성향)는 공략 대상 장면이면 고른다. 실제 플레이어도
+    // 표시가 붙은 '나다운' 선택에 끌린다는 가정(docs/MBTI_SPEC.md §4 천생연분 기준).
+    if (ev.character == target) {
+      for (final v in open) {
+        if (v.choice.mbti != null) return v.index;
+      }
+    }
     if (useHint && ev.hint != null && open.any((v) => v.index == ev.hint)) {
       return ev.hint!;
     }
@@ -679,6 +704,8 @@ RunResult simulate(
   int seed, {
   int run = 1,
   String? pref,
+  String? mbti,
+  bool useKMbti = true,
 }) {
   final engine = EventEngine(b);
   final resolver = EndingResolver(b.endings, characters: b.characters);
@@ -688,6 +715,7 @@ RunResult simulate(
     seed: seed,
     run: run,
     preference: pref ?? simPreference(),
+    mbti: mbti ?? (useKMbti ? simMbti() : null),
   );
   simAbsent = engine.absentFor(s);
   final r = Random(seed * 7919 + strat.name.hashCode);
@@ -754,7 +782,8 @@ RunResult simulate(
     }
 
     while (queue.isNotEmpty) {
-      final ev = queue.removeAt(0);
+      // 화면과 같이 이 회차 MBTI 로 거른 사본(줄·선택지·힌트 인덱스가 거른 목록 기준).
+      final ev = engine.viewFor(s, queue.removeAt(0));
       res.eventsTotal++;
       // 읽씹 대기 줄: UI 가 자존감 -1
       for (final l in ev.lines) {
@@ -896,12 +925,81 @@ class Dist {
   }
 }
 
+/// `MBTI=all`: 16유형 + 모름 17회를 focus · focus+hint 로 돌린 해피율·천생연분율 표.
+/// 기준(docs/MBTI_SPEC.md §4): focus 해피율이 유형마다 목표 범위 안, 유형 간 최대-최소 ≤ 8pp,
+/// 궁합 0 유형도 focus 해피 ≥ 65%. 표만 만들고 단정은 하지 않는다(밸런스는 사람이 본다).
+String mbtiTable(StoryBundle bundle) {
+  final pref = simPreference();
+  final roster = bundle.charactersFor(pref);
+  final targets = roster.map((c) => c.id).toList();
+  final out = StringBuffer(
+    '=== MBTI 17종 (선호 $pref, 시드 $kSeeds, 대상 ${targets.join(' ')}) ===\n'
+    '${'MBTI'.padRight(6)}${'focus 해피'.padLeft(12)}${'+hint 해피'.padLeft(12)}'
+    '${'천생연분'.padLeft(10)}${'궁합4 대상 천생연분(+hint)'.padLeft(26)}\n',
+  );
+  final focusRates = <String, double>{};
+  for (final m in Mbti.playerCases) {
+    var happy = 0, happyHint = 0, destiny = 0, n = 0;
+    var c4 = 0, c4Destiny = 0;
+    for (var seed = 1; seed <= kSeeds; seed++) {
+      final t = targets[seed % targets.length];
+      final a = simulate(
+        bundle,
+        FocusStrategy(t),
+        seed,
+        mbti: m,
+        useKMbti: false,
+      );
+      final h = simulate(
+        bundle,
+        FocusStrategy(t, useHint: true),
+        seed,
+        mbti: m,
+        useKMbti: false,
+      );
+      n++;
+      if (a.tier == 'happy') happy++;
+      if (h.tier == 'happy') happyHint++;
+      if (a.ending.endsWith('_destiny') || h.ending.endsWith('_destiny')) {
+        destiny++;
+      }
+      final ch = bundle.characterById[t];
+      if (m != null && Mbti.compat(m, ch?.mbti) == Mbti.maxCompat) {
+        c4++;
+        if (h.ending == '${t}_destiny') c4Destiny++;
+      }
+    }
+    final key = m ?? '모름';
+    focusRates[key] = happy / n;
+    out.writeln(
+      key.padRight(6) +
+          pct(happy, n).padLeft(12) +
+          pct(happyHint, n).padLeft(12) +
+          pct(destiny, n).padLeft(10) +
+          (c4 == 0 ? '-' : '${pct(c4Destiny, c4)} (n=$c4)').padLeft(26),
+    );
+  }
+  final vs = focusRates.values;
+  final spread = (vs.reduce(max) - vs.reduce(min)) * 100;
+  out.writeln('\nfocus 해피율 최대-최소: ${spread.toStringAsFixed(1)}pp (기준 ≤ 8pp)');
+  return out.toString();
+}
+
 void main() {
   late StoryBundle bundle;
   setUpAll(() {
     registerMinigames();
     bundle = loadBundle();
   });
+
+  if (kMbti == 'all') {
+    test('MBTI 17종 표 (MBTI=all)', () {
+      final table = mbtiTable(bundle);
+      print(table);
+      Directory(kOutDir).createSync(recursive: true);
+      File('$kOutDir/mbti_table.txt').writeAsStringSync(table);
+    }, timeout: const Timeout(Duration(minutes: 60)));
+  }
 
   test('밸런스 시뮬레이션 200시드 × 전략', () {
     final out = StringBuffer();
@@ -968,7 +1066,7 @@ void main() {
     }
 
     p(
-      '=== 시뮬레이션: 선호 $pref(${chars.join(' ')}), 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===',
+      '=== 시뮬레이션: 선호 $pref(${chars.join(' ')}), MBTI ${simMbti() ?? '모름'}, 시드 $kSeeds × 전략 ${byStrat.length}종, 미니게임 성공률 ${(kMinigameSuccess * 100).round()}% ===',
     );
     for (final e in byStrat.entries) {
       final rs = e.value;

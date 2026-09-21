@@ -64,18 +64,37 @@ int scaleGain(int v, double m) {
   return max(v, (v * m - 1e-9).ceil());
 }
 
+/// 궁합 배율 [m](0.95~1.06 정도)을 오르는 호감 [v] 에 곱한다. 소수 부분은 [random] 이 있으면
+/// 그 확률로 한 칸 올리고(기댓값이 정확히 v × m), 없으면 반올림한다. 결과는 최소 1.
+/// 배율이 1 이거나 v 가 양수가 아니면 그대로. docs/MBTI_SPEC.md §1.5.
+int scaleCompat(int v, double m, {Random? random}) {
+  if (v <= 0 || m == 1) return v;
+  final x = v * m;
+  final base = x.floor();
+  final frac = x - base;
+  final out = random == null
+      ? x.round()
+      : base + (frac > 1e-9 && random.nextDouble() < frac ? 1 : 0);
+  return max(1, out);
+}
+
 /// [effects] 를 [s] 에 적용하고 실제 변화량을 돌려준다.
 /// [affectionMultiplier] 는 **오르는 호감에만** 곱한다(올림). 크리티컬 2배와
 /// 초반 가속(`EarlyAffection`)을 곱한 값이 들어온다. 감소·신뢰는 그대로.
 ///
 /// [absent] 는 이 회차 선호 밖 캐릭터 id. 그 캐릭터를 id 로 직접 가리킨 호감·신뢰
 /// 효과(`"seoyeon": 3`)는 적용하지 않고, `@top` 도 그 캐릭터를 고르지 않는다.
+///
+/// [compatMultiplier] 는 캐릭터 id → 궁합 배율(MBTI). [affectionMultiplier] 를 곱한 **뒤에**
+/// 오르는 호감에만 곱한다([scaleCompat], 소수는 [random] 으로 확률 올림).
 AppliedDelta applyEffects(
   GameState s,
   Effects effects, {
   String? self,
   double affectionMultiplier = 1,
   Set<String> absent = const {},
+  double Function(String id)? compatMultiplier,
+  Random? random,
 }) {
   final d = AppliedDelta();
 
@@ -96,7 +115,10 @@ AppliedDelta applyEffects(
       if (id == null || absent.contains(id)) return;
       final r = s.rel(id);
       final before = isAffection ? r.affection : r.trust;
-      final amount = isAffection ? scaleGain(v, affectionMultiplier) : v;
+      var amount = isAffection ? scaleGain(v, affectionMultiplier) : v;
+      if (isAffection && compatMultiplier != null && amount > 0) {
+        amount = scaleCompat(amount, compatMultiplier(id), random: random);
+      }
       final after = max(0, min(100, before + amount));
       if (isAffection) {
         r.affection = after;

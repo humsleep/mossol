@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'models.dart' show PlayerGender;
+import 'models.dart' show PlayerGender, parseMbtiType;
 
 /// 회차와 세이브를 넘어 유지되는 플레이어 메타 기록.
 /// 출석·연속 접속·누적 회차·보류 중인 보상을 담는다.
@@ -38,6 +38,14 @@ class PlayerMeta {
   /// 이름 단계를 한 번 거쳤는지(입력했든 건너뛰었든). true 면 다음 새 게임에서 다시 묻지 않는다.
   bool nameAsked;
 
+  /// 온보딩 MBTI 단계 · 설정 "내 MBTI" 의 값(대문자 4글자). 모름·건너뜀은 null.
+  /// 새 게임 때 세이브(`GameState.mbti`)로 복사되고, 바꾸면 **다음 새 게임부터** 반영된다
+  /// (docs/MBTI_SPEC.md §1.2). 기기 밖으로 보내지 않고, 전체 초기화에서 지워진다.
+  String? mbti;
+
+  /// MBTI 단계를 한 번 거쳤는지(골랐든 건너뛰었든). true 면 다음 새 게임에서 다시 묻지 않는다.
+  bool mbtiAsked;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -51,6 +59,8 @@ class PlayerMeta {
     this.playerGender,
     this.playerName,
     this.nameAsked = false,
+    this.mbti,
+    this.mbtiAsked = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -66,6 +76,8 @@ class PlayerMeta {
     'playerGender': playerGender,
     'playerName': playerName,
     'nameAsked': nameAsked,
+    'mbti': mbti,
+    'mbtiAsked': mbtiAsked,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -88,6 +100,8 @@ class PlayerMeta {
         _ => null,
       },
       nameAsked: j['nameAsked'] == true,
+      mbti: parseMbtiType(j['mbti']),
+      mbtiAsked: j['mbtiAsked'] == true,
     );
   }
 }

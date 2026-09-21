@@ -35,7 +35,7 @@ class EndingScreen extends StatelessWidget {
               key: shareBoundaryKey,
               child: _Keepsake(
                 ending: e,
-                epilogue: c.say(e.epilogue),
+                epilogue: c.say(c.epilogueOf(e)),
                 state: s,
                 grade: _grade(s),
                 tierLabel: _tierLabel(e.tier),

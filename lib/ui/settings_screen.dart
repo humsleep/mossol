@@ -8,6 +8,7 @@ import '../game_controller.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'onboarding_gender_screen.dart';
+import 'onboarding_mbti_screen.dart';
 import 'onboarding_name_screen.dart';
 import 'widgets.dart';
 
@@ -72,6 +73,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _editName(context),
             ),
           ),
+          const SizedBox(height: AppSpace.listGap),
+          ListenableBuilder(
+            listenable: c,
+            builder: (context, _) => AppListRow(
+              key: const Key('settings-mbti'),
+              title: '내 MBTI',
+              subtitle: '다음 새 게임부터 적용돼요',
+              leading: const Icon(Icons.psychology_outlined, size: 22),
+              trailing: Text(
+                c.playerMbti ?? '모름',
+                style: context.text.labelMedium,
+              ),
+              onTap: () => _editMbti(context),
+            ),
+          ),
           const SizedBox(height: AppSpace.sectionGap),
           const SectionHeader(title: '개인정보'),
           FutureBuilder<bool>(
@@ -129,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SectionHeader(title: '데이터'),
           AppListRow(
             title: '저장 데이터 초기화',
-            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름이 모두 지워집니다',
+            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름 · 내 MBTI가 모두 지워집니다',
             leading: const Icon(Icons.delete_outline, size: 22),
             tone: AppTone.danger,
             onTap: () => _confirmReset(context),
@@ -205,6 +221,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ? null
               : () async {
                   await c.setPlayerName(null);
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                },
+        ),
+      ),
+    );
+  }
+
+  /// "내 MBTI" 편집. 온보딩 MBTI 단계와 같은 화면에 [저장] · [MBTI 지우기].
+  /// 기기 메타에만 저장하고, 진행 중인 회차에는 반영하지 않는다(다음 새 게임부터).
+  Future<void> _editMbti(BuildContext context) async {
+    final had = c.playerMbti;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (ctx) => OnboardingMbtiScreen(
+          initial: had,
+          submitLabel: OnboardingMbtiScreen.saveLabel,
+          note: OnboardingMbtiScreen.settingsNote,
+          onSubmit: (m) async {
+            await c.setPlayerMbti(m);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          onClear: had == null
+              ? null
+              : () async {
+                  await c.setPlayerMbti(null);
                   if (ctx.mounted) Navigator.of(ctx).pop();
                 },
         ),

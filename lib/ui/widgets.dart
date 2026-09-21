@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../ads/ad_manager.dart';
+import '../engine/mbti.dart';
 import '../engine/models.dart';
 import 'design_system.dart';
 
@@ -2387,6 +2388,15 @@ class CastIntro {
   /// 히든. 이름·역할·문구를 전부 숨기고 `???` 실루엣 한 칸으로 그린다(스포일러).
   final bool mystery;
 
+  /// 캐릭터 MBTI 칩 글자(`INTJ`, 히든은 [hiddenMbti]). null 이면 칩을 그리지 않는다.
+  final String? mbti;
+
+  /// 플레이어와의 궁합 점수(0~4). null 이면(플레이어 MBTI 모름) 궁합 줄을 그리지 않는다.
+  final int? compat;
+
+  /// 히든 캐릭터의 MBTI 칩 글자.
+  static const hiddenMbti = '????';
+
   const CastIntro({
     required this.id,
     required this.name,
@@ -2394,7 +2404,91 @@ class CastIntro {
     this.tagline = '',
     this.firstLine,
     this.mystery = false,
+    this.mbti,
+    this.compat,
   });
+}
+
+/// 캐스트 소개 카드의 MBTI 칩. 작은 pill(`surfaceContainerHigh` + `outlineVariant` 1px),
+/// 글자 `labelSmall` onSurfaceVariant. 스크린리더에는 "MBTI INTJ".
+class MbtiChip extends StatelessWidget {
+  final String mbti;
+  const MbtiChip({super.key, required this.mbti});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return Semantics(
+      label: 'MBTI $mbti',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: AppRadius.rPill,
+          border: Border.all(
+            color: scheme.outlineVariant,
+            width: AppBorderWidth.hairline,
+          ),
+        ),
+        child: Text(
+          mbti,
+          style: context.text.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 궁합 줄: 하트 5칸 중 `score + 1` 칸 + 라벨(`천생연분` … `정반대`). docs/MBTI_SPEC.md §1.5.
+/// 하트는 장식(스크린리더 제외), 라벨이 뜻을 전한다. 스크린리더에는 "궁합 천생연분, 5칸 중 5칸".
+class CompatRow extends StatelessWidget {
+  final int score;
+  const CompatRow({super.key, required this.score});
+
+  static const cells = 5;
+
+  /// 채운 하트 수.
+  static int filledFor(int score) => (score + 1).clamp(1, cells);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final filled = filledFor(score);
+    final label = Mbti.compatLabel(score);
+    return Semantics(
+      label: '궁합 $label, $cells칸 중 $filled칸',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < cells; i++)
+            Icon(
+              i < filled ? Icons.favorite : Icons.favorite_border,
+              size: 14,
+              color: i < filled ? t.heart : t.heartEmpty,
+            ),
+          const SizedBox(width: AppSpace.xs),
+          Flexible(
+            child: Text(
+              '궁합 $label',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelMedium?.copyWith(
+                color: context.scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// 새 게임 2단계(캐스트 소개)의 캐릭터 한 장. DESIGN_SYSTEM §3.2.
@@ -2426,11 +2520,18 @@ class CastIntroCard extends StatelessWidget {
     final List<Widget> body;
     if (e.mystery) {
       body = [
-        Text(
-          '???',
-          style: context.text.titleMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+        Wrap(
+          spacing: AppSpace.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              '???',
+              style: context.text.titleMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            if (e.mbti != null) MbtiChip(mbti: e.mbti!),
+          ],
         ),
         const SizedBox(height: AppSpace.xxs),
         Text(
@@ -2445,9 +2546,10 @@ class CastIntroCard extends StatelessWidget {
       body = [
         Wrap(
           spacing: AppSpace.sm,
-          crossAxisAlignment: WrapCrossAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(e.name, style: context.text.titleMedium),
+            if (e.mbti != null) MbtiChip(mbti: e.mbti!),
             if (e.title.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpace.xxs),
@@ -2460,6 +2562,10 @@ class CastIntroCard extends StatelessWidget {
               ),
           ],
         ),
+        if (e.compat != null) ...[
+          const SizedBox(height: AppSpace.xxs),
+          CompatRow(key: Key('compat-${e.id}'), score: e.compat!),
+        ],
         if (e.tagline.isNotEmpty) ...[
           const SizedBox(height: AppSpace.xxs),
           Text(

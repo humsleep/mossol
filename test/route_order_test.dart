@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/ending_resolver.dart';
 import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/mbti.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/registry.dart';
@@ -515,6 +516,14 @@ const optionalScenes = {
 
 const kRouteSeeds = int.fromEnvironment('ROUTE_SEEDS', defaultValue: 300);
 
+/// MBTI 도달성(16유형 + 모름 × 선호): 유형·선호마다 focus 봇 시드 수. 대상 캐릭터를 시드로
+/// 돌리므로 캐릭터마다 이 수 ÷ 인원만큼 돈다(기본 144 → 6명이면 24회씩).
+/// 17 × 2 × 144 ≈ 4,900회라 스위트 시간을 지키려고 focus 전략만 쓴다(docs/MBTI_SPEC.md §2.4).
+const kMbtiRouteSeeds = int.fromEnvironment(
+  'MBTI_ROUTE_SEEDS',
+  defaultValue: 144,
+);
+
 /// 시뮬레이션할 선호(`--dart-define=ROUTE_PREF=f|m|all`). 기본은 f 와 m 을 각각 돈다.
 /// 캐릭터가 한 명도 없는 쪽은 건너뛴다(신규 캐스트가 들어오기 전 데이터에서도 돈다).
 const kRoutePref = String.fromEnvironment('ROUTE_PREF', defaultValue: 'each');
@@ -539,7 +548,13 @@ class _Run {
   String? target;
 }
 
-_Run _simulate(StoryBundle b, Strategy strat, int seed, String pref) {
+_Run _simulate(
+  StoryBundle b,
+  Strategy strat,
+  int seed,
+  String pref, {
+  String? mbti,
+}) {
   final engine = EventEngine(b);
   final resolver = EndingResolver(b.endings, characters: b.characters);
   final s = GameState.fresh(
@@ -547,6 +562,7 @@ _Run _simulate(StoryBundle b, Strategy strat, int seed, String pref) {
     b.characters,
     seed: seed,
     preference: pref,
+    mbti: mbti,
   );
   simAbsent = engine.absentFor(s);
   final r = Random(seed * 7919 + strat.name.hashCode);
@@ -564,7 +580,8 @@ _Run _simulate(StoryBundle b, Strategy strat, int seed, String pref) {
     engine.applyAction(s, strat.action(s, b.config.actions, r, b));
     final queue = engine.planDay(s);
     while (queue.isNotEmpty) {
-      final ev = queue.removeAt(0);
+      // 화면과 같이 이 회차 MBTI 로 거른 사본.
+      final ev = engine.viewFor(s, queue.removeAt(0));
       saw(ev);
       for (final l in ev.lines) {
         if (l.isWait) {
@@ -986,6 +1003,74 @@ void main() {
             .reduce(max);
         expect(best, greaterThan(0), reason: '$c r15 도달 0');
       }
+    }, timeout: const Timeout(Duration(minutes: 15)));
+  }
+
+  // MBTI 16유형 + 모름 각각에서 막다른 길이 없는지(docs/MBTI_SPEC.md §2.4). 선호마다 한 테스트.
+  // 전략은 focus 하나(시간 예산), 시드는 kMbtiRouteSeeds. 캐릭터마다 r15 에 한 번 이상 닿고
+  // 선후 위반이 0 이어야 한다.
+  for (final pref in Preference.genders) {
+    test('MBTI 17종[$pref]: 캐릭터마다 focus 로 r15 도달 + 선후 위반 0', () {
+      if (!routePrefs(bundle).contains(pref)) {
+        markTestSkipped('ROUTE_PREF=$kRoutePref 이거나 $pref 쪽 캐릭터가 없음');
+        return;
+      }
+      final chars = bundle.charactersFor(pref).map((c) => c.id).toList();
+      bool inPref(String id) =>
+          bundle.eventInPreference(bundle.eventById[id]!, pref);
+      final prereq = [
+        for (final (later, earlier) in prerequisites)
+          if (inPref(later) && earlier.split('|').any(inPref)) (later, earlier),
+      ];
+      final dead = <String>[];
+      final violations = <String, int>{};
+      final table = StringBuffer(
+        '=== MBTI 17종 focus r15 도달 비율 (선호 $pref, 시드 $kMbtiRouteSeeds) ===\n'
+        '${'MBTI'.padRight(6)}${chars.map((c) => c.padLeft(10)).join()}\n',
+      );
+      for (final m in Mbti.playerCases) {
+        final reach = {
+          for (final c in chars) c: [0, 0],
+        };
+        for (var seed = 1; seed <= kMbtiRouteSeeds; seed++) {
+          final t = chars[seed % chars.length];
+          final run = _simulate(bundle, FocusStrategy(t), seed, pref, mbti: m);
+          reach[t]![1]++;
+          if (run.index.containsKey('${t}_r15')) reach[t]![0]++;
+          for (final (later, earlier) in prereq) {
+            final li = run.index[later];
+            if (li == null) continue;
+            final eis = earlier
+                .split('|')
+                .map((x) => run.index[x])
+                .whereType<int>();
+            final ei = eis.isEmpty ? null : eis.reduce(min);
+            if (ei == null || ei > li) {
+              final k = '${m ?? '모름'} $later ← $earlier';
+              violations[k] = (violations[k] ?? 0) + 1;
+            }
+          }
+        }
+        table.writeln(
+          (m ?? '모름').padRight(6) +
+              chars.map((c) {
+                final v = reach[c]!;
+                return (v[1] == 0 ? '-' : (v[0] / v[1]).toStringAsFixed(2))
+                    .padLeft(10);
+              }).join(),
+        );
+        for (final c in chars) {
+          if (reach[c]![1] > 0 && reach[c]![0] == 0) {
+            dead.add('${m ?? '모름'} $c');
+          }
+        }
+      }
+      print(table);
+      Directory('tool/sim_out').createSync(recursive: true);
+      File('tool/sim_out/route_order_mbti_$pref.txt')
+          .writeAsStringSync(table.toString());
+      expect(violations, isEmpty, reason: '선후 위반: $violations');
+      expect(dead, isEmpty, reason: 'focus 로 r15 에 한 번도 못 닿음: $dead');
     }, timeout: const Timeout(Duration(minutes: 15)));
   }
 }

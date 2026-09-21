@@ -273,7 +273,9 @@ class _EndingTabState extends State<_EndingTab> {
               final owned = got.contains(e.id);
               return _EndingCard(
                 title: owned ? e.name : '???',
-                body: owned ? c.say(e.epilogue) : endingHintFor(e, c),
+                body: owned
+                    ? c.say(c.epilogueOf(e, mbti: c.runMbti ?? c.playerMbti))
+                    : endingHintFor(e, c),
                 tierLabel: _tier(e.tier),
                 owned: owned,
                 accent: context.tokens.accentFor(e.character),

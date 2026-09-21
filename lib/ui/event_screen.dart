@@ -774,13 +774,18 @@ class _ChoicePanel extends StatelessWidget {
     final mg = v.choice.minigame;
     if (mg != null) return minigameLabels[mg] ?? '미니게임';
     final chance = v.choice.chance;
-    if (chance == null) return null;
+    // 내 MBTI 에게만 보이는 선택지. 무엇이 '나다운' 선택인지 알아보게 성향 글자를 단다.
+    if (chance == null) {
+      final m = v.choice.mbti;
+      return m == null ? null : '$m 성향';
+    }
     return c.onFire ? '${(chance + 20).clamp(0, 100)}%' : '$chance%';
   }
 
   /// 미니게임은 브랜드, 물올라 보정된 확률은 성공, 나머지는 중립.
   AppTone _trailingTone(ChoiceView v) {
     if (v.choice.minigame != null) return AppTone.brand;
+    if (v.choice.mbti != null && v.choice.chance == null) return AppTone.brand;
     if (v.choice.chance != null && c.onFire) return AppTone.success;
     return AppTone.neutral;
   }
@@ -812,6 +817,8 @@ class _ChoicePanel extends StatelessWidget {
                     ? Icons.lock_outline
                     : choices[i].choice.minigame != null
                     ? Icons.sports_esports_outlined
+                    : choices[i].choice.mbti != null
+                    ? Icons.auto_awesome_outlined
                     : null,
                 trailingLabel: _trailingLabel(choices[i]),
                 trailingTone: _trailingTone(choices[i]),

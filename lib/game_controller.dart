@@ -6,6 +6,7 @@ import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
 import 'engine/event_engine.dart';
+import 'engine/mbti.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
 import 'engine/player_name.dart';
@@ -163,7 +164,17 @@ class GameController extends ChangeNotifier {
   Map<String, int> runBonus = const {};
 
   final List<StoryEvent> _queue = [];
-  StoryEvent? current;
+
+  /// 지금 이벤트. 이 회차 플레이어 MBTI 로 거른 사본이다([EventEngine.viewFor]) — 맞지 않는
+  /// 줄·선택지·반응 줄이 빠져 있고, 선택지 인덱스·힌트는 거른 목록 기준이다. 넣을 때 거르므로
+  /// ([state] 를 먼저 넣은 뒤) 원본을 넣어도 된다. 조건 없는 이벤트는 원본 그대로.
+  StoryEvent? get current => _current;
+  set current(StoryEvent? e) {
+    final s = state;
+    _current = (e == null || s == null) ? e : engine.viewFor(s, e);
+  }
+
+  StoryEvent? _current;
   int revealed = 0;
   ChoiceOutcome? lastOutcome;
   Choice? _lastChoice;
@@ -311,6 +322,7 @@ class GameController extends ChangeNotifier {
     }
     meta = m;
     TextTemplate.currentName = m.playerName;
+    TextTemplate.currentMbti = m.mbti;
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
@@ -364,6 +376,7 @@ class GameController extends ChangeNotifier {
     await metaService.save(m);
     meta = m;
     TextTemplate.currentName = null;
+    TextTemplate.currentMbti = null;
     state = null;
     _peek = null;
     hasSave = false;
@@ -480,9 +493,55 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- 플레이어 MBTI (docs/MBTI_SPEC.md) ----
+
+  /// 기기 설정의 MBTI(온보딩 · 설정 "내 MBTI"). 모름이면 null. 다음 새 게임부터 쓰인다.
+  String? get playerMbti => meta?.mbti;
+
+  /// 이 회차의 MBTI([GameState.mbti]). 회차가 없으면(홈 첫 화면 등) 읽어 둔 세이브, 그것도
+  /// 없으면 null. 대사 치환·거르기는 이 값을 쓴다 — 설정을 바꿔도 진행 중인 회차는 그대로.
+  String? get runMbti => (state ?? _peek)?.mbti;
+
+  /// 새 게임에서 MBTI 단계를 띄울지. MBTI 가 없고 아직 한 번도 묻지 않았을 때만.
+  bool get shouldAskMbti =>
+      meta != null && meta!.mbti == null && !meta!.mbtiAsked;
+
+  /// MBTI 를 저장한다. null 이면 지운다(모름). 틀린 값은 [ArgumentError].
+  /// 기기 메타에만 저장하고, 진행 중인 회차에는 반영하지 않는다(다음 새 게임부터).
+  Future<void> setPlayerMbti(String? mbti) async {
+    final m = meta;
+    if (m == null) return;
+    final v = mbti == null ? null : Mbti.parse(mbti);
+    if (mbti != null && v == null) {
+      throw ArgumentError.value(mbti, 'mbti', 'MBTI 는 E/I S/N T/F J/P 네 글자');
+    }
+    if (m.mbti == v && m.mbtiAsked) return;
+    m.mbti = v;
+    m.mbtiAsked = true;
+    TextTemplate.currentMbti = v;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// MBTI 단계를 건너뛰었다. 값은 그대로(없음) 두고 다음 새 게임에서 다시 묻지 않는다.
+  Future<void> skipPlayerMbti() async {
+    final m = meta;
+    if (m == null || m.mbtiAsked) return;
+    m.mbtiAsked = true;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// 엔딩 [e] 의 에필로그. 이 회차 기질 문단(`epilogueMbti`)을 덧붙인 원문(치환 전).
+  /// [mbti] 를 주지 않으면 [runMbti].
+  String epilogueOf(Ending e, {String? mbti}) =>
+      e.epilogueForTemperament(Mbti.temperament(mbti ?? runMbti));
+
   /// 대사 문자열의 자리표시자(`{name|아야}` 등)를 지금 이름으로 바꾼다. 화면에 내기
   /// 직전에 부르고, `keepAll` 은 그 결과에 씌운다. 저장·비교에는 원문을 쓴다.
-  String say(String text) => TextTemplate.fill(text, name: playerName);
+  /// `{mbti}` 는 이 회차 MBTI([runMbti]).
+  String say(String text) =>
+      TextTemplate.fill(text, name: playerName, mbti: runMbti);
 
   /// [say] 의 null 허용판.
   String? sayOrNull(String? text) => text == null ? null : say(text);
@@ -492,17 +551,17 @@ class GameController extends ChangeNotifier {
   StoryEvent? get shownEvent {
     final ev = current;
     if (ev == null) return null;
-    final name = playerName;
+    final key = '$playerName|$runMbti';
     final cached = _shown;
-    if (cached != null && identical(cached.$1, ev) && cached.$2 == name) {
+    if (cached != null && identical(cached.$1, ev) && cached.$2 == key) {
       return cached.$3;
     }
     final out = TextTemplate.hasToken(_eventText(ev)) ? ev.mapText(say) : ev;
-    _shown = (ev, name, out);
+    _shown = (ev, key, out);
     return out;
   }
 
-  (StoryEvent, String?, StoryEvent)? _shown;
+  (StoryEvent, String, StoryEvent)? _shown;
 
   static String _eventText(StoryEvent ev) =>
       ev.displayTexts.map((e) => e.$2).join('\n');
@@ -610,6 +669,8 @@ class GameController extends ChangeNotifier {
       seed: seed ?? Random().nextInt(1 << 31),
       run: run,
       preference: preference,
+      // MBTI 는 새 게임 때 기기 설정에서 복사해 회차 내내 고정한다(docs/MBTI_SPEC.md §1.2).
+      mbti: meta?.mbti,
       previousEndings: endingAlbum,
       nowMs: nowMs(),
     );

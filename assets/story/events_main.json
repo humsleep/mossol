@@ -231,6 +231,510 @@
   "hint": 0
  },
  {
+  "id": "m_mbti_chat_f",
+  "layer": "main",
+  "trigger": {
+   "pref": "f"
+  },
+  "character": "seoyeon",
+  "day": 4,
+  "weight": 1,
+  "title": "MBTI 자기소개",
+  "lines": [
+   {
+    "who": "sys",
+    "text": "동아리 신입 단톡방 · 새 메시지 38개"
+   },
+   {
+    "who": "them",
+    "text": "신입 자기소개 MBTI로 하자는 사람 누구예요 ㅋㅋㅋ",
+    "name": "신입"
+   },
+   {
+    "who": "them",
+    "text": "ENFP입니다!! 다 친하게 지내요",
+    "name": "신입"
+   },
+   {
+    "who": "them",
+    "text": "ISTJ요. 출석부 만든 사람 저예요",
+    "name": "동기"
+   },
+   {
+    "who": "them",
+    "text": "INTJ. 질문은 짧게."
+   },
+   {
+    "who": "narr",
+    "text": "서연 선배다운 자기소개다. 한 줄로 끝났다."
+   },
+   {
+    "who": "them",
+    "text": "다음 신입분~ 두구두구",
+    "name": "신입"
+   },
+   {
+    "who": "narr",
+    "text": "{mbti}. 이건 자신 있다.",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "{mbti}. 이건 자신 있다.",
+    "mbti": "I"
+   },
+   {
+    "who": "narr",
+    "text": "…근데 내 MBTI가 뭐더라. 검사를 해 본 적이 없다.",
+    "noMbti": true
+   }
+  ],
+  "choices": [
+   {
+    "text": "MBTI는 비밀로 한다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "오 신비주의 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "text": "맞히기 게임 좋지. 다음 모임 때 맞혀 볼게."
+     }
+    ]
+   },
+   {
+    "text": "하트만 누르고 알림을 끈다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "하트 하나를 누르고 알림을 껐다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 아침, 단톡은 새벽 3시까지 MBTI 얘기였다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "NT",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "seoyeon": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 회의 때 반박 담당 해. 칭찬이야."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "오 선배가 먼저 답했다 ㅋㅋ"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 기억해 둘게."
+     },
+     {
+      "who": "narr",
+      "text": "서연 선배가 내 메시지에만 답을 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "NF",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "seoyeon": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 뒤풀이 때 인생 얘기 담당이네."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "저도 N이에요!! 우주 얘기 해요"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 기억해 둘게."
+     },
+     {
+      "who": "narr",
+      "text": "서연 선배가 내 메시지에만 답을 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "SJ",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "seoyeon": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 회비 정리 담당 확정."
+     },
+     {
+      "who": "them",
+      "name": "동기",
+      "text": "같은 J네요. 벌써 든든하다"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 기억해 둘게."
+     },
+     {
+      "who": "narr",
+      "text": "서연 선배가 내 메시지에만 답을 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "SP",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "seoyeon": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. MT 때 제일 재밌을 사람."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "즉흥 여행 소모임 만들어요 ㅋㅋ"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 기억해 둘게."
+     },
+     {
+      "who": "narr",
+      "text": "서연 선배가 내 메시지에만 답을 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"저 검사 안 해 봤어요\"",
+    "noMbti": true,
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "동기",
+      "text": "검사 안 해 봤어요? 요즘 그런 사람 귀한데 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "text": "모르는 쪽이 더 궁금하긴 하지. 모임 때 맞혀 볼게."
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "m_mbti_chat_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m"
+  },
+  "character": "jeongwoo",
+  "day": 4,
+  "weight": 1,
+  "title": "MBTI 자기소개",
+  "lines": [
+   {
+    "who": "sys",
+    "text": "동아리 신입 단톡방 · 새 메시지 38개"
+   },
+   {
+    "who": "them",
+    "text": "신입 자기소개 MBTI로 하자는 사람 누구예요 ㅋㅋㅋ",
+    "name": "신입"
+   },
+   {
+    "who": "them",
+    "text": "ENFP입니다!! 다 친하게 지내요",
+    "name": "신입"
+   },
+   {
+    "who": "them",
+    "text": "ISTJ요. 출석부 만든 사람 저예요",
+    "name": "동기"
+   },
+   {
+    "who": "them",
+    "text": "회장 정우. ISFJ. 모임 전날엔 공지 한 번 더 올릴게. 궁금한 건 언제든 물어봐. 하하."
+   },
+   {
+    "who": "narr",
+    "text": "회장님 자기소개가 제일 길다. 마침표까지 정확하다."
+   },
+   {
+    "who": "them",
+    "text": "다음 신입분~ 두구두구",
+    "name": "신입"
+   },
+   {
+    "who": "narr",
+    "text": "{mbti}. 이건 자신 있다.",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "{mbti}. 이건 자신 있다.",
+    "mbti": "I"
+   },
+   {
+    "who": "narr",
+    "text": "…근데 내 MBTI가 뭐더라. 검사를 해 본 적이 없다.",
+    "noMbti": true
+   }
+  ],
+  "choices": [
+   {
+    "text": "MBTI는 비밀로 한다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "오 신비주의 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "text": "비밀도 좋지. 대신 모임엔 꼭 와. 하하."
+     }
+    ]
+   },
+   {
+    "text": "하트만 누르고 알림을 끈다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "하트 하나를 누르고 알림을 껐다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 아침, 단톡은 새벽 3시까지 MBTI 얘기였다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "NT",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "jeongwoo": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 기획 회의 때 아이디어 많이 줘. 믿고 있을게."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "회장님 벌써 일 맡기신다 ㅋㅋ"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 메모해 뒀어. 하하."
+     },
+     {
+      "who": "narr",
+      "text": "회장님이 내 메시지에만 답을 따로 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "NF",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "jeongwoo": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 뒤풀이 때 얘기 들어 줄 사람 필요했어. 반갑다."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "저도 N이에요!! 우주 얘기 해요"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 메모해 뒀어. 하하."
+     },
+     {
+      "who": "narr",
+      "text": "회장님이 내 메시지에만 답을 따로 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "SJ",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "jeongwoo": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 준비물 체크 같이 해 주면 든든하겠다. 하하."
+     },
+     {
+      "who": "them",
+      "name": "동기",
+      "text": "같은 J네요. 벌써 든든하다"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 메모해 뒀어. 하하."
+     },
+     {
+      "who": "narr",
+      "text": "회장님이 내 메시지에만 답을 따로 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"{mbti}입니다! 잘 부탁드려요\"",
+    "mbti": "SP",
+    "effects": {
+     "stats": {
+      "reputation": 2
+     },
+     "affection": {
+      "jeongwoo": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "{mbti}. MT 레크리에이션은 너한테 맡겨도 되겠다."
+     },
+     {
+      "who": "them",
+      "name": "신입",
+      "text": "즉흥 여행 소모임 만들어요 ㅋㅋ"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "{mbti}. 메모해 뒀어. 하하."
+     },
+     {
+      "who": "narr",
+      "text": "회장님이 내 메시지에만 답을 따로 달았다."
+     }
+    ]
+   },
+   {
+    "text": "\"저 검사 안 해 봤어요\"",
+    "noMbti": true,
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "동기",
+      "text": "검사 안 해 봤어요? 요즘 그런 사람 귀한데 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "text": "괜찮아. 천천히 해. 모임 때 같이 맞혀 보자. 하하."
+     }
+    ]
+   }
+  ]
+ },
+ {
   "id": "m03",
   "layer": "main",
   "trigger": {
@@ -469,6 +973,26 @@
    },
    {
     "who": "narr",
+    "text": "구체적으로 적어 본다. 수면 5시간, 운동 0회, 물 한 잔. 숫자는 정직하다.",
+    "mbti": "S"
+   },
+   {
+    "who": "narr",
+    "text": "원인이 보이면 고칠 것도 보인다.",
+    "mbti": "S"
+   },
+   {
+    "who": "narr",
+    "text": "문득 100일 뒤의 내가 떠오른다. 지금보다 조금 더 웃는 얼굴이다.",
+    "mbti": "N"
+   },
+   {
+    "who": "narr",
+    "text": "어떻게 가는지는 몰라도, 방향은 알 것 같다.",
+    "mbti": "N"
+   },
+   {
+    "who": "narr",
     "text": "태현은 자존감부터 올리라고 했다. 근데 그게 어떻게 올라가는 건데."
    }
   ],
@@ -537,6 +1061,47 @@
       "text": "…현관에 거울이 하나 더 있다."
      }
     ]
+   },
+   {
+    "text": "생활표를 만든다: 수면·물·산책",
+    "mbti": "S",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 2,
+      "stress": -5
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "냉장고에 표를 붙였다. 첫 칸에 동그라미. 물 한 잔 마심."
+     },
+     {
+      "who": "narr",
+      "text": "작은 칸 하나가 생각보다 뿌듯하다."
+     }
+    ]
+   },
+   {
+    "text": "100일 뒤의 나에게 한 줄 쓴다",
+    "mbti": "N",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "stress": -4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "메모장에 썼다. '웃는 얼굴로 만나자.' 알림은 100일 뒤로."
+     },
+     {
+      "who": "narr",
+      "text": "거울 속 얼굴이 아주 조금 덜 죽어 보인다."
+     }
+    ]
    }
   ],
   "hint": 0,
@@ -567,6 +1132,28 @@
    {
     "who": "me",
     "text": "그게 무슨 협약이야 벌칙이지"
+   },
+   {
+    "who": "me",
+    "text": "하려면 제대로 하자. 규칙이랑 중간 점검 날짜부터 정해",
+    "mbti": "J"
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ 벌써 표 만들 기세네",
+    "name": "준호",
+    "mbti": "J"
+   },
+   {
+    "who": "me",
+    "text": "근데 100일 다 정해 놓으면 재미없잖아. 해 보면서 정하자",
+    "mbti": "P"
+   },
+   {
+    "who": "them",
+    "text": "ㅋㅋ 역시 너답다. 그래도 도장은 찍어",
+    "name": "준호",
+    "mbti": "P"
    }
   ],
   "choices": [
@@ -629,6 +1216,56 @@
       "who": "them",
       "name": "준호",
       "text": "좋아. 내가 먼저 하면 너 평생 나한테 배워라"
+     }
+    ]
+   },
+   {
+    "text": "협약서 초안을 바로 보낸다 (제1조, 제2조…)",
+    "mbti": "J",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "esteem": 1
+     },
+     "setFlags": [
+      "pact"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "제3조 '중간 점검은 50일차'? ㅋㅋ 진심이네"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "좋아 서명한다. 이제 진짜 못 무른다"
+     }
+    ]
+   },
+   {
+    "text": "\"조건은 그때그때 추가하기로 하자\"",
+    "mbti": "P",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "stress": -3
+     },
+     "setFlags": [
+      "pact"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "ㅋㅋ 그게 뭐야. 근데 그게 더 재밌겠다"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "추가 조건 1호: 치킨은 진 사람이 산다"
      }
     ]
    }
@@ -853,6 +1490,26 @@
     "text": "대화는 이미 시작됐고, 끼어들 타이밍은 오지 않는다."
    },
    {
+    "who": "narr",
+    "text": "사실 입이 근질거린다. 사람이 많을수록 이상하게 기운이 난다.",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "저쪽 끝 웃음소리에 같이 웃고 싶다. 타이밍만 오면.",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "열두 명의 목소리가 한꺼번에 들린다. 한 사람씩이면 좋을 텐데.",
+    "mbti": "I"
+   },
+   {
+    "who": "narr",
+    "text": "옆자리 사람과 눈이 마주쳤다. 저 사람도 조용히 듣는 쪽 같다.",
+    "mbti": "I"
+   },
+   {
     "who": "them",
     "text": "야 저기 끝에 신입 말 좀 시켜줘",
     "name": "선배"
@@ -959,6 +1616,49 @@
       "who": "them",
       "name": "선배",
       "text": "신입 한마디! 일단 삼키고 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "건배 제의부터 한다",
+    "mbti": "E",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "선배",
+      "text": "오 신입 텐션 뭐야 ㅋㅋ 건배!"
+     },
+     {
+      "who": "narr",
+      "text": "잔 부딪히는 소리가 테이블 끝까지 이어졌다."
+     }
+    ]
+   },
+   {
+    "text": "끝자리 사람들과 작은 대화를 연다",
+    "mbti": "I",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "reputation": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "끝자리 셋이 작은 원을 만들었다. 거기가 제일 조용하고 제일 웃겼다."
+     },
+     {
+      "who": "them",
+      "name": "옆자리 선배",
+      "text": "이 자리 좋다. 다음에도 여기 앉자"
      }
     ]
    }
@@ -1522,6 +2222,28 @@
     "who": "them",
     "text": "그래서 네가 모쏠인 거야",
     "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "사실 근처 카페 세 곳 리뷰는 다 봤어. 소음이랑 좌석까지",
+    "mbti": "S"
+   },
+   {
+    "who": "them",
+    "text": "…디테일은 합격. 그걸로 동선만 짜",
+    "name": "태현",
+    "mbti": "S"
+   },
+   {
+    "who": "me",
+    "text": "코스보다 무슨 얘기를 할지가 더 궁금한데",
+    "mbti": "N"
+   },
+   {
+    "who": "them",
+    "text": "…그것도 맞는 말인데 일단 장소는 정해 ㅋㅋ",
+    "name": "태현",
+    "mbti": "N"
    }
   ],
   "choices": [
@@ -1640,6 +2362,54 @@
       "who": "them",
       "name": "태현",
       "text": "내일 저녁에 후기나 보내라"
+     }
+    ]
+   },
+   {
+    "text": "리뷰 사진으로 자리까지 정해 둔다",
+    "mbti": "S",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "setFlags": [
+      "prepared_date"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "창가 두 번째 자리까지 정했다고? ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "인정. 준비는 이렇게 하는 거다"
+     }
+    ]
+   },
+   {
+    "text": "대화 주제 지도를 그려 본다",
+    "mbti": "N",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "setFlags": [
+      "prepared_date"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "영화→여행→어릴 때 꿈? 이게 뭐야 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…근데 이거면 대화 끊길 일은 없겠다"
      }
     ]
    }
@@ -1877,6 +2647,32 @@
    },
    {
     "who": "narr",
+    "text": "근거가 없다. 이틀 무시하면 뭐가 나아지는지 설명이 안 된다.",
+    "mbti": "T"
+   },
+   {
+    "who": "me",
+    "text": "그거 효과 있다는 근거 있어?",
+    "mbti": "T"
+   },
+   {
+    "who": "them",
+    "text": "근거는… 경험? ㅋㅋ",
+    "name": "태현",
+    "mbti": "T"
+   },
+   {
+    "who": "narr",
+    "text": "이틀 동안 답이 없으면 그쪽은 어떤 기분일까. 그게 먼저 떠오른다.",
+    "mbti": "F"
+   },
+   {
+    "who": "narr",
+    "text": "나라면 좀 서운할 것 같다.",
+    "mbti": "F"
+   },
+   {
+    "who": "narr",
     "text": "정말 그럴까. 태현은 지금 연애 중이긴 하다."
    },
    {
@@ -1988,6 +2784,78 @@
       "text": "…아니 믿어야지. 나 연애 중이잖아 ㅋㅋ"
      }
     ]
+   },
+   {
+    "text": "답이 없던 이유부터 물어본다",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "jiwoo": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "아, 재판 준비 때문에 정신없었어요."
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "이유부터 물어봐 주는 거 좋네요. 깔끔해서."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "안 그래도 설명하려고 했어요."
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "…이렇게 바로 물어보는 사람, 처음이에요."
+     }
+    ]
+   },
+   {
+    "text": "\"요즘 많이 바빠요? 무리하지 마요\"",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "jiwoo": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "…아, 이런 톡 좋다."
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "사실 좀 지쳐 있었어요. 고마워요."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "오늘 받은 톡 중에 제일 좋네요."
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "주말에 커피 어때요? 이번엔 제가 살게요."
+     }
+    ]
    }
   ],
   "hint": 1,
@@ -2013,6 +2881,32 @@
     "who": "them",
     "text": "밀당은 원래 그렇게 하는 거야",
     "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "근거가 없다. 이틀 무시하면 뭐가 나아지는지 설명이 안 된다.",
+    "mbti": "T"
+   },
+   {
+    "who": "me",
+    "text": "그거 효과 있다는 근거 있어?",
+    "mbti": "T"
+   },
+   {
+    "who": "them",
+    "text": "근거는… 경험? ㅋㅋ",
+    "name": "태현",
+    "mbti": "T"
+   },
+   {
+    "who": "narr",
+    "text": "이틀 동안 답이 없으면 그쪽은 어떤 기분일까. 그게 먼저 떠오른다.",
+    "mbti": "F"
+   },
+   {
+    "who": "narr",
+    "text": "나라면 좀 서운할 것 같다.",
+    "mbti": "F"
    },
    {
     "who": "narr",
@@ -2125,6 +3019,78 @@
       "who": "them",
       "name": "태현",
       "text": "…아니 믿어야지. 나 연애 중이잖아 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "답이 없던 이유부터 물어본다",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "seunghyun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "어제 응급 수술이 있었어요. 물어봐 줘서 고마워요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "이유를 말할 수 있어서 다행이에요. 확실히."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "지금 막 설명하려던 참이었어요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "…궁금한 걸 바로 물어보는 거, 좋아요."
+     }
+    ]
+   },
+   {
+    "text": "\"요즘 많이 바빠요? 무리하지 마요\"",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "seunghyun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "수술이 길었어요. 걱정해 줘서 고마워요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "이런 톡 받으면 하루가 괜찮아져요."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "…이 톡, 저장해 둘게요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "주말에 산책 어때요? 코스는 제가 짤게요."
      }
     ]
    }
@@ -2357,6 +3323,16 @@
     "text": "거절당한 지 이틀. 아무것도 하기 싫다."
    },
    {
+    "who": "narr",
+    "text": "방에 혼자 있으니 더 가라앉는다. 사람 목소리가 필요하다.",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "지금 필요한 건 조용한 방과 이불이다. 충전이 먼저다.",
+    "mbti": "I"
+   },
+   {
     "who": "them",
     "text": "야 나와. 치킨 산다",
     "name": "준호"
@@ -2369,6 +3345,18 @@
     "who": "them",
     "text": "나와 그냥. 나도 차였어",
     "name": "준호"
+   },
+   {
+    "who": "them",
+    "text": "너 사람 만나야 살아나는 타입이잖아. 알지?",
+    "name": "준호",
+    "mbti": "E"
+   },
+   {
+    "who": "them",
+    "text": "…아 너 혼자 충전하는 타입이지. 그래도 얼굴은 한 번 보자",
+    "name": "준호",
+    "mbti": "I"
    }
   ],
   "choices": [
@@ -2439,6 +3427,50 @@
       "who": "them",
       "name": "준호",
       "text": "…살아는 있구나"
+     }
+    ]
+   },
+   {
+    "text": "태현까지 불러서 판을 키운다",
+    "mbti": "E",
+    "effects": {
+     "stats": {
+      "stress": -12,
+      "reputation": 4,
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "ㅋㅋ 태현도 온대. 순식간에 셋"
+     },
+     {
+      "who": "narr",
+      "text": "치킨 두 마리가 비었다. 거절 얘기는 어느새 웃음이 됐다."
+     }
+    ]
+   },
+   {
+    "text": "오늘은 혼자 쉬고, 내일 준호를 만난다",
+    "mbti": "I",
+    "effects": {
+     "stats": {
+      "esteem": 3,
+      "stress": -10,
+      "reputation": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "오케이. 내일 치킨 예약 걸어 둔다"
+     },
+     {
+      "who": "narr",
+      "text": "불을 끄고 좋아하는 노래를 끝까지 들었다. 조금 채워졌다."
      }
     ]
    }
@@ -2725,6 +3757,484 @@
   "hint": 2
  },
  {
+  "id": "m_mbti_compat_f",
+  "layer": "main",
+  "trigger": {
+   "pref": "f"
+  },
+  "character": "seoyeon",
+  "day": 44,
+  "weight": 1,
+  "title": "간이 궁합 테스트",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 이거 해 봐. MBTI 간이 궁합 테스트",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "너랑 서연 선배 넣어 봤다 ㅋㅋ 선배 INTJ라며",
+    "name": "태현"
+   },
+   {
+    "who": "sys",
+    "text": "간이 궁합 테스트 · 결과 분석 중…"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 천생연분 (5/5) · 서로의 빈칸을 채워 주는 사이",
+    "mbti": "ENP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 잘 맞아요 (4/5) · 대화가 끊기지 않는 사이",
+    "mbti": "ENJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 잘 맞아요 (4/5) · 대화가 끊기지 않는 사이",
+    "mbti": "INP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 무난해요 (3/5) · 편하게 오래 가는 사이",
+    "mbti": "ESP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 무난해요 (3/5) · 편하게 오래 가는 사이",
+    "mbti": "INJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 노력하면 (2/5) · 다른 만큼 배울 게 많은 사이",
+    "mbti": "ESJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 노력하면 (2/5) · 다른 만큼 배울 게 많은 사이",
+    "mbti": "ISP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 정반대 (1/5) · 서로가 제일 신기한 사이",
+    "mbti": "ISJ"
+   },
+   {
+    "who": "them",
+    "text": "천생연분? 야 이거 캡처 각이다",
+    "name": "태현",
+    "mbti": "ENP"
+   },
+   {
+    "who": "them",
+    "text": "잘 맞는대 ㅋㅋ 오 좀 부럽다",
+    "name": "태현",
+    "mbti": "ENJ"
+   },
+   {
+    "who": "them",
+    "text": "잘 맞는대 ㅋㅋ 오 좀 부럽다",
+    "name": "태현",
+    "mbti": "INP"
+   },
+   {
+    "who": "them",
+    "text": "무난하대. 무난한 게 제일 오래 간다더라",
+    "name": "태현",
+    "mbti": "ESP"
+   },
+   {
+    "who": "them",
+    "text": "무난하대. 무난한 게 제일 오래 간다더라",
+    "name": "태현",
+    "mbti": "INJ"
+   },
+   {
+    "who": "them",
+    "text": "노력하면 된대 ㅋㅋ 너 요즘 노력은 하잖아",
+    "name": "태현",
+    "mbti": "ESJ"
+   },
+   {
+    "who": "them",
+    "text": "노력하면 된대 ㅋㅋ 너 요즘 노력은 하잖아",
+    "name": "태현",
+    "mbti": "ISP"
+   },
+   {
+    "who": "them",
+    "text": "정반대래 ㅋㅋ 근데 정반대가 원래 끌린다며",
+    "name": "태현",
+    "mbti": "ISJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: MBTI를 입력해 주세요",
+    "noMbti": true
+   },
+   {
+    "who": "them",
+    "text": "야 너 MBTI 몰라? 그럼 이거 반쪽짜리잖아 ㅋㅋ",
+    "name": "태현",
+    "noMbti": true
+   },
+   {
+    "who": "narr",
+    "text": "앱 한 줄에 마음이 흔들리는 게 웃기다. 그래도 서연 선배 이름을 한 번 더 보게 된다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"이런 건 재미로 보는 거지\"",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "그치. 결국 네가 어떻게 하느냐지"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…라고 영상에서 그러더라 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "결과를 선배에게 보내 본다",
+    "effects": {
+     "affection": {
+      "seoyeon": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "album": "궁합 테스트 결과 전송"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…이거 나 보라고 보낸 거야?"
+     },
+     {
+      "who": "them",
+      "text": "재밌네. 다음엔 내가 해서 보내 줄게."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "결과 캡처 나도 했어."
+     },
+     {
+      "who": "them",
+      "text": "…농담 아닌데."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "text": "뭐야 이거 ㅋㅋ"
+     },
+     {
+      "who": "narr",
+      "text": "답은 한 시간 뒤에 왔다. '재밌네.' 한 마디."
+     }
+    ]
+   },
+   {
+    "text": "캡처해서 몰래 저장한다",
+    "effects": {
+     "stats": {
+      "stress": -4,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "앨범에 '궁합' 폴더가 생겼다. 사진은 한 장."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "폴더까지 만들었냐 ㅋㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "지금 MBTI 검사부터 해 본다",
+    "noMbti": true,
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "결과 뭐 나왔어? 궁합 다시 돌려 봐"
+     },
+     {
+      "who": "narr",
+      "text": "결과는 나만 알기로 했다. 선배 쪽을 한참 봤다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "m_mbti_compat_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m"
+  },
+  "character": "jeongwoo",
+  "day": 44,
+  "weight": 1,
+  "title": "간이 궁합 테스트",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 이거 해 봐. MBTI 간이 궁합 테스트",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "너랑 정우 선배 넣어 봤다 ㅋㅋ 회장님 ISFJ라며",
+    "name": "태현"
+   },
+   {
+    "who": "sys",
+    "text": "간이 궁합 테스트 · 결과 분석 중…"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 천생연분 (5/5) · 서로의 빈칸을 채워 주는 사이",
+    "mbti": "ESP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 잘 맞아요 (4/5) · 대화가 끊기지 않는 사이",
+    "mbti": "ESJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 잘 맞아요 (4/5) · 대화가 끊기지 않는 사이",
+    "mbti": "ISP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 무난해요 (3/5) · 편하게 오래 가는 사이",
+    "mbti": "ENP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 무난해요 (3/5) · 편하게 오래 가는 사이",
+    "mbti": "ISJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 노력하면 (2/5) · 다른 만큼 배울 게 많은 사이",
+    "mbti": "ENJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 노력하면 (2/5) · 다른 만큼 배울 게 많은 사이",
+    "mbti": "INP"
+   },
+   {
+    "who": "sys",
+    "text": "결과: 정반대 (1/5) · 서로가 제일 신기한 사이",
+    "mbti": "INJ"
+   },
+   {
+    "who": "them",
+    "text": "천생연분? 야 이거 캡처 각이다",
+    "name": "태현",
+    "mbti": "ESP"
+   },
+   {
+    "who": "them",
+    "text": "잘 맞는대 ㅋㅋ 오 좀 부럽다",
+    "name": "태현",
+    "mbti": "ESJ"
+   },
+   {
+    "who": "them",
+    "text": "잘 맞는대 ㅋㅋ 오 좀 부럽다",
+    "name": "태현",
+    "mbti": "ISP"
+   },
+   {
+    "who": "them",
+    "text": "무난하대. 무난한 게 제일 오래 간다더라",
+    "name": "태현",
+    "mbti": "ENP"
+   },
+   {
+    "who": "them",
+    "text": "무난하대. 무난한 게 제일 오래 간다더라",
+    "name": "태현",
+    "mbti": "ISJ"
+   },
+   {
+    "who": "them",
+    "text": "노력하면 된대 ㅋㅋ 너 요즘 노력은 하잖아",
+    "name": "태현",
+    "mbti": "ENJ"
+   },
+   {
+    "who": "them",
+    "text": "노력하면 된대 ㅋㅋ 너 요즘 노력은 하잖아",
+    "name": "태현",
+    "mbti": "INP"
+   },
+   {
+    "who": "them",
+    "text": "정반대래 ㅋㅋ 근데 정반대가 원래 끌린다며",
+    "name": "태현",
+    "mbti": "INJ"
+   },
+   {
+    "who": "sys",
+    "text": "결과: MBTI를 입력해 주세요",
+    "noMbti": true
+   },
+   {
+    "who": "them",
+    "text": "야 너 MBTI 몰라? 그럼 이거 반쪽짜리잖아 ㅋㅋ",
+    "name": "태현",
+    "noMbti": true
+   },
+   {
+    "who": "narr",
+    "text": "앱 한 줄에 마음이 흔들리는 게 웃기다. 그래도 정우 선배 이름을 한 번 더 보게 된다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"이런 건 재미로 보는 거지\"",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "그치. 결국 네가 어떻게 하느냐지"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…라고 영상에서 그러더라 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "결과를 선배에게 보내 본다",
+    "effects": {
+     "affection": {
+      "jeongwoo": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "esteem": -2
+     },
+     "album": "궁합 테스트 결과 전송"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…이거 나한테 보내도 되는 거야? 하하."
+     },
+     {
+      "who": "them",
+      "text": "결과 좋네. 아니, 결과랑 상관없이. 좋다고."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "캡처했어."
+     },
+     {
+      "who": "them",
+      "text": "방금 거 취소는 안 할게. 하하."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "text": "하하. 재밌다."
+     },
+     {
+      "who": "narr",
+      "text": "그 뒤로 '입력 중…'이 10분 동안 떴다 사라졌다."
+     }
+    ]
+   },
+   {
+    "text": "캡처해서 몰래 저장한다",
+    "effects": {
+     "stats": {
+      "stress": -4,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "앨범에 '궁합' 폴더가 생겼다. 사진은 한 장."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "폴더까지 만들었냐 ㅋㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "지금 MBTI 검사부터 해 본다",
+    "noMbti": true,
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "결과 뭐 나왔어? 궁합 다시 돌려 봐"
+     },
+     {
+      "who": "narr",
+      "text": "결과는 나만 알기로 했다. 선배 쪽을 한참 봤다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
   "id": "m18",
   "layer": "main",
   "trigger": {
@@ -2741,6 +4251,26 @@
    {
     "who": "narr",
     "text": "제일 편한 사람에게 보낼 수도, 제일 어려운 사람에게 보낼 수도 있다."
+   },
+   {
+    "who": "narr",
+    "text": "상영표부터 열었다. 토요일 7시 10분, 가운데 줄. 끝나고 갈 곳까지 정해 두면 마음이 편하다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "이제 누구에게 보낼지만 정하면 된다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "표 유효기간은 한 달. 시간은 그날 기분 따라 정하면 된다.",
+    "mbti": "P"
+   },
+   {
+    "who": "narr",
+    "text": "'오늘 뭐 해?' 한 줄이면 시작되는 거다.",
+    "mbti": "P"
    }
   ],
   "choices": [
@@ -2840,6 +4370,54 @@
       "text": "옆자리 커플이 이쪽을 두 번 쳐다봤다."
      }
     ]
+   },
+   {
+    "text": "편한 사람에게 시간·자리까지 정해서 보낸다",
+    "mbti": "J",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "trust": {
+      "daeun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…시간표까지. 좋아. 헤매지 않겠다."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "7시 10분. 기억할게."
+     }
+    ]
+   },
+   {
+    "text": "편한 사람에게 \"지금 나올래?\" 하고 보낸다",
+    "mbti": "P",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "trust": {
+      "daeun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…지금? 앞치마 벗고 갈게."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "이런 갑자기, 싫지 않아."
+     }
+    ]
    }
   ],
   "hint": 1,
@@ -2862,6 +4440,26 @@
    {
     "who": "narr",
     "text": "제일 편한 사람에게 보낼 수도, 제일 어려운 사람에게 보낼 수도 있다."
+   },
+   {
+    "who": "narr",
+    "text": "상영표부터 열었다. 토요일 7시 10분, 가운데 줄. 끝나고 갈 곳까지 정해 두면 마음이 편하다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "이제 누구에게 보낼지만 정하면 된다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "표 유효기간은 한 달. 시간은 그날 기분 따라 정하면 된다.",
+    "mbti": "P"
+   },
+   {
+    "who": "narr",
+    "text": "'오늘 뭐 해?' 한 줄이면 시작되는 거다.",
+    "mbti": "P"
    }
   ],
   "choices": [
@@ -2959,6 +4557,54 @@
      {
       "who": "narr",
       "text": "옆자리 커플이 이쪽을 두 번 쳐다봤다."
+     }
+    ]
+   },
+   {
+    "text": "편한 사람에게 시간·자리까지 정해서 보낸다",
+    "mbti": "J",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "trust": {
+      "haneul": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "오 7시 10분에 저녁까지? 완전 코스네 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "콜. 난 몸만 간다"
+     }
+    ]
+   },
+   {
+    "text": "편한 사람에게 \"지금 나올래?\" 하고 보낸다",
+    "mbti": "P",
+    "effects": {
+     "stats": {
+      "stress": -5
+     },
+     "trust": {
+      "haneul": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "지금? ㅋㅋ 좋아 마감 방금 끝났어"
+     },
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "이런 즉흥 딱 내 스타일"
      }
     ]
    }
@@ -3731,6 +5377,26 @@
     "text": "어제 내가 세 번 물어봤는데 다 단답이었어"
    },
    {
+    "who": "narr",
+    "text": "단답이었던 건 맞다. 어제는 마감이었다. 원인을 알면 방법도 있다.",
+    "mbti": "T"
+   },
+   {
+    "who": "narr",
+    "text": "다시 안 그러려면 뭘 바꾸면 될까. 머리가 먼저 움직인다.",
+    "mbti": "T"
+   },
+   {
+    "who": "narr",
+    "text": "세 번이나 물어봤구나. 그동안 얼마나 서운했을지가 먼저 걸린다.",
+    "mbti": "F"
+   },
+   {
+    "who": "narr",
+    "text": "화가 난 게 아니라 서운한 거다. 그건 안다.",
+    "mbti": "F"
+   },
+   {
     "who": "sys",
     "wait": 20
    },
@@ -3811,6 +5477,38 @@
       "who": "narr",
       "text": "사흘째, 알림이 멈췄다."
      }
+    ]
+   },
+   {
+    "text": "\"바쁠 땐 '밤에 톡할게' 하고 먼저 말할게\"",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     "…그걸 벌써 생각했어?",
+     "좋아. 약속한 거다"
+    ]
+   },
+   {
+    "text": "\"세 번이나 물어봤는데 서운했겠다. 미안해\"",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     "…응. 좀 서운했어",
+     "알아줘서 됐어. 내일 통화하자"
     ]
    }
   ],
@@ -3930,6 +5628,26 @@
    {
     "who": "narr",
     "text": "달라진 게 있긴 하다. 적어도 프사는 바꿨다."
+   },
+   {
+    "who": "narr",
+    "text": "달력에 남은 30일을 칸칸이 나눠 본다. 할 일이 보이니 숨이 고르다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "계획이 있으면 불안이 줄어든다. 그게 내 방식이다.",
+    "mbti": "J"
+   },
+   {
+    "who": "narr",
+    "text": "30일이면 뭐든 일어날 수 있다. 계획표보다 그날의 느낌을 믿고 싶다.",
+    "mbti": "P"
+   },
+   {
+    "who": "narr",
+    "text": "지난주 즉흥으로 들어간 골목 가게가 제일 좋았던 것처럼.",
+    "mbti": "P"
    }
   ],
   "choices": [
@@ -3989,6 +5707,50 @@
       "who": "them",
       "name": "태현",
       "text": "뭐야 너 표정 왜 이렇게 편해졌냐"
+     }
+    ]
+   },
+   {
+    "text": "남은 30일 주간 계획표를 짠다",
+    "mbti": "J",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "sense": 1,
+      "stress": -4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "월요일 운동, 수요일 먼저 연락, 토요일은 비워 두기."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "야 그 계획표 나도 복사해 가도 되냐"
+     }
+    ]
+   },
+   {
+    "text": "'오늘 하고 싶은 거' 하나씩만 하기로 한다",
+    "mbti": "P",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "charm": 1,
+      "stress": -4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "오늘 하고 싶은 거: 처음 보는 버스 타 보기. 종점 빵집이 맛있었다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "너 요즘 사는 게 재밌어 보인다 ㅋㅋ"
      }
     ]
    }
@@ -4469,6 +6231,28 @@
    },
    {
     "who": "narr",
+    "text": "머릿속에서 벌써 목록이 만들어진다. 연락 빈도, 대화 주제, 첫 약속.",
+    "mbti": "T"
+   },
+   {
+    "who": "them",
+    "text": "선배 지금 머릿속으로 정리하고 계시죠? ㅋㅋ",
+    "name": "후배",
+    "mbti": "T"
+   },
+   {
+    "who": "narr",
+    "text": "후배 손끝이 떨린다. 뭘 말해 주기 전에 마음부터 풀어 주고 싶다.",
+    "mbti": "F"
+   },
+   {
+    "who": "them",
+    "text": "…저만 이렇게 떨리는 거 아니죠?",
+    "name": "후배",
+    "mbti": "F"
+   },
+   {
+    "who": "narr",
     "text": "83일 전의 나다."
    }
   ],
@@ -4534,6 +6318,51 @@
      {
       "who": "narr",
       "text": "한 번도 해본 적 없는 방법이었다."
+     }
+    ]
+   },
+   {
+    "text": "효과 있던 것 세 가지만 정리해 준다",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "reputation": 4,
+      "sense": 2,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "후배",
+      "text": "먼저 연락, 약속은 구체적으로, 솔직하게… 적었어요!"
+     },
+     {
+      "who": "them",
+      "name": "후배",
+      "text": "와 이거 바로 써먹을 수 있겠어요"
+     }
+    ]
+   },
+   {
+    "text": "\"떨리는 거 당연해. 나도 그랬어\" 하고 들어 준다",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "reputation": 3,
+      "sincerity": 3,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "후배",
+      "text": "…선배한테 말하니까 좀 괜찮아졌어요"
+     },
+     {
+      "who": "narr",
+      "text": "후배는 한 시간을 떠들고 갔다. 나는 거의 듣기만 했다."
      }
     ]
    }
@@ -5205,6 +7034,26 @@
    },
    {
     "who": "narr",
+    "text": "기억나는 장면부터 적는다. 1일차 프사, 17일차 뒤풀이, 비 오던 날의 우산.",
+    "mbti": "S"
+   },
+   {
+    "who": "narr",
+    "text": "날짜 하나하나에 그날 날씨까지 붙어 있다.",
+    "mbti": "S"
+   },
+   {
+    "who": "narr",
+    "text": "100일을 한 문장으로 줄이면 뭘까. 문장보다 느낌이 먼저 온다.",
+    "mbti": "N"
+   },
+   {
+    "who": "narr",
+    "text": "닫혀 있던 문이 조금씩 열린 느낌. 그런 거.",
+    "mbti": "N"
+   },
+   {
+    "who": "narr",
     "text": "커서가 깜빡인다."
    }
   ],
@@ -5284,6 +7133,42 @@
       "text": "내일 뭐 해? 100일이라며 ㅋㅋ"
      }
     ]
+   },
+   {
+    "text": "\"1일부터 다 적어 뒀어. 전부 네가 한 거야.\"",
+    "mbti": "S",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "sincerity": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "날짜별 목록이 스크롤 두 번 분량이 됐다."
+     },
+     {
+      "who": "narr",
+      "text": "전부 내가 한 일이다. 하나도 빠짐없이."
+     }
+    ]
+   },
+   {
+    "text": "\"문은 생각보다 가벼웠어.\"",
+    "mbti": "N",
+    "effects": {
+     "stats": {
+      "esteem": 4,
+      "sincerity": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "한 줄을 쓰고 불을 껐다. 그 문장이 오래 남았다."
+     }
+    ]
    }
   ],
   "hint": 1,
@@ -5303,6 +7188,27 @@
    {
     "who": "narr",
     "text": "숫자로 남은 건 달력의 동그라미 100개뿐이지만, 남은 건 그것만이 아니다."
+   },
+   {
+    "who": "narr",
+    "text": "고마운 얼굴이 줄줄이 떠오른다. 한 명씩 다 연락하고 싶다.",
+    "mbti": "E"
+   },
+   {
+    "who": "them",
+    "text": "야 오늘 100일인데 다 모여야 되는 거 아니냐 ㅋㅋ",
+    "name": "태현",
+    "mbti": "E"
+   },
+   {
+    "who": "narr",
+    "text": "오늘은 조용히 보내고 싶다. 100일을 천천히 곱씹으면서.",
+    "mbti": "I"
+   },
+   {
+    "who": "narr",
+    "text": "그래도 떠오르는 얼굴이 몇 있다. 짧게라도 전하고 싶다.",
+    "mbti": "I"
    },
    {
     "who": "narr",
@@ -5364,6 +7270,50 @@
       "who": "them",
       "name": "태현",
       "text": "야. 일단 프사부터 바꿔"
+     }
+    ]
+   },
+   {
+    "text": "단톡방에 100일 기념 번개를 연다",
+    "mbti": "E",
+    "effects": {
+     "stats": {
+      "reputation": 4,
+      "esteem": 4,
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "ㅋㅋ 번개 콜. 여친도 데려간다"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "100일 파티 주최자가 너라니. 사람 됐다 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "고마운 사람 세 명에게 긴 편지를 쓴다",
+    "mbti": "I",
+    "effects": {
+     "stats": {
+      "sincerity": 4,
+      "esteem": 4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "한 명당 한 문단. 전송 버튼은 천천히 눌렀다."
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…야 이거 뭐야. 아침부터 사람을 울리네"
      }
     ]
    }

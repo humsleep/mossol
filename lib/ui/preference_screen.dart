@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../engine/mbti.dart';
 import '../engine/models.dart';
 import '../engine/story_repository.dart';
 import 'design_system.dart';
@@ -29,11 +30,15 @@ class PreferenceScreen extends StatefulWidget {
   /// 고른 값을 받는 곳. 기본은 `Navigator.pop(context, 값)`.
   final ValueChanged<String>? onPicked;
 
+  /// 플레이어 MBTI. 있으면 카드마다 궁합 줄(하트 5칸 + 라벨)을 그린다(docs/MBTI_SPEC.md §2.2).
+  final String? playerMbti;
+
   const PreferenceScreen({
     super.key,
     required this.bundle,
     this.side,
     this.onPicked,
+    this.playerMbti,
   });
 
   static const title = '이 사람들을 만나게 돼요';
@@ -49,9 +54,11 @@ class PreferenceScreen extends StatefulWidget {
     BuildContext context,
     StoryBundle bundle, {
     String? side,
+    String? playerMbti,
   }) => Navigator.of(context).push<String>(
     MaterialPageRoute(
-      builder: (_) => PreferenceScreen(bundle: bundle, side: side),
+      builder: (_) =>
+          PreferenceScreen(bundle: bundle, side: side, playerMbti: playerMbti),
     ),
   );
 
@@ -71,7 +78,12 @@ class PreferenceScreen extends StatefulWidget {
   }
 
   /// 소개 카드 목록. characters.json 순, 히든은 맨 뒤에 이름·문구 없이 한 칸.
-  static List<CastIntro> introsOf(StoryBundle bundle, String gender) {
+  /// [playerMbti] 가 있으면 캐릭터 MBTI 와의 궁합 점수를 싣는다(히든은 MBTI 도 숨긴다).
+  static List<CastIntro> introsOf(
+    StoryBundle bundle,
+    String gender, {
+    String? playerMbti,
+  }) {
     final side = bundle.characters.where((c) => c.gender == gender);
     return [
       for (final c in side)
@@ -82,9 +94,19 @@ class PreferenceScreen extends StatefulWidget {
             title: c.displayTitle,
             tagline: c.tagline,
             firstLine: bundle.firstLineOf(c.id),
+            mbti: c.mbti,
+            compat: playerMbti == null || c.mbti == null
+                ? null
+                : Mbti.compat(playerMbti, c.mbti),
           ),
       for (final c in side)
-        if (c.hidden) CastIntro(id: c.id, name: '', mystery: true),
+        if (c.hidden)
+          CastIntro(
+            id: c.id,
+            name: '',
+            mystery: true,
+            mbti: c.mbti == null ? null : CastIntro.hiddenMbti,
+          ),
     ];
   }
 
@@ -194,6 +216,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                     key: Key('cast-side-$side'),
                     bundle: bundle,
                     side: side,
+                    playerMbti: widget.playerMbti,
                   ),
           ),
         ],
@@ -303,12 +326,22 @@ class _Teasers extends StatelessWidget {
 class _CastList extends StatelessWidget {
   final StoryBundle bundle;
   final String side;
+  final String? playerMbti;
 
-  const _CastList({super.key, required this.bundle, required this.side});
+  const _CastList({
+    super.key,
+    required this.bundle,
+    required this.side,
+    this.playerMbti,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final intros = PreferenceScreen.introsOf(bundle, side);
+    final intros = PreferenceScreen.introsOf(
+      bundle,
+      side,
+      playerMbti: playerMbti,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

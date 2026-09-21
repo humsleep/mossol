@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../engine/mbti.dart';
 import '../engine/meta_service.dart';
 import '../engine/models.dart';
 import '../engine/save_service.dart';
@@ -14,6 +15,7 @@ import '../ui/ending_screen.dart';
 import '../ui/event_screen.dart';
 import '../ui/home_screen.dart';
 import '../ui/onboarding_gender_screen.dart';
+import '../ui/onboarding_mbti_screen.dart';
 import '../ui/onboarding_name_screen.dart';
 import '../ui/portraits.dart';
 import '../ui/preference_screen.dart';
@@ -68,6 +70,9 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
   /// 미리보기 회차의 선호. 모먼트·정산·홈·엔딩 미리보기가 이 쪽 캐릭터로 꾸며진다.
   String _pref = Preference.all;
 
+  /// 미리보기 플레이어 MBTI. 캐스트 소개의 궁합 줄·모먼트·엔딩 미리보기가 쓴다. null 이면 모름.
+  String? _mbti;
+
   StoryBundle get bundle => widget.bundle;
 
   /// 미리보기 선호에서 등장하는 캐릭터.
@@ -80,6 +85,7 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
       bundle.characters,
       seed: 7,
       preference: _pref,
+      mbti: _mbti,
     )..day = day;
     for (final k in [Stat.charm, Stat.talk, Stat.esteem, Stat.sense]) {
       s.stats[k] = 30 + (s.stats[k] ?? 0);
@@ -292,11 +298,35 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
   /// 새 게임 1단계("나는?")부터 2단계(캐스트 소개)까지. 끝까지 고르면 새 게임 대신
   /// 고른 값을 알려 주고 돌아온다. 기기 메타는 건드리지 않는다.
   Future<void> _openOnboarding() async {
-    final pick = await OnboardingGenderScreen.run(context, bundle);
+    final pick = await OnboardingGenderScreen.run(
+      context,
+      bundle,
+      savedMbti: _mbti,
+    );
     if (!mounted || pick == null) return;
     _toast(
       '나는: ${PlayerGender.label(pick.gender)} · '
+      'MBTI: ${_mbti ?? '모름'} · '
       '고른 쪽: ${Preference.label(pick.preference)} (${pick.preference})',
+    );
+  }
+
+  /// MBTI 단계만. 고른 값(또는 건너뜀)을 스낵바로 알리고 미리보기 MBTI 로 삼는다.
+  /// 기기 메타는 건드리지 않는다.
+  Future<void> _openMbtiStep() async {
+    final m = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (ctx) => OnboardingMbtiScreen(
+          initial: _mbti,
+          onSubmit: (v) => Navigator.of(ctx).pop(v),
+          onSkip: () => Navigator.of(ctx).pop(''),
+        ),
+      ),
+    );
+    if (!mounted || m == null) return;
+    setState(() => _mbti = m.isEmpty ? null : m);
+    _toast(
+      m.isEmpty ? 'MBTI: 건너뜀(모름)' : 'MBTI: $m · 기질 ${Mbti.temperament(m)}',
     );
   }
 
@@ -320,7 +350,12 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
 
   /// 새 게임 2단계만. [side] 가 null 이면 "선택 안 할래요" 의 비교 모드.
   Future<void> _openCast(String? side) async {
-    final pref = await PreferenceScreen.show(context, bundle, side: side);
+    final pref = await PreferenceScreen.show(
+      context,
+      bundle,
+      side: side,
+      playerMbti: _mbti,
+    );
     if (!mounted || pref == null) return;
     _toast('고른 쪽: ${Preference.label(pref)} ($pref)');
   }
@@ -454,6 +489,29 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
             subtitle: const Text('입력 · 미리보기 말풍선 · 건너뛰기'),
             trailing: const Icon(Icons.chevron_right),
             onTap: _openNameStep,
+          ),
+          ListTile(
+            key: const Key('debug-mbti-step'),
+            leading: const Icon(Icons.psychology_outlined),
+            title: const Text('MBTI 단계: 나의 MBTI는?'),
+            subtitle: const Text('4축 토글 · 잘 몰라요(간이 테스트) · 건너뛰기'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openMbtiStep,
+          ),
+          // 캐스트 소개의 궁합 줄과 모먼트·엔딩 미리보기에 쓰는 플레이어 MBTI.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.screenX),
+            child: DropdownButtonFormField<String?>(
+              key: ValueKey('debug-mbti-$_mbti'),
+              initialValue: _mbti,
+              decoration: const InputDecoration(labelText: '미리보기 플레이어 MBTI'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('모름(null)')),
+                for (final t in Mbti.types)
+                  DropdownMenuItem(value: t, child: Text(t)),
+              ],
+              onChanged: (v) => setState(() => _mbti = v),
+            ),
           ),
           for (final (side, label) in [
             (Preference.female, '2단계: 캐스트 소개 · 여성 캐릭터'),

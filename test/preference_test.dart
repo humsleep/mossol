@@ -933,8 +933,8 @@ void main() {
         expect(cards(), bySide[side] ?? 0, reason: label);
         expect(findText(total), findsOneWidget, reason: '진행도는 그대로');
       }
-      expect(bySide['f'], 6 * 3, reason: '여성 6명 × 캐릭터 엔딩 3종');
-      expect(bySide['m'], 6 * 3, reason: '남성 6명 × 캐릭터 엔딩 3종');
+      expect(bySide['f'], 6 * 4, reason: '여성 6명 × 캐릭터 엔딩 4종(천생연분 포함)');
+      expect(bySide['m'], 6 * 4, reason: '남성 6명 × 캐릭터 엔딩 4종(천생연분 포함)');
       expect(bySide[null], 12, reason: '공용 엔딩');
     });
   });

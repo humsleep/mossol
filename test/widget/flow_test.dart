@@ -5,6 +5,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/ui/event_screen.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
+import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 
@@ -170,8 +171,14 @@ void main() {
     expect(findText(OnboardingNameScreen.title), findsOneWidget);
     await tester.tap(find.byKey(const Key('name-skip')));
     await tester.pumpAndSettle();
+    expect(findText(OnboardingMbtiScreen.title), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mbti-skip')));
+    await tester.pumpAndSettle();
     expect(findText(PreferenceScreen.title), findsOneWidget);
-    // 캐스트 소개 → 이름 단계 → 나는? 순으로 뒤로 간다.
+    // 캐스트 소개 → MBTI → 이름 단계 → 나는? 순으로 뒤로 간다.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(findText(OnboardingMbtiScreen.title), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(findText(OnboardingNameScreen.title), findsOneWidget);

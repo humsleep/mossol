@@ -11,6 +11,7 @@ import 'package:mossol/engine/conditions.dart';
 import 'package:mossol/engine/effects.dart';
 import 'package:mossol/engine/ending_resolver.dart';
 import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/mbti.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/engine/story_repository.dart';
@@ -347,7 +348,7 @@ void main() {
     registerMinigames();
     real = loadRealBundle();
     engine = EventEngine(real);
-    resolver = EndingResolver(real.endings);
+    resolver = EndingResolver(real.endings, characters: real.characters);
   });
 
   GameState fresh({int seed = 1, int run = 1, int day = 1}) =>
@@ -527,11 +528,19 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  group('엔딩 48개 도달성', () {
+  group('엔딩 60개 도달성', () {
     /// 엔딩 조건만 딱 맞춘 상태를 만든다. 범위 조건은 상한 쪽(100 미만이면) 아니면 하한.
     GameState stateFor(Ending e) {
-      final s = fresh(day: 101);
       final w = e.when;
+      // MBTI 조건(mbti·noMbti·compat)이 있으면 맞는 플레이어로 회차를 만든다(docs/MBTI_SPEC.md).
+      final ch = e.character == null ? null : real.characterById[e.character];
+      final mbti = Mbti.playersFor(w, characterMbti: ch?.mbti).first;
+      final s = GameState.fresh(
+        real.config,
+        real.characters,
+        seed: 1,
+        mbti: mbti,
+      )..day = 101;
       if (w.run != null) s.run = w.run!.min;
       int pick(Range r, int cap) => r.max < cap ? r.max : r.min;
       w.stats.forEach((k, r) => s.stats[k] = pick(r, Stat.maxOf(k)));
@@ -542,6 +551,8 @@ void main() {
         (k, r) => s.rel(k == '*' ? e.character! : k).trust = pick(r, 100),
       );
       s.flags.addAll(w.flags);
+      final fc = w.flagsAtLeast;
+      if (fc != null) s.flags.addAll(fc.of.take(fc.n));
       final any = w.anyAffection;
       if (any != null) {
         final ids = real.characters
@@ -556,12 +567,16 @@ void main() {
     }
 
     test('모든 엔딩이 조건을 맞추면 실제로 선택된다(우선순위에 가려지지 않음)', () {
-      expect(real.endings.length, 48);
+      expect(real.endings.length, 60);
       final shadowed = <String>[];
       for (final e in real.endings) {
         final s = stateFor(e);
         expect(
-          e.when.matches(s, self: e.character),
+          e.when.matches(
+            s,
+            self: e.character,
+            selfMbti: real.characterById[e.character]?.mbti,
+          ),
           isTrue,
           reason: '${e.id} 조건 구성 실패',
         );

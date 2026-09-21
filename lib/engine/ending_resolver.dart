@@ -9,6 +9,11 @@ class EndingResolver {
 
   EndingResolver(this.endings, {this.characters = const []});
 
+  /// 캐릭터 id → MBTI. 엔딩 `when.compat` 이 그 엔딩 캐릭터와의 궁합을 본다.
+  late final Map<String, String?> _mbti = {
+    for (final c in characters) c.id: c.mbti,
+  };
+
   /// [s] 회차 선호 밖이라 등장하지 않는 캐릭터 id.
   Set<String> _absent(GameState s) => {
     for (final c in characters)
@@ -20,7 +25,12 @@ class EndingResolver {
   bool _hits(GameState s, Ending e, Set<String> absent) {
     final ch = e.character;
     if (ch != null && absent.contains(ch)) return false;
-    return e.when.matches(s, self: ch, absent: absent);
+    return e.when.matches(
+      s,
+      self: ch,
+      selfMbti: ch == null ? null : _mbti[ch],
+      absent: absent,
+    );
   }
 
   /// 조건 충족 즉시 게임을 끝내는 엔딩. 매일 마감 후 검사.
