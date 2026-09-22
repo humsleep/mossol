@@ -38,18 +38,18 @@
 3. 🤖 Claude가 Xcode 타깃에 파일을 등록하고, 시뮬레이터에서 이벤트가 들어오는지 확인한다.
 4. 🙋 (선택) Firebase 프로젝트 설정 → 통합 → **AdMob 연결**하면 광고 수익과 이용 통계를 한곳에서 본다.
 
-## 3단계. 개인정보처리방침 올리기 (약 10분)
+## 3단계. 개인정보처리방침 올리기
 
-여러 앱이 같이 쓰는 공용 사이트 저장소를 `~/workspace/humsleep.github.io`에 준비해 두었다(앱 목록, 모쏠 안내·FAQ 페이지,
-개인정보처리방침, 새 앱 템플릿, 공용 `app-ads.txt`). 사용법은 그 폴더의 `README.md`.
+여러 앱이 같이 쓰는 공용 사이트 **github.com/humsleep/apps** (로컬 `~/workspace/apps`, 사용법은 그 `README.md`).
+사이트에 보이는 개발자 이름은 **boheme**.
 
-1. 🙋 GitHub에서 **공개(public)** 저장소 `humsleep.github.io`를 **빈 채로** 만든다(README 추가 체크 해제).
-2. 🙋 보호책임자 이름과 **앱 문의 전용 메일**을 정한다(공개되므로 개인 메일 대신).
-3. 🤖 Claude가 `[연락 이메일]`·`[보호책임자 이름]`을 채우고 푸시한다.
-4. 🙋 저장소 Settings → Pages → Branch `main` / `(root)` → Save. 1~2분 뒤 열린다.
-   - 개인정보처리방침: `https://humsleep.github.io/mossol/privacy/`
-   - 지원 URL: `https://humsleep.github.io/mossol/`
-5. 🤖 Claude가 앱 설정 화면 링크(`lib/app_meta.dart`)를 위 주소로 바꾼다.
+1. ✅ 저장소 생성·첫 푸시 완료 (2026-09-22).
+2. 🙋 저장소 Settings → Pages → Source **Deploy from a branch** → Branch `main` / `(root)` → Save. 1~2분 뒤 열린다.
+   - 개인정보처리방침: `https://humsleep.github.io/apps/mossol/privacy/` (앱 설정 화면 링크에 반영됨)
+   - 지원 URL: `https://humsleep.github.io/apps/mossol/`
+   - 마케팅 URL: `https://humsleep.github.io/apps/`
+3. 🙋 보호책임자 이름·**앱 문의 전용 메일**을 정해 알려 준다 → 🤖 Claude가 `[연락 이메일]`·`[보호책임자 이름]`을 채워 푸시한다.
+   **빈칸이 남은 채로 심사에 내지 않는다.**
 
 ## 4단계. App Store Connect에 앱 만들기 (약 30분)
 
@@ -87,8 +87,9 @@
 ## 8단계. 출시 후 바로 할 것
 
 1. 🙋 AdMob → 앱 설정 → **스토어에 앱 연결**(출시된 App Store 앱 선택). 연결해야 광고 노출이 정상화된다.
-2. 🤖 **app-ads.txt**: 공용 사이트에 자리가 이미 있다(`https://humsleep.github.io/app-ads.txt`). AdMob 게시자 ID(`pub-…`)를
-   알려 주면 Claude가 채워 푸시한다. 🙋 App Store Connect의 마케팅 URL에 `https://humsleep.github.io/`를 넣어야 AdMob이 찾아간다.
+2. **app-ads.txt**: AdMob은 도메인 **맨 위**(`https://humsleep.github.io/app-ads.txt`)만 읽는다. 공용 사이트는 `/apps/` 아래라 거기엔 둘 수 없다.
+   🙋 GitHub에 공개 저장소 `humsleep.github.io`를 하나 더 만들고(빈 채로) 알려 주면 🤖 Claude가 AdMob 게시자 ID(`pub-…`)로 `app-ads.txt` 한 파일만 넣어 푸시한다.
+   이 파일 하나로 앞으로의 모든 앱이 덮인다. (나중에 도메인을 사서 `apps` 저장소에 연결하면 이 저장소는 필요 없어진다.)
 3. 🙋 지인 20~50명에게 공유 → 1~2주 뒤 Firebase에서 `ROADMAP.md` Phase 2 숫자 확인 → Claude와 다음 단계 결정.
 
 ---
@@ -97,4 +98,4 @@
 
 - [ ] AdMob 앱 ID 1개 + 광고 단위 ID 3개
 - [ ] `GoogleService-Info.plist`를 `ios/Runner/`에 넣었다는 말
-- [ ] `humsleep.github.io` 공개 저장소를 만들었다는 말 + 보호책임자 이름·문의 전용 메일
+- [ ] `apps` 저장소 Pages 켰다는 말 + 보호책임자 이름·문의 전용 메일

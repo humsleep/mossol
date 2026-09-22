@@ -11,6 +11,9 @@ abstract final class AppMeta {
 
 /// 외부 링크.
 abstract final class AppLinks {
-  /// 배포 전 실제 URL 로 교체. placeholder 상태로 스토어에 올리지 않는다.
-  static const privacyPolicy = 'https://example.com/mossol/privacy';
+  /// 공용 안내 사이트(github.com/humsleep/apps, GitHub Pages). App Store 의 개인정보처리방침 URL 과 같아야 한다.
+  static const privacyPolicy = 'https://humsleep.github.io/apps/mossol/privacy/';
+
+  /// App Store 지원 URL 과 같은 안내·문의 페이지.
+  static const support = 'https://humsleep.github.io/apps/mossol/';
 }
