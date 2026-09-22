@@ -16,15 +16,16 @@ import '../analytics/analytics.dart';
 ///   → 3. (iOS) ATT 프롬프트 → 4. `canRequestAds()` 가 true 일 때만, 그리고 딱 한 번
 ///   `MobileAds.initialize()` → 5. 광고 미리 로드.
 ///
-/// 지금은 Google 공식 테스트 광고 단위 ID 를 쓴다. 출시 전에 AdMob 콘솔에서 만든
-/// 실제 ID 로 바꾸고, iOS 는 Info.plist 의 GADApplicationIdentifier, Android 는
-/// AndroidManifest.xml 의 APPLICATION_ID 도 함께 바꾼다.
+/// 광고 단위 ID: 릴리스 빌드(TestFlight·App Store)는 AdMob 콘솔의 실제 ID(앱 "Mossol"),
+/// 디버그·프로필 빌드는 Google 공식 테스트 ID 를 쓴다. 개발 중 실수로 자기 실제 광고를
+/// 누르는 일(AdMob 무효 트래픽 → 계정 정지 사유)을 막기 위해서다.
+/// iOS 앱 ID 는 Info.plist 의 GADApplicationIdentifier. Android 는 아직 앱이 없어 테스트 ID 다.
 class AdManager with WidgetsBindingObserver {
   AdManager._();
   static final AdManager instance = AdManager._();
 
-  // !!! 출시 전 교체 필수 !!! 테스트 광고 단위 ID (Google 제공, 그대로 써도 정책 위반 아님).
-  static const _ids = {
+  /// Google 공식 테스트 광고 단위 ID. 디버그 빌드와 Android(아직 AdMob 앱 없음)에서 쓴다.
+  static const _testIds = {
     'android': {
       'interstitial': 'ca-app-pub-3940256099942544/1033173712',
       'rewarded': 'ca-app-pub-3940256099942544/5224354917',
@@ -36,6 +37,22 @@ class AdManager with WidgetsBindingObserver {
       'banner': 'ca-app-pub-3940256099942544/2934735716',
     },
   };
+
+  /// AdMob 콘솔의 실제 광고 단위 ID (앱 "Mossol", 2026-09-22 발급). 릴리스 빌드에서만 쓴다.
+  /// Android 앱을 AdMob 에 추가하면 'android' 항목을 채운다.
+  static const _realIds = {
+    'ios': {
+      'interstitial': 'ca-app-pub-4073994600346533/8783923243',
+      'rewarded': 'ca-app-pub-4073994600346533/5122687865',
+      'banner': 'ca-app-pub-4073994600346533/7646935542',
+    },
+  };
+
+  /// 이 빌드·플랫폼에서 쓸 광고 단위 ID 표. 테스트에서 확인할 수 있게 공개한다.
+  static Map<String, String> idsFor({required bool ios, required bool release}) {
+    final platform = ios ? 'ios' : 'android';
+    return (release ? _realIds[platform] : null) ?? _testIds[platform]!;
+  }
 
   /// 개발 중 실제 광고 단위로 시험할 때 쓰는 테스트 기기 ID. 로그에 찍히는 값을 넣는다.
   /// 디버그 빌드에서만 적용되며 릴리스 빌드에는 절대 들어가지 않는다.
@@ -56,7 +73,8 @@ class AdManager with WidgetsBindingObserver {
   static const _retryMaxAttempts = 8;
 
   bool get supported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  String _unit(String kind) => _ids[Platform.isIOS ? 'ios' : 'android']![kind]!;
+  String _unit(String kind) =>
+      idsFor(ios: Platform.isIOS, release: kReleaseMode)[kind]!;
 
   bool _initCalled = false;
   bool _sdkInitialized = false;

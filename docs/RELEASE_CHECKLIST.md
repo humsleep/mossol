@@ -20,19 +20,20 @@
 
 ---
 
-## 1. 출시 전 반드시 교체해야 할 테스트 광고 ID (3곳)
+## 1. 광고 ID (iOS 완료 2026-09-22)
 
-전부 Google 공식 테스트 ID다. 실제 AdMob 콘솔에서 만든 앱/광고 단위 ID로 바꾸지 않으면
-정책 위반은 아니지만 수익이 발생하지 않는다.
+AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 
-1. `ios/Runner/Info.plist` → `GADApplicationIdentifier` (현재 `ca-app-pub-3940256099942544~1458002511`)
-2. `android/app/src/main/AndroidManifest.xml` → `com.google.android.gms.ads.APPLICATION_ID` meta-data
-   (현재 `ca-app-pub-3940256099942544~3347511713`)
-3. `lib/ads/ad_manager.dart` → `_ids` 맵 (android/ios × interstitial/rewarded/banner, 총 6개 광고 단위 ID)
+| 위치 | 값 |
+|---|---|
+| `ios/Runner/Info.plist` `GADApplicationIdentifier` | 실제 앱 ID ✅ |
+| `lib/ads/ad_manager.dart` `_realIds['ios']` | 배너 `…/7646935542`, 전면 `…/8783923243`, 보상 `…/5122687865` ✅ |
+| Android (`AndroidManifest.xml`, `_realIds['android']`) | 아직 테스트 ID. Android 출시 때 AdMob 에 Android 앱을 추가하고 교체 |
 
-세 곳 모두 코드에 "출시 전 교체 필수" 주석이 이미 달려 있다. AdMob 콘솔의 앱 ID와 Info.plist/Manifest의
-앱 ID가 다르면 `MobileAds.instance.initialize()`가 조용히 실패하거나 광고가 전혀 안 뜨므로, 앱 ID부터
-먼저 바꾸고 광고 단위 ID를 바꾼다.
+- **실제 광고 단위는 릴리스 빌드(TestFlight·App Store)에서만** 쓰인다. 디버그 빌드는 Google 테스트 광고가 뜬다(`AdManager.idsFor`, `test/ad_ids_test.dart`).
+- TestFlight 에서 본인 폰으로 확인할 때는 AdMob → 설정 → **테스트 기기**에 폰을 먼저 등록한다. 등록 안 된 폰에서 실제 광고를 반복해 누르면 계정 정지 사유다.
+- 보상형 광고 단위의 **보상 설정**: 수량 `1`, 항목 `reward`, 서버 측 확인(SSV) 끔. 앱은 AdMob 의 보상 값을 쓰지 않고
+  "보상 콜백이 왔는가"만 보고 하트·힌트 등을 앱이 정한 만큼 준다.
 
 ---
 
