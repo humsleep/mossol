@@ -335,6 +335,8 @@ class GameController extends ChangeNotifier {
     analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
+    // 세이브 키는 있었지만 깨져서 load 가 지웠다면 이어하기를 보여 주지 않는다.
+    if (_peek == null) hasSave = false;
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
     _syncSummary();
     notifyListeners();

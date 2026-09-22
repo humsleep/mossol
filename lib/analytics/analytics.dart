@@ -38,6 +38,23 @@ class Analytics {
     }
   }
 
+  /// 분석 저장 동의. Info.plist 기본값은 거부(동의 모드)이고, 광고 동의(UMP) 결과가 나오면
+  /// AdManager 가 부른다. 광고용 저장·데이터는 이 앱이 쓰지 않으므로 늘 거부로 둔다.
+  static Future<void> setAnalyticsConsent(bool granted) async {
+    final b = instance.backend;
+    if (b is! FirebaseAnalyticsBackend) return;
+    try {
+      await b.fa.setConsent(
+        analyticsStorageConsentGranted: granted,
+        adStorageConsentGranted: false,
+        adUserDataConsentGranted: false,
+        adPersonalizationSignalsConsentGranted: false,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[analytics] 동의 설정 실패: $e');
+    }
+  }
+
   // ---- 이벤트 이름 ----
   static const onboardingStep = 'onboarding_step';
   static const onboardingDone = 'onboarding_done';

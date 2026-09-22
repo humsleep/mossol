@@ -129,6 +129,16 @@ class AdManager with WidgetsBindingObserver {
             debugPrint('동의 폼 실패: $e');
           }
           _consentDone = true;
+          // 이용 통계는 동의가 필요 없는 지역(한국 등)에서만 켠다. 유럽 등 동의 대상 지역은
+          // 사용자가 어떤 선택을 했는지 앱이 확인할 수 없으므로 거부 상태(동의 모드)로 둔다.
+          try {
+            final status = await ConsentInformation.instance.getConsentStatus();
+            await Analytics.setAnalyticsConsent(
+              status == ConsentStatus.notRequired,
+            );
+          } catch (e) {
+            debugPrint('통계 동의 판정 실패: $e');
+          }
           await _requestTrackingThenInit();
         },
         (err) async {

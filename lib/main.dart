@@ -8,6 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'ads/ad_manager.dart';
 import 'analytics/analytics.dart';
 import 'debug/debug_gallery.dart';
+import 'engine/meta_service.dart';
 import 'engine/save_service.dart';
 import 'engine/story_repository.dart';
 import 'game_controller.dart';
@@ -115,16 +116,22 @@ class StartupFailureApp extends StatelessWidget {
                 const SizedBox(height: 20),
                 FilledButton(
                   onPressed: () async {
-                    await SaveService().clear();
+                    // 세이브만 지우면 깨진 엔딩 기록·설정 때문에 같은 화면이 반복될 수 있다.
+                    final save = SaveService();
+                    await save.clear();
+                    await save.clearEndings();
+                    await MetaService().clear();
                   },
                   child: const Text('저장된 기록 지우기'),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  reason,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                if (kDebugMode) const SizedBox(height: 16),
+                // 오류 원문은 개발 중에만 보인다.
+                if (kDebugMode)
+                  Text(
+                    reason,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
               ],
             ),
           ),

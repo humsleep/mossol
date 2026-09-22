@@ -4,7 +4,7 @@ library;
 /// 앱 버전 표기. `package_info_plus` 를 넣기 전까지 pubspec 과 손으로 맞춘다.
 /// 심사에 필요한 건 표기 자체라 상수 하나로 충분하다.
 abstract final class AppMeta {
-  static const version = '0.1.0';
+  static const version = '1.0.0';
   static const build = '1';
   static const versionLabel = '$version ($build)';
 }

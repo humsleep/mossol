@@ -1161,7 +1161,8 @@ class GameState {
           seed: (j['seed'] as num).toInt(),
           preference: Preference.parse(j['preference']),
           mbti: parseMbtiType(j['mbti']),
-          stats: _intMap(j['stats']),
+          // 세이브에 칸이 없으면 _intMap/_strList 가 const 빈 값을 돌려준다. 게임 중에 고쳐 쓰므로 복사본으로.
+          stats: {..._intMap(j['stats'])},
           relations: ((j['relations'] as Map?) ?? const {}).map(
             (k, v) => MapEntry(
               k as String,
@@ -1170,8 +1171,8 @@ class GameState {
           ),
           flags: _strList(j['flags']).toSet(),
           seen: _strList(j['seen']).toSet(),
-          album: _strList(j['album']),
-          endings: _strList(j['endings']),
+          album: [..._strList(j['album'])],
+          endings: [..._strList(j['endings'])],
           hearts: ((j['hearts'] as num?) ?? 5).toInt(),
           lastHeartMs: ((j['lastHeartMs'] as num?) ?? 0).toInt(),
           lastCliffhanger: j['lastCliffhanger'] as String?,

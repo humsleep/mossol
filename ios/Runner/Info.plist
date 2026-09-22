@@ -82,6 +82,14 @@
 	<false/>
 	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
 	<false/>
+	<!-- 동의 모드 기본값: 거부. 광고 동의(UMP) 결과가 나온 뒤 AdManager 가 Analytics.setAnalyticsConsent 로
+	     분석 저장만 허용한다(동의가 필요 없는 지역만). 광고용 저장·데이터는 계속 거부. -->
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE</key>
+	<false/>
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE</key>
+	<false/>
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA</key>
+	<false/>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4073994600346533~6518695864</string>
 	<!-- UMP 동의를 받은 뒤 MobileAds.initialize() 시점까지 앱 측정을 미룬다. -->
