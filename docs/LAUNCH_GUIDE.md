@@ -50,7 +50,7 @@
    - 마케팅 URL: `https://humsleep.github.io/apps/`
 3. ✅ 보호책임자·문의 연락처 채움: 안혁 / humsleep@naver.com (모든 앱 공통).
 
-## 4단계. App Store Connect에 앱 만들기 (약 30분)
+## 4단계. App Store Connect에 앱 만들기 (약 30분) — 칸별 입력값은 **`APP_STORE_CONNECT_GUIDE.md`**
 
 1. 🙋 https://appstoreconnect.apple.com → 앱 → **+ 새로운 앱**
    - 플랫폼 iOS, 이름 `모쏠 탈출기 : 100일 연애 시뮬레이션`, 기본 언어 **한국어**,
