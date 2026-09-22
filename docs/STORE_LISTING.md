@@ -123,8 +123,8 @@ App Store Connect → 앱 → 버전 정보(한국어)에 그대로 붙여 넣�
 ## 6. 스크린샷 기획
 
 **규격.** iPhone 6.9형: **1320×2868**(iPhone 16/17 Pro Max) 또는 **1290×2796**(15 Pro Max) 세로. 6.9형 한 벌만 올리면
-작은 기종에는 자동으로 줄여 쓴다. 지금 `docs/screenshots/`의 캡처는 1206×2622(6.3형)라 **그대로는 못 올린다** —
-iPhone 16 Pro Max 이상 시뮬레이터에서 다시 찍는다(`xcrun simctl io booted screenshot 파일.png`).
+작은 기종에는 자동으로 줄여 쓴다. **완료(2026-09-22):** `docs/store_screenshots/promo/01~08.png`(1320×2868, 문구 포함)를 올린다. 원본은 `raw/`,
+다시 만들기 `python3 tool/store_images/make.py`.
 최대 10장, 앞의 3장이 검색 결과에 바로 보이므로 가장 강한 장면을 앞에 둔다.
 
 **문구 얹기.** 캡션은 주인 선택 도구(Figma, Canva, Screenshots.pro 등)로 위쪽에 얹는다. 배경은 브랜드 핑크 `#C2295A` 또는

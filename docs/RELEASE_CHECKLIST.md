@@ -76,7 +76,7 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 | 사용 데이터(Usage Data) | 기타 사용 데이터 — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
 | 식별자(Identifiers) | 기기 ID(앱 인스턴스 ID) — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
 
-- Firebase 세 줄은 Firebase 를 켰을 때(§3.1)만 해당한다. 앞의 AdMob 줄과 같은 칸("제품 상호작용",
+- Firebase 세 줄도 답한다(2026-09-22 Firebase 켜짐). 앞의 AdMob 줄과 같은 칸("제품 상호작용",
   "기기 ID")은 App Store Connect 에서 한 번만 답하므로 AdMob 답(연결 예, 용도에 분석 포함)이 이긴다.
   새로 생기는 칸은 **기타 사용 데이터**(연결 안 됨 · 추적 안 함 · 분석) 하나다 — PrivacyInfo 에 이미 넣었다.
 - Firebase Analytics 는 `Info.plist` 의 `GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED=false` 로 IDFA 를
@@ -90,9 +90,8 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 
 ### 3.1 Firebase Analytics 켜기
 
-지금 앱에는 Firebase 코드가 들어 있지만 **꺼져 있다**. `ios/Runner/GoogleService-Info.plist` 가 없으면
-`Firebase.initializeApp()` 이 실패하고, 앱은 조용히 "디버그 백엔드"(디버그 빌드에서 콘솔에만 찍고
-릴리스에서는 아무것도 안 함)로 돈다. 빌드·실행은 그대로 된다. 켜려면 주인이 아래를 한 번 한다.
+**2026-09-22 켜짐**(iOS, `GoogleService-Info.plist` 커밋·Runner 타깃 등록, 시뮬레이터에서 전송 확인). 아래는 기록과
+Android 때를 위한 절차다. plist 가 없으면 `Firebase.initializeApp()` 이 실패하고 앱은 조용히 디버그 백엔드로 돈다.
 
 1. https://console.firebase.google.com 에서 프로젝트 만들기(이름 예: `mossol`). Google Analytics 사용 **켬**,
    Analytics 계정은 새로 만들거나 기존 것 선택. 데이터 공유 설정은 전부 끄는 쪽을 권장.
@@ -184,18 +183,21 @@ App Store Connect "App Review Information → Notes"에 아래 내용을 영어�
 ```
 This is a single-player narrative/story simulation game. All characters, chats, and
 "dating" scenarios are pre-written fictional content — there is no real-time matching,
-no user accounts, no messaging between real users, and no server-side communication of
-any kind. The app only talks to Google's AdMob/UMP endpoints to serve ads and consent
-forms. Please do not classify this as a dating or social-networking app.
+no user accounts, no login, and no messaging between real users. Game progress is stored
+only on the device. Please do not classify this as a dating or social-networking app.
 
-Ads are currently wired to Google's official TEST ad unit IDs
-(ca-app-pub-3940256099942544/...) for review purposes; production ad unit IDs will be
-swapped in before/at release. Test devices are not hard-coded into the release build.
+Network use: Google AdMob serves ads (production ad units) and the Google UMP consent
+form; the App Tracking Transparency prompt is shown only after the consent flow.
+Firebase Analytics receives anonymous gameplay events (e.g. day reached, ending reached);
+it does not collect the IDFA, and the player's name/MBTI are never sent.
+
+No in-app purchases. Rewarded ads are optional (refill hearts, hints); the game can be
+played without watching them.
 ```
 
 - LSApplicationCategoryType은 이미 `public.app-category.games`로 지정돼 있음 — 스토어 카테고리도
   Games로 유지할 것 (Social Networking/Lifestyle로 등록하면 오분류 리스크가 커진다).
-- 심사용 빌드에서 테스트 광고가 정상적으로 뜨는지, ATT/UMP 폼이 첫 실행 시 뜨는지 미리 확인해 둘 것.
+- 심사용 빌드(릴리스)는 실제 광고 단위를 쓴다. 출시 직후 광고 채움률이 낮을 수 있는데 정상이다. ATT/UMP 폼이 첫 실행 시 뜨는지 TestFlight에서 확인해 둘 것.
 
 ---
 
