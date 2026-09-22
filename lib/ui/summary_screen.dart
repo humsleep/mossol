@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../engine/retention.dart' show TomorrowPeek;
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'retention_widgets.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -14,6 +16,10 @@ import 'keep_all.dart';
 ///
 /// 단, 오늘 누군가와 호감 구간을 넘었으면 그 "관계 변화" 카드(서사 신호)가 맨 위에
 /// 먼저 뜬다. 숫자보다 이야기로 가까워진 걸 먼저 느끼게 하는 자리다(최대 2장).
+///
+/// 클리프행어 아래에는 내일 예고 한 줄("내일 ○○에게서 연락이 올 것 같다")이 붙는다.
+/// 엔진이 내일 계획을 사본으로 미리 본 결과라 거짓말이 아니고, 진짜 내일에 영향이 없다
+/// ([GameController.tomorrowHint]). 연락할 사람이 없거나 마지막 날이면 줄이 없다.
 class SummaryScreen extends StatelessWidget {
   final GameController c;
   const SummaryScreen({super.key, required this.c});
@@ -25,6 +31,7 @@ class SummaryScreen extends StatelessWidget {
     final hasRelation = d.affection.isNotEmpty || d.trust.isNotEmpty;
     final cliffhanger = c.sayOrNull(c.cliffhanger);
     final shifts = c.todayShifts.take(GameController.maxShiftCards).toList();
+    final tomorrow = c.tomorrowHint;
 
     // 관계 변화 줄. 라벨('서연 호감')과 변화량('+4')을 나눠 변화량을 앞세운다.
     final relations = <_RelationDelta>[
@@ -102,6 +109,23 @@ class SummaryScreen extends StatelessWidget {
             _Reveal(
               index: relations.length,
               child: CliffhangerCard(text: cliffhanger, emphasized: true),
+            ),
+          ],
+
+          // 3-1. 내일 예고. 클리프행어 뒤의 조용한 한 줄(모먼트면 알림 미리보기도).
+          if (tomorrow != null) ...[
+            SizedBox(
+              height: cliffhanger != null ? AppSpace.md : AppSpace.sectionGap,
+            ),
+            _Reveal(
+              index: relations.length + 1,
+              child: TomorrowLine(
+                characterId: tomorrow.characterId,
+                line: TomorrowPeek.lineFor(
+                  c.characterName(tomorrow.characterId),
+                ),
+                preview: c.sayOrNull(tomorrow.preview),
+              ),
             ),
           ],
 

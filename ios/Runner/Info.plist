@@ -79,6 +79,12 @@
 	아래는 Google 공식 테스트 앱 ID(ca-app-pub-3940256099942544~1458002511)다.
 	AdMob 콘솔 → 앱 → 앱 설정의 실제 iOS 앱 ID 로 바꾼 뒤 제출한다.
 	-->
+	<!-- Firebase Analytics: 광고 식별자(IDFA)를 모으지 않고 광고 개인화 신호도 보내지 않는다.
+	     측정은 앱 인스턴스 ID 로만 한다(개인정보 라벨: 추적 안 함). -->
+	<key>GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED</key>
+	<false/>
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
+	<false/>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<!-- UMP 동의를 받은 뒤 MobileAds.initialize() 시점까지 앱 측정을 미룬다. -->

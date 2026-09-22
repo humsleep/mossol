@@ -127,9 +127,77 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
     c
       ..state = s
       ..ending = e
+      // "다음 판" 카드의 궁합 문장이 미리보기 MBTI 를 따르게 한다.
+      ..meta = PlayerMeta(mbti: _mbti)
+      ..endingAlbum = [e.id]
       ..phase = Phase.ending;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(builder: (_) => _EndingPreview(controller: c)),
+    );
+  }
+
+  // ---- 리텐션 미리보기 (docs/ROADMAP.md Phase 1) ----
+
+  /// 엔딩 화면 + "다음 판" 카드. 미리보기 쪽의 첫 캐릭터 해피 엔딩으로 끝난 셈 친다.
+  Future<void> _openNextRun() async {
+    final first = _roster.where((c) => !c.hidden).firstOrNull;
+    final e =
+        bundle.endings
+            .where((x) => x.character == first?.id && x.tier == 'happy')
+            .firstOrNull ??
+        bundle.endings.first;
+    await _openEnding(e);
+  }
+
+  /// 정산 + 내일 예고 한 줄. 날을 넘겨 가며 내일 연락할 사람이 있는 샘플 상태를 찾는다.
+  Future<void> _openTomorrow() async {
+    GameController? found;
+    for (var day = 4; day < 40 && found == null; day++) {
+      final c = _previewController(_previewState(day: day));
+      if (c.tomorrowHint != null) found = c;
+    }
+    final c = found ?? _previewController(_previewState());
+    if (found == null) _warnShort(1, 0);
+    c
+      ..cliffhanger = '(미리보기) 휴대폰이 한 번 울리다 말았다.'
+      ..phase = Phase.summary;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _PhasePreview(
+          controller: c,
+          phase: Phase.summary,
+          builder: (c) => SummaryScreen(c: c),
+        ),
+      ),
+    );
+  }
+
+  /// 새 회차 첫날의 행동 화면: "지난 판엔 …으로 끝났다" 한 줄.
+  /// [heartsEmpty] 면 하트 0 — 행동을 누르면 "오늘은 여기까지" 다이얼로그가 뜬다.
+  Future<void> _openFirstDay({bool heartsEmpty = false}) async {
+    final s = _previewState(day: heartsEmpty ? 23 : 1)
+      ..run = 2
+      ..lastCliffhanger = null;
+    if (heartsEmpty) {
+      s
+        ..hearts = 0
+        ..lastHeartMs = DateTime.now().millisecondsSinceEpoch;
+    }
+    final first = _roster.where((c) => !c.hidden).firstOrNull;
+    final last =
+        bundle.endings.where((x) => x.character == first?.id).firstOrNull ??
+        bundle.endings.first;
+    final c = _previewController(s)
+      ..meta = PlayerMeta(lastEndingId: last.id, totalRuns: 2)
+      ..phase = Phase.action;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _PhasePreview(
+          controller: c,
+          phase: Phase.action,
+          builder: (c) => ActionScreen(c: c),
+        ),
+      ),
     );
   }
 
@@ -474,6 +542,39 @@ class _DebugGalleryScreenState extends State<DebugGalleryScreen> {
             subtitle: const Text('이어하기 카드와 하락 한 줄'),
             trailing: const Icon(Icons.chevron_right),
             onTap: _openHome,
+          ),
+          const _Header('리텐션 미리보기'),
+          ListTile(
+            key: const Key('debug-next-run'),
+            leading: const Icon(Icons.replay_circle_filled_outlined),
+            title: const Text('엔딩: 다음 판 카드'),
+            subtitle: const Text('권하는 캐릭터 · 못 본 엔딩 힌트 · 반대쪽 권유'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openNextRun,
+          ),
+          ListTile(
+            key: const Key('debug-tomorrow'),
+            leading: const Icon(Icons.mark_chat_unread_outlined),
+            title: const Text('정산: 내일 예고 한 줄'),
+            subtitle: const Text('내일 계획을 미리 본 결과(모먼트면 알림 미리보기)'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openTomorrow,
+          ),
+          ListTile(
+            key: const Key('debug-previous-run'),
+            leading: const Icon(Icons.history),
+            title: const Text('행동: 지난 판 요약'),
+            subtitle: const Text('2회차 첫날의 한 줄'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openFirstDay,
+          ),
+          ListTile(
+            key: const Key('debug-heart-empty'),
+            leading: const Icon(Icons.favorite_border),
+            title: const Text('행동: 하트 비었을 때'),
+            subtitle: const Text('행동을 누르면 오늘은 여기까지 다이얼로그'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openFirstDay(heartsEmpty: true),
           ),
           const _Header('새 게임 온보딩'),
           ListTile(

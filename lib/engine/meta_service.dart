@@ -46,6 +46,11 @@ class PlayerMeta {
   /// MBTI 단계를 한 번 거쳤는지(골랐든 건너뛰었든). true 면 다음 새 게임에서 다시 묻지 않는다.
   bool mbtiAsked;
 
+  /// 가장 최근에 끝난 회차의 엔딩 id. 새 회차 첫날의 "지난 판엔 …으로 끝났다" 한 줄에 쓴다.
+  /// 앨범(`mossol_endings_v1`)은 처음 본 순서만 남기므로 "마지막" 을 따로 적는다.
+  /// 이 필드가 없던 예전 메타 JSON 은 null 로 읽힌다(한 줄을 띄우지 않는다).
+  String? lastEndingId;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -61,6 +66,7 @@ class PlayerMeta {
     this.nameAsked = false,
     this.mbti,
     this.mbtiAsked = false,
+    this.lastEndingId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -78,6 +84,7 @@ class PlayerMeta {
     'nameAsked': nameAsked,
     'mbti': mbti,
     'mbtiAsked': mbtiAsked,
+    'lastEndingId': lastEndingId,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -102,6 +109,10 @@ class PlayerMeta {
       nameAsked: j['nameAsked'] == true,
       mbti: parseMbtiType(j['mbti']),
       mbtiAsked: j['mbtiAsked'] == true,
+      lastEndingId: switch (j['lastEndingId']) {
+        final String v when v.isNotEmpty => v,
+        _ => null,
+      },
     );
   }
 }

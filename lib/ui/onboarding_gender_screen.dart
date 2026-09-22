@@ -13,12 +13,14 @@ import 'widgets.dart';
 /// 새 게임 흐름의 결과. [gender] 는 이번에 1단계에서 답했을 때만 있다(이미 답이 있으면 null).
 /// [nameStep] 은 이름 단계를 거쳤는지, [name] 은 거기서 입력한 이름(건너뛰었으면 null).
 /// [mbtiStep] 은 MBTI 단계를 거쳤는지, [mbti] 는 거기서 고른 유형(건너뛰었으면 null).
+/// [mbtiFromQuiz] 는 그 유형을 간이 테스트로 채웠는지(측정용).
 typedef NewGamePick = ({
   String? gender,
   bool nameStep,
   String? name,
   bool mbtiStep,
   String? mbti,
+  bool mbtiFromQuiz,
   String preference,
 });
 
@@ -53,6 +55,9 @@ class OnboardingGenderScreen extends StatelessWidget {
   /// 캐스트 소개의 궁합 줄에 쓰는 지금 설정값.
   /// 뒤로 가면 앞 단계로 돌아간다. 끝까지 고르면 결과를, 도중에 나가면 null.
   /// 아무것도 저장하지 않는다 — 새 게임이 실제로 시작될 때 호출부가 저장한다.
+  ///
+  /// [onStep] 은 단계 화면을 띄울 때마다 단계 이름(`gender`·`name`·`mbti`·`cast`)으로
+  /// 불린다(측정 `onboarding_step`). 뒤로 갔다 다시 오면 다시 불린다.
   static Future<NewGamePick?> run(
     BuildContext context,
     StoryBundle bundle, {
@@ -60,6 +65,7 @@ class OnboardingGenderScreen extends StatelessWidget {
     bool askName = false,
     bool askMbti = false,
     String? savedMbti,
+    ValueChanged<String>? onStep,
   }) async {
     // [newGender] 는 이번에 1단계에서 고른 값(결과에 싣는다), [gender] 는 기본 쪽을 정할 값.
     Future<NewGamePick?> afterGender(
@@ -76,7 +82,9 @@ class OnboardingGenderScreen extends StatelessWidget {
         String? name,
         required bool mbtiStep,
         String? mbti,
+        bool mbtiFromQuiz = false,
       }) async {
+        onStep?.call('cast');
         final savedName = TextTemplate.currentName;
         final savedM = TextTemplate.currentMbti;
         final playerMbti = mbtiStep ? mbti : savedMbti;
@@ -102,6 +110,7 @@ class OnboardingGenderScreen extends StatelessWidget {
                 name: name,
                 mbtiStep: mbtiStep,
                 mbti: mbti,
+                mbtiFromQuiz: mbtiFromQuiz,
                 preference: pref,
               );
       }
@@ -133,6 +142,7 @@ class OnboardingGenderScreen extends StatelessWidget {
         if (!askMbti) {
           return cast(c, nameStep: nameStep, name: name, mbtiStep: false);
         }
+        onStep?.call('mbti');
         return step(
           c,
           (sctx, then) => OnboardingMbtiScreen(
@@ -145,6 +155,16 @@ class OnboardingGenderScreen extends StatelessWidget {
                 mbti: m,
               ),
             ),
+            onQuizSubmit: (m) => then(
+              (x) => cast(
+                x,
+                nameStep: nameStep,
+                name: name,
+                mbtiStep: true,
+                mbti: m,
+                mbtiFromQuiz: true,
+              ),
+            ),
             onSkip: () => then(
               (x) => cast(x, nameStep: nameStep, name: name, mbtiStep: true),
             ),
@@ -153,6 +173,7 @@ class OnboardingGenderScreen extends StatelessWidget {
       }
 
       if (!askName) return mbtiThen(ctx, nameStep: false);
+      onStep?.call('name');
       return step(
         ctx,
         (sctx, then) => OnboardingNameScreen(
@@ -165,6 +186,7 @@ class OnboardingGenderScreen extends StatelessWidget {
     if (savedGender != null) {
       return afterGender(context, savedGender, null);
     }
+    onStep?.call('gender');
     return Navigator.of(context).push<NewGamePick>(
       MaterialPageRoute(
         builder: (ctx) => OnboardingGenderScreen(

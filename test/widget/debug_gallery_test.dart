@@ -10,6 +10,7 @@ import 'package:mossol/ui/home_screen.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
 import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
+import 'package:mossol/ui/retention_widgets.dart';
 import 'package:mossol/ui/summary_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
@@ -176,6 +177,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ActionScreen), findsNothing);
     expect(find.byType(DebugGalleryScreen), findsOneWidget);
+  });
+
+  testWidgets('리텐션 미리보기: 다음 판 카드 · 내일 예고 · 지난 판 · 하트 없음', (tester) async {
+    await openPreview(tester, '엔딩: 다음 판 카드');
+    expect(find.byType(EndingScreen), findsOneWidget);
+    expect(find.byType(NextRunCard), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await closePreview(tester);
+
+    await openPreview(tester, '정산: 내일 예고 한 줄');
+    expect(find.byType(SummaryScreen), findsOneWidget);
+    expect(find.byType(TomorrowLine), findsOneWidget);
+    await closePreview(tester);
+
+    await openPreview(tester, '행동: 지난 판 요약');
+    expect(find.byType(PreviousRunNote), findsOneWidget);
+    await closePreview(tester);
+
+    await openPreview(tester, '행동: 하트 비었을 때');
+    await tester.tap(findText('헬스장'));
+    await tester.pumpAndSettle();
+    expect(findText(heartEmptyTitle), findsOneWidget);
+    await tester.tap(findText('기다릴게요'));
+    await tester.pumpAndSettle();
+    await closePreview(tester);
   });
 
   testWidgets('홈 미리보기: 이어하기 카드의 서사 신호와 밤사이 줄', (tester) async {

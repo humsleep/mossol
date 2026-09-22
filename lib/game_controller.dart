@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'analytics/analytics.dart';
 import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
@@ -10,6 +11,7 @@ import 'engine/mbti.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
 import 'engine/player_name.dart';
+import 'engine/retention.dart';
 import 'engine/save_service.dart';
 import 'engine/signals.dart';
 import 'engine/story_repository.dart';
@@ -17,6 +19,7 @@ import 'engine/text_template.dart';
 
 export 'engine/attendance.dart' show CheckInResult, Attendance;
 export 'engine/signals.dart' show RelationShift;
+export 'engine/retention.dart' show NextRunSuggestion, TomorrowHint;
 
 enum Phase { home, action, event, summary, ending }
 
@@ -129,12 +132,18 @@ class GameController extends ChangeNotifier {
   /// 현재 시각(ms). 테스트에서 시계를 고정할 때 바꿔 끼운다.
   final int Function() nowMs;
 
+  /// 측정(lib/analytics/analytics.dart). 기본은 앱 전역 인스턴스, 테스트는 가짜 백엔드를 준다.
+  /// 개인 데이터(이름·자유 입력)는 보내지 않는다. 호출은 전부 fire-and-forget.
+  final Analytics analytics;
+
   GameController({
     required this.bundle,
     required this.save,
     MetaService? meta,
     int Function()? clock,
+    Analytics? analytics,
   }) : metaService = meta ?? MetaService(),
+       analytics = analytics ?? Analytics.instance,
        nowMs = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
     // signals.json 의 `when` 이 가리키는 이벤트·플래그가 실제로 있는지. StoryBundle.validate
     // 는 캐릭터만 보므로 디버그 빌드에서 여기서 한 번 더 본다(출시 빌드는 건너뛴다).
@@ -323,6 +332,7 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
+    analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
@@ -519,6 +529,7 @@ class GameController extends ChangeNotifier {
     m.mbti = v;
     m.mbtiAsked = true;
     TextTemplate.currentMbti = v;
+    analytics.mbtiKnown(v != null);
     await metaService.save(m);
     notifyListeners();
   }
@@ -685,6 +696,7 @@ class GameController extends ChangeNotifier {
       m.totalRuns += 1;
       await metaService.save(m);
     }
+    analytics.runStart(run: run, pref: s.preference, n: totalRuns);
     await _applyPendingHearts(s);
     await _save(s);
     hasSave = true;
@@ -807,6 +819,7 @@ class GameController extends ChangeNotifier {
     final s = state!;
     _regenHearts();
     if (s.hearts <= 0) {
+      analytics.log(Analytics.heartEmpty, {'day': s.day});
       notifyListeners();
       return false;
     }
@@ -986,6 +999,8 @@ class GameController extends ChangeNotifier {
       shown: shown,
     );
     _resetDay();
+    _tomorrow = null;
+    analytics.dayReach(s.day);
     await _recordBestDay(s.day);
     final imm = resolver.immediate(s);
     if (imm != null) {
@@ -1003,6 +1018,20 @@ class GameController extends ChangeNotifier {
 
   Future<void> _finish(Ending e) async {
     ending = e;
+    final s = state;
+    if (s != null) {
+      analytics.runEnd(
+        ending: e.id,
+        tier: e.tier,
+        run: s.run,
+        day: min(s.day, config.totalDays),
+      );
+    }
+    final m = meta;
+    if (m != null) {
+      m.lastEndingId = e.id;
+      await metaService.save(m);
+    }
     await _recordBestDay(state?.day ?? 0);
     await save.addEnding(e.id);
     endingAlbum = await save.loadEndings();
@@ -1015,14 +1044,79 @@ class GameController extends ChangeNotifier {
   }
 
   /// 엔딩 후 다음 회차. run 이 올라가 히든 조건이 열린다. 선호는 이번 회차 것을 잇는다
-  /// (바꾸려면 홈의 새 게임에서 다시 고른다).
-  Future<void> nextRun() async {
+  /// (바꾸려면 홈의 새 게임에서 다시 고른다). [preference] 를 주면 그 쪽으로 — 엔딩 화면
+  /// "반대쪽 캐릭터도 만나 보기" 가 캐스트 소개에서 고른 쪽을 넘긴다.
+  Future<void> nextRun({String? preference}) async {
     final prevRun = state?.run ?? 1;
     await newGame(
-      preference: state?.preference ?? Preference.all,
+      preference: preference ?? state?.preference ?? Preference.all,
       run: prevRun + 1,
     );
   }
+
+  // ---- 측정: 온보딩 ----
+
+  /// 첫 온보딩 중인지. 이 기기에서 아직 한 판도 시작하지 않았을 때만 온보딩 측정을 남긴다
+  /// (두 번째 새 게임부터는 같은 화면을 지나도 온보딩이 아니다). 전체 초기화하면 다시 참.
+  bool get isFirstOnboarding => meta != null && meta!.totalRuns == 0;
+
+  /// 온보딩 단계 화면이 떴다(`gender`·`name`·`mbti`·`cast`).
+  void logOnboardingStep(String step) {
+    if (isFirstOnboarding) analytics.onboardingStepShown(step);
+  }
+
+  /// 온보딩 끝(새 게임 직전, 이름·MBTI 를 저장한 뒤). 이름은 있다/없다만 보낸다.
+  /// [mbtiSource] 는 `toggle` | `quiz` | `skip`.
+  void logOnboardingDone({
+    required String preference,
+    required String mbtiSource,
+  }) {
+    if (!isFirstOnboarding) return;
+    analytics.onboardingCompleted(
+      pref: preference,
+      hasName: playerName != null,
+      hasMbti: playerMbti != null,
+      mbtiSource: mbtiSource,
+    );
+  }
+
+  // ---- 리텐션 한 줄들 (docs/ROADMAP.md Phase 1, lib/engine/retention.dart) ----
+
+  /// 엔딩 화면 "다음 판" 카드. 엔딩 직후(state·ending 이 있을 때)만. 플레이어 MBTI 는 다음
+  /// 회차에 복사될 기기 설정값([playerMbti]).
+  NextRunSuggestion? get nextRunSuggestion {
+    final s = state;
+    if (s == null || ending == null) return null;
+    return NextRunAdvisor(bundle).suggest(
+      side: s.preference,
+      album: endingAlbum,
+      playerMbti: playerMbti,
+      justEnded: ending,
+    );
+  }
+
+  /// 엔딩 화면 "다음 판" 에서 무엇을 눌렀는지 남긴다(`character` | `other_side`).
+  void logNextRunTap(String kind) =>
+      analytics.log(Analytics.nextRunSuggestionTapped, {'kind': kind});
+
+  /// 정산의 "내일 ○○에게서 연락이 올 것 같다". 오늘 마감 뒤의 계획을 사본으로 미리 본다 —
+  /// 진짜 상태·난수는 건드리지 않는다([TomorrowPeek]). 없으면 null. 같은 날·같은 예고면 캐시.
+  TomorrowHint? get tomorrowHint {
+    final s = state;
+    if (s == null) return null;
+    final key = '${s.day}|${s.seen.length}|$cliffhanger';
+    final cached = _tomorrow;
+    if (cached != null && cached.$1 == key) return cached.$2;
+    final hint = TomorrowPeek(engine).peek(s, cliffhanger: cliffhanger);
+    _tomorrow = (key, hint);
+    return hint;
+  }
+
+  (String, TomorrowHint?)? _tomorrow;
+
+  /// "지난 판엔 서연과 대등한 연인으로 끝났다". 끝난 회차가 없으면 null.
+  String? get previousRunLine =>
+      previousRunLineFor(bundle, meta?.lastEndingId);
 
   String characterName(String? id) =>
       id == null ? '' : (bundle.characterById[id]?.name ?? id);

@@ -33,12 +33,13 @@ void main() {
 
       await tester.tap(findText('헬스장'));
       await tester.pumpAndSettle();
-      expect(findText('하트가 없어요'), findsOneWidget);
+      expect(findText('오늘은 여기까지'), findsOneWidget);
+      expect(findTextContaining('1개 찬다'), findsOneWidget);
       expect(c.phase, Phase.action);
       expect(c.hearts, 0);
       await tester.tap(findText('기다릴게요'));
       await tester.pumpAndSettle();
-      expect(findText('하트가 없어요'), findsNothing);
+      expect(findText('오늘은 여기까지'), findsNothing);
 
       // 광고 보기를 눌러도 미지원 환경에선 스낵바만.
       await tester.tap(findText('헬스장'));

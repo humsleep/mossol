@@ -162,7 +162,9 @@ class _RouletteSheetState extends State<RouletteSheet>
                   onPressed: _spinning
                       ? null
                       : () async {
-                          final ok = await AdManager.instance.showRewarded();
+                          final ok = await AdManager.instance.showRewarded(
+                            placement: 'roulette',
+                          );
                           if (ok && mounted) await _run(widget.c.rerollRoulette);
                         },
                   icon: const Icon(Icons.replay, size: 18),

@@ -58,7 +58,9 @@
 
 `ios/Runner/PrivacyInfo.xcprivacy`에 이미 선언된 내용과 Google이 공식 문서에서 밝힌 AdMob SDK 수집
 항목(https://developers.google.com/admob/ios/privacy/data-disclosure)이 일치하도록 아래처럼 입력한다.
-앱 자체 코드는 서버로 아무것도 보내지 않으므로 전부 "Google Mobile Ads SDK가 수집" 기준이다.
+앱 자체 코드가 서버로 보내는 것은 **Firebase Analytics 게임 진행 이벤트뿐**이다(§3.1, 켰을 때만).
+나머지는 "Google Mobile Ads SDK가 수집" 기준이다. App Store Connect 는 같은 데이터 유형에 여러 SDK 의
+답을 합쳐 한 줄로 받으므로, 같은 칸이면 더 넓은 쪽(AdMob) 답을 그대로 두고 용도에 "분석"이 들어 있는지만 확인한다.
 
 | App Store Connect 카테고리 | 세부 항목 | 사용자 추적에 사용 | 사용자 계정에 연결 | 용도 |
 |---|---|---|---|---|
@@ -69,13 +71,67 @@
 | 진단(Diagnostics) | 성능 데이터 | 아니요 | 아니요 | 타사 광고, 자사 광고, 분석 |
 | 진단(Diagnostics) | 충돌 데이터 | 아니요 | 아니요 | 분석 |
 | 진단(Diagnostics) | 기타 진단 데이터 | 아니요 | 아니요 | 타사 광고, 자사 광고, 분석 |
+| 사용 데이터(Usage Data) | 제품 상호작용 — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
+| 사용 데이터(Usage Data) | 기타 사용 데이터 — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
+| 식별자(Identifiers) | 기기 ID(앱 인스턴스 ID) — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
 
+- Firebase 세 줄은 Firebase 를 켰을 때(§3.1)만 해당한다. 앞의 AdMob 줄과 같은 칸("제품 상호작용",
+  "기기 ID")은 App Store Connect 에서 한 번만 답하므로 AdMob 답(연결 예, 용도에 분석 포함)이 이긴다.
+  새로 생기는 칸은 **기타 사용 데이터**(연결 안 됨 · 추적 안 함 · 분석) 하나다 — PrivacyInfo 에 이미 넣었다.
+- Firebase Analytics 는 `Info.plist` 의 `GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED=false` 로 IDFA 를
+  모으지 않는다. 보내는 이벤트에 이름·자유 입력·MBTI 원문 같은 개인 데이터는 없다(`lib/analytics/analytics.dart`).
 - "추적에 사용" 전체 여부: **예**(ATT를 허용한 사용자에 한해 IDFA 기반 맞춤 광고를 하므로 앱 전체
   추적 플래그는 켜야 한다 — `NSPrivacyTracking = true`로 이미 선언되어 있음).
 - 게임 자체는 로그인·회원가입·서버 통신이 없으므로 연락처, 건강, 금융, 사용자 콘텐츠, 검색/브라우징
   기록 등은 전부 "수집 안 함"으로 둔다.
 - 만 14세(국내 기준)/13세(COPPA 기준) 미만 아동 대상이 아니므로 "아동 대상 앱" 태그는 끄고, AdMob
   콘솔의 "아동용 처리(tag for child-directed treatment)"도 **아니요**로 설정한다.
+
+### 3.1 Firebase Analytics 켜기
+
+지금 앱에는 Firebase 코드가 들어 있지만 **꺼져 있다**. `ios/Runner/GoogleService-Info.plist` 가 없으면
+`Firebase.initializeApp()` 이 실패하고, 앱은 조용히 "디버그 백엔드"(디버그 빌드에서 콘솔에만 찍고
+릴리스에서는 아무것도 안 함)로 돈다. 빌드·실행은 그대로 된다. 켜려면 주인이 아래를 한 번 한다.
+
+1. https://console.firebase.google.com 에서 프로젝트 만들기(이름 예: `mossol`). Google Analytics 사용 **켬**,
+   Analytics 계정은 새로 만들거나 기존 것 선택. 데이터 공유 설정은 전부 끄는 쪽을 권장.
+2. 프로젝트에 **iOS 앱 추가** → 번들 ID `com.hyukahn.mossol`(Xcode Runner 타깃과 같아야 한다),
+   앱 닉네임 `모쏠 키우기`. App Store ID 는 출시 뒤에 넣어도 된다.
+3. `GoogleService-Info.plist` 를 내려받아 **`ios/Runner/` 에 넣는다**. 그다음 Xcode 에서
+   `ios/Runner.xcworkspace` 를 열고, 왼쪽 Runner 그룹에 이 파일을 끌어다 놓는다 →
+   "Copy items if needed" 끄고, **Add to targets: Runner 체크**. (파일만 폴더에 두고 타깃에 안 넣으면
+   번들에 안 들어가서 여전히 꺼진 상태다.)
+4. 콘솔 안내의 "SDK 추가"·"초기화 코드" 단계는 **건너뛴다** — `firebase_core`/`firebase_analytics` 패키지와
+   `main.dart` 의 `Analytics.init()` 이 이미 한다. (`flutterfire configure` 도 안 써도 된다.)
+5. 확인: 실기기/시뮬레이터에서 Xcode Scheme → Run → Arguments 에 `-FIRDebugEnabled` 를 넣고 실행 →
+   Firebase 콘솔 **DebugView** 에 `run_started` 등이 뜨면 끝. 확인 뒤 인자는 뺀다.
+6. 위 §3 표의 Firebase 세 줄을 App Store Connect 개인정보 라벨에 반영하고, §8 개인정보처리방침에
+   Firebase(Google LLC)를 처리자로 추가한다.
+7. **Android 를 낼 때만**: 같은 프로젝트에 Android 앱(패키지 `com.hyukahn.mossol`) 추가 →
+   `google-services.json` 을 `android/app/` 에 → `android/settings.gradle.kts` 의 plugins 에
+   `id("com.google.gms.google-services") version "4.4.2" apply false`, `android/app/build.gradle.kts` 의
+   plugins 에 `id("com.google.gms.google-services")` 추가. Play Data safety(§4)의 "앱 활동"·"기기 ID"
+   목적에 분석이 이미 있으므로 칸은 그대로다. 파일이 없으면 Android 도 iOS 와 똑같이 꺼진 채로 돈다.
+
+선택: IDFA 연동 코드를 아예 빼고 싶으면 빌드 때 `FIREBASE_ANALYTICS_WITHOUT_ADID=true flutter build ios`
+(firebase_analytics 가 `FirebaseAnalyticsCore` 를 쓴다). Info.plist 플래그로 이미 수집은 꺼져 있어 필수는 아니다.
+
+**보내는 이벤트**(개인 데이터 없음, 값은 작은 정수·짧은 문자열):
+
+| 이벤트 | 파라미터 | 언제 |
+|---|---|---|
+| `onboarding_step` | `step`: gender · name · mbti · cast | 첫 온보딩(이 기기 첫 판 전)에서 단계 화면이 뜰 때 |
+| `onboarding_done` | `pref` f/m, `has_name` 0/1, `has_mbti` 0/1, `mbti_source` toggle · quiz · skip | 첫 온보딩 끝(새 게임 직전) |
+| `run_started` | `run`(게임 안 회차), `pref`, `n`(이 기기에서 시작한 판 수) | 새 게임 · 다음 회차 |
+| `day_reached` | `day` | 2·3·7·10·20·30·50·70·100일에 닿을 때만 |
+| `run_ended` | `ending`(엔딩 id), `tier`, `run`, `day` | 엔딩 |
+| `ad_rewarded_shown` | `placement`: heart_action · heart_home · hint · undo · roulette · wait_skip | 리워드 광고가 실제로 떴을 때 |
+| `ad_hint_used` | — | 광고로 힌트를 받았을 때 |
+| `heart_empty` | `day` | 하트 없이 행동을 눌렀을 때 |
+| `album_opened` | — | 앨범 화면을 열 때 |
+| `next_run_suggestion_tapped` | `kind`: character · other_side | 엔딩 화면 "다음 판" 카드 |
+
+사용자 속성: `pref`(마지막 판 선호), `mbti_known`(0/1).
 
 ---
 
@@ -173,7 +229,7 @@ Apple이 신모델 출시 때마다 바뀐다.)
    엔딩 기록 등)가 있으며 서버로 전송되지 않는다는 사실.
 6. **만 14세 미만 아동 대상 아님**: 아동을 대상으로 개인정보를 의도적으로 수집하지 않으며, 만 14세
    미만임을 알게 된 경우의 처리 방침(즉시 삭제 등).
-7. **제3자 처리자 목록**: Google AdMob / UMP를 데이터 처리자로 명시하고 Google 개인정보처리방침
+7. **제3자 처리자 목록**: Google AdMob / UMP(Firebase 를 켰다면 Firebase Analytics 도)를 데이터 처리자로 명시하고 Google 개인정보처리방침
    링크(https://policies.google.com/privacy)를 함께 건다.
 8. **국내법 대응**(한국 스토어 대상이므로): 개인정보보호법상 개인정보처리방침 필수 기재사항(수집 항목,
    목적, 보유기간, 위탁 현황, 이용자 권리 행사 방법, 개인정보 보호책임자 연락처) 형식에 맞춰 작성.

@@ -4,12 +4,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../analytics/analytics.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'onboarding_gender_screen.dart';
+import 'retention_widgets.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 
@@ -161,6 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? null
                     : Preference.label(summary.preference),
               ),
+            // B-0. 지난 판 요약. 세이브가 없거나(엔딩 뒤 홈) 새 회차 첫날일 때만.
+            if (_previousRun(summary) case final line?) ...[
+              const SizedBox(height: AppSpace.sm),
+              PreviousRunNote(text: line),
+            ],
             // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
             if (summary != null)
               for (final e in summary.overnight.entries) ...[
@@ -226,6 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: const BannerSlot(),
     );
+  }
+
+  /// "지난 판엔 …으로 끝났다". 진행 중인 회차가 첫날을 넘겼으면 이미 지난 이야기라 숨긴다.
+  String? _previousRun(SaveSummary? summary) {
+    if (c.hasSave && (summary == null || summary.day > 1)) return null;
+    return c.previousRunLine;
   }
 
   /// 소개 카드의 "엔딩 N개 중 하나". 한 회차가 닿을 수 있는 수(그 쪽 캐릭터 엔딩 + 공용)다.
@@ -301,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
       askName: c.shouldAskName,
       askMbti: c.shouldAskMbti,
       savedMbti: c.playerMbti,
+      onStep: c.logOnboardingStep,
     );
     if (pick == null) return;
     final g = pick.gender;
@@ -315,6 +329,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final m = pick.mbti;
       m == null ? await c.skipPlayerMbti() : await c.setPlayerMbti(m);
     }
+    c.logOnboardingDone(
+      preference: pick.preference,
+      mbtiSource: pick.mbtiFromQuiz
+          ? Analytics.mbtiQuiz
+          : c.playerMbti == null
+          ? Analytics.mbtiSkip
+          : Analytics.mbtiToggle,
+    );
     await c.newGame(preference: pick.preference);
   }
 }
@@ -445,7 +467,7 @@ class _ResourceRow extends StatelessWidget {
   }
 
   Future<void> _watchAd(BuildContext context) async {
-    final earned = await AdManager.instance.showRewarded();
+    final earned = await AdManager.instance.showRewarded(placement: 'heart_home');
     if (earned) {
       await c.grantHeart();
     } else if (context.mounted) {

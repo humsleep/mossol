@@ -9,6 +9,8 @@ environment:
 dependencies:
   app_tracking_transparency: ^2.0.7
   characters: ^1.4.1
+  firebase_analytics: ^12.6.0
+  firebase_core: ^4.15.0
   flutter:
     sdk: flutter
   google_mobile_ads: ^9.1.0

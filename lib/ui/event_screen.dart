@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../analytics/analytics.dart';
 import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
@@ -304,7 +305,7 @@ class _EventScreenState extends State<EventScreen> {
     // 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
     // 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
     _timer?.cancel();
-    final ok = await AdManager.instance.showRewarded();
+    final ok = await AdManager.instance.showRewarded(placement: 'wait_skip');
     if (!mounted) return;
     if (ok) {
       _waitLeft = 0;
@@ -832,8 +833,13 @@ class _ChoicePanel extends StatelessWidget {
               child: Center(
                 child: TextButton.icon(
                   onPressed: () async {
-                    final ok = await AdManager.instance.showRewarded();
-                    if (ok) c.revealHint();
+                    final ok = await AdManager.instance.showRewarded(
+                      placement: 'hint',
+                    );
+                    if (ok) {
+                      c.analytics.log(Analytics.adHintUsed);
+                      c.revealHint();
+                    }
                   },
                   icon: const Icon(Icons.lightbulb_outline, size: 18),
                   label: Text(keepAll('태현에게 물어보기 (광고)')),
@@ -988,7 +994,9 @@ class _ResultPanel extends StatelessWidget {
             Center(
               child: TextButton.icon(
                 onPressed: () async {
-                  final ok = await AdManager.instance.showRewarded();
+                  final ok = await AdManager.instance.showRewarded(
+                    placement: 'undo',
+                  );
                   if (ok) c.undoChoice();
                 },
                 icon: const Icon(Icons.replay, size: 18),

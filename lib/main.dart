@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'ads/ad_manager.dart';
+import 'analytics/analytics.dart';
 import 'debug/debug_gallery.dart';
 import 'engine/save_service.dart';
 import 'engine/story_repository.dart';
@@ -26,12 +27,16 @@ Future<void> main() async {
   registerPretendardLicense();
   registerMinigames();
   try {
+    // 측정. GoogleService-Info.plist 가 없으면(Firebase 프로젝트를 아직 안 만들었으면)
+    // 조용히 디버그 백엔드로 남는다 — 던지지 않는다. 스토리 읽기와 나란히 돈다.
+    final analytics = Analytics.init();
     // 초상화 목록(AssetManifest)은 스토리와 나란히 읽는다. 실패해도 던지지 않는다(이니셜로 대체).
     final portraits = PortraitRegistry.load();
     final bundle = await StoryBundle.loadFromAssets(
       knownMinigames: minigameIds,
     );
     await portraits;
+    await analytics;
     if (kDebugMode && kDebugGallery) {
       // QA 용. `--dart-define=MOSSOL_DEBUG_GALLERY=true` 로 미니게임·엔딩 갤러리에서 시작.
       // kDebugMode 가 const false 인 릴리스 빌드에서는 갤러리 코드가 트리셰이킹된다.

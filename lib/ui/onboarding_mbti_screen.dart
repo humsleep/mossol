@@ -21,6 +21,10 @@ class OnboardingMbtiScreen extends StatefulWidget {
   /// 네 축을 다 고른 값(대문자 4글자).
   final ValueChanged<String> onSubmit;
 
+  /// 간이 테스트로 채운 뒤 제출했을 때 [onSubmit] 대신 불린다(측정의 `mbti_source: quiz`).
+  /// null 이면 언제나 [onSubmit].
+  final ValueChanged<String>? onQuizSubmit;
+
   /// 온보딩: MBTI 없이 진행. null 이면 링크를 그리지 않는다.
   final VoidCallback? onSkip;
 
@@ -37,6 +41,7 @@ class OnboardingMbtiScreen extends StatefulWidget {
     super.key,
     this.initial,
     required this.onSubmit,
+    this.onQuizSubmit,
     this.onSkip,
     this.onClear,
     this.submitLabel = nextLabel,
@@ -113,7 +118,9 @@ class _OnboardingMbtiScreenState extends State<OnboardingMbtiScreen> {
 
   void _submit() {
     final t = _type;
-    if (t != null) widget.onSubmit(t);
+    if (t == null) return;
+    final quiz = widget.onQuizSubmit;
+    _fromQuiz && quiz != null ? quiz(t) : widget.onSubmit(t);
   }
 
   @override

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart' show CenteredScrollColumn;
+import 'album_screen.dart' show endingHintFor;
 import 'design_system.dart';
+import 'preference_screen.dart';
+import 'retention_widgets.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -12,6 +15,10 @@ import 'keep_all.dart';
 /// 이 화면은 보상이다. 엔딩 이름·등급·에필로그·기록을 한 덩어리로 묶어
 /// 기념품처럼 보이게 하고, 그 덩어리만 [shareBoundaryKey] 로 따로 그려
 /// 나중에 이미지로 저장·공유할 수 있게 해 둔다.
+///
+/// 기념품 아래에는 "다음 판" 카드([NextRunCard])가 붙는다(docs/ROADMAP.md Phase 1):
+/// 권하는 캐릭터 · 못 본 엔딩 힌트 · (한쪽만 해 봤으면) 반대쪽 권유. 광고는 없고 흐름을
+/// 막지 않는다 — 1차 버튼은 여전히 `N회차 시작` 하나다. 카드는 공유 캡처 경계 밖이다.
 class EndingScreen extends StatelessWidget {
   final GameController c;
   const EndingScreen({super.key, required this.c});
@@ -24,6 +31,12 @@ class EndingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final e = c.ending!;
     final s = c.state!;
+    final next = c.nextRunSuggestion;
+    final hintEnding = next?.hintEnding;
+    final hint = hintEnding == null ? null : endingHintFor(hintEnding, c);
+    final showNext =
+        next != null &&
+        (next.character != null || hint != null || next.otherSide != null);
 
     return Scaffold(
       body: SafeArea(
@@ -42,6 +55,23 @@ class EndingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpace.xxl),
+            if (showNext) ...[
+              SizedBox(
+                width: double.infinity,
+                child: NextRunCard(
+                  suggestion: next,
+                  hintText: hint,
+                  onPickCharacter: () {
+                    c.logNextRunTap('character');
+                    c.nextRun();
+                  },
+                  onOtherSide: next.otherSide == null
+                      ? null
+                      : () => _meetOtherSide(context, next.otherSide!),
+                ),
+              ),
+              const SizedBox(height: AppSpace.xxl),
+            ],
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -55,6 +85,20 @@ class EndingScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 반대쪽 캐스트 소개를 먼저 보여 주고, 고르면 그 쪽으로 다음 회차를 시작한다.
+  /// 뒤로 가면 엔딩 화면에 그대로 남는다.
+  Future<void> _meetOtherSide(BuildContext context, String side) async {
+    c.logNextRunTap('other_side');
+    final pref = await PreferenceScreen.show(
+      context,
+      c.bundle,
+      side: side,
+      playerMbti: c.playerMbti,
+    );
+    if (pref == null || !context.mounted) return;
+    await c.nextRun(preference: pref);
   }
 
   String _tierLabel(String tier) => switch (tier) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
@@ -12,9 +13,23 @@ import 'keep_all.dart';
 /// - 주인공은 상단 수집 진행도와 카드 목록, 배경은 탭 바와 티어 라벨.
 /// - 엔딩은 트로피(메달 + 좌측 강조 띠), 흑역사는 번호가 붙은 수집 카드.
 /// - 미획득은 불투명도를 내리지 않고 자물쇠 + 글자색으로만 구분한다.
-class AlbumScreen extends StatelessWidget {
+class AlbumScreen extends StatefulWidget {
   final GameController c;
   const AlbumScreen({super.key, required this.c});
+
+  @override
+  State<AlbumScreen> createState() => _AlbumScreenState();
+}
+
+class _AlbumScreenState extends State<AlbumScreen> {
+  GameController get c => widget.c;
+
+  @override
+  void initState() {
+    super.initState();
+    // 측정: 앨범을 연 횟수(엔딩 수집 동기). 화면이 열릴 때 한 번.
+    c.analytics.log(Analytics.albumOpened);
+  }
 
   @override
   Widget build(BuildContext context) {

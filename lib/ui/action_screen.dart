@@ -8,6 +8,7 @@ import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'home_screen.dart' show OvernightNote;
+import 'retention_widgets.dart';
 import 'roulette_sheet.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
@@ -83,6 +84,8 @@ class _ActionScreenState extends State<ActionScreen> {
     ];
     // 대사 속 이름 자리표시자는 표시 직전에 바꾼다(세이브에는 원문).
     final cliffhanger = c.sayOrNull(s.lastCliffhanger);
+    // 새 회차 첫날에만: 지난 판이 어떻게 끝났는지 한 줄(회차가 이어지는 느낌).
+    final previous = s.day == 1 ? c.previousRunLine : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -123,6 +126,12 @@ class _ActionScreenState extends State<ActionScreen> {
               if (c.combo > 0) ComboBadge(combo: c.combo, onFire: c.onFire),
             ],
           ),
+
+          // 1-1. 지난 판 요약. 첫날의 조용한 한 줄.
+          if (previous != null) ...[
+            const SizedBox(height: AppSpace.md),
+            PreviousRunNote(text: previous),
+          ],
 
           // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
           if (cliffhanger != null) ...[
@@ -181,30 +190,31 @@ class _ActionScreenState extends State<ActionScreen> {
   Future<void> _start(BuildContext context, DayAction action) async {
     final ok = await c.startDay(action);
     if (ok || !context.mounted) return;
+    // 하트가 비었다. 다그치지 않고 "오늘은 여기까지" 로 쉬어 가게 한다. 1차 동작은
+    // 기다리기이고 광고는 조용한 2차 선택지다 — 광고를 저절로 띄우지 않는다.
+    // 측정(heart_empty)은 컨트롤러 startDay 가 남긴다.
     final watch = await showAppDialog<bool>(
       context,
       builder: (ctx) => AlertDialog(
-        title: const Text('하트가 없어요'),
-        content: Text(
-          keepAll(
-            '${c.config.heartRegenMinutes}분마다 1개 회복됩니다. 광고를 보면 지금 바로 1개를 받을 수 있어요.',
-          ),
-        ),
+        title: const Text(heartEmptyTitle),
+        content: Text(keepAll(heartEmptyBody(c.secondsToNextHeart))),
         actions: [
-          TextButton(
+          TextButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.play_circle_outline, size: 18),
+            label: const Text('광고 보고 하트 받기'),
+          ),
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('기다릴게요'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.play_circle_outline),
-            label: const Text('광고 보고 하트 받기'),
           ),
         ],
       ),
     );
     if (watch != true) return;
-    final earned = await AdManager.instance.showRewarded();
+    final earned = await AdManager.instance.showRewarded(
+      placement: 'heart_action',
+    );
     if (earned) {
       await c.grantHeart();
     } else if (context.mounted) {
@@ -213,6 +223,15 @@ class _ActionScreenState extends State<ActionScreen> {
       );
     }
   }
+}
+
+/// 하트가 비었을 때 다이얼로그 제목.
+const heartEmptyTitle = '오늘은 여기까지';
+
+/// 하트가 비었을 때 본문. [seconds] 는 다음 하트까지 남은 초. 분은 올려서 말한다.
+String heartEmptyBody(int seconds) {
+  final when = seconds <= 0 ? '곧' : '${(seconds + 59) ~/ 60}분 뒤';
+  return '하트는 $when 1개 찬다. 쉬었다 와도 이야기는 그대로 기다리고 있어요.';
 }
 
 /// 행동 목록 왼쪽의 아이콘 원. 여섯 줄이 글자만으로 늘어서지 않게 잡아 준다.

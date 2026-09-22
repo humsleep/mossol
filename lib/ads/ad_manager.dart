@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../analytics/analytics.dart';
+
 /// AdMob 래퍼. 광고 정책(빈도 캡)을 여기서만 관리한다.
 ///
 /// 흐름 (Google 권장, https://developers.google.com/admob/flutter/privacy):
@@ -346,7 +348,9 @@ class AdManager with WidgetsBindingObserver {
 
   /// 리워드 광고. 끝까지 봐서 보상을 받았을 때만 true.
   /// 보상은 `onUserEarnedReward` 콜백이 온 경우에만 인정하고, 닫힌 뒤에 결과를 돌려준다.
-  Future<bool> showRewarded() async {
+  /// [placement] 는 측정용 자리 이름(`heart_action` · `heart_home` · `hint` · `undo` ·
+  /// `roulette` · `wait_skip`). 광고가 실제로 떴을 때만 `ad_rewarded_shown` 을 남긴다.
+  Future<bool> showRewarded({String placement = 'unknown'}) async {
     if (!supported || !_sdkInitialized || _showingFullScreen) return false;
     if (_rewarded.isStale(_adMaxAge)) _rewarded.discard();
     final ad = _rewarded.take();
@@ -372,6 +376,7 @@ class AdManager with WidgetsBindingObserver {
       },
     );
     _showingFullScreen = true;
+    Analytics.instance.log(Analytics.adRewardedShown, {'placement': placement});
     try {
       await ad.show(onUserEarnedReward: (_, reward) {
         debugPrint('리워드 획득: ${reward.amount} ${reward.type}');
