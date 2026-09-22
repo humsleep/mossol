@@ -48,8 +48,7 @@
    - 개인정보처리방침: `https://humsleep.github.io/apps/mossol/privacy/` (앱 설정 화면 링크에 반영됨)
    - 지원 URL: `https://humsleep.github.io/apps/mossol/`
    - 마케팅 URL: `https://humsleep.github.io/apps/`
-3. 🙋 보호책임자 이름·**앱 문의 전용 메일**을 정해 알려 준다 → 🤖 Claude가 `[연락 이메일]`·`[보호책임자 이름]`을 채워 푸시한다.
-   **빈칸이 남은 채로 심사에 내지 않는다.**
+3. ✅ 보호책임자·문의 연락처 채움: 안혁 / humsleep@naver.com (모든 앱 공통).
 
 ## 4단계. App Store Connect에 앱 만들기 (약 30분)
 
@@ -98,4 +97,4 @@
 
 - [ ] AdMob 앱 ID 1개 + 광고 단위 ID 3개
 - [ ] `GoogleService-Info.plist`를 `ios/Runner/`에 넣었다는 말
-- [ ] `apps` 저장소 Pages 켰다는 말 + 보호책임자 이름·문의 전용 메일
+- [ ] `apps` 저장소 Pages 켰다는 말
