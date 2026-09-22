@@ -1072,6 +1072,13 @@ class GameState {
   /// `planDay` 가 모먼트 가중치를 올릴지 정하는 데 쓴다(docs/MOMENTS_SPEC.md §2).
   int lastMomentDay;
 
+  /// 오늘 아침 행동으로 하트를 쓰고 하루를 시작했는지. 마감(endDay)에서 풀린다.
+  /// 하루 도중 앱을 다시 켜면 이 값으로 행동 화면 대신 남은 이벤트로 돌아간다.
+  bool dayStarted;
+
+  /// 오늘 남은 이벤트 id(진행 중이던 이벤트가 맨 앞). [dayStarted] 일 때만 의미가 있다.
+  List<String> dayQueue;
+
   GameState({
     this.day = 1,
     this.run = 1,
@@ -1090,7 +1097,10 @@ class GameState {
     this.combo = 0,
     this.rouletteDay = 0,
     this.lastMomentDay = 0,
-  }) : flags = flags ?? {},
+    this.dayStarted = false,
+    List<String>? dayQueue,
+  }) : dayQueue = dayQueue ?? [],
+       flags = flags ?? {},
        seen = seen ?? {},
        album = album ?? [],
        endings = endings ?? [];
@@ -1148,6 +1158,8 @@ class GameState {
     'combo': combo,
     'rouletteDay': rouletteDay,
     'lastMomentDay': lastMomentDay,
+    'dayStarted': dayStarted,
+    'dayQueue': dayQueue,
     'signalHistory': signalHistory.map((k, v) => MapEntry(k, List.of(v))),
     'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
     'overnightShifts': Map.of(overnightShifts),
@@ -1179,6 +1191,8 @@ class GameState {
           combo: ((j['combo'] as num?) ?? 0).toInt(),
           rouletteDay: ((j['rouletteDay'] as num?) ?? 0).toInt(),
           lastMomentDay: ((j['lastMomentDay'] as num?) ?? 0).toInt(),
+          dayStarted: j['dayStarted'] == true,
+          dayQueue: [..._strList(j['dayQueue'])],
         )
         ..signalHistory.addAll(_intListMap(j['signalHistory']))
         ..signalPins.addAll(_intListMap(j['signalPins']))

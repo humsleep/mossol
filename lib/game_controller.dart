@@ -347,6 +347,11 @@ class GameController extends ChangeNotifier {
   /// 메모리의 dayDelta 가 비어 있으므로 세이브에 있던 값을 건드리지 않는다.
   Future<void> _save(GameState s) {
     if (identical(s, state)) {
+      // 하루 도중 끊겨도 이어서 할 수 있게, 아직 끝나지 않은 이벤트(선택 전의 현재 이벤트 포함)를 남긴다.
+      s.dayQueue = [
+        if (current != null && lastOutcome == null) current!.id,
+        for (final e in _queue) e.id,
+      ];
       s.dayDelta
         ..clear()
         ..addAll({
@@ -716,11 +721,20 @@ class GameController extends ChangeNotifier {
     _regenHearts();
     _resetDay();
     _restoreDayDelta(s);
-    phase = Phase.action;
     if (pendingHearts > 0) {
       await _applyPendingHearts(s);
-      await _save(s);
     }
+    if (s.dayStarted) {
+      // 하트를 이미 쓴 날: 남은 이벤트부터(없으면 정산으로). 다시 행동을 고르게 하지 않는다.
+      _queue.addAll([
+        for (final id in s.dayQueue) ?engine.byId(id),
+      ]);
+      _syncSummary();
+      _nextEvent();
+      return true;
+    }
+    phase = Phase.action;
+    if (pendingHearts > 0) await _save(s);
     _syncSummary();
     notifyListeners();
     return true;
@@ -826,6 +840,7 @@ class GameController extends ChangeNotifier {
       return false;
     }
     s.hearts -= 1;
+    s.dayStarted = true;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;
     _queue
@@ -954,6 +969,7 @@ class GameController extends ChangeNotifier {
       ..album.clear()
       ..album.addAll(restored.album)
       ..combo = restored.combo
+      ..dayQueue = restored.dayQueue
       // 저장용 하루 합계 사본도 선택 직전으로(메모리의 dayDelta 는 아래에서 되돌린다).
       ..dayDelta.clear()
       ..dayDelta.addAll(restored.dayDelta);
@@ -1001,6 +1017,8 @@ class GameController extends ChangeNotifier {
       shown: shown,
     );
     _resetDay();
+    s.dayStarted = false;
+    s.dayQueue = [];
     _tomorrow = null;
     analytics.dayReach(s.day);
     await _recordBestDay(s.day);
