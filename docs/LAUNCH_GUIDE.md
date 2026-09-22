@@ -60,7 +60,7 @@
 4. 🙋 **앱 개인정보 보호**: 개인정보처리방침 URL(3단계) + 데이터 수집 설문 → `RELEASE_CHECKLIST.md` §3 표 그대로.
 5. 🙋 **연령 등급**: `STORE_LISTING.md`의 설문 답변 그대로(예상 12+).
 6. 🙋 **1.0 버전 페이지**: 프로모션 텍스트·설명·키워드·지원 URL(개인정보처리방침 주소나 노션 페이지 가능).
-7. 🤖 **스크린샷**: Claude가 6.9인치 시뮬레이터로 8장 찍어 `docs/store_screenshots/`에 넣는다. 🙋 업로드만.
+7. ✅ **스크린샷**: `docs/store_screenshots/promo/01~08.png`(1320×2868, 문구 얹은 홍보용)을 순서대로 올린다. 원본 캡처는 `raw/`, 다시 만들기는 `python3 tool/store_images/make.py`.
 8. 🙋 **심사 노트**: `RELEASE_CHECKLIST.md` §6 문구 복사(로그인 없음, 광고 테스트 방법 등).
 
 ## 5단계. 빌드 올리기 (약 20분)
