@@ -43,8 +43,8 @@
 여러 앱이 같이 쓰는 공용 사이트 **github.com/humsleep/apps** (로컬 `~/workspace/apps`, 사용법은 그 `README.md`).
 사이트에 보이는 개발자 이름은 **boheme**.
 
-1. ✅ 저장소 생성·첫 푸시 완료 (2026-09-22).
-2. 🙋 저장소 Settings → Pages → Source **Deploy from a branch** → Branch `main` / `(root)` → Save. 1~2분 뒤 열린다.
+1. ✅ 저장소 생성·첫 푸시 완료, Pages 켜짐·세 주소 정상 (2026-09-22).
+2. ✅ Pages 설정 완료.
    - 개인정보처리방침: `https://humsleep.github.io/apps/mossol/privacy/` (앱 설정 화면 링크에 반영됨)
    - 지원 URL: `https://humsleep.github.io/apps/mossol/`
    - 마케팅 URL: `https://humsleep.github.io/apps/`
@@ -97,4 +97,4 @@
 
 - [ ] AdMob 앱 ID 1개 + 광고 단위 ID 3개
 - [ ] `GoogleService-Info.plist`를 `ios/Runner/`에 넣었다는 말
-- [ ] `apps` 저장소 Pages 켰다는 말
+
