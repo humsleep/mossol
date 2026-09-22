@@ -40,15 +40,16 @@
 
 ## 3단계. 개인정보처리방침 올리기 (약 10분)
 
-`docs/privacy/index.html`에 방침 초안이 있다(AdMob·UMP·Firebase·ATT·아동·국외 이전·보호책임자 포함).
+여러 앱이 같이 쓰는 공용 사이트 저장소를 `~/workspace/humsleep.github.io`에 준비해 두었다(앱 목록, 모쏠 안내·FAQ 페이지,
+개인정보처리방침, 새 앱 템플릿, 공용 `app-ads.txt`). 사용법은 그 폴더의 `README.md`.
 
-1. 🙋 방침의 **`[보호책임자 이름]`, `[연락 이메일]`** 두 곳을 채울 값을 정한다 (공개되는 연락처이므로 게임 전용 이메일을 새로 만들어도 좋다).
-2. 올릴 곳 하나 고르기:
-   - **GitHub Pages** (추천, 무료): 저장소 Settings → Pages → Branch `main`, 폴더 `/docs` → 주소는
-     `https://humsleep.github.io/mossol/privacy/`. 단, **저장소가 공개(public)** 여야 무료로 된다.
-     저장소를 비공개로 두고 싶으면 방침만 담은 공개 저장소를 하나 따로 만든다.
-   - **노션**: 페이지에 내용을 붙여 넣고 "웹에 게시".
-3. 🤖 주소를 알려 주면 Claude가 앱 설정 화면 링크(`lib/app_meta.dart`)를 바꾼다.
+1. 🙋 GitHub에서 **공개(public)** 저장소 `humsleep.github.io`를 **빈 채로** 만든다(README 추가 체크 해제).
+2. 🙋 보호책임자 이름과 **앱 문의 전용 메일**을 정한다(공개되므로 개인 메일 대신).
+3. 🤖 Claude가 `[연락 이메일]`·`[보호책임자 이름]`을 채우고 푸시한다.
+4. 🙋 저장소 Settings → Pages → Branch `main` / `(root)` → Save. 1~2분 뒤 열린다.
+   - 개인정보처리방침: `https://humsleep.github.io/mossol/privacy/`
+   - 지원 URL: `https://humsleep.github.io/mossol/`
+5. 🤖 Claude가 앱 설정 화면 링크(`lib/app_meta.dart`)를 위 주소로 바꾼다.
 
 ## 4단계. App Store Connect에 앱 만들기 (약 30분)
 
@@ -86,9 +87,8 @@
 ## 8단계. 출시 후 바로 할 것
 
 1. 🙋 AdMob → 앱 설정 → **스토어에 앱 연결**(출시된 App Store 앱 선택). 연결해야 광고 노출이 정상화된다.
-2. 🙋 **app-ads.txt**: AdMob이 안내하는 한 줄을 "개발자 웹사이트" 루트에 올려야 광고 수익이 제한되지 않는다.
-   App Store Connect의 마케팅/지원 URL 도메인과 같은 곳이어야 하므로, GitHub Pages를 쓰면 `humsleep.github.io/app-ads.txt`
-   (사용자 루트 저장소 `humsleep.github.io`가 필요). 🤖 Claude가 파일과 방법을 준비한다.
+2. 🤖 **app-ads.txt**: 공용 사이트에 자리가 이미 있다(`https://humsleep.github.io/app-ads.txt`). AdMob 게시자 ID(`pub-…`)를
+   알려 주면 Claude가 채워 푸시한다. 🙋 App Store Connect의 마케팅 URL에 `https://humsleep.github.io/`를 넣어야 AdMob이 찾아간다.
 3. 🙋 지인 20~50명에게 공유 → 1~2주 뒤 Firebase에서 `ROADMAP.md` Phase 2 숫자 확인 → Claude와 다음 단계 결정.
 
 ---
@@ -97,4 +97,4 @@
 
 - [ ] AdMob 앱 ID 1개 + 광고 단위 ID 3개
 - [ ] `GoogleService-Info.plist`를 `ios/Runner/`에 넣었다는 말
-- [ ] 개인정보처리방침 보호책임자 이름·연락 이메일, 그리고 올린 주소(또는 GitHub Pages를 쓸지 여부)
+- [ ] `humsleep.github.io` 공개 저장소를 만들었다는 말 + 보호책임자 이름·문의 전용 메일
