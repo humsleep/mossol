@@ -3,7 +3,7 @@
 > 자세한 근거와 정책은 `RELEASE_CHECKLIST.md`, 스토어 문구는 `STORE_LISTING.md`에 있다. 이 문서는 **순서만** 적는다.
 > 🙋 = 직접 해야 하는 것(계정·결제·콘솔). 🤖 = 값을 알려 주면 Claude가 코드에 넣는 것.
 
-현재 상태 (2026-09-22): 앱 완성, 아이콘 적용 완료, Apple 개발자 팀 설정됨(68BP5NY48R), Firebase 프로젝트 `mossol` 생성만 됨, AdMob 미생성.
+현재 상태 (2026-09-22): 앱 완성, 아이콘 ✅, AdMob(앱 Mossol·광고 단위 3개·유럽 동의 메시지 게시) ✅, Firebase(iOS 앱·plist·Xcode 등록, 시뮬레이터에서 전송 확인) ✅, 안내 사이트 ✅. 남은 것: App Store Connect → 빌드 업로드 → TestFlight → 심사.
 
 ---
 
