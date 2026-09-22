@@ -354,7 +354,7 @@ class _Header extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            '모쏠 키우기',
+            '모쏠 탈출기',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.titleLarge,

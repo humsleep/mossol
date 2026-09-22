@@ -36,7 +36,7 @@ class DebugGalleryApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '모쏠 키우기 · 디버그 갤러리',
+      title: '모쏠 탈출기 · 디버그 갤러리',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

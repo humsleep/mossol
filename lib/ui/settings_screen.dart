@@ -119,7 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.description_outlined, size: 22),
             onTap: () => showLicensePage(
               context: context,
-              applicationName: '모쏠 키우기',
+              applicationName: '모쏠 탈출기',
               applicationVersion: AppMeta.versionLabel,
             ),
           ),
@@ -152,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: AppSpace.xxl),
           Text(
-            '© 2026 모쏠 키우기',
+            '© 2026 모쏠 탈출기',
             textAlign: TextAlign.center,
             style: context.text.bodySmall,
           ),

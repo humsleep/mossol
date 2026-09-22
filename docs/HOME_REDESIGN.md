@@ -1,4 +1,4 @@
-# 모쏠 키우기 — 홈 v2 · 설정 · 다크 시트 · 돈 스탯 규격서
+# 모쏠 탈출기 — 홈 v2 · 설정 · 다크 시트 · 돈 스탯 규격서
 
 작성: UI 디자인 단계 (2026-09-18). 상위 규격: `docs/DESIGN_SYSTEM.md`(이하 DS).
 이 문서는 프런트엔드 개발자가 **해석하지 않고 그대로** 구현하는 규격이다. 여기 없는 값은
@@ -127,7 +127,7 @@ Scaffold(
 
 - 높이 **44** 고정(`SizedBox(height: AppSpace.minTouch)`). 글자 1.3배에서도 44 — 워드마크는
   `titleLarge`(18) 라 1.3배(23.4×1.34≈31)에서 44 안에 든다.
-- 구성: `Row` → 좌측 `Text('모쏠 키우기', style: text.titleLarge)` → `Spacer` → 우측
+- 구성: `Row` → 좌측 `Text('모쏠 탈출기', style: text.titleLarge)` → `Spacer` → 우측
   `IconButton(icon: Icons.settings_outlined, tooltip: '설정')` → `SettingsScreen` push.
 - 워드마크 색 `onSurface`. 로즈로 물들이지 않는다(primary 는 버튼 몫).
 - 아래 간격: `md` 12.
@@ -352,7 +352,7 @@ AppCard(onTap:)
 
 | 위치 | 문구 |
 |---|---|
-| A 워드마크 | `모쏠 키우기` |
+| A 워드마크 | `모쏠 탈출기` |
 | A 설정 툴팁 | `설정` |
 | B-1 눈썹 | `100일 프로젝트` |
 | B-1 헤드라인 | `100일 뒤, 나는 달라져 있을까` |
@@ -391,7 +391,7 @@ Scaffold(
       SectionHeader(title: '데이터'),
       [행 6],
       xxl 24,
-      Text('© 2026 모쏠 키우기', bodySmall, textAlign: center)
+      Text('© 2026 모쏠 탈출기', bodySmall, textAlign: center)
     ],
   ),
   bottomNavigationBar: BannerSlot(),                       // 설정에도 배너를 둔다(다른 화면과 동일)
@@ -408,7 +408,7 @@ Scaffold(
 | 0 | 항상(섹션 `게임`, 맨 위) | `내 성별` | `새 게임에서 먼저 소개할 캐릭터가 정해져요` | `Icon(Icons.person_outline)` | `Text(PlayerGender.label, labelMedium)` 예 `남자` · `아직 안 정함` | 세 가지 `SimpleDialog`(DESIGN_SYSTEM §2.11) |
 | 1 | `AdManager.instance.privacyOptionsRequired == true` 일 때만(`FutureBuilder`, 대기 중엔 숨김) | `개인정보 설정` | `광고 개인 맞춤 동의를 바꿉니다` | `Icon(Icons.shield_outlined)` | 기본 chevron | `AdManager.instance.showPrivacyOptions()` |
 | 2 | 항상 | `개인정보처리방침` | `외부 브라우저에서 열립니다` | `Icon(Icons.policy_outlined)` | `Icon(Icons.open_in_new, 18)` | `AppLinks.privacyPolicy` 열기 (§2.3) |
-| 3 | 항상 | `오픈소스 라이선스` | `사용한 라이브러리와 서체의 라이선스` | `Icon(Icons.description_outlined)` | chevron | `showLicensePage(context:, applicationName: '모쏠 키우기', applicationVersion: AppMeta.versionLabel)` |
+| 3 | 항상 | `오픈소스 라이선스` | `사용한 라이브러리와 서체의 라이선스` | `Icon(Icons.description_outlined)` | chevron | `showLicensePage(context:, applicationName: '모쏠 탈출기', applicationVersion: AppMeta.versionLabel)` |
 | 4 | 항상 | `서체` | `Pretendard · SIL Open Font License 1.1` | `Icon(Icons.text_fields)` | `Text('OFL', labelMedium)` | 없음(`onTap: null`, `showChevron: false`) |
 | 5 | 항상 | `앱 버전` | 없음 | `Icon(Icons.info_outline)` | `Text(AppMeta.versionLabel, tokens.numericSmall)` 예 `0.1.0 (1)` | 없음(`showChevron: false`) |
 | 6 | 항상 | `저장 데이터 초기화` | `회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름이 모두 지워집니다` | `Icon(Icons.delete_outline)` | chevron | §2.5 확인 다이얼로그 |

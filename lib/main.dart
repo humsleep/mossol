@@ -141,7 +141,7 @@ class MossolApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '모쏠 키우기',
+      title: '모쏠 탈출기',
       debugShowCheckedModeBanner: false,
       // 테마는 전부 lib/ui/design_system.dart 에서 나온다.
       // 화면에서 색·간격·모서리를 다시 정의하지 마라. 규격은 docs/DESIGN_SYSTEM.md.

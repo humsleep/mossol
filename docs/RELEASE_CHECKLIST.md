@@ -1,4 +1,4 @@
-# 출시 전 체크리스트 — 모쏠 키우기 (com.hyukahn.mossol)
+# 출시 전 체크리스트 — 모쏠 탈출기 (com.hyukahn.mossol)
 
 작성 기준일: 2026-09-15. AdMob/Apple/Google 정책은 자주 바뀌므로 제출 직전에 각 링크를 다시 확인할 것.
 
@@ -8,14 +8,14 @@
 
 | 칸 | 입력값 | 제한 |
 |---|---|---|
-| App Store 앱 이름 | 모쏠 키우기 : 연애 시뮬레이션 게임 | 30자 |
-| App Store 부제 | 100일 안에 썸부터 고백까지 | 30자 |
-| Google Play 앱 이름 | 모쏠 키우기 : 연애 시뮬레이션 게임 | 30자 |
-| 홈 화면 표시 이름 | 모쏠 키우기 | Info.plist·AndroidManifest 에 반영됨 |
+| App Store 앱 이름 | 모쏠 탈출기 : 100일 연애 시뮬레이션 | 30자 |
+| App Store 부제 | 톡 한 줄로 썸부터 고백까지 | 30자 |
+| Google Play 앱 이름 | 모쏠 탈출기 : 100일 연애 시뮬레이션 | 30자 |
+| 홈 화면 표시 이름 | 모쏠 탈출기 | Info.plist·AndroidManifest 에 반영됨 |
 
-- App Store 키워드 칸(100자)에는 이름·부제에 이미 있는 단어(모쏠, 키우기, 연애, 시뮬레이션, 게임, 썸, 고백)를 넣지 않는다. 합쳐서 검색되므로 반복은 칸 낭비다.
+- App Store 키워드 칸(100자)에는 이름·부제에 이미 있는 단어(모쏠, 탈출기, 100일, 연애, 시뮬레이션, 톡, 썸, 고백)를 넣지 않는다. 합쳐서 검색되므로 반복은 칸 낭비다.
 - 키워드 칸에 다른 앱 이름이나 상표(카톡, 인스타, 모태솔로 등)를 넣지 않는다. Apple 가이드라인 2.3.7 위반이다.
-- 앱 이름의 설명 부분 때문에 반려되면 이름은 "모쏠 키우기"만 남기고 "연애 시뮬레이션 게임"을 부제로 옮긴다.
+- 앱 이름의 설명 부분 때문에 반려되면 이름은 "모쏠 탈출기"만 남기고 "100일 연애 시뮬레이션"을 부제로 옮긴다.
 - App Store Connect 에서 앱을 만들 때 같은 이름이 이미 쓰이면 등록이 막힌다. Google Play 와 웹 검색에서는 동명 앱이 없었다(2026-09-15 확인).
 
 ---
@@ -97,7 +97,7 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 1. https://console.firebase.google.com 에서 프로젝트 만들기(이름 예: `mossol`). Google Analytics 사용 **켬**,
    Analytics 계정은 새로 만들거나 기존 것 선택. 데이터 공유 설정은 전부 끄는 쪽을 권장.
 2. 프로젝트에 **iOS 앱 추가** → 번들 ID `com.hyukahn.mossol`(Xcode Runner 타깃과 같아야 한다),
-   앱 닉네임 `모쏠 키우기`. App Store ID 는 출시 뒤에 넣어도 된다.
+   앱 닉네임 `모쏠 탈출기`. App Store ID 는 출시 뒤에 넣어도 된다.
 3. `GoogleService-Info.plist` 를 내려받아 **`ios/Runner/` 에 넣는다**. 그다음 Xcode 에서
    `ios/Runner.xcworkspace` 를 열고, 왼쪽 Runner 그룹에 이 파일을 끌어다 놓는다 →
    "Copy items if needed" 끄고, **Add to targets: Runner 체크**. (파일만 폴더에 두고 타깃에 안 넣으면

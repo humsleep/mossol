@@ -39,7 +39,7 @@ void main() {
 
   testWidgets('홈 → 새 게임 → 룰렛 → 행동 → 이벤트 → 정산 → D+2', (tester) async {
     await tester.pumpWidget(fullApp(c));
-    expect(findText('모쏠 키우기'), findsOneWidget);
+    expect(findText('모쏠 탈출기'), findsOneWidget);
     expect(findText('이어하기'), findsNothing);
 
     await tester.tap(findText('새 게임'));
