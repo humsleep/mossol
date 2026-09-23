@@ -136,7 +136,7 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 
 | 역할 | TextTheme 키 | 크기/행간/자간/굵기 | 쓰는 곳 |
 |---|---|---|---|
-| 디스플레이 | `displayLarge` | 40 / 1.15 / −1.0 / 700 | (예비) |
+| 디스플레이 | `displayLarge` | 40 / 1.15 / −1.0 / 700 | 날짜 카드 `'D+N'` (tabular) |
 | | `displayMedium` | 34 / 1.18 / −0.8 / 700 | 엔딩 등급 `S`~`F` |
 | | `displaySmall` | 28 / 1.22 / −0.6 / 700 | 홈 타이틀 "모쏠 탈출기" |
 | 헤드라인 | `headlineLarge` | 26 / 1.26 / −0.5 / 700 | (예비) |
@@ -163,7 +163,7 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 - 줄바꿈이 어색해지는 것을 막기 위해 `softWrap` 기본값을 유지하고, 말풍선·카드 폭을
   화면의 72% 이하로 제한한다.
 - **tabular figures 를 쓰는 곳**: 스탯 막대 오른쪽 값, 하트 타이머(`MM:SS`), `D+N`,
-  확률 `%`, 정산 변화량, 앨범 `N / 20`, 미니게임 점수·카운트다운. 줄마다 숫자 폭이
+  확률 `%`, 정산 변화량, 앨범 `N / 20`, 미니게임 점수·카운트다운, 날짜 카드 `D+N`, 채팅 시각. 줄마다 숫자 폭이
   달라지면 흔들려 보인다. 반대로 문장 안에 섞인 숫자(대사, 에필로그)는 tabular 를
   쓰지 않는다 — 문장에서는 비례 숫자가 더 자연스럽다.
 
@@ -231,6 +231,26 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 대신 `AppMotion.curve(context)` 로 커브만 `linear` 로 낮추고, 깜빡임·흔들림
 (shake, flash)은 축소 설정에서 완전히 생략한다.
 
+**박자와 모션의 구분**: 룰렛 릴(1.4초)·날짜 카드 체류(1.4초)처럼 "얼마나 머무는가" 는 모션이 아니라
+게임의 박자다. 상수로 두고 축소 설정에서도 줄이지 않는다(`AnimationBehavior.preserve` — 기본값은
+축소 설정에서 5% 로 줄어든다). 대신 그 사이의 진입·퇴장 연출만 `Duration.zero` 가 된다.
+사용자는 언제나 탭으로 건너뛸 수 있어야 한다.
+
+### 1.11 치수 (`AppSize`)
+
+4 배수 고정 치수. 간격(§1.8)이 아니라 요소의 크기다.
+
+| 토큰 | 값 | 쓰는 곳 |
+|---|---|---|
+| `avatarSm` | 32 | 홈 신호 줄 |
+| `avatarMd` | 40 | 채팅 아바타, 알림 카드, 통화 헤더 |
+| `avatarLg` | 56 | 캐스트 카드(320pt) |
+| `avatarXl` | 72 | 캐스트 카드 |
+| `sticker` | 120 | 채팅 스티커 한 변 |
+| `banner` | 50 | AdSize.banner 높이 |
+
+`CharacterAvatar.size` 는 이 네 값만 받는다.
+
 ---
 
 ## 2. 화면별 레이아웃 지침
@@ -288,8 +308,25 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - **주인공**: 말풍선 흐름. 화면의 최소 45% 를 대화가 차지한다.
 - **배경**: AppBar, 하단 패널의 껍데기.
 - 대화 영역 배경은 `tokens.chatBackground` 로 화면 바탕과 **한 단 구분**한다.
-- 말풍선: 최대 폭 화면의 72%, 세로 간격 같은 사람 연속 `xs`, 사람이 바뀌면 `md`.
-  상대 이름은 첫 말풍선 위에만(`labelSmall`, 캐릭터 강조색). 꼬리는 마지막 말풍선에만.
+- 상대 줄은 3열: `CharacterAvatar(avatarMd)`(묶음 첫 줄만, 그 뒤는 같은 폭 빈 칸) → `sm` → 이름(`labelSmall`,
+  강조색, 첫 줄만, 색 점 없음) + 말풍선 → `xs` → 메타(시각 `labelSmall` tabular `onSurfaceVariant`, 묶음 마지막 줄만;
+  내 말엔 그 위에 `읽음` — 대비 4.5:1 때문에 `systemLine` 이 아니라 `onSurfaceVariant`). 내 줄은 반전, 아바타 없음.
+  말풍선 최대 폭 화면 72%(메타 열이 있으면 `Flexible` 이 그만큼 더 줄인다), 같은 사람 연속 `xs`, 사람 바뀌면 `md`.
+  꼬리는 마지막 말풍선에만. 등장은 상대 6pt · 내 말 12pt 상승 + 페이드.
+- 아바타의 `characterId` 는 `Line.name` → 캐스트 id 역산(`_speakerIdFor`), NPC 는 이니셜(중립색),
+  `'모르는 번호'`·`'알 수 없는 …'` 은 실루엣(`mystery`). 강조색은 이름 글자와 아바타 테두리에만.
+- 대화 첫 항목은 `ChatDivider('D+N · 제목')`(sys pill 모양, 글자는 `onSurfaceVariant`). 이벤트 제목은 여기 한 번만 나온다.
+- 시각은 가짜 시계(`ChatClock`, 02 §3 P1): 오늘 i 번째 이벤트에 09/12/16/21(4개) · 10/15/21(3개) · 12/20(2개) · 19(1개)
+  슬롯 + `stableSeed(seed, day, 'clock$i') % 60` 분, 줄당 +1분, `wait` 줄은 그 초만큼. `오후 4:12` 형식. 같은 분이면 뒤 묶음은 생략.
+- 읽음은 낱말 `읽음` 하나. 내 말 뒤로 상대 줄이 공개됐을 때; 방금 보낸 말은 500ms(실패 톤 1500ms) 뒤. 숫자 배지 금지.
+- 타이핑: 다음 줄이 `them` 이면 그 화자의 아바타(첫 줄 규칙) + 상대 말풍선 안 `'…'`(`TypingIndicator`, 깜빡임 없음),
+  `narr/sys` 면 `CallTyping`. 상대 줄 지연은 `clamp(600 + 글자(공백 제외)×18, 800, 2400)`ms. "쓰다 지움" 은 이벤트당 1회
+  (가장 긴 `them` 줄 또는 `wait` 다음 줄): `…` 700ms → `fast` 페이드 아웃 → 600ms → `…` → 지연 → 대사. 동작 줄이기면 지연만.
+- 스티커(`Line.sticker`, 예약): 말풍선 뒤 `xs`, `AppSize.sticker` 정사각, 배경 없음, 에셋 없으면 그리지 않음.
+- AppBar: 이름 `titleLarge` + 상태 `labelSmall onSurfaceVariant`(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`) 두 줄.
+  아바타·제목·D+N 없음. `bottom` 진행 막대 유지. 독백 이벤트는 제목이 이름 자리, 상태 줄 없음.
+- 대화 목록은 `SingleChildScrollView` + `Column`(십수 줄이라 전부 그린다. 게으른 `ListView` 는 끝 높이를 어림해
+  마지막 줄로 스크롤이 못 미친다).
 - `narr` 지문은 좌우 여백 `xl`, 가운데 정렬 아님, `narration` 색, 이탤릭 유지.
 - `sys` 줄은 가운데 정렬 pill(배경 `surfaceContainerHigh`, `labelSmall`, `systemLine`).
 - 대기 중 "답이 없다" 줄은 pill 안에 카운트다운 숫자를 `numericSmall` 로. 그 아래
@@ -337,9 +374,9 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 **사진 (`photo` 줄)** — `ChatBubble` 이 `line.photo` 가 있으면 말풍선 자리에 `PhotoBubble`(§3.2, 폴라로이드 한 장)을 그리고
 `text` 가 있으면 그 아래 `xs` 간격으로 평소 말풍선을 붙인다. `me` 면 오른쪽. 반응 줄도 같은 경로.
-통화 자막 안의 사진은 화면 폭 60% 로 가운데.
+통화 자막 안의 사진은 화면 폭 60% 로 가운데. 사진·스티커도 아바타 열 다음 본문 열에 놓이고 메타 열은 마지막 요소 아래 끝에 붙는다.
 
-**헤더 구분점**: 채팅 헤더 `'이름  ·  제목'` 의 구분점은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
+**헤더 글자색**: 채팅 헤더의 상태 줄과 대화 구분줄은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
 
 ### 2.4 하루 정산 (`summary_screen.dart`)
 - **주인공**: 오늘 바뀐 수치. 변화량이 가장 크게 읽혀야 한다.
@@ -387,6 +424,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   `High` 로 올라가면서 같이 올렸다).
 - 회전 중에는 `dim` 상태를 불투명도 0.6 대신 **색 채도 낮춤 + 블러 없음** 으로 표현하고,
   축소 모션 설정에서는 중간 프레임 없이 결과만 보여 준다.
+- 상단 배너와 겹치지 않는다. 시트는 화면 아래에서 내용 높이만큼, 스크림이 배너를 덮는다.
+- 날짜 카드(§2.13)가 완전히 사라진 뒤에 뜬다(`Phase` 로 갈리므로 카드와 시트가 겹치지 않는다).
 
 ### 2.8 미니게임 (`minigames/*`)
 - **주인공**: `child` 로 들어오는 놀이판. 상단 제목/설명은 2줄 이내로 물러난다.
@@ -498,6 +537,25 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   누르면 같은 화면을 `push` 한다: 1차 버튼 `'저장'`, 2차 링크는 `건너뛰기` 대신 `'이름 지우기'`(이름이 있을 때만).
   저장·지우기는 설정으로 돌아온다. 진행 중인 회차에도 **다음에 그려지는 대사부터** 새 이름이 나간다.
 
+### 2.13 날짜 카드 (`day_card.dart`)
+- **주인공**: `'D+N'` 하나. 배경 파티클·빛번짐 없음.
+- 언제: `Phase.dayStart`(저장 안 함). 정산 `'다음 날로'` → (전면 광고) → `endDay()` → 카드(`next`) → 행동(룰렛),
+  새 게임 → 카드(`first`) → 행동, 아침 이어하기(`dayStarted == false`) → 카드(`resume`) → 행동. 엔딩 날·하루 도중 복귀는 카드 없음.
+  내용은 `GameController.dayCard`(`DayCard` 값 객체, 메모리 전용).
+- 바탕 `CallBackdrop`(항상 다크). 가운데 `CenteredScrollColumn`(좌우 `screenX`), 전체가 탭 대상(`Key('day-card')`).
+- 구성(위→아래): 장 pill `'N장'`/`'N장 · 제목'`(`surfaceContainerHigh` `rPill` `AppInsets.chip` `labelMedium onSurfaceVariant`,
+  제목은 config `chapterTitles` 가 있고 장 첫날일 때만) → `md` → `'D+N'`(`displayLarge` tabular `onSurface`) → `sm` →
+  `'N일째 아침 · 수요일 · 흐림'`(`titleMedium onSurfaceVariant`; `first` 는 `'{run}회차 · 첫날 · 월요일 · 맑음'`) →
+  [`xl` → `TomorrowLine`(`'오늘 ○○에게서 연락이 올 것 같다'` + 미리보기, `next` 만)] → [`sm` → 밤사이 한 줄 `bodySmall`, `next` 만]
+  → [`xl` → `PreviousRunNote`, `first` 만] → `xxxl` → `'탭해서 넘기기'`(`labelMedium onSurfaceVariant`, `ExcludeSemantics`).
+  요일 `['월','화','수','목','금','토','일'][(day-1)%7]`, 날씨 `stableSeed(seed, day, 'weather') % 100`(0–54 맑음 · 55–79 흐림 ·
+  80–99 비, 5장은 눈) — 둘 다 표현 전용, 엔진에 없다.
+- 시간: `AnimationController` **하나**(`Timer` 금지 — `pumpAndSettle` 이 통과해야 한다). 체류 `next` 1.4초 · `first` 2.2초 ·
+  `resume` 1.0초 상수(`AnimationBehavior.preserve`). 진입 바탕 페이드 `dSlow` + `D+N` 스케일 0.92→1, 퇴장 페이드 `dBase`.
+  첫 350ms 탭 무시, 그 뒤 탭은 곧바로 완료(`beginMorning`, 멱등). 동작 줄이기: 진입·퇴장 즉시, 체류 그대로.
+- 소리 `Sfx.dayStart`(light 진동) 1회, 카드가 뜰 때. 루트 `Semantics(liveRegion, button, label: 'N일째 아침, 수요일, 흐림')`.
+- 기존 고정 문구와 충돌하지 않는다: `'D+1  ·  1장'`(공백 2개)·`'D+1 정산'`·`'오늘의 운'`·`'어젯밤: '` 을 담지 않는다.
+
 ---
 
 ## 3. 공용 컴포넌트 규격
@@ -523,6 +581,13 @@ class ChatBubble extends StatelessWidget {
   /// 묶음의 마지막 줄인지. 꼬리(각진 모서리) 여부를 결정한다.
   final bool isLastOfGroup;
 
+  /// 아바타 초상화를 찾을 캐릭터 id. null 이면 이니셜(NPC).
+  final String? characterId;
+  /// 묶음 첫 줄에 아바타를 그릴지. false 면 같은 폭의 빈 칸(연속 줄).
+  final bool showAvatar;
+  /// 메타 열. null 이면 빈 칸. (time: '오후 9:14', read: true → '읽음')
+  final ChatMeta? meta;
+
   const ChatBubble({
     super.key,
     required this.line,
@@ -530,7 +595,13 @@ class ChatBubble extends StatelessWidget {
     this.accent,
     this.isFirstOfGroup = true,
     this.isLastOfGroup = true,
+    this.characterId,
+    this.showAvatar = true,
+    this.meta,
   });
+
+  /// '모르는'·'알 수 없는' 으로 시작하는 이름 → 실루엣 아바타.
+  static bool isMysteryName(String name);
 }
 
 /// 스탯 6개 막대. delta 가 있으면 값 옆에 변화량을 함께 보여 준다.
@@ -940,7 +1011,7 @@ class CharacterAvatar extends StatelessWidget {
   /// null 이면 tokens.neutralAccent.
   final CharacterAccent? accent;
 
-  /// 32 · 40 · 56 만 쓴다.
+  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)만 쓴다.
   final double size;
 
   /// 히든 미해금. 글자 대신 Icons.person_outline, 배경 surfaceContainerHigh.
@@ -1207,6 +1278,24 @@ String formatCallTime(int seconds); // 'mm:ss'
 /// notification_card.dart
 class NotificationCard     // 알림 카드 한 장. name, characterId, preview, onOpen
 class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOpen = 1.8초
+
+/// 채팅(카톡형, docs/overhaul/03_chat_ui_spec.md)
+class ChatMeta { final String? time; final bool read; }                   // 말풍선 옆 시각·읽음
+class ChatDivider extends StatelessWidget { final String text; }          // sys pill 모양의 구분줄 'D+N · 제목'
+class ChatAvatarSlot extends StatelessWidget { name, characterId, accent, show } // 아바타 또는 같은 폭 빈 칸
+class TypingIndicator extends StatelessWidget { name, characterId, accent, showAvatar } // Text('…') 한 개 고정, 깜빡임 없음
+class StickerBubble extends StatelessWidget { characterId, emotion, mine; static resolve } // 에셋 없으면 빈 위젯
+abstract final class ChatClock { startSeconds(seed, day, index, total); label(seconds); timesFor(lines, start) } // event_screen.dart
+
+/// day_card.dart (컨트롤러: enum DayCardVariant { next, first, resume }, class DayCard 값 객체, beginMorning())
+class DayTransitionScreen extends StatefulWidget {
+  final GameController c;
+  static const beatNext = Duration(milliseconds: 1400);
+  static const beatFirst = Duration(milliseconds: 2200);
+  static const beatResume = Duration(milliseconds: 1000);
+  static const tapGuard = Duration(milliseconds: 350);
+  static const skipHint = '탭해서 넘기기';
+}
 ```
 
 이름 단계 컴포넌트(§2.12, `onboarding_name_screen.dart` — widgets.dart 가 아니라 화면 파일에 둔다):
@@ -1263,6 +1352,10 @@ class NameInputFormatter extends TextInputFormatter {}
 | 룰렛 | `'오늘의 운'`, `'돌리기'`, `'시작'`, `'한 번 더 (광고)'` / 재도전권이 있으면 대신 `'재도전권 사용 (N장)'` |
 | 전화 | 수신 `'전화가 왔어요'`, `'받기'`, `'거절'`, 통화 `'통화 중'`/`'통화 종료'`, 타이머 `'00:00'` 형식 단일 Text, 대기 `'…(침묵)'`, 거절 뒤 `'부재중 전화 · 이름'` |
 | 알림 · 사진 | 알림 카드 `'지금'`, 사진 스크린리더 라벨 `'사진: {caption}'` |
+| 채팅 헤더 | 이름 `titleLarge` + 상태 줄 `'온라인'` / `'자리 비움'` / `'부재중'` / `'온라인 · N명'`; AppBar 안에 `CharacterAvatar` 없음; 타이핑 `'…'` 정확히 한 개(`TypingIndicator` 또는 `CallTyping`) |
+| 채팅 구분줄 | `'D+N · 제목'` 단일 Text(`ChatDivider`), 대화 첫 항목 |
+| 채팅 말풍선 | `CharacterAvatar(avatarMd)` 는 묶음 첫 줄에만, 시각 `'오후 4:12'` 는 묶음 마지막 줄에만, 읽음은 낱말 `'읽음'`(숫자 `'1'` 금지) |
+| 날짜 카드 | `Key('day-card')`, `'D+N'` 단일 Text, `'N일째'` 를 포함한 Text, 첫날 `'{run}회차 · 첫날'`, `'탭해서 넘기기'`; 카드 동안 `ActionScreen`·`RouletteSheet` 없음 |
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |
 | 앨범 아이콘 | AppBar 액션은 `Icons.photo_album_outlined` |
 | 빈 앨범 | `'아직 흑역사가 없다'` |
@@ -1304,7 +1397,9 @@ class NameInputFormatter extends TextInputFormatter {}
 - 말풍선에 삼각 꼬리를 그리지 않는다. 모서리 하나만 각지게 깎는다.
 - 특정 메신저의 시스템 문구·아이콘·레이아웃(친구 목록 탭 바, 노란 말풍선, 특유의
   읽음 표기 방식)을 흉내내지 않는다. 우리 시스템 줄은 중립 pill 이다.
-- 캐릭터 프로필 이미지 자리에는 실제 사진 대신 강조색 이니셜 원형을 쓴다.
+- 캐릭터 프로필 이미지 자리에는 실제 사진 대신 강조색 이니셜 원형을 쓴다(초상화가 있으면 그 그림).
+- 읽음 표기는 낱말 `'읽음'` 뿐이다. 숫자 배지("1")·프로필 사진 옆 시각 배치 등 특정 메신저의 읽음 표기 방식을 쓰지 않는다.
+  아바타 원형 + 이름 + 말풍선의 3열 구조는 메신저 일반 문법이라 허용한다.
 
 ---
 

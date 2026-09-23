@@ -200,6 +200,8 @@ void main() {
       await c.newGame(seed: 9, preference: Preference.female);
       c.state!.day = 99;
       await c.endDay();
+      expect(c.phase, Phase.dayStart, reason: '마감 뒤엔 날짜 카드');
+      c.beginMorning();
       expect(c.phase, Phase.action);
       expect(c.state!.day, 100);
       expect(c.bestDayReached, 100);

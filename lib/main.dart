@@ -22,6 +22,7 @@ import 'game_controller.dart';
 import 'minigames/minigame.dart';
 import 'minigames/registry.dart';
 import 'ui/action_screen.dart';
+import 'ui/day_card.dart';
 import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
@@ -223,6 +224,7 @@ class _MossolAppState extends State<MossolApp> {
         listenable: controller,
         builder: (context, _) => switch (controller.phase) {
           Phase.home => HomeScreen(c: controller),
+          Phase.dayStart => DayTransitionScreen(c: controller),
           Phase.action => ActionScreen(c: controller),
           Phase.event => EventScreen(c: controller),
           Phase.summary => SummaryScreen(c: controller),

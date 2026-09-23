@@ -88,9 +88,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('다음 날로'));
     await tester.pump();
-    expect(c.phase, Phase.action);
+    // 광고 → endDay → 날짜 카드. spinRouletteSheet 의 pumpAndSettle 이 카드를 지난다.
+    expect(c.phase, Phase.dayStart);
     expect(c.state!.day, 2);
     await spinRouletteSheet(tester);
+    expect(c.phase, Phase.action);
     expect(findText('D+2  ·  1장'), findsOneWidget);
 
     // D+2 의 m02 에는 미니게임 선택지(표정 읽기)가 있다.
@@ -144,9 +146,10 @@ void main() {
     expect(findText('이어하기'), findsOneWidget);
     await tester.tap(findText('이어하기'));
     await tester.pump();
-    expect(c.phase, Phase.action);
+    expect(c.phase, Phase.dayStart, reason: '아침 이어하기는 resume 카드');
     expect(c.state!.day, 4);
     await spinRouletteSheet(tester);
+    expect(c.phase, Phase.action);
   });
 
   testWidgets('세이브가 있을 때 새 게임은 확인 다이얼로그를 거친다', (tester) async {

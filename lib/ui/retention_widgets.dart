@@ -137,7 +137,7 @@ class _SuggestRow extends StatelessWidget {
                   name: name,
                   accent: accent,
                   characterId: character.id,
-                  size: 56,
+                  size: AppSize.avatarLg,
                 ),
                 const SizedBox(width: AppSpace.md),
                 Expanded(

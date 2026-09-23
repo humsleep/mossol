@@ -858,27 +858,50 @@ class BannerFrame extends StatelessWidget {
 // 5. 채팅 말풍선
 // ---------------------------------------------------------------------------
 
-/// 채팅 한 줄. `who` 에 따라 네 가지 위계로 갈린다.
+/// 말풍선 옆 메타 열. [time] 은 `'오후 9:14'`(묶음 마지막 줄만), [read] 는 내 말에 상대가
+/// 읽었다는 낱말 `읽음`(숫자 배지 금지 — §4.3). 둘 다 없으면 열을 그리지 않는다.
+@immutable
+class ChatMeta {
+  final String? time;
+  final bool read;
+  const ChatMeta({this.time, this.read = false});
+
+  bool get isEmpty => time == null && !read;
+}
+
+/// 채팅 한 줄. `who` 에 따라 네 가지 위계로 갈린다(DESIGN_SYSTEM §2.3).
 ///
-/// - `them` — 흰 종이 카드. 1px 테두리, 왼쪽 정렬, 묶음 첫 줄에만 이름표.
-/// - `me` — 로즈 단색. 테두리 없음, 오른쪽 정렬.
+/// - `them` — 3열: 아바타(묶음 첫 줄만, 그 뒤는 같은 폭 빈 칸) → `sm` → 이름 + 흰 종이
+///   카드(1px 테두리) → `xs` → 메타(시각·읽음, 말풍선 아래 끝에 정렬).
+/// - `me` — 좌우 반전, 아바타 없음. 로즈 단색, 테두리 없음.
 /// - `narr` — 말풍선이 아니다. 좌측 세로 선 + 이탤릭 조판으로 물러난다.
 /// - `sys` — 가운데 중립 pill.
 ///
 /// 꼬리는 삼각형을 그리지 않고 묶음 **마지막 줄의 모서리 하나만** 깎는다
-/// (트레이드드레스 회피). 등장은 6포인트 상승 + 페이드 한 번, 220ms.
+/// (트레이드드레스 회피). 등장은 상승 + 페이드 한 번, 220ms — 내 말은 12pt, 상대는 6pt
+/// (보낸 쪽이 더 "던진다", docs/overhaul/04_micro_interactions.md §2.5).
 class ChatBubble extends StatelessWidget {
   final Line line;
   final String partnerName;
 
-  /// 상대 이름·점에 쓸 캐릭터 강조색. null 이면 tokens.neutralAccent.
+  /// 상대 이름·아바타 테두리에 쓸 캐릭터 강조색. null 이면 tokens.neutralAccent.
+  /// 말풍선 배경에는 쓰지 않는다.
   final CharacterAccent? accent;
 
-  /// 같은 사람이 연속으로 말하는 묶음의 첫 줄인지. 이름 표시 여부.
+  /// 같은 사람이 연속으로 말하는 묶음의 첫 줄인지. 이름·아바타 표시 여부.
   final bool isFirstOfGroup;
 
   /// 묶음의 마지막 줄인지. 꼬리(각진 모서리) 여부.
   final bool isLastOfGroup;
+
+  /// 아바타 초상화를 찾을 캐릭터 id. null 이면 이니셜(NPC).
+  final String? characterId;
+
+  /// 묶음 첫 줄에 아바타를 그릴지. false 면 같은 폭의 빈 칸(연속 줄).
+  final bool showAvatar;
+
+  /// 메타 열. null 이면 빈 칸. (time: '오후 9:14', read: true → '읽음')
+  final ChatMeta? meta;
 
   const ChatBubble({
     super.key,
@@ -887,7 +910,15 @@ class ChatBubble extends StatelessWidget {
     this.accent,
     this.isFirstOfGroup = true,
     this.isLastOfGroup = true,
+    this.characterId,
+    this.showAvatar = true,
+    this.meta,
   });
+
+  /// `'모르는 번호'`·`'알 수 없는 사람'` 처럼 정체 없는 화자. 첫 글자 `모` 가 어색하므로
+  /// 아바타는 사람 실루엣([CharacterAvatar.mystery])으로 그린다(03 §1.2).
+  static bool isMysteryName(String name) =>
+      name.startsWith('모르는') || name.startsWith('알 수 없는');
 
   @override
   Widget build(BuildContext context) {
@@ -970,8 +1001,91 @@ class ChatBubble extends StatelessWidget {
     final name = line.name ?? partnerName;
     final a = accent ?? t.neutralAccent;
     final showName = !me && isFirstOfGroup && name.isNotEmpty;
+    final m = meta;
+    final hasMeta = m != null && !m.isEmpty;
+
+    // 본문: 사진 → xs → 글 말풍선. 메타 열은 이 묶음의 아래 끝에 붙는다.
+    final content = Column(
+      crossAxisAlignment: me
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (line.photo case final photo?) ...[
+          PhotoBubble(photo: photo, accent: a),
+          if (line.text.isNotEmpty) const SizedBox(height: AppSpace.xs),
+        ],
+        if (line.photo == null || line.text.isNotEmpty)
+          ConstrainedBox(
+            // 최대 폭은 화면 기준 72%. 메타 열이 있으면 Flexible 이 그만큼 더 줄인다.
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+            ),
+            child: Container(
+              padding: AppInsets.bubble,
+              decoration: BoxDecoration(
+                color: me ? t.bubbleMine : t.bubbleTheirs,
+                borderRadius: AppRadius.bubble(mine: me, tail: isLastOfGroup),
+                // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
+                border: me
+                    ? null
+                    : Border.all(
+                        color: t.bubbleBorder,
+                        width: AppBorderWidth.hairline,
+                      ),
+              ),
+              child: Text(
+                keepAll(line.text),
+                style: t.bubbleText.copyWith(
+                  color: me ? t.onBubbleMine : t.onBubbleTheirs,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    // 본문 + 메타 열. 메타는 말풍선 아래 끝에 맞춘다.
+    final withMeta = Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: me ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (me && hasMeta) ...[
+          _MetaColumn(meta: m, mine: true),
+          const SizedBox(width: AppSpace.xs),
+        ],
+        Flexible(child: content),
+        if (!me && hasMeta) ...[
+          const SizedBox(width: AppSpace.xs),
+          _MetaColumn(meta: m, mine: false),
+        ],
+      ],
+    );
+
+    final body = Column(
+      crossAxisAlignment: me
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showName)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AppSpace.xs,
+              bottom: AppSpace.xs,
+            ),
+            child: Text(
+              name,
+              style: context.text.labelSmall?.copyWith(color: a.base),
+            ),
+          ),
+        withMeta,
+      ],
+    );
 
     return _Entrance(
+      rise: me ? AppSpace.md : AppSpace.xs + 2,
       child: Padding(
         padding: EdgeInsets.only(
           left: AppSpace.md,
@@ -979,71 +1093,251 @@ class ChatBubble extends StatelessWidget {
           // 사람이 바뀌면 md, 같은 사람이 이어 말하면 xs.
           top: isFirstOfGroup ? AppSpace.md : AppSpace.xs,
         ),
-        child: Column(
-          crossAxisAlignment: me
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            if (showName)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpace.xs,
-                  bottom: AppSpace.xs,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: AppSpace.xs + 2,
-                      height: AppSpace.xs + 2,
-                      decoration: BoxDecoration(
-                        color: a.base,
-                        borderRadius: AppRadius.rPill,
-                      ),
-                      margin: const EdgeInsets.only(right: AppSpace.xs),
-                    ),
-                    Text(
-                      name,
-                      style: context.text.labelSmall?.copyWith(color: a.base),
-                    ),
-                  ],
-                ),
+        child: me
+            ? body
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ChatAvatarSlot(
+                    name: name,
+                    characterId: characterId,
+                    accent: a,
+                    show: showAvatar && isFirstOfGroup,
+                  ),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(child: body),
+                ],
               ),
-            if (line.photo case final photo?) ...[
-              PhotoBubble(photo: photo, accent: a),
-              if (line.text.isNotEmpty) const SizedBox(height: AppSpace.xs),
-            ],
-            if (line.photo == null || line.text.isNotEmpty)
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-                ),
-                child: Container(
-                  padding: AppInsets.bubble,
-                  decoration: BoxDecoration(
-                    color: me ? t.bubbleMine : t.bubbleTheirs,
-                    borderRadius: AppRadius.bubble(
-                      mine: me,
-                      tail: isLastOfGroup,
-                    ),
-                    // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
-                    border: me
-                        ? null
-                        : Border.all(
-                            color: t.bubbleBorder,
-                            width: AppBorderWidth.hairline,
-                          ),
+      ),
+    );
+  }
+}
+
+/// 상대 줄의 아바타 열. [show] 면 `CharacterAvatar(avatarMd)`, 아니면 같은 폭의 빈 칸 —
+/// 묶음 둘째 줄부터 말풍선 왼쪽 선이 흔들리지 않게 폭만 차지한다. 이름 Text 가 이미
+/// 화자를 읽어 주므로 아바타는 스크린리더에서 뺀다.
+class ChatAvatarSlot extends StatelessWidget {
+  final String name;
+  final String? characterId;
+  final CharacterAccent? accent;
+  final bool show;
+  const ChatAvatarSlot({
+    super.key,
+    required this.name,
+    required this.characterId,
+    required this.accent,
+    required this.show,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return const SizedBox(width: AppSize.avatarMd);
+    final mystery = ChatBubble.isMysteryName(name);
+    return ExcludeSemantics(
+      child: CharacterAvatar(
+        name: name,
+        characterId: characterId,
+        accent: mystery ? null : accent,
+        mystery: mystery,
+        size: AppSize.avatarMd,
+      ),
+    );
+  }
+}
+
+/// 메타 열. 시각은 스크린리더에 소음이라 뺀다. 읽음은 낱말 하나만 남긴다.
+class _MetaColumn extends StatelessWidget {
+  final ChatMeta meta;
+  final bool mine;
+  const _MetaColumn({required this.meta, required this.mine});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = context.text.labelSmall ?? const TextStyle();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        // 대비 4.5:1 을 지키려고 systemLine 이 아니라 onSurfaceVariant(§4.2).
+        if (meta.read)
+          Text(
+            '읽음',
+            style: base.copyWith(color: context.scheme.onSurfaceVariant),
+          ),
+        if (meta.time case final time?)
+          ExcludeSemantics(
+            child: Text(
+              time,
+              style: AppTypography.tabular(
+                base.copyWith(color: context.scheme.onSurfaceVariant),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// 대화 첫 항목의 구분줄 `'D+N · 제목'`. `sys` pill 과 같은 모양, 위 `sm` 아래 `md`.
+/// 이벤트 제목은 여기 한 번만 나온다(AppBar 에서 내려왔다).
+class ChatDivider extends StatelessWidget {
+  final String text;
+  const ChatDivider({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.sm, bottom: AppSpace.md),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.md,
+            vertical: AppSpace.xs + 2,
+          ),
+          decoration: BoxDecoration(
+            color: context.scheme.surfaceContainerHigh,
+            borderRadius: AppRadius.rPill,
+          ),
+          child: Text(
+            keepAll(text),
+            textAlign: TextAlign.center,
+            // 사건(날짜·제목)이라 읽혀야 한다 — _MissedCall 과 같은 이유로 2차 글자색.
+            style: context.text.labelSmall?.copyWith(
+              color: context.scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 스티커 한 장(레이아웃 예약, 03 §1.6). `assets/stickers/<characterId>_<emotion>.png`,
+/// 배경·테두리 없음, `AppSize.sticker` 정사각, 정지 그림.
+///
+/// 에셋이 없으면 **아무것도 그리지 않는다**(깨진 상자 금지) — 어떤 파일이 있는지는
+/// [resolve] 가 답한다. 기본값은 항상 null(아직 에셋이 없다). 4단계(장면 삽화)의
+/// 매니페스트 레지스트리가 이 자리를 채운다.
+class StickerBubble extends StatelessWidget {
+  final String characterId;
+  final String emotion;
+  final bool mine;
+  const StickerBubble({
+    super.key,
+    required this.characterId,
+    required this.emotion,
+    this.mine = false,
+  });
+
+  /// 스티커 에셋 경로. 없으면 null. 레지스트리가 붙기 전까지는 항상 null.
+  static String? Function(String characterId, String emotion) resolve = (
+    _,
+    _,
+  ) => null;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = resolve(characterId, emotion);
+    if (path == null) return const SizedBox.shrink();
+    return Align(
+      alignment: mine
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsets.only(top: AppSpace.xs),
+        child: Image.asset(
+          path,
+          width: AppSize.sticker,
+          height: AppSize.sticker,
+          fit: BoxFit.contain,
+          semanticLabel: '스티커',
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
+
+/// 타이핑 중 표시. 다음 줄 화자의 아바타(묶음 첫 줄 규칙: 직전 줄이 같은 화자면 빈 칸) +
+/// 상대 말풍선 껍데기 안 `'…'` 한 개.
+///
+/// 문구 `'…'` 는 정확히 **한 개의 Text** 로 고정이다(§4.1). 깜빡이는 반복 애니메이션은
+/// 넣지 않는다 — 읽는 흐름을 방해하고 동작 줄이기 설정과도 충돌한다. "쓰다 지움"
+/// (사라졌다 다시 뜸)은 화면이 이 위젯의 불투명도로 연출한다(04 §2.3).
+class TypingIndicator extends StatelessWidget {
+  final String name;
+  final String? characterId;
+  final CharacterAccent? accent;
+
+  /// 묶음 첫 줄인지. true 면 아바타 + 이름, false 면 빈 칸만.
+  final bool showAvatar;
+
+  const TypingIndicator({
+    super.key,
+    this.name = '',
+    this.characterId,
+    this.accent,
+    this.showAvatar = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final a = accent ?? t.neutralAccent;
+    final showName = showAvatar && name.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpace.md,
+        right: AppSpace.md,
+        top: AppSpace.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChatAvatarSlot(
+            name: name,
+            characterId: characterId,
+            accent: a,
+            show: showAvatar,
+          ),
+          const SizedBox(width: AppSpace.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showName)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppSpace.xs,
+                    bottom: AppSpace.xs,
                   ),
                   child: Text(
-                    keepAll(line.text),
-                    style: t.bubbleText.copyWith(
-                      color: me ? t.onBubbleMine : t.onBubbleTheirs,
-                    ),
+                    name,
+                    style: context.text.labelSmall?.copyWith(color: a.base),
+                  ),
+                ),
+              Container(
+                padding: AppInsets.bubble,
+                decoration: BoxDecoration(
+                  color: t.bubbleTheirs,
+                  borderRadius: AppRadius.bubble(mine: false),
+                  border: Border.all(
+                    color: t.bubbleBorder,
+                    width: AppBorderWidth.hairline,
+                  ),
+                ),
+                child: Text(
+                  '…',
+                  style: context.text.titleMedium?.copyWith(
+                    color: t.systemLine,
                   ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1051,11 +1345,14 @@ class ChatBubble extends StatelessWidget {
 
 // 사진 메시지 카드(PhotoBubble · photoIcons · photoIconFor)는 photo_card.dart.
 
-/// 한 번만 재생되는 등장 연출. 읽는 흐름을 끊지 않도록 6포인트 상승 + 페이드만.
+/// 한 번만 재생되는 등장 연출. 읽는 흐름을 끊지 않도록 [rise]pt 상승 + 페이드만.
 /// 동작 줄이기가 켜져 있으면 즉시 최종 상태로 둔다.
 class _Entrance extends StatefulWidget {
   final Widget child;
-  const _Entrance({required this.child});
+
+  /// 올라오는 거리. 상대 6pt, 내 말 12pt.
+  final double rise;
+  const _Entrance({required this.child, this.rise = AppSpace.xs + 2});
 
   @override
   State<_Entrance> createState() => _EntranceState();
@@ -1097,7 +1394,7 @@ class _EntranceState extends State<_Entrance>
     builder: (context, child) => Opacity(
       opacity: _a.value.clamp(0.0, 1.0),
       child: Transform.translate(
-        offset: Offset(0, (1 - _a.value) * (AppSpace.xs + 2)),
+        offset: Offset(0, (1 - _a.value) * widget.rise),
         child: child,
       ),
     ),
@@ -1801,7 +2098,7 @@ class CharacterAvatar extends StatelessWidget {
   /// 초상화를 찾을 캐릭터 id. null 이면 [accent] 로 찾는다.
   final String? characterId;
 
-  /// 32 · 40 · 56 · 72 를 쓴다(72 는 캐스트 소개 카드).
+  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)만 쓴다. 72 는 캐스트 소개 카드.
   final double size;
   final bool mystery;
 
@@ -1810,7 +2107,7 @@ class CharacterAvatar extends StatelessWidget {
     required this.name,
     this.accent,
     this.characterId,
-    this.size = 40,
+    this.size = AppSize.avatarMd,
     this.mystery = false,
   });
 
@@ -1830,9 +2127,9 @@ class CharacterAvatar extends StatelessWidget {
     final a = accent ?? t.neutralAccent;
     final initial = name.isEmpty ? '' : name.characters.first;
     final style =
-        (size <= 32
+        (size <= AppSize.avatarSm
                 ? context.text.labelMedium
-                : size >= 56
+                : size >= AppSize.avatarLg
                 ? context.text.titleLarge
                 : context.text.labelLarge)
             ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
@@ -2169,7 +2466,7 @@ class ContinueCard extends StatelessWidget {
                     name: topName!,
                     characterId: topCharacterId,
                     accent: topAccent,
-                    size: 32,
+                    size: AppSize.avatarSm,
                   ),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
@@ -2226,7 +2523,9 @@ class PreferenceCard extends StatelessWidget {
   /// 아바타 [n]개가 폭 [width] 한 줄에 들어가는 가장 큰 크기(40, 안 되면 32).
   static double avatarSizeFor(int n, double width) {
     double row(double s) => n * s + (n - 1) * AppSpace.sm;
-    return n <= 0 || row(40) <= width ? 40 : 32;
+    return n <= 0 || row(AppSize.avatarMd) <= width
+        ? AppSize.avatarMd
+        : AppSize.avatarSm;
   }
 
   @override
@@ -2536,7 +2835,8 @@ class CastIntroCard extends StatelessWidget {
 
   /// 카드 안쪽 폭 [width] 에 맞는 아바타 크기. 초상화 얼굴이 보이게 넉넉하면 72,
   /// 좁은 화면(320pt 폰, 안쪽 폭 약 248)은 본문 폭을 지키려 56. 그림 유무와 무관하다.
-  static double avatarSizeFor(double width) => width >= 280 ? 72 : 56;
+  static double avatarSizeFor(double width) =>
+      width >= 280 ? AppSize.avatarXl : AppSize.avatarLg;
 
   @override
   Widget build(BuildContext context) {
@@ -2691,7 +2991,7 @@ class _SignalLine extends StatelessWidget {
           name: name,
           characterId: characterId,
           accent: accent,
-          size: 32,
+          size: AppSize.avatarSm,
         ),
         const SizedBox(width: AppSpace.sm),
         Expanded(
@@ -2809,7 +3109,7 @@ class RelationShiftCard extends StatelessWidget {
               name: name,
               characterId: characterId,
               accent: a,
-              size: 40,
+              size: AppSize.avatarMd,
             ),
             const SizedBox(width: AppSpace.md),
             Expanded(

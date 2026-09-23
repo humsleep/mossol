@@ -22,7 +22,71 @@ export 'engine/attendance.dart' show CheckInResult, Attendance;
 export 'engine/signals.dart' show RelationShift;
 export 'engine/retention.dart' show NextRunSuggestion, TomorrowHint;
 
-enum Phase { home, action, event, summary, ending }
+/// [dayStart] 는 날짜 전환 카드(docs/overhaul/02_game_loop.md §2). 저장하지 않는다 —
+/// 카드 도중 앱이 죽어도 세이브는 이미 마감 뒤 상태라 다음 실행이 `resume` 카드로 같은 아침을 낸다.
+enum Phase { home, dayStart, action, event, summary, ending }
+
+/// 날짜 카드 변형. `next` 는 정산 → 다음 날, `first` 는 새 회차 첫날, `resume` 은 이어하기.
+enum DayCardVariant { next, first, resume }
+
+/// 날짜 전환 카드가 담는 것(메모리 전용, 세이브 무관). 요일·날씨는 표현 전용이라 엔진에 없다.
+/// 규격: docs/overhaul/02_game_loop.md §2.2.
+@immutable
+class DayCard {
+  final DayCardVariant variant;
+  final int day;
+  final int run;
+  final int chapter;
+
+  /// 장의 첫날에만, config `chapterTitles` 가 있을 때. 아니면 null.
+  final String? chapterTitle;
+
+  /// '수요일' 처럼 "요일" 까지 붙은 문자열.
+  final String weekday;
+
+  /// '맑음' · '흐림' · '비' · '눈'.
+  final String weather;
+
+  /// 예고(정산의 `tomorrowHint` 를 마감 전에 옮겨 둔 것). 없으면 셋 다 null.
+  final String? hintCharacterId;
+  final String? hintName;
+  final String? hintPreview;
+
+  /// 밤사이 멀어진 사람 한 줄(이름 치환 끝). 없으면 null.
+  final String? overnight;
+
+  /// 새 회차 첫날의 "지난 판엔 …으로 끝났다". `first` 에만.
+  final String? previousRunLine;
+
+  const DayCard({
+    required this.variant,
+    required this.day,
+    required this.run,
+    required this.chapter,
+    required this.weekday,
+    required this.weather,
+    this.chapterTitle,
+    this.hintCharacterId,
+    this.hintName,
+    this.hintPreview,
+    this.overnight,
+    this.previousRunLine,
+  });
+
+  static const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+  /// 요일은 표현 전용: `(day - 1) % 7`. 1일째가 월요일.
+  static String weekdayFor(int day) => '${weekdays[(day - 1) % 7]}요일';
+
+  /// 날씨도 표현 전용: `stableSeed(seed, day, 'weather') % 100` → 0–54 맑음, 55–79 흐림,
+  /// 80–99 비. 5장(81일~)은 비 자리에 눈.
+  static String weatherFor(int seed, int day, int chapter) {
+    final r = EventEngine.stableSeed(seed, day, 'weather') % 100;
+    if (r < 55) return '맑음';
+    if (r < 80) return '흐림';
+    return chapter >= 5 ? '눈' : '비';
+  }
+}
 
 /// 홈이 세이브를 복원하지 않고도 그릴 수 있게 세이브 파일에서 뽑은 요약.
 /// 규격은 docs/HOME_REDESIGN.md §0.2. [GameController.saveSummary] 로 읽는다.
@@ -156,6 +220,9 @@ class GameController extends ChangeNotifier {
 
   Phase phase = Phase.home;
   GameState? state;
+
+  /// [Phase.dayStart] 동안 화면이 읽는 카드. [endDay]·[newGame]·[continueGame] 이 채운다.
+  DayCard? dayCard;
   bool hasSave = false;
   List<String> endingAlbum = [];
 
@@ -733,7 +800,8 @@ class GameController extends ChangeNotifier {
     state = s;
     ending = null;
     _resetDay();
-    phase = Phase.action;
+    dayCard = _dayCardFor(DayCardVariant.first);
+    phase = Phase.dayStart;
     final m = meta;
     if (m != null) {
       m.totalRuns += 1;
@@ -762,12 +830,16 @@ class GameController extends ChangeNotifier {
     }
     if (s.dayStarted) {
       // 하트를 이미 쓴 날: 남은 이벤트부터(없으면 정산으로). 다시 행동을 고르게 하지 않는다.
+      // 카드 없이 — 하루 도중 복귀다.
       _queue.addAll([for (final id in s.dayQueue) ?engine.byId(id)]);
+      _dayTotal = _queue.length;
       _syncSummary();
       _nextEvent();
       return true;
     }
-    phase = Phase.action;
+    // 아직 시작 안 한 아침: `resume` 카드(예고·밤사이 줄 없음 — 행동 화면이 어젯밤 줄을 보여 준다).
+    dayCard = _dayCardFor(DayCardVariant.resume);
+    phase = Phase.dayStart;
     if (pendingHearts > 0) await _save(s);
     _syncSummary();
     notifyListeners();
@@ -778,6 +850,51 @@ class GameController extends ChangeNotifier {
     phase = Phase.home;
     _syncSummary();
     notifyListeners();
+  }
+
+  /// 날짜 카드가 끝났다(자동 진행·탭). [Phase.dayStart] 일 때만 행동 화면으로 넘어간다 —
+  /// 타이머와 탭이 같이 불러도 두 번 넘어가지 않는다(멱등).
+  void beginMorning() {
+    if (phase != Phase.dayStart) return;
+    phase = Phase.action;
+    notifyListeners();
+  }
+
+  /// 오늘 계획된 이벤트 수. 하루 도중 복원하면 남은 것(현재 포함)만 센다 — 시계 라벨 전용.
+  int _dayTotal = 0;
+
+  /// 오늘 몇 개의 이벤트가 계획됐는지(현재 포함). 시계 시간대(02 §3 P1) 표시 전용.
+  int get todayEventTotal => _dayTotal;
+
+  /// 현재 이벤트가 오늘의 몇 번째인지(0부터). 시계 시간대 표시 전용.
+  int get todayEventIndex =>
+      (_dayTotal - _queue.length - (current == null ? 0 : 1)).clamp(
+        0,
+        _dayTotal == 0 ? 0 : _dayTotal - 1,
+      );
+
+  /// 지금 상태로 날짜 카드를 만든다. [hint] 는 마감 **전에** 읽어 둔 예고.
+  DayCard _dayCardFor(DayCardVariant variant, {TomorrowHint? hint}) {
+    final s = state!;
+    final chapter = s.chapter(config);
+    final firstOfChapter = (s.day - 1) % config.chapterLength == 0;
+    final overnight = overnightShifts.values.firstOrNull;
+    return DayCard(
+      variant: variant,
+      day: s.day,
+      run: s.run,
+      chapter: chapter,
+      chapterTitle: firstOfChapter ? config.chapterTitleFor(chapter) : null,
+      weekday: DayCard.weekdayFor(s.day),
+      weather: DayCard.weatherFor(s.seed, s.day, chapter),
+      hintCharacterId: hint?.characterId,
+      hintName: hint == null ? null : characterName(hint.characterId),
+      hintPreview: sayOrNull(hint?.preview),
+      overnight: variant == DayCardVariant.next && overnight != null
+          ? say(overnight)
+          : null,
+      previousRunLine: variant == DayCardVariant.first ? previousRunLine : null,
+    );
   }
 
   // ---- 하트 ----
@@ -880,6 +997,7 @@ class GameController extends ChangeNotifier {
     _queue
       ..clear()
       ..addAll(engine.planDay(s));
+    _dayTotal = _queue.length;
     // 하트를 쓴 시점을 저장한다. 여기서 끊기면 하트만 사라지고 하루는 안 시작된 게 된다.
     await _save(s);
     _nextEvent();
@@ -1040,6 +1158,9 @@ class GameController extends ChangeNotifier {
   /// 오늘 아침 홈 카드 문장으로 고정하고 반복 방지 기록에 넣는다([SignalBook.rollover]).
   Future<void> endDay() async {
     final s = state!;
+    // 예고는 마감 **전에** 읽는다 — 사본으로 내일을 미리 보는 값이라 마감 뒤에 읽으면
+    // 모레가 된다. _resetDay 가 캐시를 지우기 전에 카드로 옮겨 둔다.
+    final hint = tomorrowHint;
     final shown = todayShifts;
     final cast = roster;
     final before = {for (final ch in cast) ch.id: s.affectionOf(ch.id)};
@@ -1065,7 +1186,9 @@ class GameController extends ChangeNotifier {
       await _finish(resolver.resolve(s));
       return;
     }
-    phase = Phase.action;
+    // 엔딩이 아니면 행동 화면 대신 날짜 카드. 카드가 끝나면 beginMorning → action.
+    dayCard = _dayCardFor(DayCardVariant.next, hint: hint);
+    phase = Phase.dayStart;
     await _save(s);
     notifyListeners();
   }

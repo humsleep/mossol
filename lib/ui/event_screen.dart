@@ -19,13 +19,67 @@ import 'keep_all.dart';
 /// 전화 이벤트의 단계. docs/MOMENTS_SPEC.md §1.1.
 enum CallStage { ringing, active, declined }
 
+/// 하루 안의 가짜 시계(docs/overhaul/02_game_loop.md §3 P1). 표현 전용 — 엔진·세이브 무관.
+///
+/// 오늘 큐의 i 번째 이벤트에 시간대를 준다: 4개면 09·12·16·21, 3개면 10·15·21, 2개면 12·20,
+/// 1개면 19. 분은 `stableSeed(seed, day, 'clock$i') % 60`. 줄마다 +1분, `wait` 줄은 그 초만큼 더한다.
+/// 통화·미니게임 전후로는 흐르지 않는다.
+abstract final class ChatClock {
+  static const _slots = <int, List<int>>{
+    1: [19],
+    2: [12, 20],
+    3: [10, 15, 21],
+    4: [9, 12, 16, 21],
+  };
+
+  /// [total] 개 중 [index](0부터) 번째 이벤트의 시작 시각(자정부터 초). 5개 이상이면
+  /// 4칸 표에 비례해 얹는다.
+  static int startSeconds({
+    required int seed,
+    required int day,
+    required int index,
+    required int total,
+  }) {
+    final n = total.clamp(1, 4);
+    final table = _slots[n]!;
+    final i = total <= 4
+        ? index.clamp(0, n - 1)
+        : (index * n ~/ total).clamp(0, n - 1);
+    final minute = EventEngine.stableSeed(seed, day, 'clock$index') % 60;
+    return table[i] * 3600 + minute * 60;
+  }
+
+  /// `오후 4:12` — 한국어 12시간, 앞 0 없음.
+  static String label(int seconds) {
+    final h = (seconds ~/ 3600) % 24;
+    final m = (seconds ~/ 60) % 60;
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    final mm = m < 10 ? '0$m' : '$m';
+    return '${h < 12 ? '오전' : '오후'} $h12:$mm';
+  }
+
+  /// [lines] 각 줄의 시각(초). [start] 에서 줄마다 +60, `wait` 줄은 그 초만큼 더.
+  static List<int> timesFor(List<Line> lines, int start) {
+    final out = <int>[];
+    var t = start;
+    for (final l in lines) {
+      out.add(t);
+      t += 60;
+      if (l.isWait) t += l.wait;
+    }
+    return out;
+  }
+}
+
 /// 채팅형 이벤트 화면. 말풍선이 순서대로 나타나고, 끝나면 하단 패널이 올라온다.
 ///
-/// 규격: docs/DESIGN_SYSTEM.md §2.3.
+/// 규격: docs/DESIGN_SYSTEM.md §2.3, docs/overhaul/03_chat_ui_spec.md §1·§2.
 /// - 주인공은 말풍선 흐름이다. 대화 영역은 `tokens.chatBackground` 로 화면 바탕과
 ///   한 단 구분하고, 상단 헤더와 하단 패널은 배경으로 물러난다.
-/// - 헤더는 상대(이니셜 원형 + 이름) · 이벤트 제목 · 날짜 · 진행 막대까지
-///   한 줄로 정리한다. 진행 막대는 이 대화가 얼마나 남았는지를 알려 준다.
+/// - 헤더는 이름 + 상태 한 줄(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`)과 진행 막대뿐.
+///   이벤트 제목과 D+N 은 대화 첫 항목 `ChatDivider('D+N · 제목')` 로 내려갔다.
+/// - 상대 줄은 아바타 열(묶음 첫 줄만) → 이름 + 말풍선 → 시각·읽음 메타 열. 시각은
+///   [ChatClock] 의 가짜 시계, 읽음은 낱말 하나(숫자 배지 금지).
 /// - 컨트롤러 호출과 상태 사용 방식은 이전과 같다. 표현 계층만 바뀌었다.
 ///
 /// 모먼트 변형(docs/MOMENTS_SPEC.md, DESIGN_SYSTEM §2.3):
@@ -56,6 +110,16 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   Timer? _replyTimer;
   ChoiceOutcome? _replyFor;
 
+  /// 내 말풍선 옆 `읽음`. 보낸 뒤 500ms(실패 톤 1500ms) 지나 켜진다(04 §2.4).
+  bool _readShown = false;
+  Timer? _readTimer;
+
+  /// "쓰다 지움"(04 §2.3)을 이 이벤트에서 이미 했는지 — 이벤트당 1회.
+  bool _eraseDone = false;
+
+  /// 쓰다 지움의 빈 구간. 타이핑 표시를 페이드로 숨긴다(트리에는 남아 `'…'` 하나 유지).
+  bool _typingHidden = false;
+
   /// 전화 이벤트 단계. 채팅 이벤트에서는 쓰지 않는다.
   CallStage _callStage = CallStage.active;
 
@@ -69,6 +133,14 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
 
   /// 통화 중 대기 줄(`wait`)은 카운트다운 대신 이만큼 침묵한다. 벌점·광고 없음.
   static const callSilence = Duration(seconds: 2);
+
+  /// 쓰다 지움 박자: `…` 700ms → 사라짐 → 600ms 빈 상태 → `…` 다시 → 대사(04 §2.3).
+  static const eraseShow = Duration(milliseconds: 700);
+  static const eraseGap = Duration(milliseconds: 600);
+
+  /// `읽음` 지연. 실패 톤이면 "읽고 고민했다" 를 숫자 없이 전하려고 더 늦춘다.
+  static const readDelay = Duration(milliseconds: 500);
+  static const readDelayFail = Duration(milliseconds: 1500);
 
   /// initState 에서는 MediaQuery(동작 줄이기)를 읽을 수 없어서 첫 동기화를 미룬다.
   bool _started = false;
@@ -106,6 +178,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   void dispose() {
     _timer?.cancel();
     _replyTimer?.cancel();
+    _readTimer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
     _sfx.stopRing();
@@ -160,6 +233,8 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _callSeconds = 0;
     _previewOpen = false;
     _callStage = CallStage.active;
+    _eraseDone = false;
+    _typingHidden = false;
     // 처음부터 보는 이벤트일 때만 전화 수신·알림을 연출한다(복원·디버그 진입은 건너뜀).
     final fresh = ev != null && c.revealed == 0 && c.lastOutcome == null;
     if (ev != null && ev.isCall) {
@@ -253,13 +328,23 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
       _sfx.cue(o.success ? Sfx.choiceOk : Sfx.choiceFail);
     }
     _replyTimer?.cancel();
+    _readTimer?.cancel();
     _replyShown = 0;
+    // 되돌리기로 결과가 사라지면 읽음도 같이 사라진다.
+    _readShown = false;
     final total = c.lastReply.length;
-    if (o == null || total == 0) return;
+    if (o == null) return;
     if (MediaQuery.of(context).disableAnimations) {
       _replyShown = total;
+      _readShown = true;
       return;
     }
+    // 읽음은 보낸 뒤 조금 있다가. 실패면 더 늦게 — "읽고 고민했다".
+    _readTimer = Timer(o.success ? readDelay : readDelayFail, () {
+      if (!mounted || !identical(c.lastOutcome, o)) return;
+      setState(() => _readShown = true);
+    });
+    if (total == 0) return;
     void step() {
       _replyTimer = Timer(const Duration(milliseconds: 750), () {
         if (!mounted || !identical(c.lastOutcome, o)) return;
@@ -283,9 +368,37 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     });
   }
 
+  /// 상대 줄의 타이핑 시간. 긴 말은 오래 친다: `clamp(600 + 글자×18, 800, 2400)`ms.
+  /// 글자는 공백을 뺀 수(치는 건 글자다).
+  static int themDelayMs(String text) {
+    final chars = text.replaceAll(RegExp(r'\s'), '').length;
+    return (600 + chars * 18).clamp(800, 2400);
+  }
+
+  /// 이벤트 안 `them` 줄 중 가장 긴 줄인지(같은 길이면 앞쪽 하나만).
+  static bool isLongestThem(StoryEvent ev, int index) {
+    final line = ev.lines[index];
+    if (line.who != 'them') return false;
+    var best = -1;
+    for (var i = 0; i < ev.lines.length; i++) {
+      final l = ev.lines[i];
+      if (l.who == 'them' && l.text.length > best) best = l.text.length;
+    }
+    if (line.text.length != best) return false;
+    for (var i = 0; i < index; i++) {
+      final l = ev.lines[i];
+      if (l.who == 'them' && l.text.length == best) return false;
+    }
+    return true;
+  }
+
   /// 다음 줄을 자동으로 공개. 대기 줄이면 카운트다운.
+  ///
+  /// 상대 줄 앞에는 "쓰다 지움" 을 이벤트당 한 번 넣는다(04 §2.3): 가장 긴 `them` 줄이거나
+  /// 직전 줄이 `wait` 였을 때, `…` → 사라짐 → 빈 상태 → `…` → 대사. 동작 줄이기면 지연만.
   void _scheduleReveal() {
     _timer?.cancel();
+    if (_typingHidden) _typingHidden = false;
     final ev = c.current;
     if (ev == null || c.linesDone) return;
     final next = ev.lines[c.revealed];
@@ -302,15 +415,40 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
       _runWaitCountdown();
       return;
     }
-    final delay = switch (next.who) {
-      'me' => 450,
-      'narr' => 350,
-      _ => 800,
-    };
-    _timer = Timer(Duration(milliseconds: delay), () {
+    final delay = Duration(
+      milliseconds: switch (next.who) {
+        'me' => 450,
+        'narr' => 350,
+        'them' => themDelayMs(next.text),
+        _ => 800,
+      },
+    );
+    void reveal() {
       if (!mounted) return;
       c.revealNext();
       _scheduleReveal();
+    }
+
+    final afterWait = c.revealed > 0 && ev.lines[c.revealed - 1].isWait;
+    final erase =
+        next.who == 'them' &&
+        !ev.isCall &&
+        !_eraseDone &&
+        !AppMotion.reduced(context) &&
+        (afterWait || isLongestThem(ev, c.revealed));
+    if (!erase) {
+      _timer = Timer(delay, reveal);
+      return;
+    }
+    _eraseDone = true;
+    _timer = Timer(eraseShow, () {
+      if (!mounted) return;
+      setState(() => _typingHidden = true);
+      _timer = Timer(AppMotion.dFast + eraseGap, () {
+        if (!mounted) return;
+        setState(() => _typingHidden = false);
+        _timer = Timer(delay, reveal);
+      });
     });
   }
 
@@ -363,6 +501,29 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     'me' => '#me',
     _ => 'them:${l.name ?? partner}',
   };
+
+  /// 줄의 화자 캐릭터 id(03 §1.2). 이름이 없거나 상대 이름이면 상대 본인, 캐스트 이름이면
+  /// 그 id(그룹 대화), 그 밖(태현·엄마·모르는 번호)은 NPC → null.
+  String? _speakerIdFor(Line l, StoryEvent ev) {
+    final name = l.name;
+    if (name == null) return ev.character;
+    if (ev.character != null && name == c.characterName(ev.character)) {
+      return ev.character;
+    }
+    for (final ch in c.bundle.characters) {
+      if (ch.name == name) return ch.id;
+    }
+    return null;
+  }
+
+  /// 이벤트 안 서로 다른 `them` 화자 수(그룹 대화 판정).
+  int _themSpeakers(StoryEvent ev, String partner) {
+    final names = <String>{};
+    for (final l in ev.lines) {
+      if (l.who == 'them') names.add(l.name ?? partner);
+    }
+    return names.length;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -438,6 +599,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     final s = c.state!;
     final t = context.tokens;
     final accent = t.accentFor(ev.character);
+    final o = c.lastOutcome;
     final visible = missedCall
         ? const <Line>[]
         : ev.lines.take(c.revealed).toList();
@@ -445,76 +607,132 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     final waiting = waitLine != null && waitLine.isWait && _waitLeft > 0;
     final total = ev.lines.length;
     final progress = total == 0 || missedCall ? 1.0 : c.revealed / total;
+    final replying = o != null && _replyShown < c.lastReply.length;
+
+    // 지금까지 공개된 줄 전부: 대사 → 내 선택 → 상대 반응. 묶음·시계·읽음은 이 순서로 센다.
+    final pickedAt = o != null && _picked != null ? visible.length : -1;
+    final rows = <Line>[
+      ...visible,
+      if (pickedAt >= 0) Line(who: 'me', text: _picked!),
+      if (o != null) ...c.lastReply.take(_replyShown),
+    ];
+    final keys = [for (final l in rows) _speakerKey(l, partner)];
+    // 가짜 시계. 대사 줄은 큐의 시간대에서, 내 선택·반응은 그 뒤로 이어진다.
+    final times = ChatClock.timesFor(
+      rows,
+      ChatClock.startSeconds(
+        seed: s.seed,
+        day: s.day,
+        index: c.todayEventIndex,
+        total: c.todayEventTotal,
+      ),
+    );
+
+    // 다음에 칠 줄(타이핑 표시의 화자). 없으면 null.
+    final Line? upcoming = replying
+        ? c.lastReply[_replyShown]
+        : (o == null && !c.linesDone && !missedCall && !waiting)
+        ? ev.lines[c.revealed]
+        : null;
+
+    final bubbles = <Widget>[];
+    String? lastLabel;
+    for (var i = 0; i < rows.length; i++) {
+      final l = rows[i];
+      final first = i == 0 || keys[i - 1] != keys[i];
+      final last = i == rows.length - 1 || keys[i + 1] != keys[i];
+      // 시각은 묶음 마지막 줄에만. 직전 묶음과 같은 분이면 생략.
+      String? time;
+      if (last && (l.who == 'them' || l.who == 'me')) {
+        final label = ChatClock.label(times[i]);
+        if (label != lastLabel) time = label;
+        lastLabel = label;
+      }
+      // 읽음: 내 말 뒤로 상대 줄이 하나라도 공개됐을 때. 방금 보낸 말은 타이머(04 §2.4).
+      final read =
+          l.who == 'me' &&
+          (i == pickedAt
+              ? _readShown
+              : rows.skip(i + 1).any((x) => x.who == 'them'));
+      final id = _speakerIdFor(l, ev);
+      bubbles.add(
+        ChatBubble(
+          line: l,
+          partnerName: partner,
+          accent: t.accentFor(id),
+          characterId: id,
+          isFirstOfGroup: first,
+          isLastOfGroup: last,
+          showAvatar: first,
+          meta: time == null && !read ? null : ChatMeta(time: time, read: read),
+        ),
+      );
+    }
 
     return Scaffold(
-      appBar: _header(context, ev, partner, accent, s.day, progress),
+      appBar: _header(
+        context,
+        ev,
+        partner,
+        accent,
+        progress,
+        status: missedCall
+            ? '부재중'
+            : waiting
+            ? '자리 비움'
+            : switch (_themSpeakers(ev, partner)) {
+                final n when n >= 2 => '온라인 · ${n + 1}명',
+                _ => '온라인',
+              },
+      ),
       body: Column(
         children: [
           // 대화 영역만 한 단 어두운(밝은) 바탕을 깔아 패널·헤더와 분리한다.
           Expanded(
             child: ColoredBox(
               color: t.chatBackground,
-              child: ListView(
+              // 대화는 길어야 십수 줄이라 전부 그린다. 게으른 ListView 는 끝 높이를 어림해
+              // 마지막 줄(대기 블록·사진)로 스크롤이 못 미칠 때가 있다.
+              child: SingleChildScrollView(
                 controller: _scroll,
                 padding: const EdgeInsets.only(
                   top: AppSpace.sm,
                   bottom: AppSpace.lg,
                 ),
-                children: [
-                  if (missedCall) _MissedCall(name: partner),
-                  for (var i = 0; i < visible.length; i++)
-                    ChatBubble(
-                      line: visible[i],
-                      partnerName: partner,
-                      accent: accent,
-                      isFirstOfGroup:
-                          i == 0 ||
-                          _speakerKey(visible[i - 1], partner) !=
-                              _speakerKey(visible[i], partner),
-                      isLastOfGroup:
-                          i == visible.length - 1 ||
-                          _speakerKey(visible[i + 1], partner) !=
-                              _speakerKey(visible[i], partner),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 제목은 헤더가 아니라 대화의 첫 줄이다.
+                    ChatDivider(
+                      text: ev.title.isEmpty
+                          ? 'D+${s.day}'
+                          : 'D+${s.day} · ${ev.title}',
                     ),
-                  if (c.lastOutcome != null && _picked != null)
-                    ChatBubble(
-                      line: Line(who: 'me', text: _picked!),
-                      partnerName: partner,
-                      accent: accent,
-                      isFirstOfGroup:
-                          visible.isEmpty ||
-                          _speakerKey(visible.last, partner) != '#me',
-                    ),
-                  if (c.lastOutcome != null) ...[
-                    for (final (i, l) in c.lastReply.take(_replyShown).indexed)
-                      ChatBubble(
-                        line: l,
-                        partnerName: partner,
-                        accent: accent,
-                        isFirstOfGroup:
-                            i == 0 ||
-                            _speakerKey(c.lastReply[i - 1], partner) !=
-                                _speakerKey(l, partner),
+                    if (missedCall) _MissedCall(name: partner),
+                    ...bubbles,
+                    if (waiting)
+                      _WaitingBlock(
+                        secondsLeft: _waitLeft,
+                        secondsTotal: waitLine.wait,
+                        onSkip: _skipWait,
+                      )
+                    else if (upcoming != null)
+                      _typing(
+                        upcoming,
+                        ev,
+                        partner,
+                        first:
+                            keys.isEmpty ||
+                            keys.last != _speakerKey(upcoming, partner),
                       ),
-                    if (_replyShown < c.lastReply.length) const _TypingBubble(),
                   ],
-                  if (waiting)
-                    _WaitingBlock(
-                      secondsLeft: _waitLeft,
-                      secondsTotal: waitLine.wait,
-                      onSkip: _skipWait,
-                    )
-                  else if (!c.linesDone && !missedCall)
-                    const _TypingBubble(),
-                ],
+                ),
               ),
             ),
           ),
           // 결과 패널은 상대 반응을 다 보여 준 뒤에 올린다. 대화의 끝을 먼저 읽게 한다.
-          if (c.lastOutcome != null)
-            _replyShown >= c.lastReply.length
-                ? _ResultPanel(c: c)
-                : const SizedBox.shrink()
+          if (o != null)
+            replying ? const SizedBox.shrink() : _ResultPanel(c: c)
           else if (c.linesDone)
             _ChoicePanel(c: c, onPicked: (text) => _picked = text),
         ],
@@ -522,85 +740,76 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// 상대 · 제목 · 날짜 · 대화 진행도를 한 줄에 정리한 헤더.
+  /// 타이핑 표시. 다음 줄이 `them` 이면 그 화자의 아바타 + 말풍선 `'…'`, 지문·시스템 줄이면
+  /// 가운데 `'…'`([CallTyping]) — 지문이 "입력 중" 으로 읽히면 이상하다. 어느 쪽이든
+  /// `Text('…')` 는 정확히 하나다. 쓰다 지움의 빈 구간은 불투명도로만 숨긴다.
+  Widget _typing(
+    Line next,
+    StoryEvent ev,
+    String partner, {
+    required bool first,
+  }) {
+    if (next.who != 'them') return const CallTyping();
+    final id = _speakerIdFor(next, ev);
+    return AnimatedOpacity(
+      opacity: _typingHidden ? 0 : 1,
+      duration: AppMotion.fast(context),
+      child: TypingIndicator(
+        name: next.name ?? partner,
+        characterId: id,
+        accent: context.tokens.accentFor(id),
+        showAvatar: first,
+      ),
+    );
+  }
+
+  /// 이름 + 상태 한 줄 + 대화 진행도. 아바타·제목·D+N 은 없다(03 §2) — 제목은 [ChatDivider].
+  /// 상대 없는 독백 이벤트는 제목이 이름 자리에 오고 상태 줄이 없다.
   PreferredSizeWidget _header(
     BuildContext context,
     StoryEvent ev,
     String partner,
     CharacterAccent accent,
-    int day,
-    double progress,
-  ) {
+    double progress, {
+    required String status,
+  }) {
     final scheme = context.scheme;
     final t = context.tokens;
     final hasPartner = partner.isNotEmpty;
 
     return AppBar(
       titleSpacing: AppSpace.lg,
-      title: Row(
-        children: [
-          if (hasPartner) ...[
-            ExcludeSemantics(
-              child: CharacterAvatar(
-                name: partner,
-                characterId: ev.character,
-                accent: accent,
-                size: AppSpace.xxxl,
-              ),
-            ),
-            const SizedBox(width: AppSpace.sm),
-          ],
-          Expanded(
-            child: Text.rich(
-              TextSpan(
+      title: hasPartner
+          ? Semantics(
+              label: '$partner, $status',
+              excludeSemantics: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (hasPartner) ...[
-                    TextSpan(text: partner, style: context.text.titleLarge),
-                    // 구분점도 글자다. 대비 기준(4.5:1)을 넘는 2차색을 쓴다.
-                    TextSpan(
-                      text: '  ·  ',
-                      style: context.text.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                  Text(
+                    partner,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleLarge,
+                  ),
+                  Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
-                  ],
-                  TextSpan(
-                    text: ev.title,
-                    style: (hasPartner
-                        ? context.text.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          )
-                        : context.text.titleLarge),
                   ),
                 ],
               ),
+            )
+          : Text(
+              ev.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: context.text.titleLarge,
             ),
-          ),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpace.sm),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xs,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                borderRadius: AppRadius.rPill,
-              ),
-              child: Text(
-                'D+$day',
-                style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ),
-          ),
-        ),
-      ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(AppSpace.xs),
         child: AppProgressBar(
@@ -615,7 +824,6 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   }
 }
 
-/// 상대 이니셜 원형. 사진 대신 강조색 한 글자로 누구인지 알린다(§4.3).
 /// 거절한 전화 자리 표시. 시스템 줄과 같은 중립 pill 이되 아이콘을 붙이고 글자는
 /// 본문 2차색(`onSurfaceVariant`)으로 둔다 — 이 줄은 장식이 아니라 사건이라 읽혀야 한다.
 class _MissedCall extends StatelessWidget {
@@ -652,44 +860,6 @@ class _MissedCall extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 타이핑 중 표시. 상대 말풍선과 같은 껍데기라 "다음 줄이 오는 중" 으로 읽힌다.
-///
-/// 문구 '…' 는 고정이다(§4.1 이벤트 화면 테스트). 깜빡이는 반복 애니메이션은
-/// 넣지 않는다 — 읽는 흐름을 방해하고 동작 줄이기 설정과도 충돌한다.
-class _TypingBubble extends StatelessWidget {
-  const _TypingBubble();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.tokens;
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: AppSpace.md,
-        right: AppSpace.md,
-        top: AppSpace.sm,
-      ),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Container(
-          padding: AppInsets.bubble,
-          decoration: BoxDecoration(
-            color: t.bubbleTheirs,
-            borderRadius: AppRadius.bubble(mine: false),
-            border: Border.all(
-              color: t.bubbleBorder,
-              width: AppBorderWidth.hairline,
-            ),
-          ),
-          child: Text(
-            '…',
-            style: context.text.titleMedium?.copyWith(color: t.systemLine),
           ),
         ),
       ),

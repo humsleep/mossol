@@ -763,7 +763,7 @@ class _PortraitPreviewScreenState extends State<PortraitPreviewScreen> {
                         name: c.name,
                         characterId: c.id,
                         accent: context.tokens.accentFor(c.id),
-                        size: 48,
+                        size: AppSize.avatarMd,
                       ),
                   ],
                 ),
@@ -870,7 +870,11 @@ class _PortraitRow extends StatelessWidget {
                   size: size,
                 ),
               if (c.hidden)
-                const CharacterAvatar(name: '', mystery: true, size: 56),
+                const CharacterAvatar(
+                  name: '',
+                  mystery: true,
+                  size: AppSize.avatarLg,
+                ),
             ],
           ),
         ],

@@ -162,6 +162,28 @@ abstract final class AppSpace {
   static const double minTouch = 44;
 }
 
+/// 4 배수 고정 치수. 간격([AppSpace])이 아니라 요소의 크기다(DESIGN_SYSTEM §1.11).
+/// `CharacterAvatar.size` 는 `avatar*` 네 값만 받는다.
+abstract final class AppSize {
+  /// 홈 신호 줄.
+  static const double avatarSm = 32;
+
+  /// 채팅 아바타, 알림 카드, 통화 헤더.
+  static const double avatarMd = 40;
+
+  /// 캐스트 카드(320pt).
+  static const double avatarLg = 56;
+
+  /// 캐스트 카드.
+  static const double avatarXl = 72;
+
+  /// 채팅 스티커 한 변.
+  static const double sticker = 120;
+
+  /// AdSize.banner 높이.
+  static const double banner = 50;
+}
+
 /// 자주 쓰는 EdgeInsets 묶음.
 abstract final class AppInsets {
   static const screen = EdgeInsets.symmetric(

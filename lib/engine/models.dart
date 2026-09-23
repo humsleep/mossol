@@ -984,6 +984,10 @@ class GameConfig {
 
   static const defaultCompatMultiplier = [1.0, 1.0, 1.0, 1.03, 1.06];
 
+  /// 장 제목(`chapterTitles`, 선택). 날짜 카드의 장 첫날 pill 에만 쓴다 — 표시 전용이라
+  /// 엔진·계획에는 들어가지 않는다(docs/overhaul/02_game_loop.md §2.2). 없으면 빈 목록.
+  final List<String> chapterTitles;
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -993,7 +997,16 @@ class GameConfig {
     this.actions = const [],
     this.earlyAffection = EarlyAffection.none,
     this.compatMultiplier = defaultCompatMultiplier,
+    this.chapterTitles = const [],
   });
+
+  /// [chapter](1부터) 의 제목. 없거나 비어 있으면 null.
+  String? chapterTitleFor(int chapter) {
+    final i = chapter - 1;
+    if (i < 0 || i >= chapterTitles.length) return null;
+    final t = chapterTitles[i].trim();
+    return t.isEmpty ? null : t;
+  }
 
   /// 궁합 점수 [score] 의 호감 상승 배율. 범위 밖이면 1.
   double compatMultiplierFor(int score) =>
@@ -1015,6 +1028,9 @@ class GameConfig {
       final List l => [for (final v in l) (v as num).toDouble()],
       _ => defaultCompatMultiplier,
     },
+    chapterTitles: [
+      for (final v in (j['chapterTitles'] as List?) ?? const []) '$v',
+    ],
   );
 }
 

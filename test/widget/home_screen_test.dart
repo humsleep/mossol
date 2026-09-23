@@ -578,6 +578,9 @@ void main() {
       await freshRun();
       c.state!.rel('seoyeon').affection = 10;
       await c.endDay();
+      expect(c.phase, Phase.dayStart);
+      expect(c.dayCard!.overnight, c.say(c.overnightShifts['seoyeon']!));
+      c.beginMorning();
       expect(c.phase, Phase.action);
       final text = c.overnightShifts['seoyeon']!;
       await tester.pumpWidget(fullApp(c));

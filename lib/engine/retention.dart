@@ -227,6 +227,9 @@ class TomorrowPeek {
 
   /// 화면 문장. [name] 은 캐릭터 이름.
   static String lineFor(String name) => '내일 $name에게서 연락이 올 것 같다';
+
+  /// 같은 예고를 다음 날 아침(날짜 카드)에서 읽을 때. "내일" 이 "오늘" 이 된다.
+  static String todayLineFor(String name) => '오늘 $name에게서 연락이 올 것 같다';
 }
 
 // ---------------------------------------------------------------------------

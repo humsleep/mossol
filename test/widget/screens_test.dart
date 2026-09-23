@@ -17,6 +17,8 @@ void main() {
   setUp(() async {
     c = await makeController();
     await c.newGame(seed: 5);
+    // 새 게임은 날짜 카드(dayStart)로 시작한다. 화면 단위 테스트는 아침부터.
+    c.beginMorning();
   });
 
   group('행동 화면', () {
@@ -159,7 +161,8 @@ void main() {
       final endedId = c.ending!.id;
       await tester.tap(findText('2회차 시작'));
       await tester.pump();
-      expect(c.phase, Phase.action);
+      // 새 회차는 first 카드를 지나 행동 화면으로. spinRouletteSheet 의 pumpAndSettle 이 통과한다.
+      expect(c.phase, Phase.dayStart);
       expect(c.state!.run, 2);
       expect(c.state!.day, 1);
       expect(c.state!.endings, contains(endedId), reason: '엔딩 앨범은 회차를 넘어 유지된다');
@@ -290,7 +293,7 @@ void main() {
       await tester.tap(findText('다음 날로'));
       await tester.pump();
       expect(c.state!.day, 2);
-      expect(c.phase, Phase.action);
+      expect(c.phase, Phase.dayStart, reason: '광고 → endDay → 날짜 카드');
       await spinRouletteSheet(tester);
     });
   });
