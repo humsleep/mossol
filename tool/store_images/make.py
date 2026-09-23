@@ -17,7 +17,11 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW = os.path.join(ROOT, "docs", "store_screenshots", "raw")
 OUT = os.path.join(ROOT, "docs", "store_screenshots", "promo")
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-W, H = 1320, 2868
+
+# App Store 스크린샷 규격. 기본은 6.9형 한 벌(작은 기기는 Apple 이 줄여서 쓴다).
+# 6.5형 칸만 보이는 화면이면 `python3 make.py --65` 로 1284×2778 한 벌을 따로 만든다.
+SIZES = {"6.9": (1320, 2868), "6.5": (1284, 2778)}
+W, H = SIZES["6.9"]
 
 # (출력 이름, 원본, 헤드라인, 보조, 테마)
 SLIDES = [
@@ -96,8 +100,13 @@ def render(name, src, headline, subline, theme, mask_from=None):
 
 if __name__ == "__main__":
     import sys
+    args = sys.argv[1:]
+    if "--65" in args:
+        args.remove("--65")
+        W, H = SIZES["6.5"]
+        OUT = OUT + "65"
     os.makedirs(OUT, exist_ok=True)
-    only = set(sys.argv[1:])  # 예: python3 make.py 07 08
+    only = set(args)  # 예: python3 make.py 07 08
     for s in SLIDES:
         if not only or s[0] in only:
             render(*s)
