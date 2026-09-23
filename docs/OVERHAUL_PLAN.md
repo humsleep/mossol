@@ -25,54 +25,63 @@
 - 배너: `BannerSlot` 이 홈·행동·정산·앨범·설정의 `bottomNavigationBar`. 채팅 화면엔 없음(선택지 옆 배너 = AdMob 우발 클릭 정책 위반, `ad_manager.dart` 주석).
 - 선택지: 이벤트당 3개 고정, `require`/`chance`/`minigame`.
 
-## 2. 항목별 설계 방향 (에이전트가 채울 자리)
+## 2. 항목별 확정 설계 (2026-09-23 연구 단계 종료)
 
-### A. 채팅 UI (카톡형)
-- 상대 말풍선 그룹의 **첫 줄에만** 아바타(40pt) + 이름. 이어지는 줄은 아바타 자리만 비움.
-- 내 말풍선은 오른쪽, 아바타 없음. narr/sys 는 가운데 캡슐.
-- 상단 AppBar: **이름만**(+ 온라인/통화중 같은 상태 한 줄 가능). 아바타 제거.
-- 그룹 대화(둘 이상 등장)는 화자마다 아바타. `Line.who` 가 캐릭터 id 를 이미 담고 있는지 확인.
-- DESIGN_SYSTEM.md §2.3 갱신 필요.
+세부는 `docs/overhaul/01~07` 에 있고, 여기는 **확정본과 문서 간 충돌의 결정**만 적는다.
+충돌 결정: Day 카드는 02 방식(`Phase.dayStart`), 타이핑은 04 방식(반복 깜빡임 없음, "쓰다 지움" 1회), 시계는 02 방식(이벤트 시간대), 효과음은 05 목록에서 `bubble_in` 제외.
 
-### B. 날짜 전환 화면
-- 정산 "다음 날" → **풀스크린 "D+N" 카드**(1.2~1.6초, 탭으로 건너뛰기) → 룰렛 시트.
-- 요일·날씨·장(章) 이름을 같이. 동작 줄이기 설정이면 페이드만.
-- 첫날(D+1)은 새 회차 인트로와 합침.
+### A. 채팅 UI (카톡형) — `03_chat_ui_spec.md` §1·§2, `04` #3·#4·#5·#7·#16
+- 상대 줄 3열: `CharacterAvatar(AppSize.avatarMd=40)`(묶음 첫 줄만, 이후는 같은 폭 빈 칸) → `sm` → 이름(`labelSmall` 강조색, 색 점 제거)+말풍선 → `xs` → 메타(시각·읽음). 내 줄은 반전, 아바타 없음.
+- 아바타 id: `Line.name` → 캐스트 id 역산(`_speakerIdFor`), NPC 는 이니셜(중립색), `'모르는 번호'` 는 실루엣.
+- AppBar: 이름 `titleLarge` + 상태 `labelSmall`(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`). 아바타·제목·D+N pill 제거. 제목은 대화 첫 항목 `ChatDivider('D+N · 제목')`.
+- 메타 열: 시각은 묶음 마지막 말풍선 옆 `오후 4:12`(02 P1 시간대: 이벤트 i 에 09/12/16/21 슬롯 + 줄당 1분 + wait), `읽음` 은 낱말만(숫자 배지 금지) — 보낸 뒤 500ms(실패 톤 1500ms) 뒤 표시 → 그 뒤 타이핑.
+- 타이핑: `_TypingBubble` 에 화자 아바타 추가, `Text('…')` 한 개 유지, 깜빡임 없음. 긴 대사 앞 "쓰다 지움"(… → 사라짐 → …) 이벤트당 1회. them 지연 `clamp(600+글자×18, 800, 2400)`.
+- 스티커 슬롯 `Line.sticker`(`AppSize.sticker=120`, 에셋 없으면 안 그림). 사진은 현행.
+- 나중에(P2): 헤더 상태줄에 관계 단계 문구(01 #3), 아바타 탭 → 프로필(01 #4).
 
-### C. 사운드·햅틱
-- 이벤트: 문자 도착(알림 카드), 전화 벨(반복, 받거나 거절할 때까지), 통화 종료, 선택 확정, 정산 카드, 엔딩.
-- 햅틱: `HapticFeedback`(내장). 전화 벨은 반복 진동, 문자는 한 번.
-- 에셋: CC0/OFL 급 효과음 6~8개, `assets/sfx/`. 라이선스 파일 동봉.
-- 설정: 효과음·진동 각각 토글. iOS 무음 스위치 존중(`audioplayers` 의 AudioContext).
-- 패키지 후보: `audioplayers` (진동은 내장으로 충분, `vibration` 패키지는 보류).
+### B. 날짜 전환 카드 — `02_game_loop.md` §2, 시각은 `03` §4.1
+- `Phase.dayStart`(저장 안 함) + `DayCard`(메모리) + `beginMorning()`(멱등). `endDay()`→`dayStart[next]`→`action`(룰렛 자동), `newGame()`→`[first]`, `continueGame(dayStarted=false)`→`[resume]`. 엔딩 날은 카드 없음. 광고 순서는 광고→`endDay()`→카드.
+- 내용: `수요일 · 흐림`(요일 `(day-1)%7`, 날씨 `stableSeed`) → `D+N`(`displayLarge` tabular, 첫 사용처) → `N일째 아침` / 장 첫날은 `2장 · 제목`(`config.json` `chapterTitles` 선택) → 예고(`endDay` 진입 시 `tomorrowHint` 를 `_resetDay` 전에 옮김) → 밤사이 한 줄 → `탭해서 넘기기`.
+- 시간: `AnimationController` 하나로 1.4s(first 2.2s, resume 1.0s), 첫 350ms 탭 무시. **Timer 금지**(`pumpAndSettle` 이 통과해야 14개 위젯 테스트가 산다). 동작 줄이기: 진입·퇴장 즉시, 체류는 그대로.
+- 배경 `CallBackdrop`. 소리 `day_start` + `lightImpact`. 고정 문구 `'D+N'` 단독 Text, `'N일째'`, `'탭해서 넘기기'`, `Key('day-card')`. 기존 `'D+1  ·  1장'`·`'오늘의 운'` 과 충돌 금지.
+- 같이 가는 것: P1 하루 시계(A 와 한 PR), P3 아침 행동 메아리(별도 소형). P2 장 제목 5줄은 작가 작업.
 
-### D. 장면 삽화
-- 슬롯: 이벤트 JSON 에 `image` 필드(선택) → 채팅 상단 또는 첫 말풍선 위에 삽화 카드. 없으면 지금과 동일.
-- 우선 대상 30~50장면: 모먼트 30개 + 전화 + 엔딩 12 + 첫날. 447개 전부는 아니다.
-- 스티커: 캐릭터별 감정 4종(기쁨·삐짐·부끄·놀람) × 12 = 48장 → 특정 대사 뒤에 붙임. `Line.sticker` 필드.
-- 프롬프트 문서 `docs/SCENE_PROMPTS.md` — PORTRAIT_PROMPTS.md 의 형식·교훈(관찰 로그 #4: 액세서리만 바꾸면 같은 사람이 된다)을 따른다.
-- GIF 는 용량(16MB 앱 아님, 스토어 앱이지만 다운로드 크기) 때문에 정적 PNG/WebP 우선, 움직임은 Flutter 애니메이션으로.
+### C. 사운드·햅틱 — `05_audio_haptics.md`, 연출은 `04` §2.1·§2.2
+- `audioplayers` 6.x, `AudioContextIOS(ambient, mixWithOthers)` — 무음 스위치 존중, 백그라운드 재생 없음. 진동은 내장 `HapticFeedback` 만.
+- 큐 11개: `msg_in`(medium) · `call_ring`(루프, 진동 2.6s 주기 2연타, 20s 뒤 진동 자동 정지) · `call_connect`(light) · `call_end`(medium) · `msg_out`(selection) · `wait_read`(light) · `choice_ok`(medium) · `choice_fail`(heavy) · `summary`(light) · `ending`(P0, heavy→light) · `day_start`(light). 말풍선 도착음 없음.
+- `SfxService` 추상 + `NoopSfxService` 기본(위젯 테스트 무영향) + `RecordingSfxService`(테스트). 설정에 효과음·진동 토글(`PlayerMeta` 추가 필드), 나중에 대사 속도 `보통/빠르게`.
+- 에셋: `assets/sfx/`, ≤0.5s 는 WAV, 나머지 m4a, `.ogg` 금지, LICENSES.md 필수. 애플·카톡 소리 금지. **1차 구현은 합성 톤(placeholder)으로 하고 실제 효과음은 사용자가 CC0 에서 교체.**
+- 검토(나중): 전화 받기 10초 카운트다운(01 권고 1, 게임 규칙 변경이라 보류).
 
-### E. 배너 상단
-- `BannerSlot` 을 홈·행동·정산·앨범·설정에서 `appBar` 아래(body 첫 줄)로. SafeArea 처리.
-- 채팅 화면은 계속 없음. 룰렛·다이얼로그 위에 겹치지 않게.
+### D. 장면 삽화·스티커 — `06_scene_plan.md`, 프롬프트 `docs/SCENE_PROMPTS.md`
+- 3종: 장면(3:2, 이벤트 위 카드·통화 배경), 사진 메시지(4:3, `photo.icon` 12종 실제 그림 + `photo.image` 덮어쓰기), 스티커(1:1 투명, 12×4 + 4명은 5번째). 엔딩은 캐릭터당 히어로 1장(+공용 3).
+- 원칙: 얼굴은 스티커에만(초상화 기반), 장면·사진은 뒷모습·손·소품. 글자 0. 12+. 하루 최대 1장.
+- 데이터: `image`(이벤트·엔딩), `sticker`(줄), `photo.image` — 전부 선택 필드. `assets/scenes|photos|stickers|endings/`. `PortraitRegistry` 와 같은 매니페스트 레지스트리. 없으면 지금과 동일(자리도 안 잡음). 총 ~113장 ~11MB, GIF 없음.
+- 나중에(01 권고 5): 호감도 단계 해금 이미지·앨범 연동.
 
-### F. 자유 입력 (제한형)
-- 선택지 패널에 입력창 하나. 보낸 문장을 **로컬에서** 기존 선택지 3개 중 하나로 매핑(키워드·감정어·길이). 매핑 신뢰도 낮으면 "이런 뜻이에요?" 로 3개 중 고르게.
-- 내 말풍선에는 **사용자가 친 문장 그대로** 남긴다(선택지 원문 대신). 이게 몰입의 핵심.
-- 상대 반응은 기존 outcome. 서버·LLM 없음. 나중에 풀 LLM 으로 갈 때 이 입력창과 매핑 로그가 학습 데이터가 된다.
-- 위험: 매핑이 틀리면 "내 말을 못 알아듣는다" 가 더 나쁜 경험. 신뢰도 임계값과 되돌리기(광고 없이 1회) 필요.
+### E. 배너 상단 — `03` §3
+- `BannerSlot(edge: top, safeArea: false)` 를 홈(헤더 줄 위)·행동·정산·앨범(TabBar 아래)·설정 body `Column` 첫 줄에. `bottomNavigationBar` 제거. `BannerFrame.edge` 추가(아래 경계선, `margin.bottom: sm`). 고정 `AdSize.banner`, `AnimatedSize`.
+- 채팅·통화·알림·시트·다이얼로그 안 금지. 모달 스크림이 배너를 덮는 건 정상. 광고 빈도는 늘리지 않는다(01 반면교사).
 
-### G. 벤치마킹
-- AI 채팅 앱(제타·Character.ai 류): 첫 화면 즉시 대화, 캐릭터 프로필, 읽음 표시, 타이핑 인디케이터, 프로필 사진 클릭 시 캐릭터 페이지.
-- 프린세스 메이커: 일정표식 하루 계획, 스탯 그래프, 월말 이벤트, 엔딩 갤러리 — 지금 앱과 구조가 비슷. 아침 행동 화면을 "이번 주 계획" 으로 확장 여부 검토.
+### F. 자유 입력(제한형) — `07_free_input.md`
+- `lib/engine/free_input.dart` 순수 함수: 음절 바이그램 Dice(선택지 0.40 + 반응 0.15) + 의도 태그 Jaccard 0.35(효과값에서도 태그 도출 — 선택지 40% 가 행동문) + 문체 0.10, 극성 페널티.
+- 자동 확정 s1 ≥ 0.38 & 여유 ≥ 0.12(chance/minigame/잠김은 항상 1탭 확인), 아니면 "이런 뜻이에요?" 3택. 동점은 무작위 금지.
+- UX: 버튼 3개 유지 + 아래 입력창, 키보드 올라오면 버튼은 칩 줄. 내 말풍선엔 친 문장 그대로. 무료 되돌리기 이벤트당 1회(자동 확정건만). 결과 패널에 `→ 원문` 캡션.
+- 저장 `GameState.freeInputs`(최근 30, ≤80자, 추가만). 분석은 구조 지표만, 원문 전송 금지. 픽스처 `test/fixtures/free_input.json`(15 이벤트 × 3문장), 저분리 이벤트 리포트 `tool/intent_report.py`, 선택 필드 `intent`.
 
-## 3. 순서
+### G. 벤치마킹 — `01_benchmark.md`
+- 권고 순서 C → A → B → F → D. Top 10 을 찍은 두 국내 사례는 형식의 신선함으로 올라가 과금·광고로 내려왔다.
+- 제타가 2026 베타로 "선택지 + 직접 작성" 하이브리드에 도달 — F 설계와 동형.
 
-1. **연구·설계** (병렬): 벤치마킹, 게임 루프 진단, 채팅 UI 명세, 오디오·햅틱 명세, 삽화·스티커 프롬프트 세트, 제한형 자유 입력 설계 → 이 문서 §2 를 확정본으로 갱신.
-2. **구현 1차** (코드만): A, B, C, E, F. 위젯·통합 테스트, 시뮬레이터 확인, 회귀 0.
-3. **구현 2차** (에셋): D 슬롯·JSON 필드 먼저, 프롬프트 문서 전달 → 그림 도착하면 투입.
-4. 풀 LLM 자유 입력은 별도 트랙(백엔드·비용·심의).
+## 3. 구현 순서 (확정)
+
+| 단계 | 내용 | 파일 | 에이전트 |
+|---|---|---|---|
+| 1 | **C+E**: `SfxService`·큐 11개·합성 placeholder 에셋·설정 토글 + 배너 상단 이동 | `lib/audio/`, `settings_screen`, `widgets(BannerFrame)`, 5개 화면, `event_screen` 훅, pubspec | Mobile App Builder |
+| 2 | **A+B**: 3열 말풍선·아바타·헤더·구분줄·시계·읽음·타이핑·"쓰다 지움" + `Phase.dayStart`·`DayCard`·`DayTransitionScreen` + DESIGN_SYSTEM 갱신 | `event_screen`, `widgets(ChatBubble…)`, `design_system(AppSize)`, `game_controller`, `day_card.dart`, `main.dart` | Mobile App Builder (+UI Designer 검수) |
+| 3 | **F**: 매처·픽스처·입력창·되돌리기·지표 | `engine/free_input*.dart`, `event_screen`, `models(GameState)`, `tool/intent_report.py` | Mobile App Builder + Narrative Designer(픽스처 검증) |
+| 4 | **D 슬롯**: 레지스트리·JSON 필드·삽화 카드·스티커·사진 실제 그림 (그림은 사용자가 `SCENE_PROMPTS.md` 로 생성) | `portraits.dart` 확장, `models`, `photo_card`, `event_screen` | Mobile App Builder |
+| 각 단계 뒤 | `flutter analyze`, `flutter test`(회귀 0), 시뮬레이터 확인, Reality Checker 검수, 커밋 | | Reality Checker |
 
 ## 4. 하지 않는 것 / 주의
 
