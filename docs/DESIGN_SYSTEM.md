@@ -235,8 +235,11 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 ## 2. 화면별 레이아웃 지침
 
-공통: 세로 전용. 모든 화면은 `SafeArea` 안. 화면 좌우 여백 20. 하단 `BannerSlot` 이
-있는 화면은 광고가 없을 때 높이 0 이어야 한다(현재 동작 유지).
+공통: 세로 전용. 모든 화면은 `SafeArea` 안. 화면 좌우 여백 20. 배너는 **화면 상단**(AppBar
+바로 아래, 홈은 헤더 줄 위)에 `BannerSlot(edge: top, safeArea: false)` 로 두고 `body` 는
+`Column([BannerSlot, Expanded(본문)])` 이다. 광고가 없을 때 높이 0, 로드되면 `AnimatedSize`
+로 내려앉는다. 채팅·통화·알림 화면에는 두지 않는다(우발 클릭 정책). 시트·다이얼로그 안에도 두지
+않는다. 모달의 스크림이 배너를 덮는 것은 정상이다. `bottomNavigationBar` 배너는 폐지.
 
 ### 2.1 홈 (`home_screen.dart`)
 
@@ -244,7 +247,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 - **주인공**: 히어로 카드(첫 실행: 소개 카드 / 세이브 있음: 이어하기 카드)와 그 아래 1차 버튼 하나.
 - **배경**: 헤더 워드마크, 자원 줄(하트), 출석 줄, 사람들 스트립, 앨범 카드. 설정은 헤더 우측 아이콘.
-- 구성(위→아래, `ListView`, 패딩 20/16/20/24): 헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정
+- 구성(위→아래, `SafeArea` 안 `Column`: `BannerSlot(top)` → `Expanded(ListView)`, 패딩 20/16/20/24):
+  `BannerSlot(top)` → 헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정
   `IconButton`) → `md` → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
   TextButton, 한 줄 고정) → `md` → 출석 줄(`RewardStrip`) → `md` → 1차 버튼(`이어하기` 또는 `새 게임`
   FilledButton) → [세이브 있음] `sm` + `새 게임` TextButton → `sectionGap` → `SectionHeader('사람들')`
@@ -258,6 +262,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   실기기에서 휑함으로 읽혔다.
 - 높이 예산: 320×568 · 글자 1.3배 · 배너 있음에서 1차 버튼 하단 ≤ 568. 이를 위해 카드 안 텍스트는
   전부 `maxLines` 를 건다(예고 2줄, 소개 헤드라인 2줄, 단계 1줄). 예산표는 HOME_REDESIGN §1.5.
+  배너가 위에 있으므로 잘리는 쪽은 히어로 카드가 아니라 1차 버튼이다 — 총 높이는 같아 예산은 그대로.
 - 캐릭터는 `CastStrip` 으로 호감 순 가로 한 줄. 히든(도윤)은 해금 전 `???` + 실루엣 아바타, 항상 맨 뒤.
   `???` 글자색은 `onSurfaceVariant`(`lockedForeground` 는 라이트 바탕 3.9:1 로 본문 대비 미달 — 잠김은
   실루엣이 먼저 말한다).
@@ -268,7 +273,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ### 2.2 행동 선택 (`action_screen.dart`)
 - **주인공**: "오늘 뭘 할까" 아래 행동 카드 목록.
 - **배경**: 하트/콤보 줄, 스탯 막대, 관계 칩.
-- 구성(위→아래): AppBar(`D+N  ·  N장`) → 상태 줄(`HeartsRow` + `ComboBadge`) → `md`
+- 구성(위→아래): AppBar(`D+N  ·  N장`) → `BannerSlot(top)` → 상태 줄(`HeartsRow` + `ComboBadge`) → `md`
   → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `StatBars(compact: true)`
   → `sectionGap` → `SectionHeader('관계')` + 캐릭터 칩 Wrap → `sectionGap`
   → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`).
@@ -341,7 +346,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - **배경**: 절대 수치, 하단 메타("흑역사 N개").
 - **관계 변화 카드**: 오늘 누군가와 호감 구간을 넘었으면(`GameController.todayShifts`) 맨 위에
   `RelationShiftCard` 최대 2장(사이 `listGap`, 뒤 `sectionGap`). 숫자보다 먼저 보이는 도파민 자리다(§3.2).
-- 구성: AppBar(`D+N 정산`) → [관계 변화 카드] → `StatBars(delta:)` → `sectionGap` →
+- 구성: AppBar(`D+N 정산`) → `BannerSlot(top)` → [관계 변화 카드] → `StatBars(delta:)` → `sectionGap` →
   `SectionHeader('관계 변화')` + `StatTile` 목록 → 클리프행어 카드 → `xxl`
   → 1차 버튼(`다음 날로` / `엔딩 보기`) → `sm` → 메타 한 줄.
 - 관계 변화는 문장 나열 대신 `StatTile`(라벨 / 값 / 부호+변화량) 로 정렬한다.
@@ -361,6 +366,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ### 2.6 앨범 (`album_screen.dart`)
 - **주인공**: 수집 진행도(상단)와 카드 목록.
 - **배경**: 탭 바, 티어 라벨.
+- 구성: AppBar(`앨범`) + `TabBar` → `BannerSlot(top)` → `TabBarView`. 배너는 TabBar 아래에 고정이라
+  탭을 바꿔도 움직이지 않는다.
 - 상단에 진행도 블록: `N / 20` (`numericMedium`) + `AppProgressBar`. 문자열
   `'2 / 20'`, `'1 / 30'` 형식을 그대로 유지한다(테스트 고정).
 - 흑역사 카드: 좌측 번호 원형(`errorContainer`), 본문 `bodyMedium`, 카드 사이 `listGap`.
@@ -580,12 +587,17 @@ class ComboBadge extends StatelessWidget {
   });
 }
 
-/// 배너 광고 자리. 광고가 없으면 높이 0 을 유지해야 한다.
-class BannerSlot extends StatefulWidget {
-  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때).
-  final bool safeArea;
+/// 배너가 붙는 가장자리. 화면은 전부 top(§2 공통). bottom 은 예전 API 호환.
+enum BannerEdge { top, bottom }
 
-  const BannerSlot({super.key, this.safeArea = true});
+/// 배너 광고 자리. 광고가 없으면 높이 0 을 유지해야 한다. 로드되면 AnimatedSize 로 내려앉는다.
+class BannerSlot extends StatefulWidget {
+  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때, AppBar 아래).
+  final bool safeArea;
+  /// top 이면 경계선·바깥 여백(sm)이 아래(본문 쪽). BannerFrame 도 같은 매개변수를 받는다.
+  final BannerEdge edge; // top | bottom
+
+  const BannerSlot({super.key, this.safeArea = true, this.edge = BannerEdge.bottom});
 }
 ```
 
@@ -1264,6 +1276,9 @@ class NameInputFormatter extends TextInputFormatter {}
 | 앨범 엔딩 필터 | 칩 `'전체'` `'여성'` `'남성'` `'공용'`. 진행도 `'N / M'` 은 필터와 무관하게 전체 기준 |
 | 이름 단계 | 제목 `'뭐라고 불러 드릴까요?'`, 입력창 `Key('name-field')`, 미리보기 `Key('name-preview')`(빈 값 `'자?'`, `민석` → `'민석아, 자?'`), 버튼 `Key('name-submit')` `'다음'`/`'저장'`, 링크 `Key('name-skip')` `'건너뛰기'` · `Key('name-clear')` `'이름 지우기'`, 카운터 `'n/6'`, 설정 행 `Key('settings-name')` `'내 이름'`(없으면 `'없음'`) |
 | 설정 | AppBar `'설정'`, 행 `'개인정보처리방침'` / `'오픈소스 라이선스'` / `'서체'` / `'앱 버전'` / `'저장 데이터 초기화'`, 확인 `'저장 데이터를 지울까요?'` → `'지우기'`, 스낵바 `'저장 데이터를 지웠어요'` |
+| 설정 토글 | `게임` 섹션에 `Key('settings-sfx')` `'효과음'` · `Key('settings-haptic')` `'진동'`. `AppListRow` + 오른쪽 `Switch`, 행 전체 탭으로도 바뀐다. 320×568 · 1.3배에서 `'개인정보처리방침'` 은 첫 화면 아래로 내려간다 |
+| 설정 배너 | AppBar 아래 `BannerSlot(top)`, 행 목록은 그 아래. `bottomNavigationBar` 없음 |
+| 배너 자리 | 홈·행동·정산·앨범·설정의 `BannerSlot` 은 `edge: top`, `safeArea: false`, `Scaffold.bottomNavigationBar == null`. `BannerFrame(top)` 은 아래 경계선 `hairline` + `margin.bottom: sm` |
 
 `test/widget/helpers.dart` 의 `wrapApp` 은 아직 자체 `ThemeData` 를 만든다. QA 단계에서
 `AppTheme.light` / `AppTheme.dark` 로 교체해야 화면이 실제 테마로 검증된다.
@@ -1317,6 +1332,8 @@ class NameInputFormatter extends TextInputFormatter {}
 11. **화면에 보이는 한국어 문구 임의 변경** — 테스트가 문구로 위젯을 찾는다. 바꿀 근거가
     있으면 이 문서의 §4.1 을 먼저 고치고 QA 단계와 함께 처리한다.
 12. **엔진·컨트롤러·광고·스토리 데이터 수정** — 표현 계층만 손댄다.
+13. **채팅·통화·알림 화면과 시트·다이얼로그 안의 배너.** 배너는 §2 공통 자리(상단 `BannerSlot(top)`)
+    하나뿐이다. `bottomNavigationBar` 에 다시 넣지 마라.
 
 ---
 

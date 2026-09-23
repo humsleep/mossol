@@ -51,6 +51,11 @@ class PlayerMeta {
   /// 이 필드가 없던 예전 메타 JSON 은 null 로 읽힌다(한 줄을 띄우지 않는다).
   String? lastEndingId;
 
+  /// 설정의 효과음·진동 토글(docs/overhaul/05_audio_haptics.md §4). 둘 다 기본 켬.
+  /// 이 필드가 없던 예전 메타 JSON 은 true 로 읽힌다(추가만, 세이브 호환).
+  bool sfxOn;
+  bool hapticOn;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -67,6 +72,8 @@ class PlayerMeta {
     this.mbti,
     this.mbtiAsked = false,
     this.lastEndingId,
+    this.sfxOn = true,
+    this.hapticOn = true,
   });
 
   Map<String, dynamic> toJson() => {
@@ -85,6 +92,8 @@ class PlayerMeta {
     'mbti': mbti,
     'mbtiAsked': mbtiAsked,
     'lastEndingId': lastEndingId,
+    'sfxOn': sfxOn,
+    'hapticOn': hapticOn,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -113,6 +122,9 @@ class PlayerMeta {
         final String v when v.isNotEmpty => v,
         _ => null,
       },
+      // 없거나 bool 이 아니면 켬. 끄는 건 명시적인 false 뿐이다.
+      sfxOn: j['sfxOn'] != false,
+      hapticOn: j['hapticOn'] != false,
     );
   }
 }

@@ -104,86 +104,94 @@ class _ActionScreenState extends State<ActionScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.screenX,
-          AppSpace.screenY,
-          AppSpace.screenX,
-          AppSpace.xxl,
-        ),
+      // 배너는 AppBar 바로 아래(DESIGN_SYSTEM §2 공통). 광고가 없으면 높이 0.
+      body: Column(
         children: [
-          // 1. 자원 줄. 폭이 모자라면 콤보 배지가 아랫줄로 내려간다.
-          Wrap(
-            spacing: AppSpace.sm,
-            runSpacing: AppSpace.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              HeartsRow(
-                hearts: c.hearts,
-                max: c.config.maxHearts,
-                nextIn: c.nextHeartIn,
+          const BannerSlot(edge: BannerEdge.top, safeArea: false),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.screenY,
+                AppSpace.screenX,
+                AppSpace.xxl,
               ),
-              if (c.combo > 0) ComboBadge(combo: c.combo, onFire: c.onFire),
-            ],
-          ),
-
-          // 1-1. 지난 판 요약. 첫날의 조용한 한 줄.
-          if (previous != null) ...[
-            const SizedBox(height: AppSpace.md),
-            PreviousRunNote(text: previous),
-          ],
-
-          // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
-          if (cliffhanger != null) ...[
-            const SizedBox(height: AppSpace.md),
-            CliffhangerCard(text: '어젯밤: $cliffhanger'),
-          ],
-
-          // 2-1. 밤사이 멀어진 사람. 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려갔을
-          // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
-          for (final e in c.overnightShifts.entries) ...[
-            const SizedBox(height: AppSpace.sm),
-            OvernightNote(id: e.key, text: c.say(e.value)),
-          ],
-
-          // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
-          const SizedBox(height: AppSpace.lg),
-          StatBars(state: s, compact: true),
-
-          // 4. 관계.
-          if (cast.isNotEmpty) ...[
-            const SizedBox(height: AppSpace.sectionGap),
-            const SectionHeader(title: '관계'),
-            Wrap(
-              spacing: AppSpace.sm,
-              runSpacing: AppSpace.sm,
               children: [
-                for (final ch in cast)
-                  CharacterChip(
-                    name: ch.name,
-                    affection: s.affectionOf(ch.id),
-                    trust: s.trustOf(ch.id),
-                    accent: context.tokens.accentFor(ch.id),
+                // 1. 자원 줄. 폭이 모자라면 콤보 배지가 아랫줄로 내려간다.
+                Wrap(
+                  spacing: AppSpace.sm,
+                  runSpacing: AppSpace.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    HeartsRow(
+                      hearts: c.hearts,
+                      max: c.config.maxHearts,
+                      nextIn: c.nextHeartIn,
+                    ),
+                    if (c.combo > 0)
+                      ComboBadge(combo: c.combo, onFire: c.onFire),
+                  ],
+                ),
+
+                // 1-1. 지난 판 요약. 첫날의 조용한 한 줄.
+                if (previous != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  PreviousRunNote(text: previous),
+                ],
+
+                // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
+                if (cliffhanger != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  CliffhangerCard(text: '어젯밤: $cliffhanger'),
+                ],
+
+                // 2-1. 밤사이 멀어진 사람. 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려갔을
+                // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
+                for (final e in c.overnightShifts.entries) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  OvernightNote(id: e.key, text: c.say(e.value)),
+                ],
+
+                // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
+                const SizedBox(height: AppSpace.lg),
+                StatBars(state: s, compact: true),
+
+                // 4. 관계.
+                if (cast.isNotEmpty) ...[
+                  const SizedBox(height: AppSpace.sectionGap),
+                  const SectionHeader(title: '관계'),
+                  Wrap(
+                    spacing: AppSpace.sm,
+                    runSpacing: AppSpace.sm,
+                    children: [
+                      for (final ch in cast)
+                        CharacterChip(
+                          name: ch.name,
+                          affection: s.affectionOf(ch.id),
+                          trust: s.trustOf(ch.id),
+                          accent: context.tokens.accentFor(ch.id),
+                        ),
+                    ],
                   ),
+                ],
+
+                // 5. 오늘의 결정. 화면의 주인공.
+                const SizedBox(height: AppSpace.sectionGap),
+                const SectionHeader(title: '오늘 뭘 할까'),
+                for (var i = 0; i < c.config.actions.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpace.listGap),
+                  AppListRow(
+                    title: c.config.actions[i].name,
+                    subtitle: c.config.actions[i].desc,
+                    leading: _ActionGlyph(id: c.config.actions[i].id),
+                    onTap: () => _start(context, c.config.actions[i]),
+                  ),
+                ],
               ],
             ),
-          ],
-
-          // 5. 오늘의 결정. 화면의 주인공.
-          const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '오늘 뭘 할까'),
-          for (var i = 0; i < c.config.actions.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpace.listGap),
-            AppListRow(
-              title: c.config.actions[i].name,
-              subtitle: c.config.actions[i].desc,
-              leading: _ActionGlyph(id: c.config.actions[i].id),
-              onTap: () => _start(context, c.config.actions[i]),
-            ),
-          ],
+          ),
         ],
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
 

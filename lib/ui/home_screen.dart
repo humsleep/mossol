@@ -127,111 +127,118 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
+      // 배너는 헤더 줄 위(DESIGN_SYSTEM §2 공통). SafeArea 가 이미 감싸니 틀은 인셋을 안 먹는다.
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.screenX,
-            AppSpace.screenY,
-            AppSpace.screenX,
-            AppSpace.xxl,
-          ),
+        child: Column(
           children: [
-            // A. 헤더
-            _Header(onSettings: () => _openSettings(context)),
-            const SizedBox(height: AppSpace.md),
-
-            // B. 히어로 카드
-            if (!hasSave)
-              _IntroCard(endings: _endingsPerRun)
-            else if (summary == null)
-              const ContinueCard.placeholder()
-            else
-              ContinueCard(
-                run: summary.run,
-                chapter: summary.chapter,
-                day: summary.day,
-                totalDays: summary.totalDays,
-                cliffhanger: c.sayOrNull(summary.lastCliffhanger),
-                topName: c.characterOf(summary.topCharacterId)?.name,
-                topAffection: summary.topAffection,
-                topSignal: c.sayOrNull(summary.topSignal),
-                topAccent: summary.topCharacterId == null
-                    ? null
-                    : context.tokens.accentFor(summary.topCharacterId),
-                // 선호가 없던 예전 세이브(all)는 표기하지 않는다.
-                preferenceLabel: summary.preference == Preference.all
-                    ? null
-                    : Preference.label(summary.preference),
-              ),
-            // B-0. 지난 판 요약. 세이브가 없거나(엔딩 뒤 홈) 새 회차 첫날일 때만.
-            if (_previousRun(summary) case final line?) ...[
-              const SizedBox(height: AppSpace.sm),
-              PreviousRunNote(text: line),
-            ],
-            // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
-            if (summary != null)
-              for (final e in summary.overnight.entries) ...[
-                const SizedBox(height: AppSpace.sm),
-                OvernightNote(id: e.key, text: c.say(e.value)),
-              ],
-            const SizedBox(height: AppSpace.lg),
-
-            // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
-            if (summary != null) ...[
-              _ResourceRow(c: c, hearts: summary.hearts),
-              const SizedBox(height: AppSpace.md),
-            ],
-
-            // D. 출석 줄
-            RewardStrip(
-              state: _stripState,
-              streakDays: c.streakDays,
-              bonusLabel: _bonusLabel,
-              pendingHearts: hasSave ? 0 : c.pendingHearts,
-              onClaim: _claim,
-            ),
-            const SizedBox(height: AppSpace.md),
-
-            // E. 1차 버튼 묶음
-            if (hasSave) ...[
-              FilledButton(
-                onPressed: () => c.continueGame(),
-                child: const Text('이어하기'),
-              ),
-              const SizedBox(height: AppSpace.sm),
-              TextButton(
-                onPressed: () => _confirmNewGame(context),
-                // DS §5.7 예외 ②: 2차 버튼을 1차와 다른 무게로.
-                style: TextButton.styleFrom(
-                  foregroundColor: scheme.onSurfaceVariant,
+            const BannerSlot(edge: BannerEdge.top, safeArea: false),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.screenX,
+                  AppSpace.screenY,
+                  AppSpace.screenX,
+                  AppSpace.xxl,
                 ),
-                child: const Text('새 게임'),
-              ),
-            ] else
-              FilledButton(
-                onPressed: () => _startNewGame(context),
-                child: const Text('새 게임'),
-              ),
-            const SizedBox(height: AppSpace.sectionGap),
+                children: [
+                  // A. 헤더
+                  _Header(onSettings: () => _openSettings(context)),
+                  const SizedBox(height: AppSpace.md),
 
-            // F. 사람들. 세이브가 없고 아직 쪽을 모르면(첫 실행 · 선택 안 함) 줄을 숨긴다.
-            if (summary != null || c.defaultSide != null) ...[
-              SectionHeader(
-                title: summary != null ? '사람들' : '등장인물',
-                trailing: summary != null
-                    ? Text('호감 순', style: context.text.labelMedium)
-                    : null,
-              ),
-              CastStrip(entries: _castEntries(summary)),
-              const SizedBox(height: AppSpace.sectionGap),
-            ],
+                  // B. 히어로 카드
+                  if (!hasSave)
+                    _IntroCard(endings: _endingsPerRun)
+                  else if (summary == null)
+                    const ContinueCard.placeholder()
+                  else
+                    ContinueCard(
+                      run: summary.run,
+                      chapter: summary.chapter,
+                      day: summary.day,
+                      totalDays: summary.totalDays,
+                      cliffhanger: c.sayOrNull(summary.lastCliffhanger),
+                      topName: c.characterOf(summary.topCharacterId)?.name,
+                      topAffection: summary.topAffection,
+                      topSignal: c.sayOrNull(summary.topSignal),
+                      topAccent: summary.topCharacterId == null
+                          ? null
+                          : context.tokens.accentFor(summary.topCharacterId),
+                      // 선호가 없던 예전 세이브(all)는 표기하지 않는다.
+                      preferenceLabel: summary.preference == Preference.all
+                          ? null
+                          : Preference.label(summary.preference),
+                    ),
+                  // B-0. 지난 판 요약. 세이브가 없거나(엔딩 뒤 홈) 새 회차 첫날일 때만.
+                  if (_previousRun(summary) case final line?) ...[
+                    const SizedBox(height: AppSpace.sm),
+                    PreviousRunNote(text: line),
+                  ],
+                  // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
+                  if (summary != null)
+                    for (final e in summary.overnight.entries) ...[
+                      const SizedBox(height: AppSpace.sm),
+                      OvernightNote(id: e.key, text: c.say(e.value)),
+                    ],
+                  const SizedBox(height: AppSpace.lg),
 
-            // G. 앨범
-            _AlbumCard(c: c, onTap: () => _openAlbum(context)),
+                  // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
+                  if (summary != null) ...[
+                    _ResourceRow(c: c, hearts: summary.hearts),
+                    const SizedBox(height: AppSpace.md),
+                  ],
+
+                  // D. 출석 줄
+                  RewardStrip(
+                    state: _stripState,
+                    streakDays: c.streakDays,
+                    bonusLabel: _bonusLabel,
+                    pendingHearts: hasSave ? 0 : c.pendingHearts,
+                    onClaim: _claim,
+                  ),
+                  const SizedBox(height: AppSpace.md),
+
+                  // E. 1차 버튼 묶음
+                  if (hasSave) ...[
+                    FilledButton(
+                      onPressed: () => c.continueGame(),
+                      child: const Text('이어하기'),
+                    ),
+                    const SizedBox(height: AppSpace.sm),
+                    TextButton(
+                      onPressed: () => _confirmNewGame(context),
+                      // DS §5.7 예외 ②: 2차 버튼을 1차와 다른 무게로.
+                      style: TextButton.styleFrom(
+                        foregroundColor: scheme.onSurfaceVariant,
+                      ),
+                      child: const Text('새 게임'),
+                    ),
+                  ] else
+                    FilledButton(
+                      onPressed: () => _startNewGame(context),
+                      child: const Text('새 게임'),
+                    ),
+                  const SizedBox(height: AppSpace.sectionGap),
+
+                  // F. 사람들. 세이브가 없고 아직 쪽을 모르면(첫 실행 · 선택 안 함) 줄을 숨긴다.
+                  if (summary != null || c.defaultSide != null) ...[
+                    SectionHeader(
+                      title: summary != null ? '사람들' : '등장인물',
+                      trailing: summary != null
+                          ? Text('호감 순', style: context.text.labelMedium)
+                          : null,
+                    ),
+                    CastStrip(entries: _castEntries(summary)),
+                    const SizedBox(height: AppSpace.sectionGap),
+                  ],
+
+                  // G. 앨범
+                  _AlbumCard(c: c, onTap: () => _openAlbum(context)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
 
@@ -467,7 +474,9 @@ class _ResourceRow extends StatelessWidget {
   }
 
   Future<void> _watchAd(BuildContext context) async {
-    final earned = await AdManager.instance.showRewarded(placement: 'heart_home');
+    final earned = await AdManager.instance.showRewarded(
+      placement: 'heart_home',
+    );
     if (earned) {
       await c.grantHeart();
     } else if (context.mounted) {

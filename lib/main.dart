@@ -1,12 +1,19 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart'
-    show LicenseEntryWithLineBreaks, LicenseRegistry, kDebugMode, kReleaseMode;
+    show
+        LicenseEntryWithLineBreaks,
+        LicenseRegistry,
+        kDebugMode,
+        kIsWeb,
+        kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'ads/ad_manager.dart';
 import 'analytics/analytics.dart';
+import 'audio/sfx_service.dart';
 import 'debug/debug_gallery.dart';
 import 'engine/meta_service.dart';
 import 'engine/save_service.dart';
@@ -26,7 +33,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
   registerPretendardLicense();
+  registerSfxLicense();
   registerMinigames();
+  installSfxService();
   try {
     // 측정. GoogleService-Info.plist 가 없으면(Firebase 프로젝트를 아직 안 만들었으면)
     // 조용히 디버그 백엔드로 남는다 — 던지지 않는다. 스토리 읽기와 나란히 돈다.
@@ -64,6 +73,24 @@ void registerPretendardLicense() {
     );
     yield LicenseEntryWithLineBreaks(const ['Pretendard'], text);
   });
+}
+
+/// 효과음 출처(assets/sfx/LICENSES.md)를 같은 라이선스 페이지에 올린다.
+void registerSfxLicense() {
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString('assets/sfx/LICENSES.md');
+    yield LicenseEntryWithLineBreaks(const ['효과음'], text);
+  });
+}
+
+/// 실기기(iOS·Android)에서만 audioplayers 구현을 끼운다. 웹·테스트는 [NoopSfxService]
+/// 그대로. 컨트롤러 init 이 메타의 토글을 여기에 밀어 넣으므로 그보다 먼저 부른다.
+void installSfxService() {
+  if (kIsWeb || !(Platform.isIOS || Platform.isAndroid)) return;
+  final service = AudioSfxService();
+  SfxService.instance = service;
+  // 프리로드는 스토리 읽기와 나란히. 실패해도 던지지 않는다(소리만 없다).
+  unawaited(service.init());
 }
 
 /// 처리되지 않은 오류가 조용히 사라지지 않게 한다.
@@ -141,9 +168,46 @@ class StartupFailureApp extends StatelessWidget {
   }
 }
 
-class MossolApp extends StatelessWidget {
+class MossolApp extends StatefulWidget {
   final GameController controller;
   const MossolApp({super.key, required this.controller});
+
+  @override
+  State<MossolApp> createState() => _MossolAppState();
+}
+
+class _MossolAppState extends State<MossolApp> {
+  GameController get controller => widget.controller;
+  Phase? _lastPhase;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastPhase = controller.phase;
+    controller.addListener(_onPhase);
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(_onPhase);
+    super.dispose();
+  }
+
+  /// 정산·엔딩 진입음. SummaryScreen 이 Stateless 라 화면이 아니라 phase 변화를 듣는다
+  /// (docs/overhaul/05_audio_haptics.md §1 #10·#11). 엔딩은 다른 소리를 전부 멈춘다.
+  void _onPhase() {
+    final phase = controller.phase;
+    if (phase == _lastPhase) return;
+    _lastPhase = phase;
+    switch (phase) {
+      case Phase.summary:
+        SfxService.instance.cue(Sfx.summary);
+      case Phase.ending:
+        SfxService.instance.cue(Sfx.ending);
+      default:
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

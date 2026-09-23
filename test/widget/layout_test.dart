@@ -17,12 +17,14 @@ import 'package:mossol/ui/album_screen.dart';
 import 'package:mossol/ui/call_view.dart';
 import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/home_screen.dart';
 import 'package:mossol/ui/notification_card.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
 import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:mossol/ui/portraits.dart';
 import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/settings_screen.dart';
+import 'package:mossol/ui/summary_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
 import 'helpers.dart';
@@ -259,6 +261,14 @@ void main() {
         await tester.pumpWidget(
           wrapApp(SettingsScreen(c: c), mode: modeOf(env)),
         );
+        await tester.pump();
+        // 효과음·진동 토글(스위치 행)이 첫 화면. 그 아래 개인정보 섹션은 한 화면 넘긴다.
+        expect(findText('효과음'), findsOneWidget);
+        expect(findText('진동'), findsOneWidget);
+        expect(find.byType(Switch), findsNWidgets(2));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await tester.drag(find.byType(ListView), const Offset(0, -400));
         await tester.pump();
         expect(findText('개인정보처리방침'), findsOneWidget);
         await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -754,5 +764,93 @@ void main() {
     final banner = tester.getSize(find.byType(BannerFrame));
     expect(banner.height, lessThan(100));
     expect(body.height, greaterThan(400));
+  });
+
+  testWidgets('상단 배너 틀은 Column 첫 줄에서 자기 높이만 차지하고 본문은 그 아래', (tester) async {
+    // 화면 다섯 곳의 실제 배치(docs/DESIGN_SYSTEM.md §2 공통): AppBar 아래 Column 첫 줄.
+    await tester.pumpWidget(
+      wrapApp(
+        Scaffold(
+          appBar: AppBar(title: const Text('t')),
+          body: const Column(
+            children: [
+              BannerFrame(
+                width: 320,
+                height: 50,
+                safeArea: false,
+                edge: BannerEdge.top,
+                child: SizedBox.expand(),
+              ),
+              Expanded(child: SizedBox.expand(key: ValueKey('body'))),
+            ],
+          ),
+        ),
+      ),
+    );
+    final bannerRect = tester.getRect(find.byType(BannerFrame));
+    final bodyRect = tester.getRect(find.byKey(const ValueKey('body')));
+    // 광고 50 + sm×2 + 경계선 1 + 아래 여백 sm. 이 안에 들어간다.
+    expect(bannerRect.height, lessThan(100));
+    expect(bodyRect.height, greaterThan(400));
+    expect(bodyRect.top, bannerRect.bottom, reason: '본문이 배너 바로 아래');
+    // 경계선은 아래쪽(본문 쪽)에만.
+    final box = tester.widget<Container>(
+      find.descendant(
+        of: find.byType(BannerFrame),
+        matching: find.byType(Container),
+      ),
+    );
+    final border = (box.decoration as BoxDecoration).border as Border;
+    expect(border.bottom.width, AppBorderWidth.hairline);
+    expect(border.top, BorderSide.none);
+    expect(box.margin, const EdgeInsets.only(bottom: AppSpace.sm));
+  });
+
+  testWidgets('광고가 없으면 상단 BannerSlot 은 높이 0 이고 본문이 위에 붙는다', (tester) async {
+    await tester.pumpWidget(
+      wrapApp(
+        Scaffold(
+          appBar: AppBar(title: const Text('t')),
+          body: const Column(
+            children: [
+              BannerSlot(edge: BannerEdge.top, safeArea: false),
+              Expanded(child: SizedBox.expand(key: ValueKey('body'))),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(BannerSlot)).height, 0);
+    final appBar = tester.getRect(find.byType(AppBar));
+    expect(
+      tester.getRect(find.byKey(const ValueKey('body'))).top,
+      appBar.bottom,
+    );
+  });
+
+  testWidgets('홈·행동·정산·앨범·설정은 상단 BannerSlot 이고 bottomNavigationBar 는 없다', (
+    tester,
+  ) async {
+    final c = await makeController();
+    await c.newGame(seed: 3);
+    await skipNameStep(tester);
+    // 룰렛이 뜨지 않게 바로 정산 단계로 두고 화면만 하나씩 띄운다.
+    final screens = <Widget>[
+      HomeScreen(c: c),
+      SummaryScreen(c: c),
+      AlbumScreen(c: c),
+      SettingsScreen(c: c),
+    ];
+    for (final w in screens) {
+      await tester.pumpWidget(wrapApp(w));
+      await tester.pump();
+      final slot = tester.widget<BannerSlot>(find.byType(BannerSlot));
+      expect(slot.edge, BannerEdge.top, reason: '${w.runtimeType}');
+      expect(slot.safeArea, isFalse, reason: '${w.runtimeType}');
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+      expect(scaffold.bottomNavigationBar, isNull, reason: '${w.runtimeType}');
+      await tester.pumpWidget(Container());
+    }
   });
 }

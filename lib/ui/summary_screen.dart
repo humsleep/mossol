@@ -54,102 +54,115 @@ class SummaryScreen extends StatelessWidget {
         title: Text('D+${s.day} 정산'),
         automaticallyImplyLeading: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.screenX,
-          AppSpace.screenY,
-          AppSpace.screenX,
-          AppSpace.xxl,
-        ),
+      // 배너는 AppBar 바로 아래(DESIGN_SYSTEM §2 공통). 광고가 없으면 높이 0.
+      body: Column(
         children: [
-          // 0. 관계 변화 카드. 오늘 구간을 넘은 사람(오른 쪽 먼저). 없으면 자리도 없다.
-          for (var i = 0; i < shifts.length; i++) ...[
-            _Reveal(
-              index: i,
-              child: RelationShiftCard(
-                name: c.characterName(shifts[i].id),
-                text: c.say(shifts[i].text),
-                up: shifts[i].up,
-                accent: context.tokens.accentFor(shifts[i].id),
-                characterId: shifts[i].id,
+          const BannerSlot(edge: BannerEdge.top, safeArea: false),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.screenY,
+                AppSpace.screenX,
+                AppSpace.xxl,
               ),
-            ),
-            const SizedBox(height: AppSpace.listGap),
-          ],
-          if (shifts.isNotEmpty)
-            const SizedBox(height: AppSpace.sectionGap - AppSpace.listGap),
+              children: [
+                // 0. 관계 변화 카드. 오늘 구간을 넘은 사람(오른 쪽 먼저). 없으면 자리도 없다.
+                for (var i = 0; i < shifts.length; i++) ...[
+                  _Reveal(
+                    index: i,
+                    child: RelationShiftCard(
+                      name: c.characterName(shifts[i].id),
+                      text: c.say(shifts[i].text),
+                      up: shifts[i].up,
+                      accent: context.tokens.accentFor(shifts[i].id),
+                      characterId: shifts[i].id,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.listGap),
+                ],
+                if (shifts.isNotEmpty)
+                  const SizedBox(
+                    height: AppSpace.sectionGap - AppSpace.listGap,
+                  ),
 
-          // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
-          const SectionHeader(title: '오늘의 변화'),
-          AppCard(
-            padding: AppInsets.cardTight,
-            child: StatBars(state: s, delta: d.stats),
-          ),
-
-          // 2. 관계 변화. 한 줄씩 차례로 쌓인다.
-          if (hasRelation) ...[
-            const SizedBox(height: AppSpace.sectionGap),
-            const SectionHeader(title: '관계 변화'),
-            for (var i = 0; i < relations.length; i++)
-              _Reveal(
-                index: i,
-                child: StatTile(
-                  label: relations[i].label,
-                  // 점은 누구인지(캐릭터색), 변화량은 색 + 부호 + 화살표 3중.
-                  accent: context.tokens.accentFor(relations[i].id).base,
-                  delta: signed(relations[i].value),
-                  good: relations[i].value > 0,
+                // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
+                const SectionHeader(title: '오늘의 변화'),
+                AppCard(
+                  padding: AppInsets.cardTight,
+                  child: StatBars(state: s, delta: d.stats),
                 ),
-              ),
-          ],
 
-          // 3. 클리프행어. 하루의 마지막 줄이자 내일의 첫 줄.
-          if (cliffhanger != null) ...[
-            const SizedBox(height: AppSpace.sectionGap),
-            _Reveal(
-              index: relations.length,
-              child: CliffhangerCard(text: cliffhanger, emphasized: true),
-            ),
-          ],
+                // 2. 관계 변화. 한 줄씩 차례로 쌓인다.
+                if (hasRelation) ...[
+                  const SizedBox(height: AppSpace.sectionGap),
+                  const SectionHeader(title: '관계 변화'),
+                  for (var i = 0; i < relations.length; i++)
+                    _Reveal(
+                      index: i,
+                      child: StatTile(
+                        label: relations[i].label,
+                        // 점은 누구인지(캐릭터색), 변화량은 색 + 부호 + 화살표 3중.
+                        accent: context.tokens.accentFor(relations[i].id).base,
+                        delta: signed(relations[i].value),
+                        good: relations[i].value > 0,
+                      ),
+                    ),
+                ],
 
-          // 3-1. 내일 예고. 클리프행어 뒤의 조용한 한 줄(모먼트면 알림 미리보기도).
-          if (tomorrow != null) ...[
-            SizedBox(
-              height: cliffhanger != null ? AppSpace.md : AppSpace.sectionGap,
-            ),
-            _Reveal(
-              index: relations.length + 1,
-              child: TomorrowLine(
-                characterId: tomorrow.characterId,
-                line: TomorrowPeek.lineFor(
-                  c.characterName(tomorrow.characterId),
+                // 3. 클리프행어. 하루의 마지막 줄이자 내일의 첫 줄.
+                if (cliffhanger != null) ...[
+                  const SizedBox(height: AppSpace.sectionGap),
+                  _Reveal(
+                    index: relations.length,
+                    child: CliffhangerCard(text: cliffhanger, emphasized: true),
+                  ),
+                ],
+
+                // 3-1. 내일 예고. 클리프행어 뒤의 조용한 한 줄(모먼트면 알림 미리보기도).
+                if (tomorrow != null) ...[
+                  SizedBox(
+                    height: cliffhanger != null
+                        ? AppSpace.md
+                        : AppSpace.sectionGap,
+                  ),
+                  _Reveal(
+                    index: relations.length + 1,
+                    child: TomorrowLine(
+                      characterId: tomorrow.characterId,
+                      line: TomorrowPeek.lineFor(
+                        c.characterName(tomorrow.characterId),
+                      ),
+                      preview: c.sayOrNull(tomorrow.preview),
+                    ),
+                  ),
+                ],
+
+                // 4. 하루를 닫는 버튼.
+                const SizedBox(height: AppSpace.xxl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      await AdManager.instance.showInterstitial(day: s.day);
+                      await c.endDay();
+                    },
+                    child: Text(
+                      s.day >= c.config.totalDays ? '엔딩 보기' : '다음 날로',
+                    ),
+                  ),
                 ),
-                preview: c.sayOrNull(tomorrow.preview),
-              ),
+                const SizedBox(height: AppSpace.sm),
+                Text(
+                  keepAll('흑역사 ${s.album.length}개'),
+                  textAlign: TextAlign.center,
+                  style: context.text.bodySmall,
+                ),
+              ],
             ),
-          ],
-
-          // 4. 하루를 닫는 버튼.
-          const SizedBox(height: AppSpace.xxl),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () async {
-                await AdManager.instance.showInterstitial(day: s.day);
-                await c.endDay();
-              },
-              child: Text(s.day >= c.config.totalDays ? '엔딩 보기' : '다음 날로'),
-            ),
-          ),
-          const SizedBox(height: AppSpace.sm),
-          Text(
-            keepAll('흑역사 ${s.album.length}개'),
-            textAlign: TextAlign.center,
-            style: context.text.bodySmall,
           ),
         ],
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
 }

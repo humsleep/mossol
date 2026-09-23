@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
 import '../analytics/analytics.dart';
+import '../audio/sfx_service.dart';
 import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
@@ -40,7 +41,7 @@ class EventScreen extends StatefulWidget {
   State<EventScreen> createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen> {
+class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   Timer? _timer;
   int _waitLeft = 0;
   String? _eventId;
@@ -74,10 +75,23 @@ class _EventScreenState extends State<EventScreen> {
 
   GameController get c => widget.c;
 
+  /// 효과음·진동(docs/overhaul/05_audio_haptics.md §1). 큐는 화면 상태 전환과 한곳에 둔다.
+  SfxService get _sfx => SfxService.instance;
+
   @override
   void initState() {
     super.initState();
     c.addListener(_onChange);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// 백그라운드에서 서비스가 벨을 끊었으니, 돌아왔을 때 아직 수신 화면이면 벨만 다시 건다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (c.current?.isCall == true && _callStage == CallStage.ringing) {
+      _sfx.startRing();
+    }
   }
 
   @override
@@ -94,6 +108,8 @@ class _EventScreenState extends State<EventScreen> {
     _replyTimer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
+    _sfx.stopRing();
+    WidgetsBinding.instance.removeObserver(this);
     c.removeListener(_onChange);
     _scroll.dispose();
     super.dispose();
@@ -103,8 +119,11 @@ class _EventScreenState extends State<EventScreen> {
     if (!mounted) return;
     if (c.lastOutcome == null) {
       _picked = null;
-      // 거절을 되돌리면(광고) 다시 울리는 화면으로.
-      if (_callStage == CallStage.declined) _callStage = CallStage.ringing;
+      // 거절을 되돌리면(광고) 다시 울리는 화면으로. 벨도 다시.
+      if (_callStage == CallStage.declined) {
+        _callStage = CallStage.ringing;
+        _sfx.startRing();
+      }
     }
     _syncEvent();
     _syncReply();
@@ -135,6 +154,8 @@ class _EventScreenState extends State<EventScreen> {
     _timer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
+    // 다른 이벤트로 넘어가면 울리던 벨은 끊는다.
+    _sfx.stopRing();
     _waitLeft = 0;
     _callSeconds = 0;
     _previewOpen = false;
@@ -144,10 +165,13 @@ class _EventScreenState extends State<EventScreen> {
     if (ev != null && ev.isCall) {
       if (fresh) {
         _callStage = CallStage.ringing;
+        _sfx.startRing();
         return;
       }
       _startCallClock();
     } else if (ev != null && fresh && _previewName(ev) != null) {
+      // 문자 도착음·진동. 동작 줄이기로 알림 카드가 생략돼도 이건 낸다(04 §2.1).
+      _sfx.cue(Sfx.msgIn);
       // 동작 줄이기면 알림 없이 바로 대화가 열린다.
       if (!AppMotion.reduced(context)) {
         _previewOpen = true;
@@ -188,6 +212,7 @@ class _EventScreenState extends State<EventScreen> {
       if (!mounted) return t.cancel();
       if (_callEnded) {
         t.cancel();
+        _sfx.cue(Sfx.callEnd);
         setState(() {});
         return;
       }
@@ -196,6 +221,9 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   void _acceptCall() {
+    _sfx
+      ..stopRing()
+      ..cue(Sfx.callConnect);
     setState(() => _callStage = CallStage.active);
     _startCallClock();
     _scheduleReveal();
@@ -206,6 +234,9 @@ class _EventScreenState extends State<EventScreen> {
     final i = c.current?.declineIndex;
     if (i == null) return;
     _timer?.cancel();
+    _sfx
+      ..stopRing()
+      ..cue(Sfx.callEnd);
     setState(() => _callStage = CallStage.declined);
     _picked = null;
     c.choose(i);
@@ -217,6 +248,10 @@ class _EventScreenState extends State<EventScreen> {
     final o = c.lastOutcome;
     if (identical(o, _replyFor)) return;
     _replyFor = o;
+    // 결과가 새로 나온 순간의 성패음. 거절은 판정이 아니라 종료음(callEnd)만 낸다.
+    if (o != null && c.lastChoice?.decline != true) {
+      _sfx.cue(o.success ? Sfx.choiceOk : Sfx.choiceFail);
+    }
     _replyTimer?.cancel();
     _replyShown = 0;
     final total = c.lastReply.length;
@@ -294,6 +329,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   void _finishWait() {
+    _sfx.cue(Sfx.waitRead);
     // 읽씹 대기는 자존감을 1 깎는다. 모쏠 체험의 핵심 감정.
     // 엔진을 거쳐야 정산 화면과 되돌리기, 세이브에 함께 잡힌다.
     c.applyWaitPenalty();
@@ -750,6 +786,8 @@ class _ChoicePanel extends StatelessWidget {
     final ev = c.current!;
     final id = ev.choices[index].minigame;
     if (id == null) {
+      // 보내기 슉: 누르는 순간 클릭 진동 + 전송음(04 §2.5).
+      SfxService.instance.cue(Sfx.msgOut);
       onPicked(c.say(ev.choices[index].text));
       c.choose(index);
       return;
@@ -760,6 +798,8 @@ class _ChoicePanel extends StatelessWidget {
       MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
     );
     // 미니게임 도중 컨트롤러가 갱신돼도 지워지지 않게 결과 직전에 넘긴다.
+    // 미니게임 선택지는 결과가 돌아온 뒤에 같은 연출.
+    SfxService.instance.cue(Sfx.msgOut);
     onPicked(c.say(ev.choices[index].text));
     c.choose(
       index,

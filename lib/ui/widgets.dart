@@ -696,15 +696,26 @@ class ComboBadge extends StatelessWidget {
 // 4. 배너 광고 자리
 // ---------------------------------------------------------------------------
 
+/// 배너가 붙는 가장자리. `top` 이 기본 자리(DESIGN_SYSTEM §2 공통), `bottom` 은 예전 API 호환.
+enum BannerEdge { top, bottom }
+
 /// 배너 슬롯. 광고를 지원하지 않는 환경에서는 빈 공간도 차지하지 않는다.
 ///
 /// 로드 로직과 재시도 백오프는 손대지 않는다. 시각만: 광고가 콘텐츠로 보이지
-/// 않도록 위쪽에 경계선을 두고, 위 콘텐츠(버튼)와 8 이상 떨어뜨린다.
+/// 않도록 본문 쪽에 경계선을 두고, 본문과 8 이상 떨어뜨린다. 로드되는 순간 본문이
+/// 66pt 밀리므로 `AnimatedSize` 로 덜컥임을 줄인다(축소 모션에선 즉시).
 class BannerSlot extends StatefulWidget {
-  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때).
+  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때, AppBar 아래).
   final bool safeArea;
 
-  const BannerSlot({super.key, this.safeArea = true});
+  /// 어느 가장자리에 붙는지. 기본은 `bottom`(기존 호출 호환). 화면은 `top` 을 쓴다.
+  final BannerEdge edge;
+
+  const BannerSlot({
+    super.key,
+    this.safeArea = true,
+    this.edge = BannerEdge.bottom,
+  });
 
   @override
   State<BannerSlot> createState() => _BannerSlotState();
@@ -767,14 +778,21 @@ class _BannerSlotState extends State<BannerSlot> {
   @override
   Widget build(BuildContext context) {
     final ad = _ad;
+    final top = widget.edge == BannerEdge.top;
     // 광고가 없으면 높이 0. 여백도 경계선도 만들지 않는다.
-    if (ad == null || !_loaded) return const SizedBox.shrink();
-
-    return BannerFrame(
-      width: ad.size.width.toDouble(),
-      height: ad.size.height.toDouble(),
-      safeArea: widget.safeArea,
-      child: AdWidget(ad: ad),
+    return AnimatedSize(
+      duration: AppMotion.base(context),
+      curve: AppMotion.curve(context),
+      alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+      child: ad == null || !_loaded
+          ? const SizedBox.shrink()
+          : BannerFrame(
+              width: ad.size.width.toDouble(),
+              height: ad.size.height.toDouble(),
+              safeArea: widget.safeArea,
+              edge: widget.edge,
+              child: AdWidget(ad: ad),
+            ),
     );
   }
 }
@@ -782,11 +800,15 @@ class _BannerSlotState extends State<BannerSlot> {
 /// 배너 한 장의 틀. 광고 SDK 와 분리해 두어 위젯 테스트로 배치를 검증한다.
 ///
 /// `Scaffold.bottomNavigationBar` 는 세로로 느슨한 제약(0 ~ 화면 높이)을 준다.
-/// 여기서 세로로 늘어나는 위젯을 쓰면 본문이 0 높이로 밀려난다.
+/// 여기서 세로로 늘어나는 위젯을 쓰면 본문이 0 높이로 밀려난다. `Column` 안(`top`)에서는
+/// `Expanded` 가 본문을 잡으므로 이 틀은 자기 높이(광고 + `sm`×2 + 경계선)만 차지한다.
 class BannerFrame extends StatelessWidget {
   final double width;
   final double height;
   final bool safeArea;
+
+  /// `top` 이면 경계선과 바깥 여백이 **아래**(본문 쪽)에 붙는다. 배경·안쪽 여백은 같다.
+  final BannerEdge edge;
   final Widget child;
 
   const BannerFrame({
@@ -795,11 +817,13 @@ class BannerFrame extends StatelessWidget {
     required this.height,
     required this.child,
     this.safeArea = true,
+    this.edge = BannerEdge.bottom,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final top = edge == BannerEdge.top;
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Center(
@@ -807,19 +831,23 @@ class BannerFrame extends StatelessWidget {
         child: SizedBox(width: width, height: height, child: child),
       ),
     );
-    if (safeArea) content = SafeArea(top: false, child: content);
+    if (safeArea) {
+      // 붙은 가장자리 쪽 인셋만 먹는다.
+      content = SafeArea(top: top, bottom: !top, child: content);
+    }
 
+    final line = BorderSide(
+      color: scheme.outlineVariant,
+      width: AppBorderWidth.hairline,
+    );
     return Container(
-      // 위 콘텐츠(버튼)와의 간격. 경계선 위로 8, 아래로 8.
-      margin: const EdgeInsets.only(top: AppSpace.sm),
+      // 본문과의 간격. 경계선 바깥으로 8, 안쪽으로 8.
+      margin: top
+          ? const EdgeInsets.only(bottom: AppSpace.sm)
+          : const EdgeInsets.only(top: AppSpace.sm),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
-        border: Border(
-          top: BorderSide(
-            color: scheme.outlineVariant,
-            width: AppBorderWidth.hairline,
-          ),
-        ),
+        border: top ? Border(bottom: line) : Border(top: line),
       ),
       child: content,
     );
@@ -3032,6 +3060,6 @@ const adFailedMessage = '광고를 불러오지 못했어요. 잠시 후 다시 
 
 /// 광고 실패를 알리는 스낵바. 모달 시트 안에서는 시트에 가리므로 쓰지 않는다
 /// (룰렛 시트는 시트 안에 직접 한 줄을 남긴다).
-void adFailedSnack(BuildContext context) => ScaffoldMessenger.of(
-  context,
-).showSnackBar(SnackBar(content: Text(keepAll(adFailedMessage))));
+void adFailedSnack(BuildContext context) =>
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(keepAll(adFailedMessage))));

@@ -45,13 +45,20 @@ class _AlbumScreenState extends State<AlbumScreen> {
             ],
           ),
         ),
-        body: TabBarView(
+        // 배너는 TabBar 아래, 탭을 바꿔도 고정(DESIGN_SYSTEM §2 공통).
+        body: Column(
           children: [
-            _ShameTab(c: c),
-            _EndingTab(c: c),
+            const BannerSlot(edge: BannerEdge.top, safeArea: false),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _ShameTab(c: c),
+                  _EndingTab(c: c),
+                ],
+              ),
+            ),
           ],
         ),
-        bottomNavigationBar: const BannerSlot(),
       ),
     );
   }

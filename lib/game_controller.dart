@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import 'analytics/analytics.dart';
+import 'audio/sfx_service.dart';
 import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
@@ -332,6 +333,7 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
+    _applySfxPrefs(m);
     analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
@@ -394,6 +396,7 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = null;
     TextTemplate.currentMbti = null;
+    _applySfxPrefs(m);
     state = null;
     _peek = null;
     hasSave = false;
@@ -548,6 +551,39 @@ class GameController extends ChangeNotifier {
     m.mbtiAsked = true;
     await metaService.save(m);
     notifyListeners();
+  }
+
+  // ---- 효과음·진동 (docs/overhaul/05_audio_haptics.md §4) ----
+
+  /// 설정의 효과음 토글. 기기 메타에만 저장하고 서비스에 바로 반영한다.
+  bool get sfxOn => meta?.sfxOn ?? true;
+
+  /// 설정의 진동 토글.
+  bool get hapticOn => meta?.hapticOn ?? true;
+
+  Future<void> setSfxOn(bool on) async {
+    final m = meta;
+    if (m == null || m.sfxOn == on) return;
+    m.sfxOn = on;
+    _applySfxPrefs(m);
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  Future<void> setHapticOn(bool on) async {
+    final m = meta;
+    if (m == null || m.hapticOn == on) return;
+    m.hapticOn = on;
+    _applySfxPrefs(m);
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// 메타의 토글을 서비스에 밀어 넣는다. 시작·초기화·변경 때마다.
+  void _applySfxPrefs(PlayerMeta m) {
+    SfxService.instance
+      ..sfxOn = m.sfxOn
+      ..hapticOn = m.hapticOn;
   }
 
   /// 엔딩 [e] 의 에필로그. 이 회차 기질 문단(`epilogueMbti`)을 덧붙인 원문(치환 전).
@@ -726,9 +762,7 @@ class GameController extends ChangeNotifier {
     }
     if (s.dayStarted) {
       // 하트를 이미 쓴 날: 남은 이벤트부터(없으면 정산으로). 다시 행동을 고르게 하지 않는다.
-      _queue.addAll([
-        for (final id in s.dayQueue) ?engine.byId(id),
-      ]);
+      _queue.addAll([for (final id in s.dayQueue) ?engine.byId(id)]);
       _syncSummary();
       _nextEvent();
       return true;
@@ -1135,8 +1169,7 @@ class GameController extends ChangeNotifier {
   (String, TomorrowHint?)? _tomorrow;
 
   /// "지난 판엔 서연과 대등한 연인으로 끝났다". 끝난 회차가 없으면 null.
-  String? get previousRunLine =>
-      previousRunLineFor(bundle, meta?.lastEndingId);
+  String? get previousRunLine => previousRunLineFor(bundle, meta?.lastEndingId);
 
   String characterName(String? id) =>
       id == null ? '' : (bundle.characterById[id]?.name ?? id);

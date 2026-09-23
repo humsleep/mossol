@@ -35,130 +35,174 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('설정')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.screenX,
-          AppSpace.screenY,
-          AppSpace.screenX,
-          AppSpace.xxl,
-        ),
+      // 배너는 AppBar 바로 아래(DESIGN_SYSTEM §2 공통). 광고가 없으면 높이 0.
+      body: Column(
         children: [
-          const SectionHeader(title: '게임'),
-          ListenableBuilder(
-            listenable: c,
-            builder: (context, _) => AppListRow(
-              key: const Key('settings-gender'),
-              title: '내 성별',
-              subtitle: '새 게임에서 먼저 소개할 캐릭터가 정해져요',
-              leading: const Icon(Icons.person_outline, size: 22),
-              trailing: Text(
-                PlayerGender.label(c.playerGender),
-                style: context.text.labelMedium,
+          const BannerSlot(edge: BannerEdge.top, safeArea: false),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.screenY,
+                AppSpace.screenX,
+                AppSpace.xxl,
               ),
-              onTap: () => _pickGender(context),
-            ),
-          ),
-          const SizedBox(height: AppSpace.listGap),
-          ListenableBuilder(
-            listenable: c,
-            builder: (context, _) => AppListRow(
-              key: const Key('settings-name'),
-              title: '내 이름',
-              subtitle: '캐릭터들이 대화에서 이 이름으로 불러요',
-              leading: const Icon(Icons.badge_outlined, size: 22),
-              trailing: Text(
-                c.playerName ?? '없음',
-                style: context.text.labelMedium,
-              ),
-              onTap: () => _editName(context),
-            ),
-          ),
-          const SizedBox(height: AppSpace.listGap),
-          ListenableBuilder(
-            listenable: c,
-            builder: (context, _) => AppListRow(
-              key: const Key('settings-mbti'),
-              title: '내 MBTI',
-              subtitle: '다음 새 게임부터 적용돼요',
-              leading: const Icon(Icons.psychology_outlined, size: 22),
-              trailing: Text(
-                c.playerMbti ?? '모름',
-                style: context.text.labelMedium,
-              ),
-              onTap: () => _editMbti(context),
-            ),
-          ),
-          const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '개인정보'),
-          FutureBuilder<bool>(
-            future: _privacyRequired,
-            builder: (context, snap) => snap.data == true
-                ? Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpace.listGap),
-                    child: AppListRow(
-                      title: '개인정보 설정',
-                      subtitle: '광고 개인 맞춤 동의를 바꿉니다',
-                      leading: const Icon(Icons.shield_outlined, size: 22),
-                      onTap: AdManager.instance.showPrivacyOptions,
+              children: [
+                const SectionHeader(title: '게임'),
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-gender'),
+                    title: '내 성별',
+                    subtitle: '새 게임에서 먼저 소개할 캐릭터가 정해져요',
+                    leading: const Icon(Icons.person_outline, size: 22),
+                    trailing: Text(
+                      PlayerGender.label(c.playerGender),
+                      style: context.text.labelMedium,
                     ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          AppListRow(
-            title: '개인정보처리방침',
-            subtitle: '외부 브라우저에서 열립니다',
-            leading: const Icon(Icons.policy_outlined, size: 22),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () => _openPrivacyPolicy(context),
-          ),
-          const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '정보'),
-          AppListRow(
-            title: '오픈소스 라이선스',
-            subtitle: '사용한 라이브러리와 서체의 라이선스',
-            leading: const Icon(Icons.description_outlined, size: 22),
-            onTap: () => showLicensePage(
-              context: context,
-              applicationName: '모쏠 탈출기',
-              applicationVersion: AppMeta.versionLabel,
+                    onTap: () => _pickGender(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-name'),
+                    title: '내 이름',
+                    subtitle: '캐릭터들이 대화에서 이 이름으로 불러요',
+                    leading: const Icon(Icons.badge_outlined, size: 22),
+                    trailing: Text(
+                      c.playerName ?? '없음',
+                      style: context.text.labelMedium,
+                    ),
+                    onTap: () => _editName(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-mbti'),
+                    title: '내 MBTI',
+                    subtitle: '다음 새 게임부터 적용돼요',
+                    leading: const Icon(Icons.psychology_outlined, size: 22),
+                    trailing: Text(
+                      c.playerMbti ?? '모름',
+                      style: context.text.labelMedium,
+                    ),
+                    onTap: () => _editMbti(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                // 효과음·진동 토글(docs/overhaul/05_audio_haptics.md §4). 행 모양은 다른 행과 같고
+                // 오른쪽이 chevron 대신 스위치다. 행 전체를 눌러도 바뀐다.
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-sfx'),
+                    title: '효과음',
+                    subtitle: '문자·전화·결과 소리. 무음 스위치가 켜져 있으면 나지 않아요',
+                    leading: const Icon(Icons.volume_up_outlined, size: 22),
+                    trailing: Switch(value: c.sfxOn, onChanged: c.setSfxOn),
+                    showChevron: false,
+                    onTap: () => c.setSfxOn(!c.sfxOn),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-haptic'),
+                    title: '진동',
+                    subtitle: '문자·전화 벨·결과에 맞춰 살짝 울려요',
+                    leading: const Icon(Icons.vibration, size: 22),
+                    trailing: Switch(
+                      value: c.hapticOn,
+                      onChanged: c.setHapticOn,
+                    ),
+                    showChevron: false,
+                    onTap: () => c.setHapticOn(!c.hapticOn),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.sectionGap),
+                const SectionHeader(title: '개인정보'),
+                FutureBuilder<bool>(
+                  future: _privacyRequired,
+                  builder: (context, snap) => snap.data == true
+                      ? Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpace.listGap,
+                          ),
+                          child: AppListRow(
+                            title: '개인정보 설정',
+                            subtitle: '광고 개인 맞춤 동의를 바꿉니다',
+                            leading: const Icon(
+                              Icons.shield_outlined,
+                              size: 22,
+                            ),
+                            onTap: AdManager.instance.showPrivacyOptions,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                AppListRow(
+                  title: '개인정보처리방침',
+                  subtitle: '외부 브라우저에서 열립니다',
+                  leading: const Icon(Icons.policy_outlined, size: 22),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _openPrivacyPolicy(context),
+                ),
+                const SizedBox(height: AppSpace.sectionGap),
+                const SectionHeader(title: '정보'),
+                AppListRow(
+                  title: '오픈소스 라이선스',
+                  subtitle: '사용한 라이브러리와 서체의 라이선스',
+                  leading: const Icon(Icons.description_outlined, size: 22),
+                  onTap: () => showLicensePage(
+                    context: context,
+                    applicationName: '모쏠 탈출기',
+                    applicationVersion: AppMeta.versionLabel,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                AppListRow(
+                  title: '서체',
+                  subtitle: 'Pretendard · SIL Open Font License 1.1',
+                  leading: const Icon(Icons.text_fields, size: 22),
+                  trailing: Text('OFL', style: context.text.labelMedium),
+                  showChevron: false,
+                ),
+                const SizedBox(height: AppSpace.listGap),
+                AppListRow(
+                  title: '앱 버전',
+                  leading: const Icon(Icons.info_outline, size: 22),
+                  trailing: Text(
+                    AppMeta.versionLabel,
+                    style: context.tokens.numericSmall,
+                  ),
+                  showChevron: false,
+                ),
+                const SizedBox(height: AppSpace.sectionGap),
+                const SectionHeader(title: '데이터'),
+                AppListRow(
+                  title: '저장 데이터 초기화',
+                  subtitle:
+                      '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름 · 내 MBTI가 모두 지워집니다',
+                  leading: const Icon(Icons.delete_outline, size: 22),
+                  tone: AppTone.danger,
+                  onTap: () => _confirmReset(context),
+                ),
+                const SizedBox(height: AppSpace.xxl),
+                Text(
+                  '© 2026 모쏠 탈출기',
+                  textAlign: TextAlign.center,
+                  style: context.text.bodySmall,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: AppSpace.listGap),
-          AppListRow(
-            title: '서체',
-            subtitle: 'Pretendard · SIL Open Font License 1.1',
-            leading: const Icon(Icons.text_fields, size: 22),
-            trailing: Text('OFL', style: context.text.labelMedium),
-            showChevron: false,
-          ),
-          const SizedBox(height: AppSpace.listGap),
-          AppListRow(
-            title: '앱 버전',
-            leading: const Icon(Icons.info_outline, size: 22),
-            trailing: Text(
-              AppMeta.versionLabel,
-              style: context.tokens.numericSmall,
-            ),
-            showChevron: false,
-          ),
-          const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '데이터'),
-          AppListRow(
-            title: '저장 데이터 초기화',
-            subtitle: '회차 · 하트 · 출석 · 엔딩 앨범 · 내 성별 · 내 이름 · 내 MBTI가 모두 지워집니다',
-            leading: const Icon(Icons.delete_outline, size: 22),
-            tone: AppTone.danger,
-            onTap: () => _confirmReset(context),
-          ),
-          const SizedBox(height: AppSpace.xxl),
-          Text(
-            '© 2026 모쏠 탈출기',
-            textAlign: TextAlign.center,
-            style: context.text.bodySmall,
           ),
         ],
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
 

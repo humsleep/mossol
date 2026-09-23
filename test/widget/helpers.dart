@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/audio/sfx_service.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/engine/story_repository.dart';
@@ -130,6 +131,58 @@ Future<void> spinRouletteSheet(WidgetTester tester) async {
   await tester.tap(findText('시작'));
   await tester.pumpAndSettle();
   expect(findText('오늘의 운'), findsNothing);
+}
+
+/// 효과음·진동 호출을 기록만 하는 서비스. 플러그인 채널을 건드리지 않는다.
+///
+/// `setUp` 에서 `SfxService.instance = RecordingSfxService()`, `tearDown` 에서
+/// `NoopSfxService()` 로 되돌린다([useRecordingSfx]). 벨은 [played] 에
+/// `Sfx.callRing` 으로 남고 정지는 [ringStops] 로 센다.
+class RecordingSfxService extends SfxService {
+  final played = <Sfx>[];
+  final haptics = <HapticKind>[];
+  int ringStops = 0;
+  int stopAlls = 0;
+  bool ringing = false;
+
+  @override
+  void onPlay(Sfx cue) => played.add(cue);
+
+  @override
+  void onHaptic(HapticKind kind) => haptics.add(kind);
+
+  @override
+  void startRing() {
+    if (ringing) return;
+    ringing = true;
+    play(Sfx.callRing);
+  }
+
+  @override
+  void stopRing() {
+    if (!ringing) return;
+    ringing = false;
+    ringStops++;
+  }
+
+  @override
+  void stopAll() {
+    stopRing();
+    stopAlls++;
+  }
+
+  void clear() {
+    played.clear();
+    haptics.clear();
+  }
+}
+
+/// 기록용 서비스를 끼우고 테스트가 끝나면 기본(Noop)으로 되돌린다.
+RecordingSfxService useRecordingSfx() {
+  final s = RecordingSfxService();
+  SfxService.instance = s;
+  addTearDown(() => SfxService.instance = NoopSfxService());
+  return s;
 }
 
 MinigameContext ctxFor(GameController c, {String? partner}) => MinigameContext(
