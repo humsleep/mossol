@@ -464,6 +464,10 @@ class Choice {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// 자유 입력 보정(선택, docs/overhaul/07_free_input.md §2). 플레이어가 칠 법한 짧은 표현들.
+  /// 문구 2-gram·태그에 합쳐진다. 없으면 빈 목록 — 스키마 호환.
+  final List<String> intent;
+
   const Choice({
     required this.text,
     this.require,
@@ -480,6 +484,7 @@ class Choice {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.intent = const [],
   });
 
   /// MBTI·궁합 조건이 붙은 선택지인지.
@@ -502,6 +507,7 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    intent: intent,
   );
 
   /// 반응 줄만 바꾼 사본(MBTI 줄 거르기).
@@ -525,6 +531,7 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    intent: intent,
   );
 
   /// 이 결과에 맞는 반응 줄.
@@ -552,6 +559,7 @@ class Choice {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    intent: _strList(j['intent']),
   );
 }
 
@@ -1055,6 +1063,53 @@ class Relation {
   );
 }
 
+/// 자유 입력 기록 한 건(docs/overhaul/07_free_input.md §3.4). 기기 세이브에만 남고 밖으로 안 나간다.
+class FreeInputEntry {
+  final String eventId;
+  final int choiceIndex;
+
+  /// 친 문장. [maxChars] 자까지.
+  final String text;
+  final int day;
+
+  /// 자동 확정이었는지(피커·확인을 거치지 않음). 무료 되돌리기 대상.
+  final bool auto;
+
+  static const maxChars = 80;
+
+  FreeInputEntry({
+    required this.eventId,
+    required this.choiceIndex,
+    required String text,
+    required this.day,
+    required this.auto,
+  }) : text = text.length > maxChars ? text.substring(0, maxChars) : text;
+
+  Map<String, dynamic> toJson() => {
+    'e': eventId,
+    'i': choiceIndex,
+    't': text,
+    'd': day,
+    'a': auto ? 1 : 0,
+  };
+
+  /// 형식이 틀린 항목은 null(건너뛴다).
+  static FreeInputEntry? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final e = j['e'];
+    final i = j['i'];
+    final t = j['t'];
+    if (e is! String || i is! num || t is! String) return null;
+    return FreeInputEntry(
+      eventId: e,
+      choiceIndex: i.toInt(),
+      text: t,
+      day: ((j['d'] as num?) ?? 0).toInt(),
+      auto: j['a'] == 1 || j['a'] == true,
+    );
+  }
+}
+
 /// 한 회차의 전체 상태. 저장·복원 대상.
 class GameState {
   int day;
@@ -1180,6 +1235,7 @@ class GameState {
     'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
     'overnightShifts': Map.of(overnightShifts),
     'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
+    'freeInputs': [for (final f in freeInputs) f.toJson()],
   };
 
   factory GameState.fromJson(Map<String, dynamic> j) =>
@@ -1219,7 +1275,11 @@ class GameState {
         ..dayDelta.addAll({
           for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
             e.key as String: _intMap(e.value),
-        });
+        })
+        ..freeInputs.addAll([
+          for (final e in (j['freeInputs'] as List?) ?? const [])
+            ?FreeInputEntry.fromJson(e),
+        ]);
 
   // ---- 서사 신호(lib/engine/signals.dart). 없는 예전 세이브는 전부 빈 값. ----
 
@@ -1235,6 +1295,19 @@ class GameState {
   /// 오늘 쌓인 변화(`stats`/`affection`/`trust` → 키 → 변화량). 하루 도중 앱을 다시
   /// 켜도 정산이 이어지게 컨트롤러가 저장 직전에 채운다.
   final Map<String, Map<String, int>> dayDelta = {};
+
+  /// 자유 입력 기록(최근 [maxFreeInputs] 건, 추가만). 없는 예전 세이브는 빈 목록.
+  final List<FreeInputEntry> freeInputs = [];
+
+  static const maxFreeInputs = 30;
+
+  /// 기록을 뒤에 붙이고 오래된 것부터 버린다.
+  void addFreeInput(FreeInputEntry e) {
+    freeInputs.add(e);
+    if (freeInputs.length > maxFreeInputs) {
+      freeInputs.removeRange(0, freeInputs.length - maxFreeInputs);
+    }
+  }
 
   static Map<String, List<int>> _intListMap(Object? j) => {
     for (final e in ((j as Map?) ?? const {}).entries)

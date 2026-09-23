@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
 import '../ads/ad_manager.dart';
 import '../analytics/analytics.dart';
@@ -101,9 +102,12 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   String? _eventId;
   final _scroll = ScrollController();
 
-  /// 방금 고른 선택지 문구. 결과 패널이 떠 있는 동안 내 말풍선으로 대화에 남긴다.
-  /// 표시 전용이며 컨트롤러 상태와 무관하다.
+  /// 방금 고른 선택지 문구(버튼). 결과 패널이 떠 있는 동안 내 말풍선으로 대화에 남긴다.
+  /// 자유 입력이면 컨트롤러의 [GameController.playerText](친 문장)가 먼저다 — 세이브에서도
+  /// 복원되므로 화면이 다시 만들어져도 말풍선이 남는다(07 §3.4).
   String? _picked;
+
+  String? get _myText => c.playerText ?? _picked;
 
   /// 선택 뒤 상대 반응 중 지금까지 보여 준 줄 수.
   int _replyShown = 0;
@@ -573,7 +577,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
       scroll: _scroll,
       subtitles: [
         for (final l in visible) sub(l),
-        if (o != null && _picked != null) sub(Line(who: 'me', text: _picked!)),
+        if (o != null && _myText != null) sub(Line(who: 'me', text: _myText!)),
         if (o != null)
           for (final l in c.lastReply.take(_replyShown)) sub(l),
         if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
@@ -583,9 +587,11 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
           ? (replying ? null : _ResultPanel(c: c))
           : c.linesDone
           ? _ChoicePanel(
+              key: ValueKey('choices-${ev.id}'),
               c: c,
               hideDecline: true,
               onPicked: (text) => _picked = text,
+              onHangUp: _declineCall,
             )
           : null,
     );
@@ -610,10 +616,11 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     final replying = o != null && _replyShown < c.lastReply.length;
 
     // 지금까지 공개된 줄 전부: 대사 → 내 선택 → 상대 반응. 묶음·시계·읽음은 이 순서로 센다.
-    final pickedAt = o != null && _picked != null ? visible.length : -1;
+    final mine = _myText;
+    final pickedAt = o != null && mine != null ? visible.length : -1;
     final rows = <Line>[
       ...visible,
-      if (pickedAt >= 0) Line(who: 'me', text: _picked!),
+      if (pickedAt >= 0) Line(who: 'me', text: mine!),
       if (o != null) ...c.lastReply.take(_replyShown),
     ];
     final keys = [for (final l in rows) _speakerKey(l, partner)];
@@ -734,7 +741,12 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
           if (o != null)
             replying ? const SizedBox.shrink() : _ResultPanel(c: c)
           else if (c.linesDone)
-            _ChoicePanel(c: c, onPicked: (text) => _picked = text),
+            _ChoicePanel(
+              // 이벤트마다 새 상태(입력창 문장·전송 잠금이 다음 이벤트로 새지 않게).
+              key: ValueKey('choices-${ev.id}'),
+              c: c,
+              onPicked: (text) => _picked = text,
+            ),
         ],
       ),
     );
@@ -936,8 +948,12 @@ class _WaitingBlock extends StatelessWidget {
 /// 선택지 패널. 대화와 같은 세계에 있되 한 단 위로 올라온 종이처럼 보인다.
 ///
 /// 선택지는 `ChoiceButton` 하나로 통일한다. 내부가 `OutlinedButton` 이고
-/// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1).
-class _ChoicePanel extends StatelessWidget {
+/// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1) — 입력창·칩·시트는 전부 다른 위젯이다.
+///
+/// 자유 입력(docs/overhaul/07_free_input.md §3): 버튼 아래 한 줄 입력창 `직접 쓰기…`. 포커스가 오면
+/// 버튼은 가로 칩 한 줄로 접힌다(빈 입력창은 백지 공포 — 후보를 계속 보여 준다). 보내면 컨트롤러가
+/// 매핑하고, 결정에 따라 바로 확정 · 확인 시트 · "이런 뜻이에요?" 피커 · 잠김 안내 한 줄.
+class _ChoicePanel extends StatefulWidget {
   final GameController c;
 
   /// 선택이 확정되기 직전에 부른다. 화면이 내 말풍선을 그리는 데만 쓴다.
@@ -945,20 +961,81 @@ class _ChoicePanel extends StatelessWidget {
 
   /// 통화 중이면 `decline` 선택지(= 거절 버튼)를 숨긴다.
   final bool hideDecline;
+
+  /// 통화 중 "끊을게" 계열 입력(07 §4 #7). 확인 뒤 거절 경로로.
+  final VoidCallback? onHangUp;
+
   const _ChoicePanel({
+    super.key,
     required this.c,
     required this.onPicked,
     this.hideDecline = false,
+    this.onHangUp,
   });
 
+  @override
+  State<_ChoicePanel> createState() => _ChoicePanelState();
+}
+
+/// 입력창 위 한 줄. 잠김·금칙어는 지문(narr) 톤, 빈 입력은 2차 글자색 안내.
+class _InlineNote {
+  final String text;
+  final bool narr;
+  const _InlineNote(this.text, {this.narr = true});
+}
+
+enum _ConfirmAction { go, other }
+
+class _ChoicePanelState extends State<_ChoicePanel> {
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  Timer? _lockTimer;
+
+  /// 보낸 뒤 [sendLock] 동안 다시 못 보낸다(연타 방지, 07 §4 #5).
+  bool _sendLocked = false;
+  _InlineNote? _note;
+  int _lastLen = 0;
+
+  static const sendLock = Duration(milliseconds: 1200);
+
+  /// 칩 문구 최대 글자. 넘으면 `…`.
+  static const chipChars = 14;
+
+  GameController get c => widget.c;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+    // 무료 되돌리기 뒤: 친 문장을 되살려 다시 고르게 한다(07 §3.3).
+    final retry = c.takeFreeRetryText();
+    if (retry != null) {
+      _ctrl.text = retry;
+      _lastLen = retry.length;
+    }
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _lockTimer?.cancel();
+    _focus.removeListener(_onFocus);
+    _focus.dispose();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
   /// 미니게임이 붙은 선택지는 먼저 게임을 돌리고 그 결과로 성패를 정한다.
-  Future<void> _pick(BuildContext context, int index) async {
+  Future<void> _pick(int index) async {
     final ev = c.current!;
     final id = ev.choices[index].minigame;
     if (id == null) {
       // 보내기 슉: 누르는 순간 클릭 진동 + 전송음(04 §2.5).
       SfxService.instance.cue(Sfx.msgOut);
-      onPicked(c.say(ev.choices[index].text));
+      widget.onPicked(c.say(ev.choices[index].text));
       c.choose(index);
       return;
     }
@@ -970,7 +1047,7 @@ class _ChoicePanel extends StatelessWidget {
     // 미니게임 도중 컨트롤러가 갱신돼도 지워지지 않게 결과 직전에 넘긴다.
     // 미니게임 선택지는 결과가 돌아온 뒤에 같은 연출.
     SfxService.instance.cue(Sfx.msgOut);
-    onPicked(c.say(ev.choices[index].text));
+    widget.onPicked(c.say(ev.choices[index].text));
     c.choose(
       index,
       minigameSuccess: result.success,
@@ -978,6 +1055,174 @@ class _ChoicePanel extends StatelessWidget {
       note: result.message,
     );
   }
+
+  // ---- 자유 입력 ----
+
+  void _onChanged(String v) {
+    // 붙여넣기로 상한에 걸리면 한 번 말해 준다(07 §4 #4). maxLength 가 이미 잘랐다.
+    if (v.length >= FreeInputThresholds.maxChars && v.length - _lastLen > 20) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('짧게 말해 주세요')),
+      );
+    }
+    _lastLen = v.length;
+    setState(() {});
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty || _sendLocked) return;
+    final r = c.chooseFree(text);
+    _lock();
+    setState(() => _note = null);
+    switch (r.decision) {
+      case MatchDecision.auto:
+        await _confirm(r, r.top!.index, auto: true, via: 'auto');
+      case MatchDecision.confirm:
+        await _confirmSheet(r);
+      case MatchDecision.locked:
+        // 확정하지 않는다. 턴·되돌리기 소모 없음, 문장은 남긴다(07 §3.2-4).
+        setState(
+          () => _note = _InlineNote('아직 그 말은 안 나온다 (${r.top!.view.reason})'),
+        );
+      case MatchDecision.pick:
+        await _pickSheet(r);
+      case MatchDecision.empty:
+        setState(() => _note = const _InlineNote('조금만 더 써 주세요', narr: false));
+      case MatchDecision.blocked:
+        // 저장·기록·분석 없음. 문장도 지운다.
+        _ctrl.clear();
+        _lastLen = 0;
+        setState(() => _note = const _InlineNote('그 말은 보내지 않기로 했다.'));
+      case MatchDecision.hangUp:
+        await _hangUpSheet();
+    }
+  }
+
+  void _lock() {
+    _lockTimer?.cancel();
+    setState(() => _sendLocked = true);
+    _lockTimer = Timer(sendLock, () {
+      if (mounted) setState(() => _sendLocked = false);
+    });
+  }
+
+  /// 매핑 결과를 선택지 [index] 로 확정한다. [auto] 는 자동 확정(무료 되돌리기 대상). 미니게임이면
+  /// 먼저 게임 — 실력 판정은 문장으로 건너뛸 수 없다(07 §3.2-5).
+  Future<void> _confirm(
+    MatchResult r,
+    int index, {
+    required bool auto,
+    required String via,
+  }) async {
+    final ev = c.current!;
+    final choice = ev.choices[index];
+    c.noteFreeConfidence(r);
+    bool? ok;
+    bool? crit;
+    String? note;
+    final mg = choice.minigame;
+    if (mg != null) {
+      final result = await playMinigame(
+        context,
+        mg,
+        MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
+      );
+      ok = result.success;
+      crit = result.critical;
+      note = result.message;
+      auto = false;
+    }
+    if (!mounted) return;
+    _focus.unfocus();
+    SfxService.instance.cue(Sfx.msgOut);
+    widget.onPicked(r.text);
+    c.confirmFree(
+      index,
+      text: r.text,
+      auto: auto,
+      match: r,
+      via: via,
+      minigameSuccess: ok,
+      minigameCritical: crit,
+      note: note,
+    );
+  }
+
+  /// `chance`·`minigame` 이 1위: 확인 한 번(07 §3.2-5).
+  Future<void> _confirmSheet(MatchResult r) async {
+    _focus.unfocus();
+    final top = r.top!;
+    final choice = top.view.choice;
+    final mg = choice.minigame;
+    final label = mg != null
+        ? (minigameLabels[mg] ?? '미니게임')
+        : '${c.onFire ? (choice.chance! + 20).clamp(0, 100) : choice.chance}%';
+    final res = await showModalBottomSheet<_ConfirmAction>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _ConfirmSheet(
+        text: r.text,
+        choiceText: c.say(choice.text),
+        label: label,
+        primary: mg != null ? '게임 시작' : '이대로',
+      ),
+    );
+    if (!mounted || res == null) return;
+    switch (res) {
+      case _ConfirmAction.go:
+        await _confirm(r, top.index, auto: false, via: 'confirm');
+      case _ConfirmAction.other:
+        await _pickSheet(r);
+    }
+  }
+
+  /// "이런 뜻이에요?" 피커(07 §3.2-3). `다시 쓰기` 면 문장을 남긴 채 돌아온다.
+  Future<void> _pickSheet(MatchResult r) async {
+    _focus.unfocus();
+    final forced = c.freePickForced;
+    final idx = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PickSheet(c: c, result: r, forced: forced),
+    );
+    if (!mounted || idx == null) return;
+    await _confirm(r, idx, auto: false, via: forced ? 'forced' : 'picker');
+  }
+
+  Future<void> _hangUpSheet() async {
+    _focus.unfocus();
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: AppInsets.panel,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('전화를 끊을까요?', style: ctx.text.titleMedium),
+              const SizedBox(height: AppSpace.md),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('끊기'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('계속 통화'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || ok != true) return;
+    _ctrl.clear();
+    widget.onHangUp?.call();
+  }
+
+  static String _short(String t) =>
+      t.length > chipChars ? '${t.substring(0, chipChars)}…' : t;
 
   /// 우측 짧은 라벨: 미니게임 이름 또는 성공 확률. 잠긴 선택지는 이유만 보여 준다.
   String? _trailingLabel(ChoiceView v) {
@@ -1001,40 +1246,142 @@ class _ChoicePanel extends StatelessWidget {
     return AppTone.neutral;
   }
 
+  Widget _buttons(List<ChoiceView> choices) => Column(
+    key: const ValueKey('choice-buttons'),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (var i = 0; i < choices.length; i++)
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
+          ),
+          child: ChoiceButton(
+            text: c.say(choices[i].choice.text),
+            onPressed: choices[i].locked ? null : () => _pick(choices[i].index),
+            lockedReason: choices[i].locked ? choices[i].reason : null,
+            leadingIcon: choices[i].locked
+                ? Icons.lock_outline
+                : choices[i].choice.minigame != null
+                ? Icons.sports_esports_outlined
+                : choices[i].choice.mbti != null
+                ? Icons.auto_awesome_outlined
+                : null,
+            trailingLabel: _trailingLabel(choices[i]),
+            trailingTone: _trailingTone(choices[i]),
+            recommended: c.hintIndex == choices[i].index,
+          ),
+        ),
+    ],
+  );
+
+  /// 키보드가 올라온 동안의 후보 칩 한 줄(07 §3.1). 칩을 누르면 버튼과 같은 경로.
+  Widget _chips(List<ChoiceView> choices) => SingleChildScrollView(
+    key: const ValueKey('choice-chips'),
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: [
+        for (final v in choices)
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpace.sm),
+            child: ActionChip(
+              avatar: v.locked ? const Icon(Icons.lock_outline, size: 16) : null,
+              label: Text(_short(c.say(v.choice.text))),
+              onPressed: v.locked ? null : () => _pick(v.index),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  Widget _inputRow(BuildContext context) {
+    final scheme = context.scheme;
+    final canSend = !_sendLocked && _ctrl.text.trim().isNotEmpty;
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            key: const Key('free-input'),
+            controller: _ctrl,
+            focusNode: _focus,
+            maxLength: FreeInputThresholds.maxChars,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _send(),
+            onChanged: _onChanged,
+            style: context.text.bodyMedium,
+            decoration: InputDecoration(
+              hintText: '직접 쓰기…',
+              counterText: '',
+              isDense: true,
+              filled: true,
+              fillColor: scheme.surfaceContainerLowest,
+              contentPadding: AppInsets.chip,
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(color: scheme.outlineVariant),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(color: scheme.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(
+                  color: scheme.primary,
+                  width: AppBorderWidth.emphasis,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpace.sm),
+        IconButton.filled(
+          key: const Key('free-send'),
+          tooltip: '보내기',
+          onPressed: canSend ? _send : null,
+          icon: const Icon(Icons.send_rounded, size: 18),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ev = c.current!;
+    final t = context.tokens;
     final choices = [
       for (final v in c.choices)
-        if (!(hideDecline && v.choice.decline)) v,
+        if (!(widget.hideDecline && v.choice.decline)) v,
     ];
+    final freeOn = c.canFreeInput;
+    final collapsed = freeOn && _focus.hasFocus;
+    final note = _note;
 
     return BottomPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var i = 0; i < choices.length; i++)
+          // 동작 줄이기면 0ms — 즉시 바뀐다.
+          AnimatedSwitcher(
+            duration: AppMotion.base(context),
+            switchInCurve: AppMotion.curve(context),
+            child: collapsed ? _chips(choices) : _buttons(choices),
+          ),
+          if (note != null)
             Padding(
-              padding: EdgeInsets.only(
-                bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
+              padding: const EdgeInsets.only(top: AppSpace.sm),
+              child: Text(
+                keepAll(note.text),
+                style: context.text.bodySmall?.copyWith(
+                  color: note.narr ? t.narration : context.scheme.onSurfaceVariant,
+                  fontStyle: note.narr ? FontStyle.italic : null,
+                ),
               ),
-              child: ChoiceButton(
-                text: c.say(choices[i].choice.text),
-                onPressed: choices[i].locked
-                    ? null
-                    : () => _pick(context, choices[i].index),
-                lockedReason: choices[i].locked ? choices[i].reason : null,
-                leadingIcon: choices[i].locked
-                    ? Icons.lock_outline
-                    : choices[i].choice.minigame != null
-                    ? Icons.sports_esports_outlined
-                    : choices[i].choice.mbti != null
-                    ? Icons.auto_awesome_outlined
-                    : null,
-                trailingLabel: _trailingLabel(choices[i]),
-                trailingTone: _trailingTone(choices[i]),
-                recommended: c.hintIndex == choices[i].index,
-              ),
+            ),
+          if (freeOn)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.sm),
+              child: _inputRow(context),
             ),
           // 힌트는 선택지보다 한 단 아래. 광고 제안이 선택을 밀어내지 않게 한다.
           if (ev.hint != null && c.hintIndex == null)
@@ -1065,6 +1412,191 @@ class _ChoicePanel extends StatelessWidget {
   }
 }
 
+/// 친 문장 인용 한 줄(피커·확인 시트 공용).
+class _Quote extends StatelessWidget {
+  final String text;
+  const _Quote(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+    keepAll('"$text"'),
+    style: context.text.bodyMedium?.copyWith(
+      color: context.scheme.onSurfaceVariant,
+      fontStyle: FontStyle.italic,
+    ),
+  );
+}
+
+/// `chance`·`minigame` 확인 시트: `"선택지 원문" (75%)` [이대로] [다른 뜻].
+class _ConfirmSheet extends StatelessWidget {
+  final String text;
+  final String choiceText;
+  final String label;
+  final String primary;
+  const _ConfirmSheet({
+    required this.text,
+    required this.choiceText,
+    required this.label,
+    required this.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: AppInsets.panel,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Quote(text),
+          const SizedBox(height: AppSpace.sm),
+          Text(
+            keepAll('"$choiceText" ($label)'),
+            style: context.text.titleMedium,
+          ),
+          const SizedBox(height: AppSpace.md),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _ConfirmAction.go),
+            child: Text(primary),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, _ConfirmAction.other),
+            child: const Text('다른 뜻'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// "이런 뜻이에요?" 피커. 후보를 점수순으로, 상위 1~2개 강조(잘 못 알아들었으면 강조 없음).
+/// 행은 `OutlinedButton` 이 아니다(§4.1 — 선택지 개수만큼만 존재해야 한다).
+class _PickSheet extends StatelessWidget {
+  final GameController c;
+  final MatchResult result;
+
+  /// 무료 되돌리기 뒤 강제 피커 — 강조 없음(같은 실수를 반복하지 않게).
+  final bool forced;
+  const _PickSheet({required this.c, required this.result, required this.forced});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = result;
+    final weak = r.weak || forced;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: AppInsets.panel,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('이런 뜻이에요?', style: context.text.titleMedium),
+            if (r.weak)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpace.xxs),
+                child: Text(
+                  keepAll('잘 못 알아들었어요 — 어느 쪽에 가까워요?'),
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpace.sm),
+            _Quote(r.text),
+            const SizedBox(height: AppSpace.md),
+            for (var i = 0; i < r.ranked.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.listGap),
+                child: _PickRow(
+                  text: c.say(r.ranked[i].view.choice.text),
+                  recommended:
+                      !weak &&
+                      (i == 0 ||
+                          (i == 1 && r.margin < FreeInputThresholds.autoMargin)),
+                  lockedReason: r.ranked[i].view.locked ? r.ranked[i].view.reason : null,
+                  onTap: r.ranked[i].view.locked
+                      ? null
+                      : () => Navigator.pop(context, r.ranked[i].index),
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('다시 쓰기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickRow extends StatelessWidget {
+  final String text;
+  final bool recommended;
+  final String? lockedReason;
+  final VoidCallback? onTap;
+  const _PickRow({
+    required this.text,
+    required this.recommended,
+    required this.lockedReason,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final t = context.tokens;
+    final locked = onTap == null;
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      borderRadius: AppRadius.rMd,
+      child: InkWell(
+        borderRadius: AppRadius.rMd,
+        onTap: onTap,
+        child: Container(
+          padding: AppInsets.cardTight,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.rMd,
+            border: Border.all(
+              color: recommended ? scheme.primary : scheme.outlineVariant,
+              width: recommended ? AppBorderWidth.emphasis : AppBorderWidth.hairline,
+            ),
+          ),
+          child: Row(
+            children: [
+              if (locked) ...[
+                Icon(Icons.lock_outline, size: 18, color: t.lockedForeground),
+                const SizedBox(width: AppSpace.sm),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      keepAll(text),
+                      style: context.text.labelLarge?.copyWith(
+                        color: locked ? t.lockedForeground : scheme.onSurface,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (lockedReason != null)
+                      Text(
+                        keepAll(lockedReason!),
+                        style: context.text.bodySmall?.copyWith(
+                          color: t.lockedForeground,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 결과 패널. 크리티컬·성공·실패를 배경 톤 + 아이콘 + 문구 3중으로 알린다(§2.3).
 class _ResultPanel extends StatelessWidget {
   final GameController c;
@@ -1089,6 +1621,8 @@ class _ResultPanel extends StatelessWidget {
         : scheme.onSurface;
     // 전화를 거절한 건 '성공'이 아니다. 판정 없는 선택이므로 담담하게 적는다.
     final declined = c.lastChoice?.decline == true;
+    // 자유 입력이면 어느 선택지로 알아들었는지 캡션으로 — 오매핑을 스스로 알아채는 유일한 창(07 §3.2).
+    final heard = c.lastChoiceSource == ChoiceSource.freeText ? c.lastChoice : null;
     final headline = declined
         ? '전화를 넘겼다'
         : o.critical
@@ -1151,6 +1685,14 @@ class _ResultPanel extends StatelessWidget {
               ],
             ],
           ),
+          if (heard != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.xs),
+              child: Text(
+                keepAll('→ "${c.say(heard.text)}" 으로 알아들었어요'),
+                style: context.text.bodySmall?.copyWith(color: fg),
+              ),
+            ),
           if (o.comboBroken)
             Padding(
               padding: const EdgeInsets.only(top: AppSpace.xs),
@@ -1201,9 +1743,18 @@ class _ResultPanel extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpace.lg),
-          // 되돌리기(광고)는 구제책이지 주된 길이 아니다. 조용한 텍스트 버튼으로
-          // 1차 버튼 위에 두어 "계속" 을 가리거나 밀어내지 않게 한다.
-          if (c.canOfferUndo)
+          // 자유 입력 자동 확정이면 무료 되돌리기(이벤트당 1회, 광고 없음 — 07 §3.3).
+          // 광고 되돌리기와 합쳐 1회라 둘 다 뜨지 않는다.
+          if (c.canOfferFreeUndo)
+            Center(
+              child: TextButton.icon(
+                onPressed: c.undoFree,
+                icon: const Icon(Icons.replay, size: 18),
+                style: TextButton.styleFrom(foregroundColor: fg),
+                label: Text(keepAll('그런 뜻 아니었어요')),
+              ),
+            )
+          else if (c.canOfferUndo)
             Center(
               child: TextButton.icon(
                 onPressed: () async {
@@ -1222,7 +1773,8 @@ class _ResultPanel extends StatelessWidget {
                 label: const Text('10초 전으로 (광고)'),
               ),
             ),
-          if (c.canOfferUndo) const SizedBox(height: AppSpace.sm),
+          if (c.canOfferFreeUndo || c.canOfferUndo)
+            const SizedBox(height: AppSpace.sm),
           FilledButton(
             onPressed: c.continueAfterChoice,
             child: const Text('계속'),

@@ -67,6 +67,16 @@ class Analytics {
   static const albumOpened = 'album_opened';
   static const nextRunSuggestionTapped = 'next_run_suggestion_tapped';
 
+  // 자유 입력(docs/overhaul/07_free_input.md §5). 구조 지표만 — 원문은 절대 싣지 않는다.
+  static const freeInputSent = 'free_input_sent';
+  static const freeInputPicked = 'free_input_picked';
+  static const freeInputUndo = 'free_input_undo';
+  static const freeInputBlocked = 'free_input_blocked';
+  static const freeInputLocked = 'free_input_locked';
+
+  /// user property: `0` 안 씀 · `1` 1~5회 · `2` 6회+.
+  static const freeInputUse = 'free_input_use';
+
   /// `day_reached` 를 보내는 날. 매일 보내면 이벤트가 너무 많고 퍼널에는 이것으로 충분하다.
   static const dayMilestones = {2, 3, 7, 10, 20, 30, 50, 70, 100};
 
@@ -153,6 +163,85 @@ class Analytics {
 
   void mbtiKnown(bool known) =>
       setUserProperty('mbti_known', known ? '1' : '0');
+
+  // ---- 자유 입력(07 §5). 값은 전부 작은 정수·짧은 문자열. ----
+
+  /// 보낼 때마다. [confB]·[marginB] 는 점수×10 정수, [emo] 는 비트 5개 합(joke 1·sad 2·excited 4·
+  /// hesitant 8·love 16), [topKind] 는 plain/chance/mg/locked, [result] 는 auto/confirm/picker/locked/blocked.
+  void freeInputSend({
+    required String layer,
+    required String ev,
+    required int nCh,
+    required int lenB,
+    required int polite,
+    required bool q,
+    required int emo,
+    required int confB,
+    required int marginB,
+    required int topI,
+    required String topKind,
+    required String result,
+  }) => log(freeInputSent, {
+    'layer': layer,
+    'ev': _id(ev),
+    'n_ch': nCh,
+    'len_b': lenB,
+    'polite': polite,
+    'q': q ? 1 : 0,
+    'emo': emo,
+    'conf_b': confB,
+    'margin_b': marginB,
+    'top_i': topI,
+    'top_kind': topKind,
+    'result': result,
+  });
+
+  /// 피커·확인 칩에서 고름. [rank] 는 고른 것의 점수 순위(0부터), [via] 는 picker/confirm/forced.
+  void freeInputPick({
+    required String ev,
+    required int topI,
+    required int pickI,
+    required int rank,
+    required String via,
+  }) => log(freeInputPicked, {
+    'ev': _id(ev),
+    'top_i': topI,
+    'pick_i': pickI,
+    'rank': rank,
+    'via': via,
+  });
+
+  /// 자동 확정 뒤 무료 되돌리기. [reI] 는 되돌린 뒤 고른 index(아직 모르면 -1).
+  void freeInputUndone({
+    required String ev,
+    required int topI,
+    required int reI,
+    required int confB,
+  }) => log(freeInputUndo, {
+    'ev': _id(ev),
+    'top_i': topI,
+    're_i': reI,
+    'conf_b': confB,
+  });
+
+  /// [reason] 은 empty/emoji/long/spam/profanity.
+  void freeInputBlock(String reason) => log(freeInputBlocked, {'reason': reason});
+
+  void freeInputLock({required String ev, required int topI}) =>
+      log(freeInputLocked, {'ev': _id(ev), 'top_i': topI});
+
+  /// [sends] 누적 전송 횟수 → `0`/`1`/`2`.
+  void freeInputUsage(int sends) => setUserProperty(
+    freeInputUse,
+    sends <= 0
+        ? '0'
+        : sends <= 5
+        ? '1'
+        : '2',
+  );
+
+  /// 이벤트 id 는 40자 이하로 자른다(파라미터 값 규칙).
+  static String _id(String ev) => ev.length <= 40 ? ev : ev.substring(0, 40);
 }
 
 /// 분석 백엔드. 구현은 예외를 던져도 된다 — [Analytics] 가 삼킨다.

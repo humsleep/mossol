@@ -8,6 +8,7 @@ import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
 import 'engine/event_engine.dart';
+import 'engine/free_input.dart';
 import 'engine/mbti.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
@@ -21,6 +22,11 @@ import 'engine/text_template.dart';
 export 'engine/attendance.dart' show CheckInResult, Attendance;
 export 'engine/signals.dart' show RelationShift;
 export 'engine/retention.dart' show NextRunSuggestion, TomorrowHint;
+export 'engine/free_input.dart'
+    show MatchResult, MatchDecision, ChoiceScore, FreeInputThresholds;
+
+/// 선택이 버튼에서 왔는지 자유 입력에서 왔는지(docs/overhaul/07_free_input.md §3.3).
+enum ChoiceSource { button, freeText }
 
 /// [dayStart] 는 날짜 전환 카드(docs/overhaul/02_game_loop.md §2). 저장하지 않는다 —
 /// 카드 도중 앱이 죽어도 세이브는 이미 마감 뒤 상태라 다음 실행이 `resume` 카드로 같은 아침을 낸다.
@@ -334,6 +340,234 @@ class GameController extends ChangeNotifier {
   Map<String, dynamic>? _undoSnapshot;
   AppliedDelta? _undoDayDelta;
   bool undoUsedThisEvent = false;
+
+  // ---- 자유 입력(docs/overhaul/07_free_input.md §3) ----
+
+  final FreeInputMatcher _matcher = FreeInputMatcher();
+
+  /// 방금 선택이 어디서 왔는지. 결과가 없으면 의미 없다.
+  ChoiceSource lastChoiceSource = ChoiceSource.button;
+
+  /// 자유 입력이 자동 확정이었는지(피커·확인을 안 거침). 무료 되돌리기의 조건.
+  bool _lastFreeAuto = false;
+
+  /// 자유 입력으로 고른 뒤 내 말풍선에 남길 문장(메모리).
+  String? _playerText;
+
+  /// 이번 이벤트에서 보낸 자유 입력 수. [maxFreeSendsPerEvent] 에 닿으면 버튼만 남긴다(07 §4 #5).
+  int freeSendsThisEvent = 0;
+
+  /// 금칙어에 연속으로 걸린 횟수. [maxBlockedStreak] 이면 이 이벤트는 버튼만(07 §4 #2).
+  int _blockedStreak = 0;
+
+  /// 무료 되돌리기 뒤 재시도 — 자동 확정 금지(되돌리기 루프 방지, 07 §3.3).
+  bool _forcePickThisEvent = false;
+
+  /// 무료 되돌리기 뒤 입력창에 되살릴 문장. 화면이 한 번 읽고 [takeFreeRetryText] 로 비운다.
+  String? _freeRetryText;
+
+  static const maxFreeSendsPerEvent = 5;
+  static const maxBlockedStreak = 3;
+
+  /// 이번 이벤트에서 자유 입력을 더 받는지(전송 상한·금칙어 연속 제한).
+  bool get canFreeInput =>
+      current != null &&
+      freeSendsThisEvent < maxFreeSendsPerEvent &&
+      _blockedStreak < maxBlockedStreak;
+
+  /// 결과가 떠 있는 동안 내 말풍선에 쓸 문장. 자유 입력이면 친 문장, 버튼이면 null(화면이 선택지
+  /// 원문을 쓴다). 메모리 값이 없으면(화면 재생성·복원) 세이브의 [GameState.freeInputs] 에서
+  /// 같은 이벤트·같은 날 기록을 찾는다 — 07 §3.4.
+  String? get playerText {
+    if (lastOutcome == null) return null;
+    final t = _playerText;
+    if (t != null) return t;
+    final s = state;
+    final ev = current;
+    if (s == null || ev == null) return null;
+    for (final e in s.freeInputs.reversed) {
+      if (e.eventId == ev.id && e.day == s.day) return e.text;
+    }
+    return null;
+  }
+
+  /// 무료 되돌리기 뒤라 이번 이벤트는 피커만(자동 확정 금지). 지표 `via=forced` 의 근거.
+  bool get freePickForced => _forcePickThisEvent;
+
+  /// 무료 되돌리기 뒤 입력창에 되살릴 문장. 한 번 읽으면 비운다.
+  String? takeFreeRetryText() {
+    final t = _freeRetryText;
+    _freeRetryText = null;
+    return t;
+  }
+
+  /// 친 문장을 지금 보이는 선택지에 매핑한다(07 §1). 상태를 바꾸지 않는다 — 확정은 [confirmFree].
+  /// 전송 수·금칙어 연속·지표만 갱신한다. `empty` 는 전송으로 세지 않는다.
+  MatchResult chooseFree(String text) {
+    final ev = current!;
+    final visible = choices;
+    final r = _matcher.match(
+      text,
+      visible,
+      inCall: ev.isCall,
+      forcePick: _forcePickThisEvent,
+      say: say,
+      cacheKey: '${ev.id}|${visible.map((v) => v.index).join(',')}|$playerName|$runMbti',
+    );
+    switch (r.decision) {
+      case MatchDecision.empty:
+        analytics.freeInputBlock(
+          r.input == null || r.input!.text.compact.isEmpty && text.trim().isNotEmpty
+              ? 'emoji'
+              : 'empty',
+        );
+      case MatchDecision.blocked:
+        _blockedStreak++;
+        analytics.freeInputBlock('profanity');
+      default:
+        _blockedStreak = 0;
+        freeSendsThisEvent++;
+        _countFreeSend();
+        final top = r.top;
+        final i = r.input!;
+        analytics.freeInputSend(
+          layer: ev.layer.name,
+          ev: ev.id,
+          nCh: r.ranked.length,
+          lenB: i.lenBucket,
+          polite: i.polite,
+          q: i.question,
+          emo: _emoBits(i.emo),
+          confB: (r.s1 * 10).round(),
+          marginB: (r.margin * 10).round(),
+          topI: top?.index ?? -1,
+          topKind: top == null
+              ? 'none'
+              : top.view.locked
+              ? 'locked'
+              : top.view.choice.minigame != null
+              ? 'mg'
+              : top.view.choice.chance != null
+              ? 'chance'
+              : 'plain',
+          result: switch (r.decision) {
+            MatchDecision.auto => 'auto',
+            MatchDecision.confirm => 'confirm',
+            MatchDecision.locked => 'locked',
+            MatchDecision.hangUp => 'hangup',
+            _ => 'picker',
+          },
+        );
+        if (r.decision == MatchDecision.locked && top != null) {
+          analytics.freeInputLock(ev: ev.id, topI: top.index);
+        }
+    }
+    notifyListeners();
+    return r;
+  }
+
+  static int _emoBits(Set<String> emo) =>
+      (emo.contains('joke') ? 1 : 0) +
+      (emo.contains('sad') ? 2 : 0) +
+      (emo.contains('excited') ? 4 : 0) +
+      (emo.contains('hesitant') ? 8 : 0) +
+      (emo.contains('love') ? 16 : 0);
+
+  /// 누적 전송 횟수(메타) → user property. 저장은 fire-and-forget.
+  void _countFreeSend() {
+    final m = meta;
+    if (m == null) return;
+    final before = m.freeInputSends;
+    m.freeInputSends = before + 1;
+    // 구간이 바뀔 때만 보낸다(0→1, 5→6).
+    if (before == 0 || before == 5) analytics.freeInputUsage(m.freeInputSends);
+    metaService.save(m);
+  }
+
+  /// 자유 입력을 선택지 [index] 로 확정한다. [text] 는 내 말풍선에 남길 친 문장, [auto] 는 자동
+  /// 확정이었는지(무료 되돌리기 대상). [match] 를 주면 피커 지표(순위)를 남긴다. 미니게임·기타 인자는
+  /// [choose] 와 같다.
+  void confirmFree(
+    int index, {
+    required String text,
+    required bool auto,
+    MatchResult? match,
+    String via = 'picker',
+    bool? minigameSuccess,
+    bool? minigameCritical,
+    String? note,
+  }) {
+    final s = state!;
+    final ev = current!;
+    final t = text.trim();
+    final kept = t.length > FreeInputEntry.maxChars
+        ? t.substring(0, FreeInputEntry.maxChars)
+        : t;
+    s.addFreeInput(
+      FreeInputEntry(
+        eventId: ev.id,
+        choiceIndex: index,
+        text: kept,
+        day: s.day,
+        auto: auto,
+      ),
+    );
+    if (!auto && match != null) {
+      analytics.freeInputPick(
+        ev: ev.id,
+        topI: match.top?.index ?? -1,
+        pickI: index,
+        rank: match.rankOf(index),
+        via: via,
+      );
+    }
+    _apply(
+      index,
+      minigameSuccess: minigameSuccess,
+      minigameCritical: minigameCritical,
+      note: note,
+      source: ChoiceSource.freeText,
+      playerText: kept,
+      freeAuto: auto,
+    );
+  }
+
+  /// 무료 되돌리기(07 §3.3): 자유 입력 **자동 확정**이었고, 아직 되돌리기를 안 썼고, 하드코어가 아닐 때.
+  /// 결과의 좋고 나쁨과 무관하다 — 문제는 결과가 아니라 이해라서. 광고 되돌리기와 합쳐 이벤트당 1회.
+  bool get canOfferFreeUndo {
+    final s = state;
+    if (s == null || lastOutcome == null) return false;
+    if (lastChoiceSource != ChoiceSource.freeText || !_lastFreeAuto) return false;
+    if (undoUsedThisEvent || _undoSnapshot == null) return false;
+    return !s.flags.contains('hardcore');
+  }
+
+  /// "그런 뜻 아니었어요". [undoChoice] 그대로 + 문장을 입력창에 되살리고 이번엔 피커를 강제한다.
+  void undoFree() {
+    if (!canOfferFreeUndo) return;
+    final ev = current!;
+    final text = _playerText;
+    final idx = lastChoiceIndex;
+    analytics.freeInputUndone(
+      ev: ev.id,
+      topI: idx ?? -1,
+      reI: -1,
+      confB: _lastFreeConfB,
+    );
+    undoChoice();
+    _freeRetryText = text;
+    _forcePickThisEvent = true;
+    notifyListeners();
+  }
+
+  /// 방금 고른 선택지의 index(결과가 없으면 null).
+  int? lastChoiceIndex;
+
+  /// 자동 확정 때의 점수×10(지표용).
+  int _lastFreeConfB = 0;
+
+  /// 자유 입력 자동 확정의 신뢰도를 기억해 둔다(되돌리기 지표). [confirmFree] 전에 화면이 부른다.
+  void noteFreeConfidence(MatchResult r) => _lastFreeConfB = (r.s1 * 10).round();
 
   /// 오늘 아직 볼 이벤트 id. 테스트·디버그용 읽기 전용 뷰.
   List<String> get queuedEventIds => [for (final e in _queue) e.id];
@@ -967,6 +1201,20 @@ class GameController extends ChangeNotifier {
     _undoSnapshot = null;
     _undoDayDelta = null;
     undoUsedThisEvent = false;
+    _resetFreeInput();
+  }
+
+  /// 이벤트 단위 자유 입력 상태를 비운다.
+  void _resetFreeInput() {
+    _playerText = null;
+    lastChoiceSource = ChoiceSource.button;
+    _lastFreeAuto = false;
+    lastChoiceIndex = null;
+    freeSendsThisEvent = 0;
+    _blockedStreak = 0;
+    _forcePickThisEvent = false;
+    _freeRetryText = null;
+    _lastFreeConfB = 0;
   }
 
   /// 리워드 광고 보상: 하트 1개.
@@ -1011,6 +1259,7 @@ class GameController extends ChangeNotifier {
     undoUsedThisEvent = false;
     _undoSnapshot = null;
     _undoDayDelta = null;
+    _resetFreeInput();
     if (_queue.isEmpty) {
       current = null;
       revealed = 0;
@@ -1053,6 +1302,22 @@ class GameController extends ChangeNotifier {
     bool? minigameSuccess,
     bool? minigameCritical,
     String? note,
+  }) => _apply(
+    index,
+    minigameSuccess: minigameSuccess,
+    minigameCritical: minigameCritical,
+    note: note,
+    source: ChoiceSource.button,
+  );
+
+  void _apply(
+    int index, {
+    bool? minigameSuccess,
+    bool? minigameCritical,
+    String? note,
+    required ChoiceSource source,
+    String? playerText,
+    bool freeAuto = false,
   }) {
     final s = state!;
     final ev = current!;
@@ -1063,6 +1328,10 @@ class GameController extends ChangeNotifier {
       _undoSnapshot = s.toJson();
       _undoDayDelta = dayDelta.copy();
     }
+    lastChoiceSource = source;
+    _playerText = playerText;
+    _lastFreeAuto = freeAuto;
+    lastChoiceIndex = index;
     final outcome = engine.applyChoice(
       s,
       ev,
@@ -1134,6 +1403,18 @@ class GameController extends ChangeNotifier {
         _queue.first.id == o!.nextEventId) {
       _queue.removeAt(0);
     }
+    // 자유 입력 기록도 선택과 함께 없던 일이 된다(되돌린 뒤 버튼으로 고르면 말풍선이 옛 문장이 되지 않게).
+    if (lastChoiceSource == ChoiceSource.freeText) {
+      final ev = current;
+      final i = s.freeInputs.lastIndexWhere(
+        (e) => ev != null && e.eventId == ev.id && e.day == s.day,
+      );
+      if (i >= 0) s.freeInputs.removeAt(i);
+    }
+    _playerText = null;
+    lastChoiceSource = ChoiceSource.button;
+    _lastFreeAuto = false;
+    lastChoiceIndex = null;
     lastOutcome = null;
     minigameNote = null;
     undoUsedThisEvent = true;

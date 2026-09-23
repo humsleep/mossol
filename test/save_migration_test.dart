@@ -148,6 +148,46 @@ void main() {
       },
     );
 
+    test('freeInputs: 없으면 빈 목록, 왕복 안정, 틀린 항목 건너뜀, 최근 30건만', () {
+      // 예전 세이브(키 없음) → 빈 목록. 다시 저장하면 빈 배열이 붙는다(추가만).
+      final legacy = GameState.fromJson(legacySave());
+      expect(legacy.freeInputs, isEmpty);
+      expect(legacy.toJson()['freeInputs'], isEmpty);
+
+      final s = GameState.fromJson(legacySave());
+      for (var i = 0; i < 35; i++) {
+        s.addFreeInput(
+          FreeInputEntry(eventId: 'ev$i', choiceIndex: i % 3, text: '문장 $i', day: 1 + i, auto: i.isEven),
+        );
+      }
+      expect(s.freeInputs.length, GameState.maxFreeInputs);
+      expect(s.freeInputs.first.eventId, 'ev5', reason: '오래된 것부터 버린다');
+      final j = s.toJson();
+      expect(j['freeInputs'], isA<List>());
+      expect((j['freeInputs'] as List).first, {'e': 'ev5', 'i': 2, 't': '문장 5', 'd': 6, 'a': 0});
+      final again = GameState.fromJson(jsonDecode(jsonEncode(j)) as Map<String, dynamic>);
+      expect(again.toJson(), j);
+      expect(again.freeInputs.last.text, '문장 34');
+      expect(again.freeInputs.last.auto, isTrue);
+
+      // 형식이 틀린 항목은 건너뛰고 나머지는 읽는다. 80자 넘는 원문은 자른다.
+      final mixed = GameState.fromJson(
+        legacySave()
+          ..['freeInputs'] = [
+            {'e': 'a', 'i': 0, 't': 'x', 'd': 1, 'a': 1},
+            {'e': 3, 'i': 0, 't': 'x'},
+            'junk',
+            null,
+            {'e': 'b', 'i': 1.0, 't': '가' * 100, 'a': true},
+          ],
+      );
+      expect(mixed.freeInputs.length, 2);
+      expect(mixed.freeInputs[0].auto, isTrue);
+      expect(mixed.freeInputs[1].day, 0);
+      expect(mixed.freeInputs[1].auto, isTrue);
+      expect(mixed.freeInputs[1].text.length, FreeInputEntry.maxChars);
+    });
+
     test('dayDelta 안의 null 값·빈 맵은 빈 정산으로 읽힌다', () {
       final s = GameState.fromJson(
         legacySave()..['dayDelta'] = {'stats': null, 'affection': {}},
@@ -348,6 +388,7 @@ void main() {
         mbti: 'ENTP',
         mbtiAsked: true,
         lastEndingId: 'forever_solo',
+        freeInputSends: 7,
       );
       await MetaService().save(m);
       final r = await MetaService().load();

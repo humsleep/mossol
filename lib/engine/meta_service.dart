@@ -56,6 +56,10 @@ class PlayerMeta {
   bool sfxOn;
   bool hapticOn;
 
+  /// 자유 입력을 보낸 횟수(회차 무관, 원문 없음). user property `free_input_use` 의 근거.
+  /// docs/overhaul/07_free_input.md §5. 없던 예전 메타는 0.
+  int freeInputSends;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -74,6 +78,7 @@ class PlayerMeta {
     this.lastEndingId,
     this.sfxOn = true,
     this.hapticOn = true,
+    this.freeInputSends = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -94,6 +99,7 @@ class PlayerMeta {
     'lastEndingId': lastEndingId,
     'sfxOn': sfxOn,
     'hapticOn': hapticOn,
+    'freeInputSends': freeInputSends,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -125,6 +131,7 @@ class PlayerMeta {
       // 없거나 bool 이 아니면 켬. 끄는 건 명시적인 false 뿐이다.
       sfxOn: j['sfxOn'] != false,
       hapticOn: j['hapticOn'] != false,
+      freeInputSends: _int(j['freeInputSends']),
     );
   }
 }

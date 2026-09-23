@@ -338,6 +338,37 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 선택지는 `ChoiceButton` 하나로 통일하되 **내부는 반드시 `OutlinedButton`** 이어야 한다
   (§4.1 테스트 고정 사항).
 
+#### 2.3.0 자유 입력 줄 · 피커 시트 (docs/overhaul/07_free_input.md §3)
+
+선택지 버튼은 그대로 두고 그 아래에 한 줄 입력창을 붙인다. 버튼·입력창·시트 어디에도 `ChoiceButton` 밖의
+`OutlinedButton` 은 없다(§4.1).
+
+- **입력 줄**(`Key('free-input')`): 버튼 아래 `sm`. `TextField` 한 줄, `maxLength 80`(카운터 없음, 붙여넣기로 넘치면 스낵바
+  `짧게 말해 주세요`), 힌트 `직접 쓰기…`, `surfaceContainerLowest` 채움, `rPill`, 테두리 `outlineVariant` hairline → 포커스
+  `primary` emphasis, 안쪽 `AppInsets.chip`, 글자 `bodyMedium`. 오른쪽 `sm` 뒤 보내기 `IconButton.filled`(`Icons.send_rounded` 18,
+  `Key('free-send')`, 툴팁 `보내기`) — 빈 문장·보낸 뒤 1.2 s 잠금 동안 비활성. 힌트(광고) 버튼은 입력 줄 아래.
+  이벤트당 5회 보냈거나 금칙어에 3회 연속 걸리면 입력 줄이 사라지고 버튼만 남는다.
+- **키보드가 올라오면** 버튼 묶음이 **가로 스크롤 `ActionChip` 한 줄**로 접힌다(`AnimatedSwitcher`, `AppMotion.base` — 동작 줄이기면
+  0ms). 칩 문구는 14자 + `…`, 잠긴 선택지는 자물쇠 아바타 + 비활성. 칩을 누르면 버튼과 같은 경로.
+- **입력창 위 한 줄**(`bodySmall`, 입력 줄과 `sm`): 잠김·금칙어는 지문 톤(`narration`, 이탤릭) — `아직 그 말은 안 나온다 (눈치 40↑)`
+  (`ChoiceView.reason` 재사용, 턴·되돌리기 소모 없음, 문장은 남는다) / `그 말은 보내지 않기로 했다.`(문장은 지운다, 저장·기록·분석 없음).
+  빈 입력·이모지만은 `onSurfaceVariant` `조금만 더 써 주세요`.
+- **피커 시트** `이런 뜻이에요?`(`showModalBottomSheet`, 테마 시트 모양, 안쪽 `AppInsets.panel` + SafeArea):
+  제목 `titleMedium` → (잘 못 알아들었으면) 부제 `잘 못 알아들었어요 — 어느 쪽에 가까워요?`(`bodySmall onSurfaceVariant`) → `sm` →
+  인용 `"친 문장"`(`bodyMedium` 이탤릭 `onSurfaceVariant`) → `md` → 후보 행 목록(점수순, 사이 `listGap`) → `다시 쓰기` TextButton
+  (문장을 남긴 채 입력창으로). 후보 행(`_PickRow`): `Material(surfaceContainerLowest)` + `InkWell`, `rMd`, 안쪽 `AppInsets.cardTight`,
+  테두리 `outlineVariant` hairline — 추천(1위, 2위는 차가 0.12 미만일 때)은 `primary` emphasis. 잠긴 행은 자물쇠 + 이유
+  (`lockedForeground`) + 비활성. 되돌리기 뒤 강제 피커와 약한 매칭에는 추천 강조 없음.
+- **확인 시트**(1위가 `chance`·`minigame`): 인용 → `sm` → `"선택지 원문" (75%)` / `"선택지 원문" (표정 읽기)`(`titleMedium`) → `md` →
+  `FilledButton` `이대로`(미니게임이면 `게임 시작`) → `TextButton` `다른 뜻`(피커로). 미니게임은 문장으로 건너뛸 수 없다.
+- **통화 중 "끊을게"**: 시트 `전화를 끊을까요?`(`titleMedium`) → `FilledButton` `끊기` → `TextButton` `계속 통화`. 끊기는 통화 화면의
+  거절과 같은 경로.
+- **내 말풍선**은 친 문장 그대로(`GameController.playerText`). 선택지 원문은 말풍선에 남지 않는다. 화면이 다시 만들어져도 컨트롤러·
+  세이브(`GameState.freeInputs`)에서 되살린다.
+- **결과 패널**: 헤드라인 아래 `xs` 캡션 `→ "선택지 원문" 으로 알아들었어요`(`bodySmall`, 패널 전경색). 자유 입력 **자동 확정**이면
+  광고 되돌리기 자리에 무료 되돌리기 `그런 뜻 아니었어요`(`TextButton.icon` `Icons.replay`)가 대신 선다 — 둘이 같이 뜨지 않는다.
+  누르면 선택 직전으로, 문장은 입력창에 되살아나고 이번엔 피커만 뜬다.
+
 #### 2.3.1 모먼트 변형 (docs/MOMENTS_SPEC.md)
 
 형식을 깨는 이벤트 세 가지. 데이터 규격은 MOMENTS_SPEC 이 맞고, 여기는 표현만 정한다.
@@ -1318,6 +1349,53 @@ class NamePreviewBubble extends StatelessWidget { final String text; }
 class NameInputFormatter extends TextInputFormatter {}
 ```
 
+#### 3.2.1 자유 입력 (event_screen.dart 안 비공개 위젯 · 엔진 API)
+
+화면 밖에서 재사용하지 않으므로 `widgets.dart` 에 올리지 않았다. 규격은 §2.3.0.
+
+```dart
+/// 선택지 패널. 입력창·칩 접기·시트를 안에서 처리한다. 이벤트마다 `key: ValueKey('choices-<id>')`.
+class _ChoicePanel extends StatefulWidget {
+  final GameController c;
+  final ValueChanged<String> onPicked;   // 내 말풍선 문구(버튼)
+  final bool hideDecline;                // 통화 중
+  final VoidCallback? onHangUp;          // 통화 중 "끊을게" → 거절 경로
+}
+
+/// "이런 뜻이에요?" — 후보를 점수순으로. `Navigator.pop(index)` / `다시 쓰기` 는 null.
+class _PickSheet extends StatelessWidget {
+  final GameController c;
+  final MatchResult result;
+  final bool forced;                     // 되돌리기 뒤: 추천 강조 없음
+}
+
+/// 피커 한 행. OutlinedButton 이 아니다.
+class _PickRow extends StatelessWidget {
+  final String text;
+  final bool recommended;
+  final String? lockedReason;
+  final VoidCallback? onTap;             // null 이면 잠김
+}
+
+/// chance·minigame 확인. `_ConfirmAction.go` / `.other`.
+class _ConfirmSheet extends StatelessWidget {
+  final String text;                     // 친 문장
+  final String choiceText;               // 선택지 원문(이름 치환 뒤)
+  final String label;                    // '75%' | '표정 읽기'
+  final String primary;                  // '이대로' | '게임 시작'
+}
+
+// lib/engine/free_input.dart (순수 함수)
+MatchResult FreeInputMatcher.match(String text, List<ChoiceView> visible,
+    {bool inCall, bool forcePick, Map<int, ChoiceSignature>? signatures, String Function(String)? say, String? cacheKey});
+// decision: auto | confirm | locked | pick | empty | blocked | hangUp
+
+// GameController
+MatchResult chooseFree(String text);                       // 매핑만, 상태 변화 없음(전송 수·지표)
+void confirmFree(int index, {required String text, required bool auto, MatchResult? match, String via, ...});
+bool get canOfferFreeUndo;  void undoFree();  String? get playerText;  bool get canFreeInput;
+```
+
 ### 3.3 유지하는 것
 
 - `CenteredScrollColumn` — 시그니처 변경 없음. 작은 화면 + 큰 글꼴 대응의 핵심이라
@@ -1356,6 +1434,7 @@ class NameInputFormatter extends TextInputFormatter {}
 | 채팅 구분줄 | `'D+N · 제목'` 단일 Text(`ChatDivider`), 대화 첫 항목 |
 | 채팅 말풍선 | `CharacterAvatar(avatarMd)` 는 묶음 첫 줄에만, 시각 `'오후 4:12'` 는 묶음 마지막 줄에만, 읽음은 낱말 `'읽음'`(숫자 `'1'` 금지) |
 | 날짜 카드 | `Key('day-card')`, `'D+N'` 단일 Text, `'N일째'` 를 포함한 Text, 첫날 `'{run}회차 · 첫날'`, `'탭해서 넘기기'`; 카드 동안 `ActionScreen`·`RouletteSheet` 없음 |
+| 자유 입력 | 입력창 `Key('free-input')` 은 `TextField`(**`OutlinedButton` 아님**), 힌트 `'직접 쓰기…'`; 보내기 `Key('free-send')`; 피커 `'이런 뜻이에요?'` · `'다시 쓰기'` · 약하면 `'잘 못 알아들었어요 — 어느 쪽에 가까워요?'`; 시트 안 후보 행도 `OutlinedButton` 아님(선택지 버튼은 여전히 정확히 N개); 확인 `'이대로'` / `'게임 시작'` / `'다른 뜻'`; 잠김 `'아직 그 말은 안 나온다 (자존감 30↑)'`; 금칙어 `'그 말은 보내지 않기로 했다.'`; 빈 입력 `'조금만 더 써 주세요'`; 결과 캡션 `'→ "선택지 원문" 으로 알아들었어요'`(단일 Text); 무료 되돌리기 `'그런 뜻 아니었어요'`; 통화 `'전화를 끊을까요?'` · `'끊기'` · `'계속 통화'` |
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |
 | 앨범 아이콘 | AppBar 액션은 `Icons.photo_album_outlined` |
 | 빈 앨범 | `'아직 흑역사가 없다'` |
