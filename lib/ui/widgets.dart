@@ -3026,3 +3026,12 @@ class EndingTierDots extends StatelessWidget {
     );
   }
 }
+
+/// 광고를 못 받았을 때 쓰는 한 문장. 자리마다 다르게 말할 이유가 없다.
+const adFailedMessage = '광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+
+/// 광고 실패를 알리는 스낵바. 모달 시트 안에서는 시트에 가리므로 쓰지 않는다
+/// (룰렛 시트는 시트 안에 직접 한 줄을 남긴다).
+void adFailedSnack(BuildContext context) => ScaffoldMessenger.of(
+  context,
+).showSnackBar(SnackBar(content: Text(keepAll(adFailedMessage))));

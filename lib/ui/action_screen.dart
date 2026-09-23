@@ -218,9 +218,7 @@ class _ActionScreenState extends State<ActionScreen> {
     if (earned) {
       await c.grantHeart();
     } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(keepAll('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))),
-      );
+      adFailedSnack(context);
     }
   }
 }

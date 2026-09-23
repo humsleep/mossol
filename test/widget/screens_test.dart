@@ -66,6 +66,31 @@ void main() {
       expect(findText('오늘의 운'), findsNothing);
     });
 
+    testWidgets('룰렛 "한 번 더 (광고)" 는 광고를 못 받으면 시트 안에 이유를 남긴다 (회귀)', (tester) async {
+      // TestFlight: 버튼을 눌러도 아무 일도 안 일어났다. showRewarded 가 false 를
+      // 돌려줄 때 else 가지가 없었다. 스낵바는 시트 뒤에 가려지므로 시트 안에서 말한다.
+      await tester.pumpWidget(wrapApp(ActionScreen(c: c)));
+      await tester.pumpAndSettle();
+      await tester.tap(findText('돌리기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump();
+      expect(findText('한 번 더 (광고)'), findsOneWidget);
+      expect(findTextContaining('광고를 불러오지 못했어요'), findsNothing);
+
+      final before = c.rouletteSlot;
+      await tester.tap(findText('한 번 더 (광고)'));
+      await tester.pumpAndSettle();
+      // 미지원 환경(테스트 호스트)에선 광고가 없으니 결과는 그대로, 안내만 뜬다.
+      expect(findTextContaining('광고를 불러오지 못했어요'), findsOneWidget);
+      expect(c.rouletteSlot, before);
+      expect(c.rouletteRerolled, isFalse);
+      // 다시 누를 수 있어야 한다(잠시 뒤 재시도 안내와 맞아야 하므로).
+      expect(findText('한 번 더 (광고)'), findsOneWidget);
+      await tester.tap(findText('시작'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('하트 타이머가 1초마다 줄고 차면 하트가 는다 (회귀)', (tester) async {
       // 실기기: 행동 화면의 '다음 하트 12:48' 이 3분 넘게 그대로였다(타이머 없음).
       var now = DateTime(2026, 9, 18, 12).millisecondsSinceEpoch;

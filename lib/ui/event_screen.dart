@@ -839,6 +839,9 @@ class _ChoicePanel extends StatelessWidget {
                     if (ok) {
                       c.analytics.log(Analytics.adHintUsed);
                       c.revealHint();
+                    } else if (context.mounted) {
+                      // 광고가 안 뜨면 아무 말 없이 끝내지 않는다.
+                      adFailedSnack(context);
                     }
                   },
                   icon: const Icon(Icons.lightbulb_outline, size: 18),
@@ -997,7 +1000,11 @@ class _ResultPanel extends StatelessWidget {
                   final ok = await AdManager.instance.showRewarded(
                     placement: 'undo',
                   );
-                  if (ok) c.undoChoice();
+                  if (ok) {
+                    c.undoChoice();
+                  } else if (context.mounted) {
+                    adFailedSnack(context);
+                  }
                 },
                 icon: const Icon(Icons.replay, size: 18),
                 // 톤 배경 위에서도 대비를 지키기 위해 전경색만 맞춘다.
