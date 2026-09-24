@@ -6,6 +6,16 @@
 
 ## 0. 쓰는 법
 
+> **코드 쪽 준비 완료 (2026-09-24, 개편 4단계 D).**
+> 그림을 받을 **자리는 이미 다 비어 있다.** §0.3 이름 그대로 `assets/scenes|photos|stickers|endings/`
+> 에 파일을 넣고 다시 빌드하면 그대로 뜬다 — JSON 도 코드도 더 고칠 필요가 없다.
+> 자동 인식이 안 되는 전용 사진(`P`)과 공유하는 삽화만 JSON 의 선택 필드(`image` · `photo.image` · `sticker`)로 가리킨다.
+> 파일이 하나도 없는 지금은 화면이 예전과 **1px 도 다르지 않다**(카드도 여백도 안 생긴다).
+>
+> 확인: `python3 tool/check_assets.py` — 이 문서가 기대하는 파일(현재 **114장**)과 `assets/` 를 대조해
+> 없는 것 · 남는 것 · 이름·형식이 틀린 것 · 용량 초과를 찍는다(`-v` 로 전부, `--json` 으로 기계용).
+> 코드 쪽 규격은 `docs/DESIGN_SYSTEM.md` §2.3.2, 계약은 `docs/overhaul/06_scene_plan.md` §4.
+
 ### 0.1 도구 무관 규칙
 
 - **어느 도구든 같은 프롬프트.** Midjourney 는 본문 뒤에 `--ar 3:2 --style raw`(사진 `--ar 4:3`, 스티커 `--ar 1:1`), Stable Diffusion 은 §1.2 의 Avoid 블록을 Negative prompt 칸에 옮기고, DALL-E·Nano-Banana 류 대화형 도구는 본문을 그대로 붙인다. 본문에 이미 비율·크기·금지 항목이 들어 있으니 도구 파라미터는 **중복 지정**일 뿐이다.

@@ -407,4 +407,91 @@ void main() {
       }
     });
   });
+
+  // 스토리 JSON 의 그림 필드(docs/overhaul/06_scene_plan.md §4)는 **추가만** 한다.
+  // 예전 JSON(필드 없음)이 지금과 똑같이 읽히고, 새 필드는 그대로 왕복해야 한다.
+  group('스토리 JSON: 그림 필드는 추가만', () {
+    Map<String, dynamic> eventJson({bool withImages = false}) => {
+      'id': 'mo_seoyeon_call_eleven',
+      'layer': 'route',
+      'character': 'seoyeon',
+      'format': 'call',
+      'title': '11시의 전화',
+      if (withImages) 'image': 'assets/scenes/공유.webp',
+      'lines': [
+        {
+          'who': 'them',
+          'text': '자, 아야?',
+          if (withImages) 'sticker': 'seoyeon_shy',
+        },
+        {
+          'who': 'them',
+          'photo': {
+            'icon': 'night',
+            'caption': '창밖 야경',
+            if (withImages) 'image': 'assets/photos/mo_x_0.webp',
+          },
+        },
+      ],
+      'choices': [
+        {'text': '응', 'decline': true},
+      ],
+    };
+
+    test('없으면 null — 지금까지의 이벤트·줄·사진과 같다', () {
+      final ev = StoryEvent.fromJson(eventJson());
+      expect(ev.image, isNull);
+      expect(ev.lines.first.sticker, isNull);
+      expect(ev.lines.last.photo!.image, isNull);
+      // 나머지는 그대로 읽힌다.
+      expect(ev.title, '11시의 전화');
+      expect(ev.isCall, isTrue);
+      expect(ev.lines.last.photo!.icon, 'night');
+      expect(ev.lines.last.photo!.caption, '창밖 야경');
+    });
+
+    test('있으면 그대로 읽고, 이름 치환·MBTI 거르기를 거쳐도 남는다', () {
+      final ev = StoryEvent.fromJson(eventJson(withImages: true));
+      expect(ev.image, 'assets/scenes/공유.webp');
+      expect(ev.lines.first.sticker, 'seoyeon_shy');
+      expect(ev.lines.last.photo!.image, 'assets/photos/mo_x_0.webp');
+
+      // mapText(이름 치환)는 글자만 바꾼다.
+      final shown = ev.mapText((t) => t.replaceAll('아야', '이름'));
+      expect(shown.image, ev.image);
+      expect(shown.lines.first.sticker, 'seoyeon_shy');
+      expect(shown.lines.last.photo!.image, 'assets/photos/mo_x_0.webp');
+      expect(shown.lines.first.text, '자, 이름?');
+
+      // withContent(MBTI 거르기)도 그림을 잃지 않는다.
+      final filtered = shown.withContent(
+        lines: shown.lines,
+        choices: shown.choices,
+        hint: null,
+      );
+      expect(filtered.image, ev.image);
+    });
+
+    test('엔딩: image 는 선택, 없으면 null', () {
+      const base = {'id': 'e1', 'name': '엔딩', 'tier': 'bad'};
+      expect(Ending.fromJson({...base}).image, isNull);
+      expect(
+        Ending.fromJson({...base, 'image': 'assets/endings/x.webp'}).image,
+        'assets/endings/x.webp',
+      );
+    });
+
+    test('실제 스토리 JSON 에는 아직 그림 필드가 없다(지금과 동일 보장)', () {
+      final b = testBundle();
+      expect(b.events.every((e) => e.image == null), isTrue);
+      expect(b.endings.every((e) => e.image == null), isTrue);
+    });
+
+    test('세이브에는 아무것도 추가되지 않는다', () {
+      final b = testBundle();
+      final s = GameState.fresh(b.config, b.characters, seed: 1, nowMs: 0);
+      expect(s.toJson().keys.where((k) => k.contains('image')), isEmpty);
+      expect(s.toJson().keys.where((k) => k.contains('sticker')), isEmpty);
+    });
+  });
 }

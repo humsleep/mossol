@@ -306,6 +306,7 @@ class StoryBundle {
       );
       _checkMbti(e);
       _checkMoment(e);
+      _checkImage(e.image, '${e.id}.image');
       _checkLines(e.lines, '${e.id}.lines');
       for (var i = 0; i < e.choices.length; i++) {
         final c = e.choices[i];
@@ -373,6 +374,7 @@ class StoryBundle {
         );
       }
       if (e.hint != null) _checkTemplate(e.hint!, 'ending ${e.id}.hint');
+      _checkImage(e.image, 'ending ${e.id}.image');
       _checkNoTemplate(e.name, 'ending ${e.id}.name');
       if (requireEndingHints && (e.hint ?? '').trim().isEmpty) {
         throw StateError('엔딩 hint 없음: ${e.id}');
@@ -644,14 +646,34 @@ class StoryBundle {
   /// 대사·반응 줄의 사진 설명 길이.
   void _checkLines(List<Line> lines, String where) {
     for (var i = 0; i < lines.length; i++) {
-      final p = lines[i].photo;
+      final line = lines[i];
+      final sticker = line.sticker;
+      if (sticker != null && !Sticker.isValid(sticker)) {
+        throw StateError(
+          'sticker 는 <캐릭터>_<${Sticker.emotions.join('|')}> 또는 '
+          '${Sticker.extras.join('|')}: $where[$i] -> "$sticker"',
+        );
+      }
+      final p = line.photo;
       if (p == null) continue;
+      _checkImage(p.image, '$where[$i].photo.image');
       final n = TextTemplate.maxLength(p.caption);
       if (n > Photo.maxCaption) {
         throw StateError(
           'photo caption ${Photo.maxCaption}자 초과: $where[$i] ($n)',
         );
       }
+    }
+  }
+
+  /// 그림 경로 형식(06 §4). `assets/` 로 시작하는 한 줄만 본다 — **파일이 있는지는
+  /// 검사하지 않는다**. 그림은 나중에 들어오고, 없으면 화면이 지금과 같을 뿐이다.
+  void _checkImage(String? path, String where) {
+    if (path == null) return;
+    if (!AssetPath.isValid(path)) {
+      throw StateError(
+        'image 는 ${AssetPath.prefix} 로 시작하는 경로: $where -> "$path"',
+      );
     }
   }
 

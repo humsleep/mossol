@@ -14,6 +14,8 @@ import '../minigames/registry.dart';
 import 'call_view.dart';
 import 'design_system.dart';
 import 'notification_card.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -569,31 +571,35 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     final replying = o != null && _replyShown < c.lastReply.length;
     Widget sub(Line l) =>
         CallSubtitle(line: l, partnerName: partner, characterId: ev.character);
-    return ActiveCallView(
-      name: partner,
-      characterId: ev.character,
-      seconds: _callSeconds,
-      ended: _callEnded,
-      scroll: _scroll,
-      subtitles: [
-        for (final l in visible) sub(l),
-        if (o != null && _myText != null) sub(Line(who: 'me', text: _myText!)),
-        if (o != null)
-          for (final l in c.lastReply.take(_replyShown)) sub(l),
-        if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
-          const CallTyping(),
-      ],
-      bottom: o != null
-          ? (replying ? null : _ResultPanel(c: c))
-          : c.linesDone
-          ? _ChoicePanel(
-              key: ValueKey('choices-${ev.id}'),
-              c: c,
-              hideDecline: true,
-              onPicked: (text) => _picked = text,
-              onHangUp: _declineCall,
-            )
-          : null,
+    return SceneScope(
+      builder: (context, r) => ActiveCallView(
+        name: partner,
+        characterId: ev.character,
+        // 통화 배경 삽화(06 §1). 없으면 지금까지의 바탕 그대로.
+        image: SceneImages.forEvent(ev, registry: r),
+        seconds: _callSeconds,
+        ended: _callEnded,
+        scroll: _scroll,
+        subtitles: [
+          for (final l in visible) sub(l),
+          if (o != null && _myText != null) sub(Line(who: 'me', text: _myText!)),
+          if (o != null)
+            for (final l in c.lastReply.take(_replyShown)) sub(l),
+          if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
+            const CallTyping(),
+        ],
+        bottom: o != null
+            ? (replying ? null : _ResultPanel(c: c))
+            : c.linesDone
+            ? _ChoicePanel(
+                key: ValueKey('choices-${ev.id}'),
+                c: c,
+                hideDecline: true,
+                onPicked: (text) => _picked = text,
+                onHangUp: _declineCall,
+              )
+            : null,
+      ),
     );
   }
 
@@ -674,6 +680,21 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
           meta: time == null && !read ? null : ChatMeta(time: time, read: read),
         ),
       );
+      // 스티커는 그 대사 바로 아래 별도 줄. 상대 줄에만, 에셋이 없으면 빈 칸도 없다.
+      final sticker = l.who == 'them' ? l.sticker : null;
+      if (sticker != null) {
+        final char = Sticker.characterOf(sticker);
+        final emotion = Sticker.emotionOf(sticker);
+        if (char != null && emotion != null) {
+          bubbles.add(
+            StickerBubble(
+              characterId: char,
+              emotion: emotion,
+              name: l.name ?? partner,
+            ),
+          );
+        }
+      }
     }
 
     return Scaffold(
@@ -709,6 +730,14 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // 장면 삽화(06 §1). 그림이 없으면 아무것도 그리지 않는다 — 여백도 0.
+                    SceneScope(
+                      builder: (context, r) => SceneCard(
+                        path: SceneImages.forEvent(ev, registry: r),
+                        title: ev.title,
+                        bundle: r.bundle,
+                      ),
+                    ),
                     // 제목은 헤더가 아니라 대화의 첫 줄이다.
                     ChatDivider(
                       text: ev.title.isEmpty

@@ -167,6 +167,7 @@
 
 - **등록 방식은 `PortraitRegistry` 와 동일**: 시작 시 `AssetManifest` 를 한 번 읽어 `assets/scenes/`·`photos/`·`stickers/`·`endings/` 를 캐시(`SceneRegistry`). 파일만 넣고 재빌드하면 뜬다. 필드는 공유·예외용(예: `m03`/`m03_m`, `m_mbti_chat_f`/`_m` 가 한 장을 같이 씀).
 - **검증기**: `image`/`photo.image` 는 `assets/` 로 시작하는 문자열만, **존재는 검사하지 않는다**(테스트·CI 는 그림 없이 돈다). `sticker` 는 감정 id 화이트리스트(`joy sulk shy surprise` + 캐릭터별 5번째: `daeun_blank`, `sohee_call`, `jeongwoo_haha`, `seunghyun_sure`).
+- **구현 확정(2026-09-24, 4단계)**: `sticker` 값은 위 표의 `<char>_<emotion>` 조합이 아니라 **파일 이름 그대로**다 — `"sticker": "seoyeon_shy"`. 5번째 스티커 id(`daeun_blank`)가 이미 같은 꼴이라 규약이 하나로 합쳐지고, 그룹 대화에서도 이벤트 `character` 와 무관하게 화자를 적을 수 있다(객체형은 두지 않았다). 감정 4종의 철자는 `sulk`·`surprise`(파일명과 같다). 엔딩은 `image` → 엔딩 id → 캐릭터 id → `common_<tier>` 순, `image` 가 가리킨 파일이 없으면 규약 경로로 되돌아간다.
 - **세이브 호환**: 세이브에는 아무것도 추가하지 않는다(그림은 렌더링만). `save_migration_test.dart` 영향 없음.
 - **pubspec**: `assets/scenes/`, `assets/photos/`, `assets/stickers/`, `assets/endings/` 를 `.gitkeep` 과 함께 등록. 예상 번들 증가 ≈ 11MB(1차 113장).
 - **접근성**: 삽화 카드 `Semantics(image, label: "<이벤트 title> 장면")`, 스티커 `label: "<이름> 스티커: 기쁨"`. 동작 줄이기면 켄번즈·팝인 정지. 사진 카드 라벨은 지금대로 `사진: <caption>`.

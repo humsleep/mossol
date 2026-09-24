@@ -180,6 +180,9 @@ abstract final class AppSize {
   /// 채팅 스티커 한 변.
   static const double sticker = 120;
 
+  /// 장면 삽화·엔딩 히어로의 가로세로비(3:2, 06 §1).
+  static const double sceneAspect = 3 / 2;
+
   /// AdSize.banner 높이.
   static const double banner = 50;
 }
@@ -275,6 +278,9 @@ abstract final class AppMotion {
   static const Duration dSlow = Duration(milliseconds: 320);
   static const Duration dSheet = Duration(milliseconds: 380);
 
+  /// 장면 삽화 켄번즈(06 §1). 8초에 걸쳐 아주 천천히 확대한다 — 눈에 띄면 실패다.
+  static const Duration dScene = Duration(seconds: 8);
+
   /// 기본 진입·퇴장.
   static const Curve standard = Curves.easeOutCubic;
 
@@ -296,6 +302,9 @@ abstract final class AppMotion {
   static Duration base(BuildContext context) => _scaled(context, dBase);
   static Duration slow(BuildContext context) => _scaled(context, dSlow);
   static Duration sheet(BuildContext context) => _scaled(context, dSheet);
+
+  /// 켄번즈. 동작 줄이기면 0 — 그림이 정지한다.
+  static Duration scene(BuildContext context) => _scaled(context, dScene);
 
   /// 반복 애니메이션(룰렛 회전, 스윕바)은 축소 설정에서 멈춰야 한다.
   /// 게임 판정에 필요한 연출은 멈추지 말고 커브만 단순하게 바꾼다.

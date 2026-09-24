@@ -83,6 +83,23 @@
 | 4 | **D 슬롯**: 레지스트리·JSON 필드·삽화 카드·스티커·사진 실제 그림 (그림은 사용자가 `SCENE_PROMPTS.md` 로 생성) | `portraits.dart` 확장, `models`, `photo_card`, `event_screen` | Mobile App Builder |
 | 각 단계 뒤 | `flutter analyze`, `flutter test`(회귀 0), 시뮬레이터 확인, Reality Checker 검수, 커밋 | | Reality Checker |
 
+### 진행 상황 (2026-09-24)
+
+| 단계 | 상태 | 커밋 |
+|---|---|---|
+| 1 · C+E 사운드·햅틱, 배너 상단 | 완료 (테스트 654) | `78975d0` |
+| 2 · A+B 카톡형 채팅, Day 카드 | 완료 (677) | `a58271b` |
+| 3 · F 제한형 자유 입력 | 완료 (705) + 퇴화 입력 버그 수정 (706) | `2f1fe58`, `78d8281` |
+| 4 · D 이미지 슬롯 | 완료 (743). 그림 0장이어도 지금과 동일 | |
+
+**그림이 도착하면**: 장면 17 · 사진 30 · 엔딩 15 는 파일 이름만 맞으면 **JSON 수정 없이** 자동으로 붙는다
+(`assets/scenes/<이벤트 id>` · `assets/photos/<icon>` · `assets/endings/<캐릭터 id>`).
+스티커 52장만 "어느 대사 뒤에 붙는가" 를 JSON(`Line.sticker`)에 적어야 한다.
+확인: `python3 tool/check_assets.py` (기대 114장).
+
+**남은 것**: 효과음 실제 파일 교체(지금은 합성 자리표시자), 장 제목 5줄(`config.json` `chapterTitles`),
+실기기 QA(05 §5), 저분리 이벤트 139개 `intent` 보강(선택).
+
 ## 4. 하지 않는 것 / 주의
 
 - 채팅 화면 배너 (정책).

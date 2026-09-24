@@ -196,6 +196,67 @@ void main() {
       expect(b.events.length, 2);
     });
 
+    test('그림 필드(06 §4): assets/ 로 시작하면 통과, 존재는 보지 않는다', () {
+      final b = _bundle([
+        {
+          ..._call(),
+          'image': 'assets/scenes/아직없는파일.webp',
+          'lines': [
+            {
+              'who': 'them',
+              'text': '여보세요?',
+              'sticker': 'a_shy',
+              'photo': {
+                'icon': 'night',
+                'caption': '창밖',
+                'image': 'assets/photos/아직없는파일.webp',
+              },
+            },
+          ],
+        },
+      ]);
+      expect(b.events.single.image, 'assets/scenes/아직없는파일.webp');
+      expect(b.events.single.lines.single.sticker, 'a_shy');
+    });
+
+    test('그림 경로는 assets/ 로 시작해야 한다', () {
+      _expectError([
+        {..._call(), 'image': 'scenes/m01.webp'},
+      ], 'image 는 assets/');
+      _expectError([
+        {
+          ..._call(),
+          'lines': [
+            {
+              'who': 'them',
+              'photo': {'icon': 'night', 'image': '/tmp/x.webp'},
+            },
+          ],
+        },
+      ], 'image 는 assets/');
+    });
+
+    test('스티커는 화이트리스트(joy sulk shy surprise + 5번째 넷)만', () {
+      _expectError([
+        {
+          ..._call(),
+          'lines': [
+            {'who': 'them', 'text': '여보세요?', 'sticker': 'a_angry'},
+          ],
+        },
+      ], 'sticker 는');
+      // 5번째 스티커 id 는 그대로 통과한다.
+      final b = _bundle([
+        {
+          ..._call(),
+          'lines': [
+            {'who': 'them', 'text': '여보세요?', 'sticker': 'daeun_blank'},
+          ],
+        },
+      ]);
+      expect(b.events.single.lines.single.sticker, 'daeun_blank');
+    });
+
     test('알 수 없는 format', () {
       _expectError([
         {..._call(), 'format': 'video'},

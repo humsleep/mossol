@@ -17,6 +17,7 @@ import 'design_system.dart';
 
 import 'photo_card.dart';
 import 'portraits.dart';
+import 'scene_registry.dart';
 import 'keep_all.dart';
 
 export 'photo_card.dart';
@@ -1214,48 +1215,101 @@ class ChatDivider extends StatelessWidget {
   }
 }
 
-/// 스티커 한 장(레이아웃 예약, 03 §1.6). `assets/stickers/<characterId>_<emotion>.png`,
-/// 배경·테두리 없음, `AppSize.sticker` 정사각, 정지 그림.
+/// 스티커 한 장(03 §1.6, 06 §1). `assets/stickers/<characterId>_<emotion>.webp`,
+/// 배경·테두리 없음, `AppSize.sticker` 정사각.
 ///
 /// 에셋이 없으면 **아무것도 그리지 않는다**(깨진 상자 금지) — 어떤 파일이 있는지는
-/// [resolve] 가 답한다. 기본값은 항상 null(아직 에셋이 없다). 4단계(장면 삽화)의
-/// 매니페스트 레지스트리가 이 자리를 채운다.
+/// [resolve] 가 답하고, 기본값은 [SceneRegistry] 다. 그림이 하나도 없는 지금은
+/// 늘 null 이라 이 자리는 빈 줄조차 남기지 않는다.
+///
+/// 상대 줄이면 아바타 열만큼 들여써 말풍선과 왼쪽 선을 맞춘다. 등장은 팝인
+/// ([AppMotion.base] + [AppMotion.emphasized]), 동작 줄이기면 곧바로 제자리.
 class StickerBubble extends StatelessWidget {
   final String characterId;
   final String emotion;
   final bool mine;
+
+  /// 스크린리더용 화자 이름. 있으면 "<이름> 스티커: 기쁨" 으로 읽는다.
+  final String? name;
+
   const StickerBubble({
     super.key,
     required this.characterId,
     required this.emotion,
     this.mine = false,
+    this.name,
   });
 
-  /// 스티커 에셋 경로. 없으면 null. 레지스트리가 붙기 전까지는 항상 null.
-  static String? Function(String characterId, String emotion) resolve = (
-    _,
-    _,
-  ) => null;
+  /// 스티커 에셋 경로. 없으면 null. 기본값은 시작할 때 읽은 매니페스트 목록이다.
+  static String? Function(String characterId, String emotion) resolve =
+      (id, emotion) => SceneImages.forSticker('${id}_$emotion');
+
+  /// 말풍선 왼쪽 선. 아바타(avatarMd) + sm, 바깥 여백 md 는 [ChatBubble] 과 같다.
+  static const double indent = AppSize.avatarMd + AppSpace.sm;
 
   @override
   Widget build(BuildContext context) {
-    final path = resolve(characterId, emotion);
-    if (path == null) return const SizedBox.shrink();
-    return Align(
-      alignment: mine
-          ? AlignmentDirectional.centerEnd
-          : AlignmentDirectional.centerStart,
-      child: Padding(
-        padding: const EdgeInsets.only(top: AppSpace.xs),
-        child: Image.asset(
-          path,
-          width: AppSize.sticker,
-          height: AppSize.sticker,
-          fit: BoxFit.contain,
-          semanticLabel: '스티커',
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
-        ),
-      ),
+    return SceneScope(
+      builder: (context, _) {
+        final path = resolve(characterId, emotion);
+        if (path == null) return const SizedBox.shrink();
+        final label = switch ((name, Sticker.labels[emotion])) {
+          (final n?, final e?) => '$n 스티커: $e',
+          (final n?, _) => '$n 스티커',
+          (_, final e?) => '스티커: $e',
+          _ => '스티커',
+        };
+        return Padding(
+          padding: EdgeInsets.only(
+            left: mine ? AppSpace.md : AppSpace.md + indent,
+            right: AppSpace.md,
+            top: AppSpace.xs,
+          ),
+          child: Align(
+            alignment: mine
+                ? AlignmentDirectional.centerEnd
+                : AlignmentDirectional.centerStart,
+            child: _StickerPop(
+              child: Image.asset(
+                path,
+                bundle: SceneRegistry.current.bundle,
+                scale: 1,
+                cacheWidth:
+                    (AppSize.sticker * MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
+                width: AppSize.sticker,
+                height: AppSize.sticker,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+                semanticLabel: label,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, sync) =>
+                    frame == null && !sync ? const SizedBox.shrink() : child,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 스티커 팝인. 동작 줄이기면 애니메이션 없이 제자리에서 뜬다.
+class _StickerPop extends StatelessWidget {
+  final Widget child;
+  const _StickerPop({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = AppMotion.base(context);
+    if (d == Duration.zero) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.8, end: 1),
+      duration: d,
+      curve: AppMotion.curve(context, AppMotion.emphasized),
+      builder: (context, v, child) => Transform.scale(scale: v, child: child),
+      child: child,
     );
   }
 }

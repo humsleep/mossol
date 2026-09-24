@@ -28,6 +28,7 @@ import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/portraits.dart';
+import 'ui/scene_registry.dart';
 import 'ui/summary_screen.dart';
 
 Future<void> main() async {
@@ -43,10 +44,13 @@ Future<void> main() async {
     final analytics = Analytics.init();
     // 초상화 목록(AssetManifest)은 스토리와 나란히 읽는다. 실패해도 던지지 않는다(이니셜로 대체).
     final portraits = PortraitRegistry.load();
+    // 장면 삽화·사진·스티커·엔딩 목록도 같은 매니페스트에서. 없으면 그림 없는 화면 그대로.
+    final scenes = SceneRegistry.load();
     final bundle = await StoryBundle.loadFromAssets(
       knownMinigames: minigameIds,
     );
     await portraits;
+    await scenes;
     await analytics;
     if (kDebugMode && kDebugGallery) {
       // QA 용. `--dart-define=MOSSOL_DEBUG_GALLERY=true` 로 미니게임·엔딩 갤러리에서 시작.

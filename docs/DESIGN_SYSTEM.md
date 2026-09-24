@@ -220,6 +220,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 | `dBase` | 220ms | 기본 진입/퇴장, 배지 변화 |
 | `dSlow` | 320ms | 결과 패널, 카드 등장 |
 | `dSheet` | 380ms | 바텀시트 |
+| `dScene` | 8s | 장면 삽화 켄번즈(`AppMotion.scene`) |
 | `standard` | `easeOutCubic` | 기본 |
 | `emphasized` | `easeOutBack` | 콤보·배지 팝 |
 | `gauge` | `easeInOutCubic` | 게이지 증감 |
@@ -247,6 +248,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 | `avatarLg` | 56 | 캐스트 카드(320pt) |
 | `avatarXl` | 72 | 캐스트 카드 |
 | `sticker` | 120 | 채팅 스티커 한 변 |
+| `sceneAspect` | 3/2 | 장면 삽화·엔딩 히어로 가로세로비(치수가 아니라 비율) |
 | `banner` | 50 | AdSize.banner 높이 |
 
 `CharacterAvatar.size` 는 이 네 값만 받는다.
@@ -322,7 +324,10 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - 타이핑: 다음 줄이 `them` 이면 그 화자의 아바타(첫 줄 규칙) + 상대 말풍선 안 `'…'`(`TypingIndicator`, 깜빡임 없음),
   `narr/sys` 면 `CallTyping`. 상대 줄 지연은 `clamp(600 + 글자(공백 제외)×18, 800, 2400)`ms. "쓰다 지움" 은 이벤트당 1회
   (가장 긴 `them` 줄 또는 `wait` 다음 줄): `…` 700ms → `fast` 페이드 아웃 → 600ms → `…` → 지연 → 대사. 동작 줄이기면 지연만.
-- 스티커(`Line.sticker`, 예약): 말풍선 뒤 `xs`, `AppSize.sticker` 정사각, 배경 없음, 에셋 없으면 그리지 않음.
+- 장면 삽화 카드는 대화의 **맨 위**(구분줄 위)에 온다 — §2.3.2.
+- 스티커(`Line.sticker`): 그 대사 **바로 아래 별도 줄**, 말풍선 뒤 `xs`, `AppSize.sticker`(120) 정사각, 배경·테두리 없음.
+  상대 줄에만(`them`), 이벤트당 1개. 왼쪽은 아바타 열(`avatarMd + sm`)만큼 들여써 말풍선과 선을 맞춘다.
+  등장은 팝인(`AppMotion.base` + `emphasized`, 동작 줄이기면 없음). **에셋이 없으면 아무것도 그리지 않는다**(빈 줄도 없음).
 - AppBar: 이름 `titleLarge` + 상태 `labelSmall onSurfaceVariant`(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`) 두 줄.
   아바타·제목·D+N 없음. `bottom` 진행 막대 유지. 독백 이벤트는 제목이 이름 자리, 상태 줄 없음.
 - 대화 목록은 `SingleChildScrollView` + `Column`(십수 줄이라 전부 그린다. 게으른 `ListView` 는 끝 높이를 어림해
@@ -408,6 +413,28 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 통화 자막 안의 사진은 화면 폭 60% 로 가운데. 사진·스티커도 아바타 열 다음 본문 열에 놓이고 메타 열은 마지막 요소 아래 끝에 붙는다.
 
 **헤더 글자색**: 채팅 헤더의 상태 줄과 대화 구분줄은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
+
+#### 2.3.2 장면 삽화 · 사진 그림 · 스티커 · 엔딩 히어로 (docs/overhaul/06_scene_plan.md)
+
+그림 파일은 `assets/scenes|photos|stickers|endings/` 에 **규약 이름**으로 넣는다(docs/SCENE_PROMPTS.md §0.3).
+목록은 시작할 때 `AssetManifest` 를 한 번 읽어 `SceneRegistry` 에 캐시한다(초상화와 같은 방식).
+**어느 자리든 파일이 없으면 아무것도 그리지 않고 자리도 잡지 않는다** — 그림 0장이면 화면은 지금과 1px 도 다르지 않다.
+깨진 파일도 같다(`errorBuilder`·`frameBuilder` 가 그림 없는 레이아웃으로 되돌린다). 확인은 `python3 tool/check_assets.py`.
+
+| 자리 | 규격 | 경로(필드 없을 때) | 없을 때 |
+|---|---|---|---|
+| 장면 카드 (`SceneCard`) | 풀폭 3:2(`AppSize.sceneAspect`), 좌우 `md`, 위 `sm`, 모서리 `AppRadius.lg`, `BoxFit.cover`, 켄번즈 `AppMotion.scene`(8s, 6% 확대), 탭 → 크게 보기 | `assets/scenes/<이벤트 id>` (`StoryEvent.image` 로 덮어쓰기) | 카드 없음. 구분줄이 그대로 첫 줄 |
+| 통화 배경 (`CallBackdrop.image`) | 2단계(`ActiveCallView`) 상단 55% 에 깔고 아래로 페이드, 30% 어둡게(`CallBackdrop.dim`), 켄번즈 | 같은 `assets/scenes/<이벤트 id>` | 지금의 자수정 그라데이션 |
+| 사진 창 (`PhotoWindow`) | `PolaroidFrame` 안 4:3 자리만 교체. 프레임·기울기·캡션·크게 보기·스크린리더 라벨 전부 그대로 | `photo.image` → `assets/photos/<icon>` | 지금의 `PhotoScene`(그라데이션 + 구석 아이콘) |
+| 스티커 (`StickerBubble`) | §2.3 참조 | `assets/stickers/<캐릭터 id>_<감정>` | 아무것도 그리지 않음 |
+| 엔딩 히어로 (`EndingHero`) | 엔딩 이름 **위**, 폭 = 화면 − `screenX`×2, 3:2, 모서리 `lg`, 아래 `lg`. 티어 색은 코드가: bad = 채도↓·어둡게, hidden = 세피아, 그 밖은 원본 | `Ending.image` → 엔딩 id → 캐릭터 id → `common_solo`·`common_bad`·`common_hidden` | 지금의 기념품 레이아웃 |
+
+- **디코딩**: 전부 `BoxFit.cover` + `cacheWidth = 레이아웃 폭 × 기기 배율`(1200px 원본을 화면 폭으로 줄여 읽는다).
+- **스크린리더**: 장면 카드 `'<이벤트 제목> 장면'` + 힌트 `'크게 보기'`, 스티커 `'<이름> 스티커: 기쁨'`,
+  엔딩 히어로 `'<엔딩 이름> 엔딩 그림'`, 사진은 지금대로 `'사진: <caption>'`.
+- **동작 줄이기**: 켄번즈·팝인 전부 정지(`AppMotion` 의 context 버전만 쓴다).
+- **검증기**: `image`·`photo.image` 는 `assets/` 로 시작하는지만 본다 — **파일 존재는 검사하지 않는다**(그림 없이 테스트·CI 가 돈다).
+  `sticker` 는 화이트리스트(`<캐릭터>_joy|sulk|shy|surprise` + `daeun_blank` `sohee_call` `jeongwoo_haha` `seunghyun_sure`).
 
 ### 2.4 하루 정산 (`summary_screen.dart`)
 - **주인공**: 오늘 바뀐 수치. 변화량이 가장 크게 읽혀야 한다.
@@ -1430,6 +1457,7 @@ bool get canOfferFreeUndo;  void undoFree();  String? get playerText;  bool get 
 | 룰렛 | `'오늘의 운'`, `'돌리기'`, `'시작'`, `'한 번 더 (광고)'` / 재도전권이 있으면 대신 `'재도전권 사용 (N장)'` |
 | 전화 | 수신 `'전화가 왔어요'`, `'받기'`, `'거절'`, 통화 `'통화 중'`/`'통화 종료'`, 타이머 `'00:00'` 형식 단일 Text, 대기 `'…(침묵)'`, 거절 뒤 `'부재중 전화 · 이름'` |
 | 알림 · 사진 | 알림 카드 `'지금'`, 사진 스크린리더 라벨 `'사진: {caption}'` |
+| 그림 슬롯 | 에셋이 없으면 `SceneCard`·`StickerBubble`·`EndingHero` 높이 0(그림 없는 화면과 동일), `SceneImage` 없음, 사진은 `PhotoScene` 유지. 있으면 장면 카드는 구분줄 **위** 3:2, 스티커 라벨 `'<이름> 스티커: 기쁨'`, 장면 크게 보기 버튼 `'닫기'` |
 | 채팅 헤더 | 이름 `titleLarge` + 상태 줄 `'온라인'` / `'자리 비움'` / `'부재중'` / `'온라인 · N명'`; AppBar 안에 `CharacterAvatar` 없음; 타이핑 `'…'` 정확히 한 개(`TypingIndicator` 또는 `CallTyping`) |
 | 채팅 구분줄 | `'D+N · 제목'` 단일 Text(`ChatDivider`), 대화 첫 항목 |
 | 채팅 말풍선 | `CharacterAvatar(avatarMd)` 는 묶음 첫 줄에만, 시각 `'오후 4:12'` 는 묶음 마지막 줄에만, 읽음은 낱말 `'읽음'`(숫자 `'1'` 금지) |

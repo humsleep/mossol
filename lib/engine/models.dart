@@ -333,7 +333,72 @@ class Effects {
   }
 }
 
-/// 사진 메시지(docs/MOMENTS_SPEC.md §1.3). 실제 이미지는 없고 아이콘과 장면 설명만 있다.
+/// 그림 에셋 경로 규약(docs/overhaul/06_scene_plan.md §4).
+///
+/// 경로는 **있는지 검사하지 않는다** — 테스트·CI 는 그림 파일 없이 돌아야 한다.
+/// 형식(`assets/` 로 시작하는 한 줄)만 본다. 실제로 있는지는 화면을 그릴 때
+/// `SceneRegistry` 가 답하고, 없으면 아무것도 그리지 않는다.
+abstract final class AssetPath {
+  static const prefix = 'assets/';
+
+  /// 규약에 맞는 경로인지. 빈 칸·줄바꿈·역슬래시가 들어가면 오타다.
+  static bool isValid(String path) =>
+      path.startsWith(prefix) &&
+      path.length > prefix.length &&
+      !path.contains(RegExp(r'[\s\\]'));
+}
+
+/// 스티커 id 규약(06 §4, docs/SCENE_PROMPTS.md §0.3).
+///
+/// [Line.sticker] 값은 **파일 이름 그대로**다: `<캐릭터 id>_<감정>`(`seoyeon_joy`).
+/// 넷은 감정 자리에 그 캐릭터만의 시그니처 이름이 온다([extras]).
+abstract final class Sticker {
+  /// 전원 공통 감정 4종.
+  static const emotions = ['joy', 'sulk', 'shy', 'surprise'];
+
+  /// 5번째 스티커가 있는 넷. 파일 이름이 곧 id 다.
+  static const extras = [
+    'daeun_blank',
+    'sohee_call',
+    'jeongwoo_haha',
+    'seunghyun_sure',
+  ];
+
+  /// 화이트리스트 통과 여부. `<캐릭터>_<감정 4종>` 이거나 [extras] 중 하나.
+  static bool isValid(String key) {
+    if (extras.contains(key)) return true;
+    final cut = key.lastIndexOf('_');
+    if (cut <= 0 || cut == key.length - 1) return false;
+    return emotions.contains(key.substring(cut + 1));
+  }
+
+  /// 스티커의 캐릭터 id. 규약 밖이면 null.
+  static String? characterOf(String key) {
+    if (!isValid(key)) return null;
+    return key.substring(0, key.lastIndexOf('_'));
+  }
+
+  /// 스티커의 감정 id. 규약 밖이면 null.
+  static String? emotionOf(String key) {
+    if (!isValid(key)) return null;
+    return key.substring(key.lastIndexOf('_') + 1);
+  }
+
+  /// 스크린리더용 감정 이름. 모르는 값이면 null.
+  static const labels = {
+    'joy': '기쁨',
+    'sulk': '삐짐',
+    'shy': '부끄',
+    'surprise': '놀람',
+    'blank': '무표정',
+    'call': '집중',
+    'haha': '하하',
+    'sure': '응시',
+  };
+}
+
+/// 사진 메시지(docs/MOMENTS_SPEC.md §1.3). [image] 가 없으면 아이콘과 장면 설명만으로
+/// 그린다(지금까지의 모습).
 class Photo {
   /// [Photo.icons] 중 하나. 모르는 값이면 UI 가 기본 사진 아이콘을 쓴다.
   final String icon;
@@ -341,7 +406,10 @@ class Photo {
   /// 사진 속 장면 설명. 20자 이내([maxCaption]).
   final String caption;
 
-  const Photo({required this.icon, this.caption = ''});
+  /// 전용 사진 에셋 경로(선택, 06 §4). 없으면 아이콘 공용 그림을 찾는다.
+  final String? image;
+
+  const Photo({required this.icon, this.caption = '', this.image});
 
   /// 규격이 정한 아이콘 이름 14종.
   static const icons = [
@@ -365,11 +433,12 @@ class Photo {
 
   /// 캡션을 [f] 로 바꾼 사본(이름 치환, lib/engine/text_template.dart).
   Photo mapText(String Function(String) f) =>
-      Photo(icon: icon, caption: f(caption));
+      Photo(icon: icon, caption: f(caption), image: image);
 
   factory Photo.fromJson(Map<String, dynamic> j) => Photo(
     icon: (j['icon'] as String?) ?? '',
     caption: (j['caption'] as String?) ?? '',
+    image: j['image'] as String?,
   );
 }
 
@@ -391,6 +460,10 @@ class Line {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// 이 줄 뒤에 붙는 스티커 id(선택, 06 §4). 파일 이름 그대로 `<캐릭터 id>_<감정>`.
+  /// 규약은 [Sticker], 에셋이 없으면 아무것도 그리지 않는다(빈 줄도 없음).
+  final String? sticker;
+
   const Line({
     required this.who,
     this.text = '',
@@ -400,6 +473,7 @@ class Line {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.sticker,
   });
 
   bool get isWait => who == 'sys' && wait > 0;
@@ -417,6 +491,7 @@ class Line {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    sticker: sticker,
   );
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
@@ -430,6 +505,7 @@ class Line {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    sticker: j['sticker'] as String?,
   );
 }
 
@@ -601,6 +677,10 @@ class StoryEvent {
   /// 상대가 먼저 보낸 톡 알림 문장(40자 이내). 있으면 이벤트 진입 때 알림 카드가 먼저 뜬다.
   final String? preview;
 
+  /// 장면 삽화 에셋 경로(선택, 06 §4). 없으면 `assets/scenes/<id>.<확장자>` 를 찾는다.
+  /// 여러 이벤트가 한 장을 나눠 쓸 때(`m03`/`m03_m`)만 적는다.
+  final String? image;
+
   static const formatChat = 'chat';
   static const formatCall = 'call';
   static const formats = [formatChat, formatCall];
@@ -621,6 +701,7 @@ class StoryEvent {
     this.cliffhanger,
     this.format = formatChat,
     this.preview,
+    this.image,
   });
 
   /// 상대가 먼저 거는 전화인지.
@@ -643,6 +724,7 @@ class StoryEvent {
     cliffhanger: cliffhanger == null ? null : f(cliffhanger!),
     format: format,
     preview: preview == null ? null : f(preview!),
+    image: image,
   );
 
   /// 대사·선택지·힌트만 바꾼 사본(MBTI 거르기, lib/engine/mbti.dart).
@@ -665,6 +747,7 @@ class StoryEvent {
     cliffhanger: cliffhanger,
     format: format,
     preview: preview,
+    image: image,
   );
 
   /// 화면에 보이는 글 전부(위치, 문자열). 검증기가 자리표시자 형식을 본다.
@@ -736,6 +819,7 @@ class StoryEvent {
         final p? when p.trim().isNotEmpty => p,
         _ => null,
       },
+      image: j['image'] as String?,
     );
   }
 }
@@ -847,6 +931,10 @@ class Ending {
   final bool immediate;
   final bool isDefault;
 
+  /// 엔딩 히어로 그림 경로(선택, 06 §4). 없으면 엔딩 id → 캐릭터 id →
+  /// 공용 `common_<tier>` 순으로 `assets/endings/` 를 찾는다.
+  final String? image;
+
   // 캐릭터 엔딩([character])은 그 캐릭터의 성별로 자동 필터된다([EndingResolver]).
   // 공용 엔딩을 한쪽에만 두려면 `when.pref` 를 쓴다.
 
@@ -862,6 +950,7 @@ class Ending {
     this.hint,
     this.immediate = false,
     this.isDefault = false,
+    this.image,
   });
 
   /// [temperament](`NT`·`NF`·`SJ`·`SP`, 없으면 null) 플레이어에게 보여 줄 에필로그.
@@ -889,6 +978,7 @@ class Ending {
     hint: j['hint'] as String?,
     immediate: (j['immediate'] as bool?) ?? false,
     isDefault: (j['default'] as bool?) ?? false,
+    image: j['image'] as String?,
   );
 }
 

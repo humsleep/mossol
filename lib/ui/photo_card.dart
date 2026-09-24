@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
 import 'design_system.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart' show showAppDialog;
 import 'keep_all.dart';
 
@@ -165,7 +167,7 @@ class PolaroidFrame extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 4 / 3,
-            child: PhotoScene(icon: photo.icon, accent: accent, dark: dark),
+            child: PhotoWindow(photo: photo, accent: accent, dark: dark),
           ),
           // 폴라로이드의 넓은 아래 여백. 캡션이 없어도 여백은 남긴다.
           ConstrainedBox(
@@ -201,6 +203,43 @@ class PolaroidFrame extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 사진 창 한 칸. 그림이 있으면 그 그림, 없으면 지금까지의 [PhotoScene].
+///
+/// 그림은 `photo.image` → `assets/photos/<icon>.<확장자>` 순으로 찾는다(06 §4).
+/// 읽는 중·깨진 파일이면 곧바로 [PhotoScene] 으로 떨어져 카드 모양은 그대로다.
+class PhotoWindow extends StatelessWidget {
+  final Photo photo;
+  final CharacterAccent accent;
+  final bool dark;
+
+  const PhotoWindow({
+    super.key,
+    required this.photo,
+    required this.accent,
+    required this.dark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget scene(BuildContext context) =>
+        PhotoScene(icon: photo.icon, accent: accent, dark: dark);
+    return SceneScope(
+      builder: (context, registry) {
+        final path = SceneImages.forPhoto(photo, registry: registry);
+        if (path == null) return scene(context);
+        // 폴라로이드 창은 카드 폭에서 좌우 여백을 뺀 만큼. 800px 원본을 그만큼만 읽는다.
+        final w = MediaQuery.sizeOf(context).width * 0.6;
+        return SceneImage(
+          path: path,
+          width: w,
+          bundle: registry.bundle,
+          fallback: scene,
+        );
+      },
     );
   }
 }

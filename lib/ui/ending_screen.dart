@@ -7,6 +7,8 @@ import 'album_screen.dart' show endingHintFor;
 import 'design_system.dart';
 import 'preference_screen.dart';
 import 'retention_widgets.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -162,6 +164,15 @@ class _Keepsake extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 엔딩 히어로(06 §1). 그림이 없으면 아무것도 그리지 않는다 — 지금 레이아웃 그대로.
+            SceneScope(
+              builder: (context, r) => EndingHero(
+                path: SceneImages.forEnding(ending, registry: r),
+                tier: ending.tier,
+                name: ending.name,
+                bundle: r.bundle,
+              ),
+            ),
             _TierPill(label: tierLabel),
             const SizedBox(height: AppSpace.xs),
             Text(
