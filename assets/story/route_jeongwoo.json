@@ -94,7 +94,11 @@
      ]
     },
     "reply": [
-     "…그래?",
+     {
+      "who": "them",
+      "text": "…그래?",
+      "sticker": "jeongwoo_surprise"
+     },
      "다시 해 볼게.",
      "반가워, {name|아야}!"
     ]
@@ -439,7 +443,8 @@
    },
    {
     "who": "them",
-    "text": "취소가 안 되네. 하하."
+    "text": "취소가 안 되네. 하하.",
+    "sticker": "jeongwoo_haha"
    }
   ],
   "choices": [
@@ -1402,7 +1407,11 @@
      "솔직히 좀 신경 쓰였어. 그게 다야."
     ],
     "critReply": [
-     "…신경 쓰였어.",
+     {
+      "who": "them",
+      "text": "…신경 쓰였어.",
+      "sticker": "jeongwoo_sulk"
+     },
      "그 말 하려고 댓글을 세 번 지웠어. 하하.",
      "답은 안 해도 돼. 말한 걸로 됐어."
     ]
@@ -1672,7 +1681,8 @@
    },
    {
     "who": "them",
-    "text": "ㅋㅋ"
+    "text": "ㅋㅋ",
+    "sticker": "jeongwoo_joy"
    },
    {
     "who": "narr",
@@ -2610,7 +2620,11 @@
      ]
     },
     "reply": [
-     "…기대라니.",
+     {
+      "who": "them",
+      "text": "…기대라니.",
+      "sticker": "jeongwoo_shy"
+     },
      "그럼 딱 한 번만. 오늘 가게 마감 같이 해 줘."
     ],
     "critReply": [
@@ -2738,7 +2752,11 @@
       }
      },
      "…둘 다 나왔네.",
-     "이건 취소 못 하겠다. 하하."
+     {
+      "who": "them",
+      "text": "이건 취소 못 하겠다. 하하.",
+      "sticker": "jeongwoo_shy"
+     }
     ],
     "failReply": [
      {
@@ -3146,7 +3164,11 @@
     ],
     "critReply": [
      "…다 다렸다.",
-     "이상하다. 오늘은 하나도 안 무거웠어."
+     {
+      "who": "them",
+      "text": "이상하다. 오늘은 하나도 안 무거웠어.",
+      "sticker": "jeongwoo_joy"
+     }
     ],
     "failReply": [
      "…졸리지? 하하. 끊을게.",

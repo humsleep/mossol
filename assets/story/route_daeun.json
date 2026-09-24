@@ -51,7 +51,11 @@
      ]
     },
     "reply": [
-     "네.",
+     {
+      "who": "them",
+      "text": "네.",
+      "sticker": "daeun_blank"
+     },
      {
       "who": "narr",
       "text": "그게 끝인 줄 알았다. 1분 뒤 한 줄이 더 왔다."
@@ -320,7 +324,11 @@
      ]
     },
     "reply": [
-     "…정산부터 해요.",
+     {
+      "who": "them",
+      "text": "…정산부터 해요.",
+      "sticker": "daeun_sulk"
+     },
      {
       "who": "narr",
       "text": "다은이 영수증을 뺏듯이 가져갔다."
@@ -1003,7 +1011,11 @@
      }
     },
     "reply": [
-     "…봤어요?",
+     {
+      "who": "them",
+      "text": "…봤어요?",
+      "sticker": "daeun_surprise"
+     },
      "잉크가 번져서요. 들켰네요."
     ]
    },
@@ -1092,7 +1104,11 @@
     "reply": [
      "…봤어요?",
      "봤네요. 괜찮아요.",
-     "…이제 말 놔도 돼요? …돼?"
+     {
+      "who": "them",
+      "text": "…이제 말 놔도 돼요? …돼?",
+      "sticker": "daeun_shy"
+     }
     ]
    },
    {
@@ -2546,7 +2562,11 @@
      }
     },
     "reply": [
-     "응. 나 볼 때만.",
+     {
+      "who": "them",
+      "text": "응. 나 볼 때만.",
+      "sticker": "daeun_joy"
+     },
      "…그거 좀 웃기지."
     ],
     "critReply": [
@@ -2668,7 +2688,11 @@
      "album": "영수증 속 나, 컵 네 번째"
     },
     "reply": [
-     "…그거 좀 웃기네요.",
+     {
+      "who": "them",
+      "text": "…그거 좀 웃기네요.",
+      "sticker": "daeun_joy"
+     },
      "내일 네 번째 표정 기대할게요."
     ],
     "failReply": [
@@ -3003,7 +3027,11 @@
     },
     "reply": [
      "…맞아. 너야.",
-     "어떻게 알았어."
+     {
+      "who": "them",
+      "text": "어떻게 알았어.",
+      "sticker": "daeun_surprise"
+     }
     ],
     "failReply": [
      "…틀렸어. 창가 화분이야.",
