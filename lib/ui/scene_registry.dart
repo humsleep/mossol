@@ -112,8 +112,19 @@ class SceneRegistry {
 
   /// JSON 이 적어 준 경로. 네 폴더 안에 **실제로 있는** 파일일 때만 돌려준다
   /// (없는 파일을 그리면 깨진 상자가 되므로 애초에 그리지 않는다).
-  String? exact(String? path) =>
-      path != null && _paths.contains(path) ? path : null;
+  ///
+  /// 확장자를 빼고 적어도 된다(`assets/photos/mo_daily_dad_sky_0`). 그래야 JSON 이
+  /// 파일 형식에 묶이지 않는다 — png 로 뽑았다가 jpg 로 줄여도 대본을 고칠 일이 없다.
+  String? exact(String? path) {
+    if (path == null) return null;
+    if (_paths.contains(path)) return path;
+    final slash = path.lastIndexOf('/');
+    if (slash < 0) return null;
+    final dir = path.substring(0, slash + 1);
+    final key = path.substring(slash + 1);
+    // 확장자가 이미 붙어 있으면(위에서 못 찾았으므로) 없는 파일이다.
+    return key.contains('.') ? null : pathIn(dir, key);
+  }
 
   /// [dir] 폴더에 있는 이름들.
   Iterable<String> keysIn(String dir) => _byDir[dir]?.keys ?? const [];

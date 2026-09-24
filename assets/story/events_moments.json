@@ -26,7 +26,8 @@
     "who": "them",
     "photo": {
      "icon": "night",
-     "caption": "동아리방 창밖 야경"
+     "caption": "동아리방 창밖 야경",
+     "image": "assets/photos/mo_seoyeon_photo_night_0"
     },
     "text": "과제하다 창밖 봤는데"
    },
@@ -591,7 +592,8 @@
     "who": "them",
     "photo": {
      "icon": "food",
-     "caption": "폐기 샌드위치 두 개"
+     "caption": "폐기 샌드위치 두 개",
+     "image": "assets/photos/mo_haneul_photo_sandwich_0"
     },
     "text": "마감하다 건짐 ㅋㅋㅋ"
    },
@@ -1046,7 +1048,8 @@
     "who": "them",
     "photo": {
      "icon": "selfie",
-     "caption": "앞치마 차림 둘, 흔들림"
+     "caption": "앞치마 차림 둘, 흔들림",
+     "image": "assets/photos/mo_haneul_photo_profile_0"
     },
     "text": "저번 주 마감 끝나고 찍은 거"
    },
@@ -1296,7 +1299,8 @@
     "who": "them",
     "photo": {
      "icon": "food",
-     "caption": "서류 더미 옆 식은 김밥"
+     "caption": "서류 더미 옆 식은 김밥",
+     "image": "assets/photos/mo_jiwoo_photo_dinner_0"
     },
     "text": "오늘 저녁이에요"
    },
@@ -1703,7 +1707,8 @@
     "who": "them",
     "photo": {
      "icon": "food",
-     "caption": "모니터 불빛 옆 컵라면"
+     "caption": "모니터 불빛 옆 컵라면",
+     "image": "assets/photos/mo_minjae_photo_ramen_0"
     },
     "text": "승리 기념 야식 ㅋㅋ"
    },
@@ -2125,7 +2130,8 @@
     "who": "them",
     "photo": {
      "icon": "street",
-     "caption": "편의점 앞 두 그림자"
+     "caption": "편의점 앞 두 그림자",
+     "image": "assets/photos/mo_minjae_photo_shadow_0"
     },
     "text": "얼굴은 안 나옴. 약속 지킴 ㅋㅋ"
    },
@@ -2263,7 +2269,8 @@
     "who": "them",
     "photo": {
      "icon": "food",
-     "caption": "학교 앞 분식집 간판"
+     "caption": "학교 앞 분식집 간판",
+     "image": "assets/photos/mo_yeeun_photo_snackbar_0"
     },
     "text": "이거 아직 있어!!"
    },
@@ -2516,7 +2523,8 @@
     "who": "them",
     "photo": {
      "icon": "flower",
-     "caption": "6학년 소풍 단체 사진"
+     "caption": "6학년 소풍 단체 사진",
+     "image": "assets/photos/mo_yeeun_photo_picnic_0"
     },
     "text": "찾았다 ㅋㅋ 근데 둘이 왜 붙어 있냐",
     "name": "동창"
@@ -2810,7 +2818,8 @@
     "who": "them",
     "photo": {
      "icon": "sky",
-     "caption": "해 뜨기 직전의 강변"
+     "caption": "해 뜨기 직전의 강변",
+     "image": "assets/photos/mo_doyun_photo_run_0"
     },
     "text": "새벽 러닝 중이에요"
    },
@@ -3245,7 +3254,8 @@
     "who": "them",
     "photo": {
      "icon": "book",
-     "caption": "운동 일지 마지막 장"
+     "caption": "운동 일지 마지막 장",
+     "image": "assets/photos/mo_doyun_photo_journal_0"
     },
     "text": "이건 기록 아니에요"
    },
@@ -3368,7 +3378,8 @@
     "who": "them",
     "photo": {
      "icon": "food",
-     "caption": "테이프 칭칭 감은 반찬통"
+     "caption": "테이프 칭칭 감은 반찬통",
+     "image": "assets/photos/mo_daily_mom_banchan_0"
     },
     "text": "반찬 보냈다",
     "name": "엄마"
@@ -3667,7 +3678,8 @@
     "who": "them",
     "photo": {
      "icon": "cafe",
-     "caption": "창가 자리 뒷모습"
+     "caption": "창가 자리 뒷모습",
+     "image": "assets/photos/mo_daily_unknown_photo_0"
     },
     "text": "이거 너 맞지?",
     "name": "모르는 번호"
@@ -3810,7 +3822,8 @@
     "who": "them",
     "photo": {
      "icon": "selfie",
-     "caption": "단체 사진, 나만 눈 감음"
+     "caption": "단체 사진, 나만 눈 감음",
+     "image": "assets/photos/mo_daily_group_photo_0"
     },
     "text": "사진 올림~ 다들 저장ㄱㄱ",
     "name": "과대"
@@ -3972,7 +3985,8 @@
     "who": "them",
     "photo": {
      "icon": "cafe",
-     "caption": "커피 두 잔, 맞은편 손"
+     "caption": "커피 두 잔, 맞은편 손",
+     "image": "assets/photos/mo_daily_taehyun_story_0"
     },
     "text": "맞은편에 손 보이지",
     "name": "태현"
@@ -4146,7 +4160,8 @@
     "who": "them",
     "photo": {
      "icon": "sky",
-     "caption": "흔들린 퇴근길 노을"
+     "caption": "흔들린 퇴근길 노을",
+     "image": "assets/photos/mo_daily_dad_sky_0"
     },
     "text": "하늘",
     "name": "아빠"

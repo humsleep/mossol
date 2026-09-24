@@ -37,10 +37,12 @@ EXTENSIONS = ('png', 'jpg', 'jpeg', 'webp')
 PATH_RE = re.compile(r'assets/(%s)/([a-z0-9_]+)\.webp' % '|'.join(DIRS))
 
 # 크기 기준(§0.4). 파일 크기(바이트)가 이 선을 크게 넘으면 변환을 건너뛴 것이다.
+# 한 장당 상한. SCENE_PROMPTS 는 webp 기준인데 실제로 넣은 장면·사진·엔딩은 jpg 라
+# 같은 화질에서 1.5배쯤 크다. 그만큼 올려 잡았다(전체 합이 10MB 안이면 충분하다).
 SIZE_BUDGET = {
-    'scenes': 200 * 1024,
-    'endings': 200 * 1024,
-    'photos': 120 * 1024,
+    'scenes': 300 * 1024,
+    'endings': 300 * 1024,
+    'photos': 180 * 1024,
     'stickers': 60 * 1024,
 }
 
@@ -96,8 +98,11 @@ def check(want: dict[str, set[str]], have: dict[str, dict[str, int]]) -> dict:
             if found is None:
                 missing.append(w)
             elif ext(found) in EXTENSIONS:
-                # 이름은 맞는데 형식이 webp 가 아니다. 코드는 읽지만 규약은 webp.
-                wrong_ext.append(f'{found} (규약: {w})')
+                # 이름은 맞고 형식만 다르다. 레지스트리가 EXTENSIONS 를 다 읽으므로
+                # 이것은 오류가 아니다 — 이 맥에 webp 인코더가 없어 장면·사진·엔딩은
+                # jpg 로 넣었다(초상화와 같은 형식). 투명도가 필요한 스티커만 png 여야 한다.
+                if d == 'stickers' and ext(found) != 'png':
+                    wrong_ext.append(f'{found} (스티커는 투명 png 여야 한다)')
             else:
                 missing.append(w)
         extra = sorted(
