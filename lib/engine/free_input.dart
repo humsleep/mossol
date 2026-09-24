@@ -159,6 +159,31 @@ int politenessOf(String body) {
   return 0;
 }
 
+/// 완성형 음절(U+AC00–D7A3) 수.
+int syllableCount(String s) =>
+    s.codeUnits.where((u) => u >= 0xAC00 && u <= 0xD7A3).length;
+
+/// 호환 자모(ㄱ-ㅎ·ㅏ-ㅣ) 수.
+int jamoCount(String s) =>
+    s.codeUnits.where((u) => u >= 0x3131 && u <= 0x318E).length;
+
+int latinCount(String s) =>
+    s.codeUnits.where((u) => u >= 0x61 && u <= 0x7A).length;
+
+/// "본문이 없는" 입력(07 §4 #3). 매칭 근거가 자모·문장부호뿐이라 어떤 후보도 자동 확정하면 안 된다 —
+/// 결정은 기껏해야 피커(강조 없음).
+///
+/// 기기에서 본 경로: 한글 자판을 켠 채 영문처럼 두드린 `?ㅁㄱㄷ ㅃㅐㅕ ㄱㄷㅁㅣㅍ ㅁ 햐기` 가 본문 `햐기`(2-gram 1개)
+/// + `?` 하나로 `ask` 태그를 얻어, 유일한 의문형 선택지 `ㄱㄱ 오늘 몇 시까지 함?` 과 태그 jaccard 1.0 → 0.40 으로
+/// 자동 확정돼 호감이 올랐다. 그래서 두 조건 중 하나면 퇴화로 본다:
+/// - 완성형 음절 2개 미만이고 라틴 3자 미만(자모·이모지·문장부호만).
+/// - 음절이 2개 이하인데 자모가 음절보다 많다(우연히 조합된 한 낱말 + 자판 쓰레기).
+bool isDegenerate(String raw) {
+  final syl = syllableCount(raw);
+  if (syl < 2 && latinCount(raw) < 3) return true;
+  return syl <= 2 && jamoCount(raw) > syl;
+}
+
 /// 07 §1.2 `question`.
 bool questionOf(NormText n) =>
     n.raw.contains('?') ||
@@ -251,6 +276,9 @@ class InputFeatures {
   final bool action;
   final Set<String> tags;
 
+  /// 본문이 없는 입력([isDegenerate]). 자동 확정·확인 불가, 피커도 강조 없음.
+  final bool degenerate;
+
   const InputFeatures({
     required this.text,
     required this.grams,
@@ -260,11 +288,17 @@ class InputFeatures {
     required this.emo,
     required this.action,
     required this.tags,
+    this.degenerate = false,
   });
 
   factory InputFeatures.from(String s) {
     final n = norm(s);
-    final q = questionOf(n);
+    final degenerate = isDegenerate(n.raw);
+    // 퇴화 입력에서는 `?` 하나로 질문(ask)이 되지 않는다 — 의문 어미가 본문에 있을 때만.
+    final q = degenerate
+        ? n.body.isNotEmpty && _endsWithAny(n.body, FreeInputLexicon.questionEndings)
+        : questionOf(n);
+    // 자모(ㅋㅋ·ㅇㅋ)는 사전 태그로만 기여한다. 후보를 임계값 너머로 올리는 건 [decide] 가 막는다.
     return InputFeatures(
       text: n,
       grams: bigrams(n.body),
@@ -274,6 +308,7 @@ class InputFeatures {
       emo: emoOf(n.raw),
       action: actionOf(n),
       tags: tagsOf(n, question: q),
+      degenerate: degenerate,
     );
   }
 
@@ -463,8 +498,8 @@ class MatchResult {
   double get s2 => ranked.length < 2 ? 0 : ranked[1].score;
   double get margin => s1 - s2;
 
-  /// 피커에 강조 없음(잘 못 알아들었다).
-  bool get weak => s1 < FreeInputThresholds.weak;
+  /// 피커에 강조 없음(잘 못 알아들었다). 퇴화 입력은 점수와 무관하게 약하다.
+  bool get weak => (input?.degenerate ?? false) || s1 < FreeInputThresholds.weak;
 
   /// 점수순 상위 [n] 개의 선택지 index.
   List<int> topIndices(int n) => [for (final s in ranked.take(n)) s.index];
@@ -591,7 +626,9 @@ class FreeInputMatcher {
     bool forcePick = false,
   }) {
     if (ranked.isEmpty) return MatchDecision.empty;
-    // 2-gram 이 없는 한 글자 입력은 억지 확정하지 않는다(07 §4 #3).
+    // 본문이 없는 입력은 기껏해야 피커(07 §4 #3, [isDegenerate]). 정확 일치보다 먼저 본다.
+    if (input.degenerate) return MatchDecision.pick;
+    // 2-gram 이 없는 한 글자 입력은 억지 확정하지 않는다.
     if (input.grams.isEmpty && !ranked.first.exact) return MatchDecision.pick;
     final top = ranked.first;
     final s1 = top.score;

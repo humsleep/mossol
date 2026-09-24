@@ -116,6 +116,15 @@ def question(n):
     return '?' in n['raw'] or (bool(n['body']) and any(n['body'].endswith(e) for e in QUESTION_END))
 
 
+def degenerate(raw):
+    syl = sum(1 for ch in raw if 0xAC00 <= ord(ch) <= 0xD7A3)
+    jamo = sum(1 for ch in raw if 0x3131 <= ord(ch) <= 0x318E)
+    latin = sum(1 for ch in raw if 'a' <= ch <= 'z')
+    if syl < 2 and latin < 3:
+        return True
+    return syl <= 2 and jamo > syl
+
+
 def len_bucket(body):
     return 0 if len(body) <= 4 else 1 if len(body) <= 15 else 2
 
@@ -158,9 +167,11 @@ def tags_of(n, q):
 
 def features(s):
     n = norm(s)
-    q = question(n)
+    deg = degenerate(n['raw'])
+    q = (bool(n['body']) and any(n['body'].endswith(e) for e in QUESTION_END)) if deg else question(n)
     return {'n': n, 'grams': bigrams(n['body']), 'polite': politeness(n['body']), 'question': q,
-            'len': len_bucket(n['body']), 'emo': emo(n['raw']), 'action': action(n), 'tags': tags_of(n, q)}
+            'len': len_bucket(n['body']), 'emo': emo(n['raw']), 'action': action(n), 'tags': tags_of(n, q),
+            'degenerate': deg}
 
 
 def last_sentence(s):
@@ -316,6 +327,8 @@ def decide(i, ranked):
     if not ranked:
         return 'empty'
     idx, s1, exact, c = ranked[0]
+    if i['degenerate']:
+        return 'pick'
     if not i['grams'] and not exact:
         return 'pick'
     s2 = ranked[1][1] if len(ranked) > 1 else 0.0

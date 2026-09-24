@@ -275,6 +275,45 @@ void main() {
       expect(m.match('생각해 볼게', visible, forcePick: true).decision, MatchDecision.pick);
     });
 
+    test('퇴화 입력(자모·문장부호뿐)은 절대 auto·confirm 이 아니다 — 기기에서 본 자판 쓰레기 포함', () {
+      // 기기에서 본 경로: 한글 자판 켜고 영문처럼 두드린 것. 유일한 의문형 선택지에 자동 확정됐었다.
+      final garbage = StoryEvent.fromJson({
+        'id': 't_garbage',
+        'layer': 'daily',
+        'title': 't',
+        'choices': [
+          {'text': '오늘은 쉴래', 'reply': '그래'},
+          {'text': 'ㄱㄱ 오늘 몇 시까지 함?', 'reply': '11시', 'effects': {'affection': {'seoyeon': 2}}},
+          {'text': '내일 하자', 'reply': 'ㅇㅋ'},
+        ],
+      });
+      final gv = engine.choicesFor(state, garbage);
+      const typed = '?ㅁㄱㄷ ㅃㅐㅕ ㄱㄷㅁㅣㅍ ㅁ 햐기';
+      expect(isDegenerate(typed), isTrue);
+      final r = m.match(typed, gv);
+      expect(r.decision, MatchDecision.pick);
+      expect(r.weak, isTrue);
+      expect(r.input!.question, isFalse, reason: "'?' 하나로 ask 가 되지 않는다");
+      expect(r.input!.tags, isNot(contains(Intent.ask)));
+
+      for (final s in ['ㅋㅋㅋ', '??', 'ㅇㅋ', 'ㄱㄱ', '?ㅁㄱㄷ', 'ㅇㅋ ㄱㄱ ㅋㅋ']) {
+        expect(isDegenerate(s), isTrue, reason: s);
+        for (final vis in [visible, gv]) {
+          final d = m.match(s, vis).decision;
+          expect(d, anyOf(MatchDecision.pick, MatchDecision.empty), reason: s);
+        }
+      }
+      // 자모는 사전 태그로는 기여한다(ㅇㅋ → agree) — 순위에만, 확정에는 아니다.
+      final ok = m.match('ㅇㅋ', visible);
+      expect(ok.input!.tags, contains(Intent.agree));
+      expect(ok.top!.index, 0);
+      expect(ok.decision, MatchDecision.pick);
+      // 본문이 충분하면 퇴화가 아니다.
+      expect(isDegenerate('ㅇㅋ 좋아 가자'), isFalse);
+      expect(isDegenerate('okay'), isFalse);
+      expect(isDegenerate('진짜?'), isFalse);
+    });
+
     test('80자 초과는 자른다', () {
       final long = '가' * 100;
       expect(m.match(long, visible).text.length, FreeInputThresholds.maxChars);
