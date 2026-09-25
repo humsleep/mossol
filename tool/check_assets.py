@@ -101,8 +101,9 @@ def check(want: dict[str, set[str]], have: dict[str, dict[str, int]]) -> dict:
                 # 이름은 맞고 형식만 다르다. 레지스트리가 EXTENSIONS 를 다 읽으므로
                 # 이것은 오류가 아니다 — 이 맥에 webp 인코더가 없어 장면·사진·엔딩은
                 # jpg 로 넣었다(초상화와 같은 형식). 투명도가 필요한 스티커만 png 여야 한다.
-                if d == 'stickers' and ext(found) != 'png':
-                    wrong_ext.append(f'{found} (스티커는 투명 png 여야 한다)')
+                if d == 'stickers' and ext(found) not in ('webp', 'png'):
+                    # 스티커는 배경이 투명해야 한다. jpg 는 알파를 담지 못한다.
+                    wrong_ext.append(f'{found} (스티커는 알파가 있는 webp·png 여야 한다)')
             else:
                 missing.append(w)
         extra = sorted(
