@@ -2,16 +2,31 @@
 """생성한 그림을 앱에 넣을 크기·형식으로 바꾼다.
 
 생성 도구가 뱉는 원본은 1536×1024 PNG 2MB 쯤이다. 62장이면 118MB — 텍스트 게임
-다운로드 용량으로는 말이 안 된다. 여기서 규격 크기로 줄이고 JPEG 로 바꾼다.
+다운로드 용량으로는 말이 안 된다.
 
-형식이 JPEG 인 이유: 이 맥에 webp 인코더(cwebp·Pillow)가 없고, 초상화
-(assets/portraits/*.jpg)가 이미 JPEG 라 프로젝트 관행과도 맞는다. 장면·사진·엔딩은
-투명도가 필요 없다. 스티커는 투명도가 필요하므로 PNG 로 둔다(이 스크립트는 건드리지 않는다).
+**크기**: 화면이 실제로 쓰는 픽셀만큼만 넣는다. 가장 큰 아이폰(Pro Max 440pt)에서
+장면·엔딩 카드는 `화면 폭 - screenX*2 = 392pt`, 3배 화면이면 1176px 다. 확대 뷰어도
+같은 폭(`- xl*2`)이라 **1200px 이면 전부 덮는다.** 사진 창은 화면 폭의 60% → 792px,
+그래서 800px. 이보다 큰 원본을 넣어도 기기가 줄여 그릴 뿐 보이는 것은 같다.
 
-원본은 지우지 않고 art_src/ 로 옮긴다(git 에는 올리지 않는다). 다시 뽑을 때 쓴다.
+**형식**: WebP q90. 같은 1200px 에서 실측(PSNR, 높을수록 원본에 가깝다):
+
+    JPEG q82   88KB / 40.5dB      WebP q80   39KB / 39.9dB
+    JPEG q90  127KB / 42.2dB      WebP q90   70KB / 42.4dB
+
+WebP q90 이 JPEG q90 급 화질을 절반 크기로 낸다. 투명도가 필요한 스티커도 같은 형식을
+쓸 수 있다(이 스크립트는 stickers/ 를 건드리지 않는다 — 알파를 살려 따로 넣는다).
+
+WebP 인코더가 필요하다. 둘 중 하나:
+    pip install Pillow          # 권장
+    brew install webp           # cwebp 바이너리
+둘 다 없으면 sips 로 JPEG 를 만든다(맥 기본, 화질 같고 용량 1.5배).
+
+원본은 지우지 않고 art_src/ 로 옮긴다(git 제외). 다시 뽑을 때 쓴다.
 
     python3 tool/convert_art.py            # 변환
     python3 tool/convert_art.py --dry-run  # 무엇이 바뀔지만 본다
+    python3 tool/convert_art.py --quality 95
 """
 
 from __future__ import annotations
@@ -25,15 +40,10 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# 폴더별 목표 긴 변(px)과 JPEG 품질. docs/SCENE_PROMPTS.md §0 의 내보내기 크기다.
-# 레티나 3배 화면에서도 카드 폭(≈390pt)보다 크므로 더 키울 이유가 없다.
-TARGETS = {
-    "scenes": (1200, 82),
-    "photos": (800, 82),
-    "endings": (1200, 82),
-}
+# 폴더별 목표 긴 변(px). 위 주석의 계산값이다.
+LONGEST = {"scenes": 1200, "photos": 800, "endings": 1200}
 
-SRC_EXT = {".png", ".jpeg"}  # .jpg 는 이미 결과물 형식이라 건드리지 않는다
+SRC_EXT = {".png", ".jpg", ".jpeg"}  # 결과 형식(.webp)은 건드리지 않는다
 
 
 def png_size(path: pathlib.Path) -> tuple[int, int] | None:
@@ -45,61 +55,90 @@ def png_size(path: pathlib.Path) -> tuple[int, int] | None:
     return struct.unpack(">II", head[16:24])
 
 
-def convert(src: pathlib.Path, dst: pathlib.Path, longest: int, quality: int) -> None:
+def encoder() -> str:
+    """쓸 수 있는 인코더. webp 가 가능하면 webp, 아니면 jpeg."""
+    try:
+        from PIL import features  # noqa: F401
+
+        if features.check("webp"):
+            return "pillow"
+    except ImportError:
+        pass
+    if shutil.which("cwebp"):
+        return "cwebp"
+    return "sips"
+
+
+def convert(src: pathlib.Path, longest: int, quality: int, how: str) -> pathlib.Path:
+    if how == "pillow":
+        from PIL import Image
+
+        dst = src.with_suffix(".webp")
+        im = Image.open(src).convert("RGB")
+        im.thumbnail((longest, longest), Image.LANCZOS)
+        im.save(dst, "WEBP", quality=quality, method=6)
+        return dst
+    if how == "cwebp":
+        dst = src.with_suffix(".webp")
+        subprocess.run(
+            ["cwebp", "-q", str(quality), "-resize", str(longest), "0",
+             "-m", "6", str(src), "-o", str(dst)],
+            check=True, capture_output=True,
+        )
+        return dst
+    dst = src.with_suffix(".jpg")
     subprocess.run(
-        [
-            "sips", "-s", "format", "jpeg",
-            "-s", "formatOptions", str(quality),
-            "--resampleHeightWidthMax", str(longest),
-            str(src), "--out", str(dst),
-        ],
-        check=True,
-        capture_output=True,
+        ["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(quality),
+         "--resampleHeightWidthMax", str(longest), str(src), "--out", str(dst)],
+        check=True, capture_output=True,
     )
+    return dst
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true", help="바꾸지 않고 목록만 본다")
+    ap.add_argument("--quality", type=int, default=90, help="압축 품질(기본 90)")
     args = ap.parse_args()
 
-    if not shutil.which("sips"):
-        print("sips 가 없다(맥 기본 도구). 다른 변환기를 써야 한다.", file=sys.stderr)
+    how = encoder()
+    if how == "sips" and not shutil.which("sips"):
+        print("쓸 수 있는 변환기가 없다. pip install Pillow 를 하라.", file=sys.stderr)
         return 2
+    if how == "sips":
+        print("! WebP 인코더가 없어 JPEG 로 만든다(용량 1.5배). pip install Pillow 권장.\n")
 
     src_root = ROOT / "art_src"
-    before = after = 0
-    moved = 0
+    before = after = moved = 0
 
-    for folder, (longest, quality) in TARGETS.items():
+    for folder, longest in LONGEST.items():
         d = ROOT / "assets" / folder
         if not d.is_dir():
             continue
         for src in sorted(d.iterdir()):
             if src.suffix.lower() not in SRC_EXT:
                 continue
-            dst = src.with_suffix(".jpg")
             size = png_size(src)
             dim = f"{size[0]}×{size[1]}" if size else "?"
             kb = src.stat().st_size // 1024
             before += src.stat().st_size
-            print(f"  {folder}/{src.name}  {dim} {kb}KB → {dst.name} (긴 변 {longest})")
+            print(f"  {folder}/{src.name}  {dim} {kb}KB → 긴 변 {longest}, {how} q{args.quality}")
             if args.dry_run:
                 continue
-            convert(src, dst, longest, quality)
+            dst = convert(src, longest, args.quality, how)
             after += dst.stat().st_size
-            # 원본은 지우지 않고 옮긴다.
-            keep = src_root / folder
-            keep.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src), str(keep / src.name))
+            if dst != src:  # 형식이 바뀌었으면 원본을 치운다
+                keep = src_root / folder
+                keep.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(src), str(keep / src.name))
             moved += 1
 
     if args.dry_run:
         print(f"\n--dry-run: 바꾸지 않았다. 대상 {before // 1024 // 1024}MB")
         return 0
     print(
-        f"\n{moved}장 변환. {before // 1024 // 1024}MB → {after // 1024 // 1024}MB"
-        f" (원본은 art_src/ 로 옮겼다)"
+        f"\n{moved}장 변환. {before // 1024 // 1024}MB → {after / 1024 / 1024:.1f}MB"
+        f" (원본은 art_src/ 에 있다)"
     )
     return 0
 

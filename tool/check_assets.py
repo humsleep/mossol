@@ -37,12 +37,12 @@ EXTENSIONS = ('png', 'jpg', 'jpeg', 'webp')
 PATH_RE = re.compile(r'assets/(%s)/([a-z0-9_]+)\.webp' % '|'.join(DIRS))
 
 # 크기 기준(§0.4). 파일 크기(바이트)가 이 선을 크게 넘으면 변환을 건너뛴 것이다.
-# 한 장당 상한. SCENE_PROMPTS 는 webp 기준인데 실제로 넣은 장면·사진·엔딩은 jpg 라
-# 같은 화질에서 1.5배쯤 크다. 그만큼 올려 잡았다(전체 합이 10MB 안이면 충분하다).
+# 한 장당 상한(webp q90 기준). 이 크기를 넘으면 해상도나 품질이 과한 것이다 —
+# 가장 큰 아이폰이 쓰는 픽셀은 장면·엔딩 1176px, 사진 792px 뿐이다(tool/convert_art.py).
 SIZE_BUDGET = {
-    'scenes': 300 * 1024,
-    'endings': 300 * 1024,
-    'photos': 180 * 1024,
+    'scenes': 160 * 1024,
+    'endings': 160 * 1024,
+    'photos': 100 * 1024,
     'stickers': 60 * 1024,
 }
 
