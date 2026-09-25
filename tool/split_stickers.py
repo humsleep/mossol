@@ -15,9 +15,11 @@
 보존하면서 PNG 보다 훨씬 작다. 실제 일러스트 384×384 로 재 보면 PNG 146KB · WebP q90 17KB
 (8배). 52장이면 7.6MB 대 0.9MB 차이다.
 
-    pip3 install Pillow
     python3 tool/split_stickers.py
     python3 tool/split_stickers.py --dry-run
+
+처음 돌리면 Pillow 를 프로젝트 전용 `.venv/` 에 자동으로 깔고 이어서 진행한다
+(맥 Homebrew 파이썬은 시스템 설치를 막는다 — tool/_venv.py).
 """
 
 from __future__ import annotations
@@ -25,6 +27,11 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _venv import ensure  # noqa: E402
+
+ensure("PIL", pip="Pillow")
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHEETS = ROOT / "art_src" / "sticker_sheets"
@@ -80,11 +87,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="쓰지 않고 목록만 본다")
     args = ap.parse_args()
 
-    try:
-        from PIL import Image
-    except ImportError:
-        print("Pillow 가 필요하다:  pip3 install Pillow", file=sys.stderr)
-        return 2
+    from PIL import Image
 
     made = total = 0
     found_any = False

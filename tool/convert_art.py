@@ -17,10 +17,8 @@
 WebP q90 이 JPEG q90 급 화질을 절반 크기로 낸다. 투명도가 필요한 스티커도 같은 형식을
 쓸 수 있다(이 스크립트는 stickers/ 를 건드리지 않는다 — 알파를 살려 따로 넣는다).
 
-WebP 인코더가 필요하다. 둘 중 하나:
-    pip install Pillow          # 권장
-    brew install webp           # cwebp 바이너리
-둘 다 없으면 sips 로 JPEG 를 만든다(맥 기본, 화질 같고 용량 1.5배).
+WebP 인코더는 처음 돌릴 때 프로젝트 전용 `.venv/` 에 자동으로 깔린다(tool/_venv.py).
+`cwebp` 가 이미 있으면 그걸 쓰고, 둘 다 안 되면 sips 로 JPEG 를 만든다(용량 1.5배).
 
 원본은 지우지 않고 art_src/ 로 옮긴다(git 제외). 다시 뽑을 때 쓴다.
 
@@ -37,6 +35,12 @@ import shutil
 import struct
 import subprocess
 import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _venv import ensure  # noqa: E402
+
+if not shutil.which("cwebp"):
+    ensure("PIL", pip="Pillow")
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 

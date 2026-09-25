@@ -21,7 +21,8 @@ python3 tool/split_stickers.py
 ```
 
    2×2 분할 → 마젠타 배경 제거 → 여백 정리 → 384×384 → `assets/stickers/<id>_<감정>.webp` 로 저장까지 한다.
-   Pillow 가 필요하다: `pip3 install Pillow`
+   처음 한 번은 필요한 패키지를 프로젝트 안 `.venv/` 에 자동으로 깔고 이어서 진행한다(1분쯤).
+   맥 Homebrew 파이썬은 `pip3 install` 을 막으므로(PEP 668) 직접 설치할 필요도, 하려 해서도 안 된다.
 
 5. 5번째 스티커 4장은 시트가 확정된 뒤 단독으로 뽑아 `art_src/sticker_singles/<파일명>.png` 로 저장하고 같은 명령을 다시 돌린다.
 6. 확인:
