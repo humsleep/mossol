@@ -35,7 +35,16 @@ def ensure(module: str, *, pip: str | None = None) -> None:
         pass
 
     if os.environ.get(_FLAG):
-        # 이미 venv 안인데도 없다 — 설치가 실패한 것이다. 더 돌지 않는다.
+        # 이미 venv 파이썬으로 도는 중이다(두 번째 ensure 같은 경우). 다시 실행하지 말고
+        # 여기서 바로 설치한다 — 재실행 가드가 설치까지 막으면 안 된다(그랬던 적이 있다).
+        print(f"{pip or module} 설치 중…")
+        r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", pip or module])
+        try:
+            if r.returncode == 0:
+                __import__(module)
+                return
+        except ImportError:
+            pass
         print(f"{pip or module} 를 설치하지 못했다. 직접 설치하라:\n"
               f"  {PY} -m pip install {pip or module}", file=sys.stderr)
         raise SystemExit(2)

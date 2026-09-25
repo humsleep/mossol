@@ -32,6 +32,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _venv import ensure  # noqa: E402
 
 ensure("PIL", pip="Pillow")
+ensure("numpy")  # 키잉을 픽셀 루프 대신 배열 연산으로(1254² × 64칸을 파이썬 루프로 돌면 느리다)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHEETS = ROOT / "art_src" / "sticker_sheets"
@@ -43,27 +44,47 @@ CELLS = ["joy", "sulk", "shy", "surprise"]
 
 SIDE = 384          # 최종 한 변
 QUALITY = 90        # WebP 품질. 알파는 항상 무손실로 저장된다
-KEY = (255, 0, 255)  # 빼낼 배경색
-TOLERANCE = 60       # 이 거리 안이면 배경으로 본다(JPEG·리사이즈로 번진 가장자리까지)
+KEY = (255.0, 0.0, 255.0)  # 빼낼 배경색
+
+# "얼마나 마젠타인가" = min(R,B) - G. 순수 마젠타 255, 머리카락·피부·입술은 0 근처나 음수.
+# 이 값이 KEY_LO 아래면 완전 불투명, KEY_HI 위면 완전 투명, 사이는 부드럽게 잇는다.
+# 경계 픽셀(머리색+마젠타가 섞인 분홍)이 이 중간 구간에 떨어지므로 하드 임계값으로는
+# 분홍 테두리가 남는다 — 실제로 첫 판에서 남았다.
+KEY_LO = 48
+KEY_HI = 200
 
 
-def key_out(im, tol: int = TOLERANCE):
-    """마젠타 배경을 투명으로. 이미 알파가 있으면 그대로 둔다."""
-    from PIL import Image
+def key_out(im):
+    """마젠타 배경을 투명으로. 이미 알파가 있으면 그대로 둔다.
+
+    1. 마젠타 정도로 부드러운 알파를 만든다.
+    2. 반투명 경계 픽셀의 색에서 섞여 든 마젠타를 도로 뺀다(despill):
+       보이는 색 c = a·앞색 + (1-a)·마젠타  →  앞색 = (c - (1-a)·마젠타) / a
+    3. 알파를 1px 수축해 마지막 잔여 테두리를 지운다(384 로 줄이면 보이지 않는 양).
+    """
+    import numpy as np
+    from PIL import Image, ImageFilter
 
     if im.mode == "RGBA" and im.getchannel("A").getextrema()[0] < 255:
         return im  # 도구가 투명 PNG 를 준 경우
-    im = im.convert("RGBA")
-    px = im.load()
-    w, h = im.size
-    for y in range(h):
-        for x in range(w):
-            r, g, b, _ = px[x, y]
-            # 마젠타는 R·B 가 높고 G 가 낮다. 거리로 재면 살구색 피부까지 먹으므로
-            # "초록이 확실히 낮다" 는 조건을 함께 본다.
-            if abs(r - KEY[0]) < tol and abs(b - KEY[2]) < tol and g < tol:
-                px[x, y] = (r, g, b, 0)
-    return im
+
+    rgb = np.asarray(im.convert("RGB"), dtype=np.float32)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    m = np.minimum(r, b) - g
+    alpha = np.clip((KEY_HI - m) / (KEY_HI - KEY_LO), 0.0, 1.0)
+
+    # despill — 완전 불투명·완전 투명은 건드리지 않는다.
+    a = alpha[..., None]
+    key = np.array(KEY, dtype=np.float32)
+    mid = (a > 0.0) & (a < 1.0)
+    fg = np.where(mid, (rgb - (1.0 - a) * key) / np.maximum(a, 1e-3), rgb)
+    fg = np.clip(fg, 0.0, 255.0)
+
+    out = Image.fromarray(fg.astype(np.uint8), "RGB").convert("RGBA")
+    a8 = Image.fromarray((alpha * 255.0).astype(np.uint8), "L")
+    a8 = a8.filter(ImageFilter.MinFilter(3))  # 1px 수축
+    out.putalpha(a8)
+    return out
 
 
 def finish(im, dst: pathlib.Path) -> int:
