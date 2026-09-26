@@ -24,6 +24,34 @@ class Stat {
   static const hidden = [sincerity, reputation];
   static const all = [...visible, ...hidden];
 
+  /// 돈 1 = **1,000원**. 대본이 이미 이 축척으로 쓰여 있다
+  /// (`d_luck_01` money +50 = "5만원", `d_friend_05` -150 = "15만원",
+  /// `haneul_r09` -30 = "3만원", `c_broke` +120 = "12만원").
+  static const wonPerMoney = 1000;
+
+  /// 돈을 사람이 읽는 금액으로. `72` → `7.2만원`, `30` → `3만원`, `5` → `5천원`.
+  ///
+  /// 숫자만 보여 주면("72") 현실감이 없다는 지적을 받았다. 원 단위 전체("72,000원")는
+  /// 320pt·글자 1.3배에서 스탯 줄을 넘치고, 무엇보다 대본이 이미 만원으로 말한다
+  /// ("5만원 벌었다"). 그래서 만원을 기본 단위로 쓰고 1만원 미만만 천원으로 내린다.
+  static String won(int money) => _won(money, sign: false);
+
+  /// 돈 증감. `15` → `+1.5만원`, `-5` → `-5천원`.
+  static String wonDelta(int money) => _won(money, sign: true);
+
+  static String _won(int money, {required bool sign}) {
+    final s = sign && money > 0 ? '+' : (money < 0 ? '-' : '');
+    final a = money.abs();
+    if (a == 0) return '0원';
+    if (a < 10) return '$s$a천원';
+    final man = a / 10;
+    // 1만원 단위로 떨어지면 소수점을 떼고, 아니면 한 자리만 남긴다.
+    final text = man == man.truncateToDouble()
+        ? man.toInt().toString()
+        : man.toStringAsFixed(1);
+    return '$s$text만원';
+  }
+
   static const labels = {
     charm: '매력',
     talk: '화술',

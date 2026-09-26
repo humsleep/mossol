@@ -399,7 +399,7 @@ class EventEngine {
 
   /// 럭키 룰렛 칸. 하루에 한 번, 광고로 한 번 더.
   static const rouletteSlots = [
-    ('돈이 생겼다', {Stat.money: 40}, '길에서 주운 5만원'),
+    ('돈이 생겼다', {Stat.money: 40}, '길에서 주운 4만원'),
     ('컨디션 최고', {Stat.stress: -20}, '푹 잤다'),
     ('거울이 좋다', {Stat.charm: 4}, '오늘따라 잘 나왔다'),
     ('말이 잘 통한다', {Stat.talk: 4}, '농담이 세 번 먹혔다'),

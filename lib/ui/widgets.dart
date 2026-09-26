@@ -396,7 +396,7 @@ extension _MoneyRow on StatBars {
 
     return Semantics(
       container: true,
-      label: '$label $value',
+      label: '$label ${Stat.won(value)}',
       value: hasDelta ? signed(d) : null,
       child: ExcludeSemantics(
         child: Padding(
@@ -427,11 +427,9 @@ extension _MoneyRow on StatBars {
                 ),
               ),
               const SizedBox(width: AppSpace.sm),
-              // 막대 자리는 비운다. 트랙도 그리지 않는다.
-              const Expanded(child: SizedBox()),
-              const SizedBox(width: AppSpace.sm),
-              SizedBox(
-                width: valueW,
+              // 막대 자리는 비운다. 트랙도 그리지 않는다 — 대신 그 폭을 숫자가 쓴다.
+              // "72,000원" 은 다른 스탯의 valueW(40~88)에 들어가지 않는다.
+              Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -444,7 +442,7 @@ extension _MoneyRow on StatBars {
                       const SizedBox(width: AppSpace.xxs),
                       Flexible(
                         child: Text(
-                          signed(d),
+                          Stat.wonDelta(d),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: t.numericMedium.copyWith(
@@ -456,7 +454,7 @@ extension _MoneyRow on StatBars {
                     ],
                     // 막대가 없는 만큼 숫자가 정보의 전부라 한 단 크게(numericMedium).
                     Text(
-                      '$value',
+                      Stat.won(value),
                       maxLines: 1,
                       textAlign: TextAlign.right,
                       style: t.numericMedium.copyWith(

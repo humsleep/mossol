@@ -289,7 +289,9 @@ class _SlotCard extends StatelessWidget {
               for (final e in effects.entries)
                 _EffectChip(
                   label:
-                      '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
+                      e.key == Stat.money
+                          ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+                          : '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
                   good: _isGood(e.key, e.value),
                   up: e.value > 0,
                   muted: !result,

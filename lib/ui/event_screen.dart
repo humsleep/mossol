@@ -1720,7 +1720,9 @@ class _ResultPanel extends StatelessWidget {
     final parts = <_DeltaPart>[
       for (final e in o.delta.stats.entries)
         _DeltaPart(
-          '${Stat.label(e.key)} ${signed(e.value)}',
+          e.key == Stat.money
+              ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+              : '${Stat.label(e.key)} ${signed(e.value)}',
           good: e.key == Stat.stress ? e.value < 0 : e.value > 0,
           up: e.value > 0,
         ),
