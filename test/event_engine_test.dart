@@ -206,7 +206,10 @@ void main() {
             ...c.effects.setFlags,
             ...c.fail.setFlags,
           ],
-      }..addAll(['album_10', 'album_20', 'burnout_x3']);
+      }..addAll(const [
+        // 선택지가 아니라 엔진이 세우는 플래그(lib/engine/effects.dart).
+        'album_10', 'album_20', 'album_30', 'burnout_x3',
+      ]);
       final required = {for (final e in bundle.endings) ...e.when.flags};
       expect(required.difference(produced), isEmpty);
     });

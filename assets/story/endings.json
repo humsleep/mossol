@@ -1846,6 +1846,10 @@
    "flags": [
     "album_30"
    ],
+   "anyAffection": {
+    "min": 30,
+    "count": 1
+   },
    "affection": {
     "seoyeon": [
      0,
@@ -1910,7 +1914,7 @@
   "id": "forever_solo",
   "name": "영구 모쏠",
   "tier": "bad",
-  "priority": 125,
+  "priority": 95,
   "default": true,
   "when": {
    "affection": {
