@@ -5,7 +5,7 @@ library;
 /// 심사에 필요한 건 표기 자체라 상수 하나로 충분하다.
 abstract final class AppMeta {
   static const version = '1.0.0';
-  static const build = '3';
+  static const build = '4';
   static const versionLabel = '$version ($build)';
 }
 
