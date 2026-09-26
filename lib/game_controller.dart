@@ -692,7 +692,9 @@ class GameController extends ChangeNotifier {
     await save.clear();
     await save.clearEndings();
     await metaService.clear();
-    final m = PlayerMeta(firstLaunchMs: nowMs());
+    // 인트로는 다시 세우지 않는다. 이 버튼은 설정 안에 있고, 설정에 닿았다는 건 인트로를
+    // 이미 지났다는 뜻이다 — 회차를 지운 사람에게 첫 문자를 다시 보내는 건 되돌아가기다.
+    final m = PlayerMeta(firstLaunchMs: nowMs(), introSeen: true);
     await metaService.save(m);
     meta = m;
     TextTemplate.currentName = null;
@@ -759,6 +761,24 @@ class GameController extends ChangeNotifier {
 
   /// 아직 세이브에 얹히지 않은 출석 하트. 세이브 없이 출석했을 때만 0 보다 크다.
   int get pendingHearts => meta?.pendingHearts ?? 0;
+
+  /// 첫 실행이면 홈 대신 인트로(`lib/ui/intro_screen.dart`)를 세운다.
+  ///
+  /// 첫 실행 = 이 기기에서 아직 한 판도 시작하지 않았고(세이브·회차 기록 없음) 인트로를
+  /// 끝까지 본 적도 없을 때. 홈은 세이브 카드·하트·앨범이 있는 **관리 화면**이라 게임을
+  /// 처음 여는 사람에게는 읽을 것이 못 된다(00_VERDICT §3, 03_game_design §1.1).
+  /// 설정의 저장 데이터 초기화는 이 값을 되살리지 않는다([resetAllData] 주석).
+  bool get shouldShowIntro =>
+      meta != null && !meta!.introSeen && !hasSave && totalRuns == 0;
+
+  /// 인트로를 끝까지 봤다(또는 건너뛰었다). 다음부터는 홈이 첫 화면이다.
+  Future<void> markIntroSeen() async {
+    final m = meta;
+    if (m == null || m.introSeen) return;
+    m.introSeen = true;
+    await metaService.save(m);
+    notifyListeners();
+  }
 
   /// 온보딩 "나는?" 의 답. 아직 안 물었으면 null([PlayerGender]).
   String? get playerGender => meta?.playerGender;
@@ -842,6 +862,22 @@ class GameController extends ChangeNotifier {
     TextTemplate.currentMbti = v;
     analytics.mbtiKnown(v != null);
     await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// D+4 `m_mbti_chat` 대화 안에서 MBTI 를 처음 답했다(온보딩에서 묻지 않은 첫 회차).
+  /// 기기 설정에 저장하고, **진행 중인 회차에도 바로 반영한다** — 그러지 않으면 방금 답한
+  /// 값이 이번 판에서 아무것도 바꾸지 않는다(docs/review/00_VERDICT.md §3 R6).
+  ///
+  /// 이미 공개된 줄은 다시 거르지 않는다(지금 이벤트는 '모름' 판으로 끝나고, 다음 이벤트부터
+  /// MBTI 판이 나온다). [mbti] 가 null 이면 모름으로 굳힌다([skipPlayerMbti] 와 같다).
+  Future<void> adoptMbti(String? mbti) async {
+    await (mbti == null ? skipPlayerMbti() : setPlayerMbti(mbti));
+    final s = state;
+    if (s == null || mbti == null || s.mbti != null) return;
+    s.mbti = Mbti.parse(mbti);
+    await _save(s);
+    _syncSummary();
     notifyListeners();
   }
 
@@ -1229,16 +1265,25 @@ class GameController extends ChangeNotifier {
 
   // ---- 하루 진행 ----
 
-  /// 아침 행동 선택. 하트 1개를 쓰고 그날의 이벤트를 계획한다.
+  /// 이 아침이 하트를 쓰지 않는 날인지. 1회차 오프닝(config `firstRunFreeHeartDays`, 기본 0)
+  /// 에만 참이다 — 첫 세션이 첫 모먼트를 보기 전에 하트로 끊기던 문제(00_VERDICT §3 R4).
+  /// 2회차부터, 그리고 값이 0인 데이터에서는 예전 그대로 하루에 하트 하나다.
+  bool get freeHeartToday {
+    final s = state;
+    return s != null && s.run == 1 && s.day <= config.firstRunFreeHeartDays;
+  }
+
+  /// 아침 행동 선택. 하트 1개를 쓰고 그날의 이벤트를 계획한다([freeHeartToday] 면 안 쓴다).
   Future<bool> startDay(DayAction action) async {
     final s = state!;
     _regenHearts();
-    if (s.hearts <= 0) {
+    final free = freeHeartToday;
+    if (!free && s.hearts <= 0) {
       analytics.log(Analytics.heartEmpty, {'day': s.day});
       notifyListeners();
       return false;
     }
-    s.hearts -= 1;
+    if (!free) s.hearts -= 1;
     s.dayStarted = true;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;

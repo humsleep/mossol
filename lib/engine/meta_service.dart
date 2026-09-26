@@ -60,6 +60,11 @@ class PlayerMeta {
   /// docs/overhaul/07_free_input.md §5. 없던 예전 메타는 0.
   int freeInputSends;
 
+  /// 첫 실행 인트로(태현의 첫 문자 → 이름 → "나는?")를 끝까지 봤는지.
+  /// 이 필드가 없던 예전 메타는 false 로 읽히지만, 이미 한 판 이상 한 기기는
+  /// `totalRuns > 0` 이라 인트로가 다시 뜨지 않는다([GameController.shouldShowIntro]).
+  bool introSeen;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -79,6 +84,7 @@ class PlayerMeta {
     this.sfxOn = true,
     this.hapticOn = true,
     this.freeInputSends = 0,
+    this.introSeen = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -100,6 +106,7 @@ class PlayerMeta {
     'sfxOn': sfxOn,
     'hapticOn': hapticOn,
     'freeInputSends': freeInputSends,
+    'introSeen': introSeen,
   };
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -132,6 +139,7 @@ class PlayerMeta {
       sfxOn: j['sfxOn'] != false,
       hapticOn: j['hapticOn'] != false,
       freeInputSends: _int(j['freeInputSends']),
+      introSeen: j['introSeen'] == true,
     );
   }
 }

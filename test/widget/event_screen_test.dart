@@ -90,7 +90,7 @@ void main() {
     await tester.tap(findText('광고 보고 기다리지 않기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(findText('광고를 불러오지 못했어요.'), findsOneWidget);
+    expect(findTextContaining('광고를 불러오지 못했어요'), findsOneWidget);
     expect(c.revealed, waitIdx);
 
     await tester.pump(const Duration(seconds: 20));

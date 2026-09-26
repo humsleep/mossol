@@ -62,6 +62,10 @@ abstract class SfxService {
   bool sfxOn = true;
   bool hapticOn = true;
 
+  /// 초기화가 삼킨 실패. null 이면 정상. 소리 전체가 조용히 죽는 사고(세션 카테고리
+  /// assert 로 11개 큐가 전부 무음이던 적이 있다)를 밖에서 알아챌 수 있게 남긴다.
+  String? lastInitError;
+
   /// 처음부터 재생. 같은 큐를 다시 부르면 처음부터 다시 난다.
   void play(Sfx cue) {
     if (sfxOn) onPlay(cue);
@@ -114,8 +118,8 @@ class NoopSfxService extends SfxService {
 
 /// audioplayers + HapticFeedback 구현. 큐마다 플레이어 하나를 미리 만들어 둔다.
 ///
-/// 세션은 `ambient` + `mixWithOthers` — 무음 스위치를 존중하고 사용자의 음악을 끊지
-/// 않는다. 백그라운드 재생은 하지 않는다(`UIBackgroundModes` 에 audio 를 넣지 않는다).
+/// 세션은 `ambient` — 무음 스위치를 존중하고 사용자의 음악을 끊지 않는다(옵션 없이도
+/// 섞인다). 백그라운드 재생은 하지 않는다(`UIBackgroundModes` 에 audio 를 넣지 않는다).
 class AudioSfxService extends SfxService with WidgetsBindingObserver {
   /// 벨 진동 한 주기. 아이폰 기본 벨의 "두 번 울리고 쉼" 을 흉내 낸다(05 §2.3).
   static const ringPeriod = Duration(milliseconds: 2600);
@@ -135,23 +139,31 @@ class AudioSfxService extends SfxService with WidgetsBindingObserver {
   Timer? _ringHapticStop;
   Timer? _endingBeat;
 
+  /// 재생 세대. `stop().then(resume())` 로 재트리거하는 사이에 정지가 들어오면,
+  /// 뒤늦게 도착한 `resume` 이 멈춘 소리를 되살린다(벨이 다음 이벤트까지 울린 원인).
+  /// 정지할 때마다 올려서 그 사이에 걸려 있던 재개를 버린다.
+  int _gen = 0;
+
+  /// 이 앱이 쓰는 오디오 세션. 테스트가 같은 값을 그대로 만들어 볼 수 있게 밖으로 뺀다 —
+  /// `AudioContextIOS` 는 생성자 assert 가 있어서, 조합이 틀리면 만드는 순간 던진다.
+  ///
+  /// iOS `ambient` 는 그 자체로 다른 앱과 섞이고 무음 스위치를 존중한다.
+  /// `mixWithOthers` 를 명시하면 audioplayers 의 assert(playback · playAndRecord ·
+  /// multiRoute 에서만 허용)에 걸려 [init] 이 첫 줄에서 죽고 큐가 전부 무음이 된다.
+  static AudioContext get audioContext => AudioContext(
+    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+    android: const AudioContextAndroid(
+      usageType: AndroidUsageType.game,
+      contentType: AndroidContentType.sonification,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+  );
+
   /// 앱 시작 1회: 세션 카테고리 + 큐마다 setSource. 실패해도 던지지 않는다 —
   /// 소리가 안 나는 것이 앱이 안 뜨는 것보다 낫다.
   Future<void> init() async {
     try {
-      await AudioPlayer.global.setAudioContext(
-        AudioContext(
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.ambient,
-            options: const {AVAudioSessionOptions.mixWithOthers},
-          ),
-          android: const AudioContextAndroid(
-            usageType: AndroidUsageType.game,
-            contentType: AndroidContentType.sonification,
-            audioFocus: AndroidAudioFocus.none,
-          ),
-        ),
-      );
+      await AudioPlayer.global.setAudioContext(audioContext);
       for (final c in Sfx.values) {
         final p = AudioPlayer(playerId: 'sfx_${c.file}');
         await p.setReleaseMode(
@@ -163,7 +175,9 @@ class AudioSfxService extends SfxService with WidgetsBindingObserver {
       }
       _ready = true;
     } catch (e) {
-      debugPrint('효과음 준비 실패: $e');
+      // 앱은 계속 뜬다. 다만 조용히 죽지는 않는다 — 흔적을 남겨 밖에서 볼 수 있게.
+      lastInitError = '$e';
+      debugPrint('!!! 효과음 준비 실패 — 큐 ${Sfx.values.length}개 전부 무음: $e');
     }
     WidgetsBinding.instance.addObserver(this);
   }
@@ -183,8 +197,15 @@ class AudioSfxService extends SfxService with WidgetsBindingObserver {
         if (e.key != cue) unawaited(e.value.stop());
       }
     }
-    // 같은 큐 재트리거는 처음부터 다시.
-    unawaited(p.stop().then((_) => p.resume()));
+    // 같은 큐 재트리거는 처음부터 다시. 그 사이에 정지가 들어왔으면 재개하지 않는다.
+    final gen = ++_gen;
+    unawaited(
+      p.stop().then((_) {
+        if (gen != _gen) return null;
+        if (cue == Sfx.callRing && !_ringing) return null;
+        return p.resume();
+      }),
+    );
     if (cue == Sfx.ending) {
       _endingBeat?.cancel();
       _endingBeat = Timer(endingSecondBeat, () => haptic(HapticKind.light));
@@ -216,6 +237,7 @@ class AudioSfxService extends SfxService with WidgetsBindingObserver {
     _stopRingHaptics();
     if (!_ringing) return;
     _ringing = false;
+    _gen++;
     final p = _players[Sfx.callRing];
     if (p != null) unawaited(p.stop());
   }
@@ -223,6 +245,7 @@ class AudioSfxService extends SfxService with WidgetsBindingObserver {
   @override
   void stopAll() {
     stopRing();
+    _gen++;
     _endingBeat?.cancel();
     for (final p in _players.values) {
       unawaited(p.stop());

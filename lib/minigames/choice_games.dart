@@ -161,12 +161,34 @@ class PickMemeGame extends StatefulWidget {
 }
 
 class _PickMemeGameState extends State<PickMemeGame> {
+  /// (취향 키, 이름, 설명, 카드 기호, 카드 색). 짤 그림은 없다 — 있는 척하는 회색
+  /// 이미지 아이콘은 "로딩 실패" 로 읽혔다(01 P1-2). 그래서 그림 대신 후보마다 다른
+  /// 기호·색의 **자막 카드** 로 보여 준다. 색은 캐릭터 강조색 팔레트를 빌려 후보를
+  /// 구분만 하고 뜻은 없다.
   static const _memes = [
-    ('dry', '정색하는 고양이', '무표정으로 쳐다보는 고양이'),
-    ('loud', '박수치며 웃는 사람', '대문짝만한 ㅋㅋㅋ 자막'),
-    ('witty', '안경 고쳐 쓰는 짤', '"흥미롭군요" 자막'),
-    ('meme', '픽셀 강아지', '알 사람만 아는 옛날 짤'),
-    ('warm', '하트 뿅뿅 곰', '따뜻한 파스텔톤'),
+    (
+      'dry',
+      '정색하는 고양이',
+      '무표정으로 쳐다보는 고양이',
+      Icons.sentiment_neutral,
+      'doyun',
+    ),
+    (
+      'loud',
+      '박수치며 웃는 사람',
+      '대문짝만한 ㅋㅋㅋ 자막',
+      Icons.sentiment_very_satisfied,
+      'jiwoo',
+    ),
+    ('witty', '안경 고쳐 쓰는 짤', '"흥미롭군요" 자막', Icons.menu_book_outlined, 'minjae'),
+    (
+      'meme',
+      '픽셀 강아지',
+      '알 사람만 아는 옛날 짤',
+      Icons.videogame_asset_outlined,
+      'haneul',
+    ),
+    ('warm', '하트 뿅뿅 곰', '따뜻한 파스텔톤', Icons.favorite_outline, 'yeeun'),
   ];
 
   int? _picked;
@@ -253,10 +275,9 @@ class _PickMemeGameState extends State<PickMemeGame> {
               selected: _picked == i,
               dimmed: _picked != null && _picked != i,
               tone: _toneFor(i),
-              leading: Icon(
-                Icons.image_outlined,
-                size: AppSpace.xl,
-                color: context.scheme.onSurfaceVariant,
+              leading: _MemeCard(
+                icon: _memes[_order[i]].$4,
+                accent: t.accentFor(_memes[_order[i]].$5),
               ),
               onTap: () => _pick(i),
             ),
@@ -264,6 +285,30 @@ class _PickMemeGameState extends State<PickMemeGame> {
       ),
     );
   }
+}
+
+/// 짤 한 장 자리. 그림이 아니라 기호 + 색으로 후보를 구별하는 작은 카드다.
+/// 말풍선에 붙여 보낸 짤처럼 보이게 모서리와 테두리를 준다.
+class _MemeCard extends StatelessWidget {
+  final IconData icon;
+  final CharacterAccent accent;
+  const _MemeCard({required this.icon, required this.accent});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: AppSpace.huge,
+    height: AppSpace.huge,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: accent.container,
+      borderRadius: AppRadius.rSm,
+      border: Border.all(
+        color: accent.base,
+        width: AppBorderWidth.hairline,
+      ),
+    ),
+    child: Icon(icon, size: AppSpace.xl, color: accent.onContainer),
+  );
 }
 
 /// 10. 옷장 코디 — 매력

@@ -66,8 +66,9 @@ void main() {
     await tester.tap(findText('헬스장'));
     await tester.pump();
     expect(c.phase, Phase.event);
-    // 홈 진입 때 첫 출석 하트(+1)가 보류됐다가 새 게임에 얹힌다. 거기서 하나를 썼다.
-    expect(c.hearts, c.config.maxHearts + Attendance.dailyHearts - 1);
+    // 홈 진입 때 첫 출석 하트(+1)가 보류됐다가 새 게임에 얹힌다. 1회차 오프닝(D+1~3)은
+    // 하트를 쓰지 않으므로 그대로다(config `firstRunFreeHeartDays`).
+    expect(c.hearts, c.config.maxHearts + Attendance.dailyHearts);
     expect(find.byType(EventScreen), findsOneWidget);
 
     // 첫 이벤트는 m01. 대사가 자동으로 공개된다.

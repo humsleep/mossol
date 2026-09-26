@@ -93,6 +93,8 @@ void main() {
       final c = controller();
       await c.init();
       await c.newGame(seed: 5, preference: Preference.female);
+      // 1회차 오프닝(D+1~3)은 하트를 쓰지 않는다 — 하트 경제는 그다음 날부터 본다.
+      c.state!.day = real.config.firstRunFreeHeartDays + 1;
       final full = c.hearts;
       expect(await c.startDay(real.config.actions.first), isTrue);
       expect(c.hearts, full - 1);
@@ -109,11 +111,14 @@ void main() {
       final c = controller();
       await c.init();
       await c.newGame(seed: 5, preference: Preference.male);
+      final day = real.config.firstRunFreeHeartDays + 1;
       c.state!
+        // 오프닝은 하트를 쓰지 않으므로 하트 0 판정은 그다음 날부터다.
+        ..day = day
         ..hearts = 0
         ..lastHeartMs = now;
       expect(await c.startDay(real.config.actions.first), isFalse);
-      expect(rec.paramsOf(Analytics.heartEmpty).single, {'day': 1});
+      expect(rec.paramsOf(Analytics.heartEmpty).single, {'day': day});
     });
   });
 
@@ -227,15 +232,16 @@ void main() {
       );
     });
 
-    test('전면 광고: 1 · 2일은 안 되고 3일부터(처음 켠 상태), 상수는 설계서대로', () {
+    test('전면 광고: 첫 세션(D+6까지)은 안 되고 7일부터(처음 켠 상태), 상수는 설계서대로', () {
       final ads = AdManager.instance;
       expect(ads.canShowInterstitial(1), isFalse);
-      expect(ads.canShowInterstitial(2), isFalse);
-      expect(ads.canShowInterstitial(3), isTrue);
+      expect(ads.canShowInterstitial(3), isFalse, reason: '첫 세션 안에서 전면 광고 금지');
+      expect(ads.canShowInterstitial(6), isFalse);
+      expect(ads.canShowInterstitial(7), isTrue);
       expect(ads.canShowInterstitial(100), isTrue);
-      expect(AdManager.interstitialMinDay, 3);
-      expect(AdManager.interstitialMinInterval, const Duration(minutes: 2));
-      expect(AdManager.interstitialMaxPerDay, 12);
+      expect(AdManager.interstitialMinDay, 7);
+      expect(AdManager.interstitialMinInterval, const Duration(minutes: 6));
+      expect(AdManager.interstitialMaxPerDay, 6);
     });
 
     test('광고 단위 표: 종류 3개, 서로 다른 단위, 실제·테스트가 섞이지 않는다', () {

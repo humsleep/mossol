@@ -245,13 +245,26 @@ Set<String> tagsOf(NormText n, {required bool question}) {
 bool isBlocked(String text) {
   final n = norm(text);
   for (final t in n.tokens) {
-    if (FreeInputLexicon.blockedPrefix.any(t.startsWith)) return true;
-    if (FreeInputLexicon.blockedExact.contains(t)) return true;
+    if (_blockedWord(t)) return true;
   }
-  // 띄어쓰기로 쪼갠 변형(`시 발`)은 공백을 뺀 문자열에서 강한 어간만 본다.
-  return FreeInputLexicon.blockedPrefix
-      .where((b) => b.length >= 2)
-      .any(n.compact.contains);
+  // 띄어쓰기로 쪼갠 변형(`씨 발`·`ㅅ ㅂ`). 한 글자짜리 낱말이 이어질 때만 도로 붙인다 —
+  // 공백을 뺀 문장 전체를 보면 멀쩡한 낱말 둘이 붙어 없던 욕이 생긴다(04 P1-3).
+  for (var i = 0; i < n.tokens.length; i++) {
+    if (n.tokens[i].length != 1) continue;
+    final run = StringBuffer(n.tokens[i]);
+    for (var j = i + 1; j < n.tokens.length && n.tokens[j].length == 1; j++) {
+      run.write(n.tokens[j]);
+      if (_blockedWord(run.toString())) return true;
+    }
+  }
+  return false;
+}
+
+/// 낱말 하나가 금칙인가. `새끼손가락`·`개새벽` 처럼 어간을 품은 멀쩡한 낱말은 먼저 뺀다.
+bool _blockedWord(String w) {
+  if (FreeInputLexicon.blockedAllow.any(w.startsWith)) return false;
+  if (FreeInputLexicon.blockedPrefix.any(w.startsWith)) return true;
+  return FreeInputLexicon.blockedExact.contains(w);
 }
 
 /// 통화 중 "끊을게"(07 §4 #7). 부정형(`안 끊을게`·`끊지 않고`)은 아니다.
@@ -472,7 +485,11 @@ class ChoiceScore {
   /// 입력 본문이 문구 본문과 같다(선택지를 그대로 침).
   final bool exact;
 
-  const ChoiceScore(this.view, this.score, {this.exact = false});
+  /// 입력이 문구를 통째로 품었다("고양이 사진" → "고양이 사진으로 할게").
+  /// 선택지를 그대로 적고 말끝만 붙인 경우라 확인을 한 번 더 묻지 않는다(01 D-4).
+  final bool near;
+
+  const ChoiceScore(this.view, this.score, {this.exact = false, this.near = false});
 
   int get index => view.index;
 }
@@ -602,12 +619,14 @@ class FreeInputMatcher {
             v,
             score(input, sig),
             exact: sig.body.isNotEmpty && (sig.body == input.text.body || sig.body == fullBody),
+            near: _near(sig.body, input.text.body) || _near(sig.body, fullBody),
           ),
     ];
-    // 안정 정렬: 동점은 원래 순서. 정확 일치는 맨 앞.
+    // 안정 정렬: 동점은 원래 순서. 정확 일치가 맨 앞, 그 다음이 통째로 품은 문구.
     final ranked = List.of(scored)
       ..sort((a, b) {
         if (a.exact != b.exact) return a.exact ? -1 : 1;
+        if (a.near != b.near) return a.near ? -1 : 1;
         final d = b.score.compareTo(a.score);
         return d != 0 ? d : a.index.compareTo(b.index);
       });
@@ -618,6 +637,14 @@ class FreeInputMatcher {
       decision: decide(input, ranked, forcePick: forcePick),
     );
   }
+
+  /// "선택지를 그대로 적고 말끝만 붙였다" 판정. 문구가 입력 안에 통째로 들어 있고,
+  /// 입력의 절반 이상을 차지해야 한다 — 짧은 문구(`응`)가 아무 문장에나 걸리면 안 된다.
+  static bool _near(String choiceBody, String inputBody) =>
+      choiceBody.length >= 4 &&
+      choiceBody != inputBody &&
+      inputBody.contains(choiceBody) &&
+      choiceBody.length * 2 >= inputBody.length;
 
   /// 07 §1.6 표.
   static MatchDecision decide(
@@ -633,8 +660,12 @@ class FreeInputMatcher {
     final top = ranked.first;
     final s1 = top.score;
     final s2 = ranked.length > 1 ? ranked[1].score : 0.0;
+    // 선택지를 그대로 적고 말끝만 붙인 입력(01 D-4). 그런 후보가 둘이면 고를 수 없으니
+    // 평소대로 피커로 간다.
+    final onlyNear = top.near && !(ranked.length > 1 && ranked[1].near);
     final confident =
         top.exact ||
+        onlyNear ||
         (s1 >= FreeInputThresholds.autoMin &&
             s1 - s2 >= FreeInputThresholds.autoMargin &&
             s1 - s2 >= FreeInputThresholds.tie);

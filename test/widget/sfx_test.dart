@@ -126,6 +126,25 @@ void main() {
     expect(sfx.ringing, isFalse);
   });
 
+  testWidgets('전화: 거절 뒤 계속을 누르면 벨이 다시 울리지 않는다 (회귀)', (tester) async {
+    // 거절 상태 그대로 다음 이벤트로 넘어가면 _onChange 가 벨을 켜고 같은 틱에
+    // _syncEvent 가 껐다. 플랫폼에는 stop·stop·resume 순으로 도착해(audioplayers 는
+    // 직렬화하지 않는다) 루프 벨이 _ringing=false 인 채로 계속 울렸다(04 P1-2).
+    await show(tester, call);
+    await tester.tap(findText('거절'));
+    await tester.pump();
+    await settleReplies(tester);
+    sfx.clear();
+    final stopsBefore = sfx.ringStops;
+
+    await tester.tap(findText('계속'));
+    await tester.pump();
+    expect(sfx.played, isNot(contains(Sfx.callRing)));
+    expect(sfx.ringing, isFalse);
+    expect(sfx.ringStops, stopsBefore, reason: '켰다 끄는 짝도 나오면 안 된다');
+    await tester.pumpWidget(Container());
+  });
+
   testWidgets('전화: 다른 이벤트로 넘어가면 벨이 끊긴다', (tester) async {
     await show(tester, call);
     expect(sfx.ringing, isTrue);

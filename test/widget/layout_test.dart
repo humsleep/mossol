@@ -829,6 +829,28 @@ void main() {
     );
   });
 
+  testWidgets('홈 배너는 앱 이름 줄 아래다 — 첫 화면 맨 위가 광고이면 안 된다 (R3)', (
+    tester,
+  ) async {
+    final c = await makeController();
+    await tester.pumpWidget(wrapApp(HomeScreen(c: c)));
+    await tester.pump();
+    final title = tester.getRect(findText('모쏠 탈출기'));
+    final banner = tester.getRect(find.byType(BannerSlot));
+    final hero = tester.getRect(find.byType(AppCard).first);
+    expect(
+      banner.top,
+      greaterThanOrEqualTo(title.bottom),
+      reason: '앱 이름보다 광고가 먼저 오지 않는다',
+    );
+    expect(hero.top, greaterThanOrEqualTo(banner.bottom), reason: '본문은 배너 아래');
+    // 설정 아이콘도 배너 위(헤더 줄)에 남는다.
+    expect(
+      tester.getRect(find.byIcon(Icons.settings_outlined)).bottom,
+      lessThanOrEqualTo(banner.top),
+    );
+  });
+
   testWidgets('홈·행동·정산·앨범·설정은 상단 BannerSlot 이고 bottomNavigationBar 는 없다', (
     tester,
   ) async {

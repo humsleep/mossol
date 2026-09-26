@@ -105,6 +105,31 @@ void main() {
     expect(find.byType(MinigameScaffold), findsOneWidget);
   });
 
+  testWidgets('짤 고르기: 후보가 회색 이미지 아이콘이 아니다 (회귀)', (tester) async {
+    // 후보 4개가 전부 같은 `Icons.image_outlined` 라 "로딩 실패한 화면" 으로 읽혔다
+    // (01 P1-2). 짤 그림은 없고 넣을 계획도 없으니, 기호·색이 다른 자막 카드로 보인다.
+    tester.view.physicalSize = const Size(400, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(DebugGalleryApp(bundle: testBundle()));
+    await tester.pumpAndSettle();
+    await tester.tap(findText(minigameLabels['pick_meme']!));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(MinigameScaffold), findsOneWidget);
+    expect(find.byIcon(Icons.image_outlined), findsNothing);
+    expect(find.byType(MinigameOption), findsNWidgets(4));
+    // 후보마다 다른 기호.
+    final icons = tester
+        .widgetList<MinigameOption>(find.byType(MinigameOption))
+        .map((o) => (o.leading! as dynamic).icon)
+        .toSet();
+    expect(icons.length, 4);
+    expect(tester.takeException(), isNull);
+  });
+
   // ---- 정산·홈 미리보기 ----
 
   Future<void> openPreview(WidgetTester tester, String label) async {

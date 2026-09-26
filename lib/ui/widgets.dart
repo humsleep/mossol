@@ -3417,3 +3417,189 @@ const adFailedMessage = '광고를 불러오지 못했어요. 잠시 후 다시 
 void adFailedSnack(BuildContext context) =>
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(keepAll(adFailedMessage))));
+
+/// 광고를 기다리는 동안 버튼에 다는 문구.
+const adLoadingLabel = '광고 불러오는 중…';
+
+/// 테스트가 광고 대기(최대 8초)를 흉내 내는 자리. null 이면 [AdManager] 를 부른다.
+/// 실기기 경로는 건드리지 않는다 — 대기 중 화면 잠금을 검증하려면 느린 광고가 필요하다.
+@visibleForTesting
+Future<bool> Function(String placement)? debugRewarded;
+
+/// 보상형 광고 버튼의 모양. 자리의 무게만 다르고 동작은 같다.
+enum RewardedButtonKind {
+  /// 2차 제안(힌트·되돌리기·기다리지 않기·홈 하트).
+  text,
+
+  /// 시트 안에서 1차 버튼과 구별되는 2차 버튼(룰렛 재도전).
+  outlined,
+}
+
+/// 보상형 광고를 부르는 유일한 버튼. 광고는 준비돼 있지 않으면 최대 8초를 기다리므로
+/// ([AdManager] `_showWaitTimeout`), 그 사이 버튼이 죽은 것처럼 보이면 사용자는 다시
+/// 탭하고 그 탭이 선택지에 떨어진다 — 실제로 플레이테스트에서 원치 않은 선택이 확정됐다
+/// (docs/review/01 P1-1). 룰렛에만 로딩 상태가 있고 힌트·되돌리기에는 없었던 것이
+/// 정확히 자리마다 따로 짠 탓이라, 광고를 부르는 자리는 전부 이 위젯 하나를 쓴다.
+///
+/// 대기 중: 스피너 + [adLoadingLabel] + 버튼 비활성. 바깥의 [RewardedBusyScope] 가
+/// 그 화면의 다른 조작(선택지 패널 등)을 함께 막는다.
+/// 실패: [adFailedSnack]. 모달(시트·다이얼로그) 안에서는 스낵바가 가리므로
+/// [inline] 을 켜 버튼 아래 한 줄로 말한다.
+class RewardedButton extends StatefulWidget {
+  /// 측정용 자리 이름(`hint` · `undo` · `heart_home` …).
+  final String placement;
+
+  /// 평소 문구. 대기 중에는 [adLoadingLabel] 로 바뀐다.
+  final String label;
+  final IconData icon;
+  final RewardedButtonKind kind;
+
+  /// 끝까지 봐서 보상을 받았을 때. 실패하면 부르지 않는다.
+  final FutureOr<void> Function() onEarned;
+
+  /// 광고를 부르기 직전. 대기 전에 멈춰야 할 것(읽씹 카운트다운 등)을 여기서 멈춘다.
+  final VoidCallback? beforeWatch;
+
+  /// 광고를 못 받았을 때 되돌릴 것(멈춰 둔 카운트다운 재개 등).
+  /// 사용자에게 알리는 일은 이 위젯이 하므로 여기서 또 말하지 않는다.
+  final VoidCallback? onFailed;
+
+  /// 실패를 스낵바 대신 버튼 아래 한 줄로(모달 안).
+  final bool inline;
+
+  /// 버튼 자리는 두되 누를 수 없게 한다(룰렛 회전 중 등).
+  final bool enabled;
+
+  /// 톤 배경 위에서 대비를 맞춰야 할 때만 준다.
+  final Color? foregroundColor;
+
+  /// 짧은 문구를 쓰는 자리에서 스크린리더에 읽힐 전체 문장.
+  final String? semanticsLabel;
+
+  const RewardedButton({
+    super.key,
+    required this.placement,
+    required this.label,
+    required this.onEarned,
+    this.beforeWatch,
+    this.onFailed,
+    this.icon = Icons.play_circle_outline,
+    this.kind = RewardedButtonKind.text,
+    this.inline = false,
+    this.enabled = true,
+    this.foregroundColor,
+    this.semanticsLabel,
+  });
+
+  @override
+  State<RewardedButton> createState() => _RewardedButtonState();
+}
+
+class _RewardedButtonState extends State<RewardedButton> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _watch() async {
+    if (_busy) return;
+    final scope = RewardedBusyScope._of(context);
+    widget.beforeWatch?.call();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    scope?._add(1);
+    final show = debugRewarded;
+    final ok = show != null
+        ? await show(widget.placement)
+        : await AdManager.instance.showRewarded(placement: widget.placement);
+    scope?._add(-1);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      await widget.onEarned();
+      return;
+    }
+    widget.onFailed?.call();
+    // 아무 말 없이 끝내지 않는다.
+    if (widget.inline) {
+      setState(() => _error = adFailedMessage);
+    } else if (context.mounted) {
+      adFailedSnack(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _busy ? adLoadingLabel : widget.label;
+    final icon = _busy
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(widget.icon, size: 18);
+    final onPressed = _busy || !widget.enabled ? null : _watch;
+    final style = widget.foregroundColor == null
+        ? null
+        : TextButton.styleFrom(foregroundColor: widget.foregroundColor);
+    final text = Text(keepAll(label), semanticsLabel: widget.semanticsLabel);
+    final button = switch (widget.kind) {
+      RewardedButtonKind.text => TextButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        style: style,
+        label: text,
+      ),
+      RewardedButtonKind.outlined => OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        style: style,
+        label: text,
+      ),
+    };
+    final error = _error;
+    if (error == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button,
+        const SizedBox(height: AppSpace.sm),
+        Text(
+          keepAll(error),
+          textAlign: TextAlign.center,
+          style: context.text.bodySmall?.copyWith(color: context.tokens.danger),
+        ),
+      ],
+    );
+  }
+}
+
+/// 광고를 기다리는 동안 이 안의 조작을 전부 막는다.
+///
+/// 안에 있는 [RewardedButton] 이 스스로 찾아 대기 상태를 알리므로, 화면은 감쌀 곳만
+/// 정하면 된다. 막는 대상에 그 버튼도 포함되지만 어차피 비활성이다. 최대 8초이고,
+/// 그 사이의 탭은 전부 "원하지 않은 선택" 이 될 수 있는 탭이다.
+class RewardedBusyScope extends StatefulWidget {
+  final Widget child;
+  const RewardedBusyScope({super.key, required this.child});
+
+  static _RewardedBusyScopeState? _of(BuildContext context) =>
+      context.findAncestorStateOfType<_RewardedBusyScopeState>();
+
+  @override
+  State<RewardedBusyScope> createState() => _RewardedBusyScopeState();
+}
+
+class _RewardedBusyScopeState extends State<RewardedBusyScope> {
+  /// 대기 중인 버튼 수. 한 화면에 광고 버튼이 둘 이상 있을 수 있다.
+  int _busy = 0;
+
+  void _add(int delta) {
+    if (!mounted) return;
+    setState(() => _busy += delta);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      AbsorbPointer(absorbing: _busy > 0, child: widget.child);
+}

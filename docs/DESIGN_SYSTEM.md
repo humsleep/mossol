@@ -258,8 +258,10 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ## 2. 화면별 레이아웃 지침
 
 공통: 세로 전용. 모든 화면은 `SafeArea` 안. 화면 좌우 여백 20. 배너는 **화면 상단**(AppBar
-바로 아래, 홈은 헤더 줄 위)에 `BannerSlot(edge: top, safeArea: false)` 로 두고 `body` 는
-`Column([BannerSlot, Expanded(본문)])` 이다. 광고가 없을 때 높이 0, 로드되면 `AnimatedSize`
+바로 아래, 홈은 헤더 줄 **아래**)에 `BannerSlot(edge: top, safeArea: false)` 로 두고 `body` 는
+`Column([BannerSlot, Expanded(본문)])`(홈은 `Column([헤더, BannerSlot, Expanded(본문)])`) 이다.
+앱의 이름보다 광고가 먼저 오지 않는다 — 홈 배너가 헤더 위에 있던 것이 첫인상 문제였다
+(docs/review/00_VERDICT.md §3 R3). 광고가 없을 때 높이 0, 로드되면 `AnimatedSize`
 로 내려앉는다. 채팅·통화·알림 화면에는 두지 않는다(우발 클릭 정책). 시트·다이얼로그 안에도 두지
 않는다. 모달의 스크림이 배너를 덮는 것은 정상이다. `bottomNavigationBar` 배너는 폐지.
 
@@ -269,14 +271,17 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 - **주인공**: 히어로 카드(첫 실행: 소개 카드 / 세이브 있음: 이어하기 카드)와 그 아래 1차 버튼 하나.
 - **배경**: 헤더 워드마크, 자원 줄(하트), 출석 줄, 사람들 스트립, 앨범 카드. 설정은 헤더 우측 아이콘.
-- 구성(위→아래, `SafeArea` 안 `Column`: `BannerSlot(top)` → `Expanded(ListView)`, 패딩 20/16/20/24):
-  `BannerSlot(top)` → 헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정
-  `IconButton`) → `md` → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
+- 구성(위→아래, `SafeArea` 안 `Column`: 헤더 줄 → `BannerSlot(top)` → `Expanded(ListView)`,
+  헤더 패딩 20/16/20/0 · 목록 패딩 20/12/20/24):
+  헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정 `IconButton`) → `BannerSlot(top)`
+  → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
   TextButton, 한 줄 고정) → `md` → 출석 줄(`RewardStrip`) → `md` → 1차 버튼(`이어하기` 또는 `새 게임`
   FilledButton) → [세이브 있음] `sm` + `새 게임` TextButton → `sectionGap` → `SectionHeader('사람들')`
   + `CastStrip` → `sectionGap` → 앨범 `AppCard(onTap)`(`'앨범  N / M'` 단일 Text + `EndingTierDots` +
   다음 엔딩 힌트).
 - 세이브가 없으면 `새 게임` 이 1차 버튼 자리에 온다. 빈자리를 남기지 않는다.
+- **첫 실행(세이브·회차 기록 없음)에는 홈이 뜨지 않는다.** 인트로(§2.14)가 먼저 서고, 거기서
+  이름·"나는?" 까지 받아 곧바로 첫날로 들어간다. 홈은 두 번째 세션부터 보는 화면이다.
 - `새 게임` 은 곧바로 시작하지 않고 온보딩 "나는?"(§2.11, 답이 없을 때만) → 캐스트 소개(§2.9)를 거친다.
   이어하기 카드와 사람들 줄의 선호 표기는 §2.10.
 - 세이브가 없을 때의 사람들 줄(`등장인물`)과 앨범 힌트, 소개 카드의 엔딩 수는 "나는?" 답을 따른다(§2.10).
@@ -613,6 +618,24 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   첫 350ms 탭 무시, 그 뒤 탭은 곧바로 완료(`beginMorning`, 멱등). 동작 줄이기: 진입·퇴장 즉시, 체류 그대로.
 - 소리 `Sfx.dayStart`(light 진동) 1회, 카드가 뜰 때. 루트 `Semantics(liveRegion, button, label: 'N일째 아침, 수요일, 흐림')`.
 - 기존 고정 문구와 충돌하지 않는다: `'D+1  ·  1장'`(공백 2개)·`'D+1 정산'`·`'오늘의 운'`·`'어젯밤: '` 을 담지 않는다.
+
+### 2.14 첫 실행 인트로 (`intro_screen.dart`)
+- **주인공**: 태현에게서 온 문자 한 통. 설명·기능 소개·"시작하기" 버튼은 없다.
+- 언제: `Phase.home` 이면서 `GameController.shouldShowIntro`(세이브·회차 기록이 없고 아직
+  인트로를 안 봄). 홈 대신 이 화면이 선다. 끝나면 곧바로 `newGame()` → 날짜 카드(§2.13) —
+  **홈을 거치지 않는다.** 두 번째 세션부터는 홈이 첫 화면이다(`introSeen`).
+- 단계(화면 하나, 하단 패널만 바뀐다): ① 잠금화면 알림(`NotificationPreview`, `Sfx.msgIn`
+  + medium 진동, 탭 또는 1.8초 뒤 열림) → ② 대답 두 개(`ChoiceButton`, `intro-yes`·`intro-maybe`)
+  → ③ 이름(대화 안 입력창 `intro-name-field` + `intro-name-submit` + `intro-name-skip`,
+  규칙·거르개는 §2.12 와 같은 `PlayerName`·`NameInputFormatter`) → ④ "나는?"(§2.11 의 문구·
+  `GenderOptionCard` 그대로, `gender-m`·`gender-f`·`gender-none`) → [선택 안 할래요면 ⑤ 어느 쪽부터
+  (`intro-side-f`·`intro-side-m`)] → 마지막 답 900ms 뒤 첫날.
+- 본문은 채팅 화면과 같은 껍데기: `AppBar`(이니셜 아바타 + `태현` + `온라인`, 뒤로 없음) →
+  `ColoredBox(tokens.chatBackground)` 안 `ChatDivider('D+1')` + `ChatBubble` 들 → `BottomPanel`.
+- 탭 수: 전부 건너뛰어도 **4탭**(열기 · 대답 · 이름 건너뛰기 · 나는?). MBTI 는 묻지 않는다 —
+  D+4 `m_mbti_chat` 대화의 `MbtiSheet` 로 옮겼다(§3, `onboarding_mbti_screen.dart`).
+- 저장은 마지막 답에서 한 번에. 도중에 앱을 닫으면 다음 실행에 처음부터 다시 선다.
+- 배너는 두지 않는다(채팅 화면과 같은 이유, §2 공통).
 
 ---
 

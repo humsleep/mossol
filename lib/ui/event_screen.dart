@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
-import '../ads/ad_manager.dart';
 import '../analytics/analytics.dart';
 import '../audio/sfx_service.dart';
 import '../engine/event_engine.dart';
@@ -14,6 +13,7 @@ import '../minigames/registry.dart';
 import 'call_view.dart';
 import 'design_system.dart';
 import 'notification_card.dart';
+import 'onboarding_mbti_screen.dart';
 import 'scene_card.dart';
 import 'scene_registry.dart';
 import 'widgets.dart';
@@ -94,6 +94,14 @@ class EventScreen extends StatefulWidget {
   final GameController c;
   const EventScreen({super.key, required this.c});
 
+  /// MBTI 를 묻는 D+4 대화의 id 앞부분(`m_mbti_chat_f` · `m_mbti_chat_m`).
+  /// 이 화면은 id 로만 알아본다 — `assets/story/events_main.json` 은 건드리지 않는다.
+  ///
+  /// TODO(2b): 그 이벤트의 대사는 "내 MBTI 를 이미 안다" 는 전제로 쓰여 있다. 글 손질 때
+  /// `m_mbti_chat_f`/`m_mbti_chat_m` 맨 앞에 상대가 묻는 줄(`them: "너 MBTI 뭐야?"`)을
+  /// 한 줄씩 넣어 주면 시트가 그 질문의 답으로 읽힌다. 지금도 동작은 한다(모름 판 대사 뒤에 시트).
+  static const mbtiEventPrefix = 'm_mbti_chat';
+
   @override
   State<EventScreen> createState() => _EventScreenState();
 }
@@ -136,6 +144,9 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   /// 알림 카드가 떠 있는지와 자동 열림 타이머.
   bool _previewOpen = false;
   Timer? _previewTimer;
+
+  /// 이 이벤트에서 MBTI 시트를 이미 띄웠는지(이벤트가 바뀌면 풀린다).
+  bool _mbtiSheetShown = false;
 
   /// 통화 중 대기 줄(`wait`)은 카운트다운 대신 이만큼 침묵한다. 벌점·광고 없음.
   static const callSilence = Duration(seconds: 2);
@@ -199,7 +210,10 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     if (c.lastOutcome == null) {
       _picked = null;
       // 거절을 되돌리면(광고) 다시 울리는 화면으로. 벨도 다시.
-      if (_callStage == CallStage.declined) {
+      // 같은 이벤트일 때만이다 — `계속` 으로 다음 이벤트가 오면 여기서 켠 벨을 바로 뒤
+      // _syncEvent 가 끄고, 두 호출이 같은 틱이라 플랫폼에는 stop·stop·resume 순으로
+      // 도착해 벨이 꺼지지 않은 채 다음 이벤트까지 울렸다(04 P1-2).
+      if (_callStage == CallStage.declined && c.current?.id == _eventId) {
         _callStage = CallStage.ringing;
         _sfx.startRing();
       }
@@ -241,6 +255,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _callStage = CallStage.active;
     _eraseDone = false;
     _typingHidden = false;
+    _mbtiSheetShown = false;
     // 처음부터 보는 이벤트일 때만 전화 수신·알림을 연출한다(복원·디버그 진입은 건너뜀).
     final fresh = ev != null && c.revealed == 0 && c.lastOutcome == null;
     if (ev != null && ev.isCall) {
@@ -279,6 +294,26 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _previewTimer?.cancel();
     setState(() => _previewOpen = false);
     _scheduleReveal();
+  }
+
+  // ---- MBTI 를 대화 안에서 묻기(docs/review/00_VERDICT.md §3 R6) ----
+
+  /// 첫 회차 온보딩에서 MBTI 를 묻지 않았다면(`shouldAskMbti`), D+4 `m_mbti_chat` 대화의
+  /// 대사가 끝난 자리에서 [MbtiSheet] 를 한 번 올린다. 답을 고르면 기기 설정과 **이번 회차**
+  /// 에 함께 반영되고([GameController.adoptMbti]), `나도 몰라` 면 예전의 건너뛰기와 똑같이
+  /// 모름으로 굳는다(대사·궁합은 전부 모름 판으로 돌아간다 — 데이터는 그대로다).
+  ///
+  Future<void> _maybeAskMbti() async {
+    final ev = c.current;
+    if (_mbtiSheetShown || ev == null) return;
+    if (!ev.id.startsWith(EventScreen.mbtiEventPrefix)) return;
+    if (!c.shouldAskMbti || c.lastOutcome != null) return;
+    _mbtiSheetShown = true;
+    if (!mounted) return;
+    final r = await MbtiSheet.ask(context);
+    // 바깥을 눌러 닫았으면 아무것도 저장하지 않는다(설정에서 언제든 정할 수 있다).
+    if (r == null || !mounted) return;
+    await c.adoptMbti(r.type);
   }
 
   // ---- 전화 ----
@@ -406,7 +441,11 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _timer?.cancel();
     if (_typingHidden) _typingHidden = false;
     final ev = c.current;
-    if (ev == null || c.linesDone) return;
+    if (ev == null || c.linesDone) {
+      // 대사가 끝난 자리에서만 MBTI 를 묻는다(선택지가 뜨기 직전).
+      unawaited(_maybeAskMbti());
+      return;
+    }
     final next = ev.lines[c.revealed];
     if (next.isWait && ev.isCall) {
       // 통화 중 대기 줄은 "…(침묵)" 을 바로 띄우고 잠시 멈춘다.
@@ -481,24 +520,22 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _scheduleReveal();
   }
 
-  Future<void> _skipWait() async {
-    // 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
-    // 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
-    _timer?.cancel();
-    final ok = await AdManager.instance.showRewarded(placement: 'wait_skip');
+  /// 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
+  /// 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
+  void _pauseWait() => _timer?.cancel();
+
+  void _skipWaitEarned() {
     if (!mounted) return;
-    if (ok) {
-      _waitLeft = 0;
-      c.revealNext();
-      _scheduleReveal();
-    } else {
-      _snack('광고를 불러오지 못했어요.');
-      _runWaitCountdown();
-    }
+    setState(() => _waitLeft = 0);
+    c.revealNext();
+    _scheduleReveal();
   }
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  /// 광고를 못 받았으면 멈춰 둔 초부터 그대로 이어 센다. 안내는 버튼이 한다.
+  void _skipWaitFailed() {
+    if (!mounted) return;
+    _runWaitCountdown();
+  }
 
   /// 말풍선 묶음 기준. 같은 사람이 이어 말하면 같은 키가 나온다.
   String _speakerKey(Line l, String partner) => switch (l.who) {
@@ -531,8 +568,13 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     return names.length;
   }
 
+  /// 광고를 기다리는 동안은 이 화면의 탭을 전부 막는다. 힌트 버튼이 무반응으로 보여
+  /// 다시 탭했을 때 그 탭이 선택지에 떨어져 원치 않은 선택이 확정됐다(01 P1-1).
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      RewardedBusyScope(child: _body(context));
+
+  Widget _body(BuildContext context) {
     // 화면에는 이름을 치환한 사본(docs/NAME_GUIDE.md). 엔진 호출은 c.current(원본).
     final ev = c.shownEvent;
     if (ev == null) return const SizedBox.shrink();
@@ -750,7 +792,9 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
                       _WaitingBlock(
                         secondsLeft: _waitLeft,
                         secondsTotal: waitLine.wait,
-                        onSkip: _skipWait,
+                        onSkipStart: _pauseWait,
+                        onSkipEarned: _skipWaitEarned,
+                        onSkipFailed: _skipWaitFailed,
                       )
                     else if (upcoming != null)
                       _typing(
@@ -915,12 +959,18 @@ class _MissedCall extends StatelessWidget {
 class _WaitingBlock extends StatelessWidget {
   final int secondsLeft;
   final int secondsTotal;
-  final Future<void> Function() onSkip;
+
+  /// 광고를 부르기 전(카운트다운 정지) · 보상 · 실패(카운트다운 재개).
+  final VoidCallback onSkipStart;
+  final VoidCallback onSkipEarned;
+  final VoidCallback onSkipFailed;
 
   const _WaitingBlock({
     required this.secondsLeft,
     required this.secondsTotal,
-    required this.onSkip,
+    required this.onSkipStart,
+    required this.onSkipEarned,
+    required this.onSkipFailed,
   });
 
   @override
@@ -963,10 +1013,12 @@ class _WaitingBlock extends StatelessWidget {
             fill: t.systemLine,
           ),
           const SizedBox(height: AppSpace.xs),
-          TextButton.icon(
-            onPressed: onSkip,
-            icon: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('광고 보고 기다리지 않기'),
+          RewardedButton(
+            placement: 'wait_skip',
+            label: '광고 보고 기다리지 않기',
+            beforeWatch: onSkipStart,
+            onEarned: onSkipEarned,
+            onFailed: onSkipFailed,
           ),
         ],
       ),
@@ -1417,21 +1469,14 @@ class _ChoicePanelState extends State<_ChoicePanel> {
             Padding(
               padding: const EdgeInsets.only(top: AppSpace.xs),
               child: Center(
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final ok = await AdManager.instance.showRewarded(
-                      placement: 'hint',
-                    );
-                    if (ok) {
-                      c.analytics.log(Analytics.adHintUsed);
-                      c.revealHint();
-                    } else if (context.mounted) {
-                      // 광고가 안 뜨면 아무 말 없이 끝내지 않는다.
-                      adFailedSnack(context);
-                    }
+                child: RewardedButton(
+                  placement: 'hint',
+                  label: '태현에게 물어보기 (광고)',
+                  icon: Icons.lightbulb_outline,
+                  onEarned: () {
+                    c.analytics.log(Analytics.adHintUsed);
+                    c.revealHint();
                   },
-                  icon: const Icon(Icons.lightbulb_outline, size: 18),
-                  label: Text(keepAll('태현에게 물어보기 (광고)')),
                 ),
               ),
             ),
@@ -1785,21 +1830,13 @@ class _ResultPanel extends StatelessWidget {
             )
           else if (c.canOfferUndo)
             Center(
-              child: TextButton.icon(
-                onPressed: () async {
-                  final ok = await AdManager.instance.showRewarded(
-                    placement: 'undo',
-                  );
-                  if (ok) {
-                    c.undoChoice();
-                  } else if (context.mounted) {
-                    adFailedSnack(context);
-                  }
-                },
-                icon: const Icon(Icons.replay, size: 18),
+              child: RewardedButton(
+                placement: 'undo',
+                label: '10초 전으로 (광고)',
+                icon: Icons.replay,
                 // 톤 배경 위에서도 대비를 지키기 위해 전경색만 맞춘다.
-                style: TextButton.styleFrom(foregroundColor: fg),
-                label: const Text('10초 전으로 (광고)'),
+                foregroundColor: fg,
+                onEarned: c.undoChoice,
               ),
             ),
           if (c.canOfferFreeUndo || c.canOfferUndo)

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../ads/ad_manager.dart';
 import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
@@ -48,13 +47,6 @@ class _RouletteSheetState extends State<RouletteSheet>
   int? _slot;
   bool _spinning = false;
 
-  /// 광고를 부르는 중. 누른 뒤 아무 일도 안 일어나는 구간을 없앤다.
-  bool _loadingAd = false;
-
-  /// 광고를 못 받았을 때 버튼 아래에 남기는 한 줄.
-  /// 스낵바는 이 시트 뒤에 깔려 보이지 않으므로 시트 안에서 말한다.
-  String? _adError;
-
   @override
   void dispose() {
     _spin.dispose();
@@ -73,28 +65,12 @@ class _RouletteSheetState extends State<RouletteSheet>
     });
   }
 
-  /// 광고를 보고 한 번 더 돌린다. 광고가 아직 준비되지 않았으면
-  /// [AdManager.showRewarded] 가 잠시 기다려 주고, 그래도 안 되면 이유를 말한다.
-  Future<void> _watchAdAndReroll() async {
-    setState(() {
-      _loadingAd = true;
-      _adError = null;
-    });
-    final ok = await AdManager.instance.showRewarded(placement: 'roulette');
-    if (!mounted) return;
-    setState(() => _loadingAd = false);
-    if (ok) {
-      await _run(widget.c.rerollRoulette);
-    } else {
-      setState(() => _adError = adFailedMessage);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final slots = EventEngine.rouletteSlots;
     final slot = _slot;
-    return SafeArea(
+    return RewardedBusyScope(
+      child: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpace.xxl,
@@ -183,30 +159,22 @@ class _RouletteSheetState extends State<RouletteSheet>
                 ),
               ] else if (widget.c.canRerollRoulette) ...[
                 const SizedBox(height: AppSpace.md),
-                OutlinedButton.icon(
-                  onPressed: _spinning || _loadingAd ? null : _watchAdAndReroll,
-                  icon: _loadingAd
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.replay, size: 18),
-                  label: Text(_loadingAd ? '광고 불러오는 중…' : '한 번 더 (광고)'),
+                // 광고 대기·실패 안내는 RewardedButton 이 다른 자리와 똑같이 한다.
+                // 시트 안에서는 스낵바가 가리므로 버튼 아래 한 줄(inline).
+                RewardedButton(
+                  placement: 'roulette',
+                  label: '한 번 더 (광고)',
+                  icon: Icons.replay,
+                  kind: RewardedButtonKind.outlined,
+                  inline: true,
+                  enabled: !_spinning,
+                  onEarned: () => _run(widget.c.rerollRoulette),
                 ),
-                if (_adError != null) ...[
-                  const SizedBox(height: AppSpace.sm),
-                  Text(
-                    keepAll(_adError!),
-                    textAlign: TextAlign.center,
-                    style: context.text.bodySmall
-                        ?.copyWith(color: context.tokens.danger),
-                  ),
-                ],
               ],
             ],
           ],
         ),
+      ),
       ),
     );
   }

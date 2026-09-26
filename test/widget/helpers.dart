@@ -35,10 +35,14 @@ StoryBundle testBundle() {
   );
 }
 
-Future<GameController> makeController() async {
+/// 기본은 **두 번째 세션 이후**의 컨트롤러다: 첫 실행 인트로를 이미 본 것으로 표시하므로
+/// `fullApp(c)` 가 홈에서 시작한다(기존 흐름 테스트가 보던 상태).
+/// [firstLaunch] 를 주면 아무것도 표시하지 않아 첫 실행(인트로)이 그대로 뜬다.
+Future<GameController> makeController({bool firstLaunch = false}) async {
   SharedPreferences.setMockInitialValues({});
   final c = GameController(bundle: testBundle(), save: SaveService());
   await c.init();
+  if (!firstLaunch) await c.markIntroSeen();
   return c;
 }
 

@@ -2,6 +2,7 @@
  "totalDays": 100,
  "chapterLength": 20,
  "maxHearts": 5,
+ "firstRunFreeHeartDays": 3,
  "heartRegenMinutes": 15,
  "earlyAffection": {
   "curve": [

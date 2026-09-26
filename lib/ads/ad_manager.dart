@@ -60,9 +60,13 @@ class AdManager with WidgetsBindingObserver {
 
   /// 전면 광고 정책. 설계서 07 항목과 같다.
   /// `interstitialMinDay` 는 게임 내 일차(day), 나머지는 실제 시각 기준이다.
-  static const interstitialMinDay = 3;
-  static const interstitialMinInterval = Duration(minutes: 2);
-  static const interstitialMaxPerDay = 12;
+  ///
+  /// 왜 이 값인가(docs/review/00_VERDICT.md §3 R1): 게임 내 하루가 약 2분이라
+  /// 최소 간격 2분은 "하루에 한 번" 과 같았고, D+3 은 첫 세션(약 10분) 안이었다.
+  /// 벤치마크에서 별점을 떨어뜨린 1순위가 광고 빈도다 — 첫 세션은 광고 없이 끝낸다.
+  static const interstitialMinDay = 7;
+  static const interstitialMinInterval = Duration(minutes: 6);
+  static const interstitialMaxPerDay = 6;
 
   /// 로드된 전면·리워드 광고는 약 1시간 뒤 만료된다(Google 안내). 여유를 두고 갈아 끼운다.
   static const _adMaxAge = Duration(minutes: 50);
@@ -81,6 +85,36 @@ class AdManager with WidgetsBindingObserver {
   bool _initializing = false;
   bool _consentDone = false;
   bool _showingFullScreen = false;
+
+  /// 전체 화면 광고를 띄운 시각. 표시 콜백(닫힘·표시 실패)이 끝내 오지 않으면
+  /// 플래그가 영원히 남아 그 세션의 광고가 전부 조용히 막힌다 — 시각을 함께 들고
+  /// 있다가 [_fullScreenBusy] 가 스스로 푼다.
+  DateTime? _showingSince;
+
+  /// 이 시간이 지나도록 콜백이 없으면 플래그가 잘못 남은 것으로 본다.
+  static const _showStuck = Duration(minutes: 2);
+
+  /// 지금 전체 화면 광고가 떠 있는가. 오래 남은 플래그는 여기서 푼다.
+  bool get _fullScreenBusy {
+    if (!_showingFullScreen) return false;
+    final since = _showingSince;
+    if (since == null || DateTime.now().difference(since) < _showStuck) {
+      return true;
+    }
+    debugPrint('전체 화면 광고 상태가 ${_showStuck.inMinutes}분 넘게 남아 있어 푼다.');
+    _endFullScreen();
+    return false;
+  }
+
+  void _beginFullScreen() {
+    _showingFullScreen = true;
+    _showingSince = DateTime.now();
+  }
+
+  void _endFullScreen() {
+    _showingFullScreen = false;
+    _showingSince = null;
+  }
 
   bool get consentDone => _consentDone;
   bool get sdkInitialized => _sdkInitialized;
@@ -256,6 +290,10 @@ class AdManager with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    // 광고 도중 앱이 죽었다 살아나면 표시 콜백이 유실된다. 읽는 것만으로 풀린다.
+    if (_fullScreenBusy) {
+      debugPrint('복귀 시점에 전체 화면 광고가 아직 떠 있는 것으로 돼 있다.');
+    }
     if (!_sdkInitialized) {
       // 첫 시도 때 동의 정보를 못 받아 canRequestAds 가 false 였을 수 있다.
       // 그대로 두면 그 세션 내내 광고가 하나도 안 뜨므로 복귀 때마다 다시 본다.
@@ -341,7 +379,7 @@ class AdManager with WidgetsBindingObserver {
 
   /// 전면 광고. 정책에 걸리거나 로드가 안 됐으면 즉시 false 로 끝나 흐름을 막지 않는다.
   Future<bool> showInterstitial({required int day}) async {
-    if (!supported || !_sdkInitialized || _showingFullScreen) return false;
+    if (!supported || !_sdkInitialized || _fullScreenBusy) return false;
     if (!canShowInterstitial(day)) return false;
     if (_interstitial.isStale(_adMaxAge)) _interstitial.discard();
     final ad = _interstitial.take();
@@ -354,28 +392,34 @@ class AdManager with WidgetsBindingObserver {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadInterstitial();
         if (!done.isCompleted) done.complete(true);
       },
       onAdFailedToShowFullScreenContent: (a, err) {
         debugPrint('전면 광고 표시 실패: ${err.message}');
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadInterstitial();
         if (!done.isCompleted) done.complete(false);
       },
     );
-    _showingFullScreen = true;
+    _beginFullScreen();
     _countInterstitial(DateTime.now());
     try {
       await ad.show();
     } catch (e) {
       debugPrint('전면 광고 show 예외: $e');
-      _showingFullScreen = false;
+      _endFullScreen();
       return false;
     }
-    return done.future;
+    // 콜백이 끝내 오지 않아도 여기서 풀린다(그 뒤의 광고까지 막히면 안 된다).
+    return done.future.timeout(_showStuck, onTimeout: () {
+      debugPrint('전면 광고 닫힘 콜백이 오지 않았다.');
+      _endFullScreen();
+      _loadInterstitial();
+      return false;
+    });
   }
 
   // ───────────────────────── 리워드 ─────────────────────────
@@ -414,28 +458,36 @@ class AdManager with WidgetsBindingObserver {
   /// [placement] 는 측정용 자리 이름(`heart_action` · `heart_home` · `hint` · `undo` ·
   /// `roulette` · `wait_skip`). 광고가 실제로 떴을 때만 `ad_rewarded_shown` 을 남긴다.
   Future<bool> showRewarded({String placement = 'unknown'}) async {
-    if (!supported || _showingFullScreen) return false;
-    if (!await _awaitRewarded()) return false;
+    if (!supported || _fullScreenBusy) return false;
+    // 대기(최대 8초) 전에 자리를 잡는다. 그 사이 전면 광고가 끼어들면 둘 중 하나가
+    // 표시 실패로 거절돼 "광고를 봤는데 보상이 없다" 가 된다(04 P2-2).
+    _beginFullScreen();
+    if (!await _awaitRewarded()) {
+      _endFullScreen();
+      return false;
+    }
     final ad = _rewarded.take();
-    if (ad == null) return false;
+    if (ad == null) {
+      _endFullScreen();
+      return false;
+    }
     final done = Completer<bool>();
     var earned = false;
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadRewarded();
         if (!done.isCompleted) done.complete(earned);
       },
       onAdFailedToShowFullScreenContent: (a, err) {
         debugPrint('리워드 광고 표시 실패: ${err.message}');
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadRewarded();
         if (!done.isCompleted) done.complete(false);
       },
     );
-    _showingFullScreen = true;
     Analytics.instance.log(Analytics.adRewardedShown, {'placement': placement});
     try {
       await ad.show(onUserEarnedReward: (_, reward) {
@@ -444,10 +496,16 @@ class AdManager with WidgetsBindingObserver {
       });
     } catch (e) {
       debugPrint('리워드 광고 show 예외: $e');
-      _showingFullScreen = false;
+      _endFullScreen();
       return false;
     }
-    return done.future;
+    return done.future.timeout(_showStuck, onTimeout: () {
+      debugPrint('리워드 광고 닫힘 콜백이 오지 않았다.');
+      _endFullScreen();
+      _loadRewarded();
+      // 끝까지 봤다면 보상은 준다 — 콜백 유실이 사용자 손해가 되면 안 된다.
+      return earned;
+    });
   }
 
   // ───────────────────────── 배너 ─────────────────────────

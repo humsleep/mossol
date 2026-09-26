@@ -27,6 +27,7 @@ import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
+import 'ui/intro_screen.dart';
 import 'ui/portraits.dart';
 import 'ui/scene_registry.dart';
 import 'ui/summary_screen.dart';
@@ -227,6 +228,11 @@ class _MossolAppState extends State<MossolApp> {
       home: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => switch (controller.phase) {
+          // 첫 실행에는 홈 대신 인트로(태현의 첫 문자)를 세운다. 인트로가 끝나면
+          // 곧바로 첫날이라 홈은 두 번째 세션부터 보인다(00_VERDICT §3).
+          Phase.home when controller.shouldShowIntro => IntroScreen(
+            c: controller,
+          ),
           Phase.home => HomeScreen(c: controller),
           Phase.dayStart => DayTransitionScreen(c: controller),
           Phase.action => ActionScreen(c: controller),

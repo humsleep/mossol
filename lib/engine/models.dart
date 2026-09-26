@@ -1086,6 +1086,13 @@ class GameConfig {
   /// 엔진·계획에는 들어가지 않는다(docs/overhaul/02_game_loop.md §2.2). 없으면 빈 목록.
   final List<String> chapterTitles;
 
+  /// 1회차 오프닝 중 하트를 쓰지 않는 날 수(`firstRunFreeHeartDays`, 선택). 기본 0 = 예전 그대로.
+  ///
+  /// 왜: 첫 세션이 D+5~6, 약 10분에 하트로 끊겨 첫 모먼트(전화·사진)를 보기 전에 끝났다
+  /// (docs/review/00_VERDICT.md §3 R4). `run == 1` 이고 `day <= 이 값` 인 아침만 공짜다.
+  /// [GameController.startDay] 한 곳에서만 본다 — 엔진·밸런스 시뮬레이터는 이 값을 모른다.
+  final int firstRunFreeHeartDays;
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -1096,6 +1103,7 @@ class GameConfig {
     this.earlyAffection = EarlyAffection.none,
     this.compatMultiplier = defaultCompatMultiplier,
     this.chapterTitles = const [],
+    this.firstRunFreeHeartDays = 0,
   });
 
   /// [chapter](1부터) 의 제목. 없거나 비어 있으면 null.
@@ -1129,6 +1137,11 @@ class GameConfig {
     chapterTitles: [
       for (final v in (j['chapterTitles'] as List?) ?? const []) '$v',
     ],
+    // 음수·이상한 값은 0(없음)으로 읽는다.
+    firstRunFreeHeartDays: switch (j['firstRunFreeHeartDays']) {
+      final num v when v > 0 => v.toInt(),
+      _ => 0,
+    },
   );
 }
 
@@ -1210,9 +1223,13 @@ class GameState {
   /// 필드가 없는 예전 세이브는 [Preference.all] 로 읽는다.
   final String preference;
 
-  /// 이 회차의 플레이어 MBTI(대문자 4글자). 새 게임 때 기기 설정(`PlayerMeta.mbti`)에서 복사해
-  /// 회차 내내 바뀌지 않는다(분기 일관성). 모름·건너뜀·예전 세이브는 null. docs/MBTI_SPEC.md §1.2.
-  final String? mbti;
+  /// 이 회차의 플레이어 MBTI(대문자 4글자). 새 게임 때 기기 설정(`PlayerMeta.mbti`)에서 복사한다.
+  /// 모름·건너뜀·예전 세이브는 null. docs/MBTI_SPEC.md §1.2.
+  ///
+  /// 회차 도중에 바뀌는 자리는 하나뿐이다: 온보딩에서 MBTI 를 묻지 않은 첫 회차가 D+4
+  /// `m_mbti_chat` 대화에서 처음 답할 때([GameController.adoptMbti]). 그때도 null → 값
+  /// 한 방향뿐이고, 이미 지나간 이벤트를 다시 거르지 않는다(00_VERDICT §3 R6).
+  String? mbti;
   final Map<String, int> stats;
   final Map<String, Relation> relations;
   final Set<String> flags;

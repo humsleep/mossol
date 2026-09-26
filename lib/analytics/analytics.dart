@@ -81,6 +81,8 @@ class Analytics {
   static const dayMilestones = {2, 3, 7, 10, 20, 30, 50, 70, 100};
 
   /// 온보딩 단계 이름(`onboarding_step{step}`).
+  /// [stepIntro] 는 첫 실행 인트로(태현의 첫 문자)가 떴을 때 — 홈을 건너뛴 경로다.
+  static const stepIntro = 'intro';
   static const stepGender = 'gender';
   static const stepName = 'name';
   static const stepMbti = 'mbti';
@@ -90,6 +92,9 @@ class Analytics {
   static const mbtiToggle = 'toggle';
   static const mbtiQuiz = 'quiz';
   static const mbtiSkip = 'skip';
+
+  /// 인트로에서는 MBTI 를 아예 묻지 않았다(D+4 대화에서 묻는다). `skip` 과 구분한다.
+  static const mbtiLater = 'later';
 
   // ---- 보내기 ----
 

@@ -24,6 +24,8 @@ void main() {
   group('행동 화면', () {
     testWidgets('하트 0 이면 행동 탭 시 다이얼로그가 뜬다', (tester) async {
       c.state!
+        // 1회차 오프닝(D+1~3)은 하트를 쓰지 않는다 — 하트 벽은 그다음 날부터다.
+        ..day = c.config.firstRunFreeHeartDays + 1
         ..hearts = 0
         ..lastHeartMs = DateTime.now().millisecondsSinceEpoch
         ..rouletteDay = c.state!.day; // 룰렛 시트는 이미 돌린 걸로.

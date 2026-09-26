@@ -652,6 +652,8 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final c = GameController(bundle: testBundle(), save: SaveService());
       await c.init();
+      // 홈에서 시작하는 흐름(두 번째 세션 이후). 첫 실행 인트로는 intro_test 가 본다.
+      await c.markIntroSeen();
       return c;
     }
 

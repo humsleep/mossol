@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../ads/ad_manager.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
@@ -201,33 +200,31 @@ class _ActionScreenState extends State<ActionScreen> {
     // 하트가 비었다. 다그치지 않고 "오늘은 여기까지" 로 쉬어 가게 한다. 1차 동작은
     // 기다리기이고 광고는 조용한 2차 선택지다 — 광고를 저절로 띄우지 않는다.
     // 측정(heart_empty)은 컨트롤러 startDay 가 남긴다.
-    final watch = await showAppDialog<bool>(
+    // 광고는 다이얼로그를 닫기 전에 부른다 — 닫고 나서 부르면 그 8초 동안 행동 목록이
+    // 살아 있어 다른 행동이 눌린다. 대기 중에는 스피너 + 기다릴게요 잠금, 실패하면
+    // 다이얼로그 안에 한 줄(모달 위에서는 스낵바가 가린다).
+    final watched = await showAppDialog<bool>(
       context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(heartEmptyTitle),
-        content: Text(keepAll(heartEmptyBody(c.secondsToNextHeart))),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('광고 보고 하트 받기'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('기다릴게요'),
-          ),
-        ],
+      builder: (ctx) => RewardedBusyScope(
+        child: AlertDialog(
+          title: const Text(heartEmptyTitle),
+          content: Text(keepAll(heartEmptyBody(c.secondsToNextHeart))),
+          actions: [
+            RewardedButton(
+              placement: 'heart_action',
+              label: '광고 보고 하트 받기',
+              inline: true,
+              onEarned: () => Navigator.pop(ctx, true),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('기다릴게요'),
+            ),
+          ],
+        ),
       ),
     );
-    if (watch != true) return;
-    final earned = await AdManager.instance.showRewarded(
-      placement: 'heart_action',
-    );
-    if (earned) {
-      await c.grantHeart();
-    } else if (context.mounted) {
-      adFailedSnack(context);
-    }
+    if (watched == true) await c.grantHeart();
   }
 }
 

@@ -260,6 +260,29 @@ void main() {
       expect(r.decision, MatchDecision.auto);
     });
 
+    test('선택지를 그대로 적고 말끝만 붙이면 확인 없이 확정(01 D-4)', () {
+      // "직접 쓰기" 가 늘 2탭이면 선택지를 그냥 누르는 편이 빠르다 — 쓸 이유가 사라진다.
+      final r = m.match('생각해 볼게 일단', visible);
+      expect(r.top!.index, 2);
+      expect(r.top!.exact, isFalse);
+      expect(r.top!.near, isTrue);
+      expect(r.decision, MatchDecision.auto);
+      // 문구를 품지 않은 보통 입력은 그대로 — 임계값이 판단한다.
+      expect(m.match('음 글쎄 잘 모르겠네', visible).top!.near, isFalse);
+      // 짧은 문구가 아무 문장에나 걸리면 안 된다.
+      final short = StoryEvent.fromJson({
+        'id': 't_short',
+        'layer': 'daily',
+        'title': 't',
+        'choices': [
+          {'text': '응', 'reply': 'ㅇㅋ'},
+          {'text': '아니 오늘은 좀 쉴래', 'reply': '그래'},
+        ],
+      });
+      final sv = engine.choicesFor(state, short);
+      expect(m.match('응 그래서 내일은 뭐 해', sv).top!.near, isFalse);
+    });
+
     test('빈 입력·이모지·자음만 → empty/pick, 금칙어 → blocked, 되돌리기 뒤 → pick', () {
       expect(m.match('', visible).decision, MatchDecision.empty);
       expect(m.match('😂', visible).decision, MatchDecision.empty);
@@ -350,6 +373,43 @@ void main() {
       final b = ChoiceSignature.build(tuned);
       expect(b.textGrams.length, greaterThan(a.textGrams.length));
       expect(b.tags, contains(Intent.love));
+    });
+
+    test('금칙어 코퍼스: 평범한 한국어는 통과, 진짜 욕은 막는다 (회귀)', () {
+      // 공백을 뺀 문장 전체에 contains 를 돌리던 시절 8/8 이 차단됐다(04 P1-3).
+      // 3연속이면 그 이벤트의 자유 입력이 사라지므로 오탐은 기능 상실이다.
+      const pass = [
+        '아니 미안, 내가 늦었어',
+        '언니 미안해',
+        '새끼손가락 걸고 약속',
+        '한강 간다',
+        '건강 간식 챙겨',
+        '역시 발이 아파',
+        '개새벽에 일어났어',
+        '전화가 꺼져 있었어',
+        // 덤: 사전이 낱말 경계로 보는지 함께 지킨다.
+        '운명인가 보지',
+        '읽씹 당했어',
+        '보자 지금 몇 시야',
+      ];
+      for (final t in pass) {
+        expect(isBlocked(t), isFalse, reason: t);
+      }
+      const block = [
+        '시발 가자',
+        '씨 발',
+        'ㅅㅂ',
+        'ㅅ ㅂ',
+        '병신아',
+        '씨발놈아',
+        '이 새끼야',
+        '지랄하지 마',
+        '꺼져라',
+        'fuck you',
+      ];
+      for (final t in block) {
+        expect(isBlocked(t), isTrue, reason: t);
+      }
     });
 
     test('서명 캐시는 키가 같으면 재사용', () {

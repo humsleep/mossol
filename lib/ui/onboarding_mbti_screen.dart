@@ -514,3 +514,105 @@ class _MbtiQuizScreenState extends State<MbtiQuizScreen> {
     );
   }
 }
+
+/// D+4 `m_mbti_chat` 대화 안에서 MBTI 를 묻는 시트(docs/review/00_VERDICT.md §3 R6).
+///
+/// 첫 회차는 온보딩에서 MBTI 를 묻지 않는다 — 첫 문자까지의 탭을 줄이는 쪽이 먼저다.
+/// 대신 친구가 "너는?" 하고 묻는 D+4 대화에서 이 시트가 올라온다. 고르는 방식은
+/// [OnboardingMbtiScreen] 과 같은 축 토글([MbtiAxisOption])이고, 간이 테스트는 없다
+/// (대화 도중에 화면을 갈아탈 자리가 아니다 — 설정에서 언제든 다시 할 수 있다).
+///
+/// 결과: `(type: 'INFP')` 고름 · `(type: null)` 모름 · `null` 바깥을 눌러 닫음(아무것도 저장 안 함).
+class MbtiSheet extends StatefulWidget {
+  const MbtiSheet({super.key});
+
+  static const title = '나? 알려 주면';
+  static const subtitle = '몇몇 장면과 대사, 캐릭터와의 궁합이 달라져요';
+  static const submitLabel = '이게 나야';
+  static const skipLabel = '나도 몰라';
+
+  /// 시트를 띄우고 답을 돌려준다. 바깥을 누르면 null(이번 대화에서는 더 묻지 않는다).
+  static Future<({String? type})?> ask(BuildContext context) =>
+      showModalBottomSheet<({String? type})>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => const MbtiSheet(),
+      );
+
+  @override
+  State<MbtiSheet> createState() => _MbtiSheetState();
+}
+
+class _MbtiSheetState extends State<MbtiSheet> {
+  final List<String?> _picks = List.filled(4, null);
+
+  String? get _type => OnboardingMbtiScreen.typeOf(_picks);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final type = _type;
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: AppInsets.panel,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(keepAll(MbtiSheet.title), style: context.text.titleLarge),
+            const SizedBox(height: AppSpace.xs),
+            Text(
+              keepAll(MbtiSheet.subtitle),
+              style: context.text.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpace.lg),
+            for (final (i, (a, b)) in OnboardingMbtiScreen.axes.indexed)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : AppSpace.gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (j, side) in [a, b].indexed) ...[
+                        if (j > 0) const SizedBox(width: AppSpace.sm),
+                        Expanded(
+                          child: MbtiAxisOption(
+                            key: Key('mbti-${side.letter}'),
+                            side: side,
+                            selected: _picks[i] == side.letter,
+                            onTap: () =>
+                                setState(() => _picks[i] = side.letter),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpace.lg),
+            FilledButton(
+              key: const Key('mbti-sheet-submit'),
+              onPressed: type == null
+                  ? null
+                  : () => Navigator.pop(context, (type: type)),
+              child: const Text(MbtiSheet.submitLabel),
+            ),
+            const SizedBox(height: AppSpace.xs),
+            TextButton(
+              key: const Key('mbti-sheet-skip'),
+              onPressed: () => Navigator.pop(context, (type: null)),
+              style: TextButton.styleFrom(
+                foregroundColor: scheme.onSurfaceVariant,
+              ),
+              child: const Text(MbtiSheet.skipLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
