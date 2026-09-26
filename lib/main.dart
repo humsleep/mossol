@@ -61,7 +61,10 @@ Future<void> main() async {
     }
     final controller = GameController(bundle: bundle, save: SaveService());
     await controller.init();
-    unawaited(AdManager.instance.init());
+    // 첫 실행이면 광고·ATT 를 인트로가 끝난 뒤에 켠다. 앱을 열자마자 추적 동의 팝업이
+    // 태현의 첫 문자를 덮으면 연출이 죽고, 무슨 앱인지도 모르는 채 답하게 된다.
+    // 인트로 동안에는 광고가 한 장도 안 나오므로 미뤄도 잃는 것이 없다.
+    if (!controller.shouldShowIntro) unawaited(AdManager.instance.init());
     runApp(MossolApp(controller: controller));
   } catch (e, stack) {
     // 여기서 죽으면 유저는 흰 화면만 본다. 이유를 보여 주고 빠져나갈 길을 준다.

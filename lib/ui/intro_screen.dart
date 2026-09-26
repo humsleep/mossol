@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../analytics/analytics.dart';
+import '../ads/ad_manager.dart';
 import '../audio/sfx_service.dart';
 import '../engine/models.dart';
 import '../engine/player_name.dart';
@@ -53,6 +54,10 @@ class IntroScreen extends StatefulWidget {
 
   static const genderQuestion = '아 맞다, 너는?';
   static const genderNote = OnboardingGenderScreen.note;
+
+  /// 성별을 묻는 태현의 말. 온보딩 화면의 부제(`만나게 될 사람들이 달라져요`)는
+  /// 존댓말이라 반말을 쓰는 태현의 말풍선에 그대로 넣으면 말투가 깨진다.
+  static const genderAsk = '누가 먼저 말 걸지가 달라지거든';
   static const sideQuestion = '그럼 누구부터 소개해 줄까?';
   static const startReply = '좋아. 그럼 시작이다';
 
@@ -165,7 +170,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _say(n);
       _them('$n. 외웠다');
       _them(IntroScreen.genderQuestion);
-      _them(OnboardingGenderScreen.subtitle);
+      _them(IntroScreen.genderAsk);
       _step = IntroStep.gender;
     });
     c.logOnboardingStep(Analytics.stepGender);
@@ -177,7 +182,7 @@ class _IntroScreenState extends State<IntroScreen> {
     setState(() {
       _them(IntroScreen.nameSkipReply);
       _them(IntroScreen.genderQuestion);
-      _them(OnboardingGenderScreen.subtitle);
+      _them(IntroScreen.genderAsk);
       _step = IntroStep.gender;
     });
     c.logOnboardingStep(Analytics.stepGender);
@@ -226,6 +231,8 @@ class _IntroScreenState extends State<IntroScreen> {
     final n = _pickedName;
     n == null ? await c.skipPlayerName() : await c.setPlayerName(n);
     await c.markIntroSeen();
+    // 이제야 ATT·동의 폼을 띄운다(main 이 첫 실행에서는 미뤄 뒀다).
+    unawaited(AdManager.instance.init());
     // MBTI 는 D+4 대화에서 묻는다(mbtiAsked 를 여기서 세우지 않는다).
     c.logOnboardingDone(
       preference: preference,

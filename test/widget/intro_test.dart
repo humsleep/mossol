@@ -63,7 +63,9 @@ void main() {
     expect(findText(IntroScreen.genderQuestion), findsOneWidget);
 
     // 4탭: "나는?" 의 기존 문구 그대로. 남자 → 여성 캐릭터 회차.
-    expect(findText(OnboardingGenderScreen.subtitle), findsWidgets);
+    // 태현은 반말을 쓴다 — 온보딩 화면의 존댓말 부제를 말풍선에 그대로 넣지 않는다.
+    expect(findText(IntroScreen.genderAsk), findsWidgets);
+    expect(findText(OnboardingGenderScreen.subtitle), findsNothing);
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
     // 마지막 답 뒤 태현의 한 줄을 읽는 사이에 첫날이 열린다.
     await tester.pump(IntroScreen.startDelay);
