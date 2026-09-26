@@ -1,0 +1,101 @@
+
+=========== 선호 f · 시드 300 · D+1~D+20 ===========
+층별 이벤트 총합: {main: 2700, daily: 10166, route: 6000, crisis: 27, hidden: 14}
+  main: 2700 (14.3%)
+  daily: 10166 (53.8%)
+  route: 6000 (31.7%)
+  crisis: 27 (0.1%)
+  hidden: 14 (0.1%)
+회차당 이벤트 63.0개, 하루 3.15개
+메인 이벤트가 있는 날: 1,2,4,5,8,11,14,17,20 (20일 중 9일)
+d_open_bet(100일 내기)를 D+1~3 안에 본 회차: 209/300 (69.7%)
+회차당 d_open_* 오프닝 이벤트 5.8개 / 12개
+회차당 등장 캐릭터 3.7명, 서로 다른 일상 27.8개
+같은 일상 이벤트를 20일 안에 2번 이상 본 회차: 300/300 (100.0%) · 중복 개수 분포 {1: 3, 2: 28, 3: 91, 4: 98, 5: 62, 6: 15, 7: 3}
+뒤풀이 루트(seoyeon_r03/r14)가 m07 뒤풀이보다 뒤에 온 회차: 237/237
+--- 캐릭터별 "첫 등장 장면" 분포 (소개 장면이 아닌 것에 ✗) ---
+  daeun (등장 291회): daeun_r00 257, daeun_r01 34
+      소개 장면 없이 시작: 0/291 (0.0%)
+  seoyeon (등장 295회): seoyeon_r00 253, seoyeon_r01 41, ✗mo_seoyeon_photo_night 1
+      소개 장면 없이 시작: 1/295 (0.3%)
+  sohee (등장 227회): sohee_r00 205, sohee_r01 22
+      소개 장면 없이 시작: 0/227 (0.0%)
+  yeeun (등장 223회): yeeun_r00 194, yeeun_r01 29
+      소개 장면 없이 시작: 0/223 (0.0%)
+  yuna (등장 85회): yuna_r01 85
+      소개 장면 없이 시작: 0/85 (0.0%)
+
+=========== 선호 m · 시드 300 · D+1~D+20 ===========
+층별 이벤트 총합: {main: 2700, daily: 10150, route: 6000, crisis: 39, hidden: 16}
+  main: 2700 (14.3%)
+  daily: 10150 (53.7%)
+  route: 6000 (31.7%)
+  crisis: 39 (0.2%)
+  hidden: 16 (0.1%)
+회차당 이벤트 63.0개, 하루 3.15개
+메인 이벤트가 있는 날: 1,2,4,5,8,11,14,17,20 (20일 중 9일)
+d_open_bet(100일 내기)를 D+1~3 안에 본 회차: 209/300 (69.7%)
+회차당 d_open_* 오프닝 이벤트 5.8개 / 12개
+회차당 등장 캐릭터 3.7명, 서로 다른 일상 28.2개
+같은 일상 이벤트를 20일 안에 2번 이상 본 회차: 300/300 (100.0%) · 중복 개수 분포 {1: 7, 2: 44, 3: 99, 4: 97, 5: 38, 6: 14, 7: 1}
+뒤풀이 루트(seoyeon_r03/r14)가 m07 뒤풀이보다 뒤에 온 회차: 0/0
+--- 캐릭터별 "첫 등장 장면" 분포 (소개 장면이 아닌 것에 ✗) ---
+  doyun (등장 77회): doyun_r01 77
+      소개 장면 없이 시작: 0/77 (0.0%)
+  geonwoo (등장 228회): geonwoo_r00 201, geonwoo_r01 27
+      소개 장면 없이 시작: 0/228 (0.0%)
+  haneul (등장 296회): haneul_r00 259, haneul_r01 37
+      소개 장면 없이 시작: 0/296 (0.0%)
+  jeongwoo (등장 290회): jeongwoo_r00 251, jeongwoo_r01 37, ✗mo_jeongwoo_preview_cancel 2
+      소개 장면 없이 시작: 2/290 (0.7%)
+  minjae (등장 212회): minjae_r00 185, minjae_r01 27
+      소개 장면 없이 시작: 0/212 (0.0%)
+일상(daily) 이벤트 123개, 가중치 합 468
+
+=== 선호 f · 시드 300 ===
+오프닝 훅 플래그가 세워진 회차: {stranger_laugh: 118}
+그 훅의 후속편(d_fu_*)이 D+20 안에 실제로 나온 회차: {d_fu_stranger: 117}
+캐스트(12명) 중 아무도 안 나오는 날: 0/6000 (0.0%)
+루트 이벤트가 하나도 없는 날: 0/6000 (0.0%)
+클리프행어 없이 끝난 날: 1639/6000 (27.3%)
+  daeun 첫 등장: 291/300 회차 · 중간값 D+2 · 최소 D+1 최대 D+9
+  seoyeon 첫 등장: 300/300 회차 · 중간값 D+2 · 최소 D+1 최대 D+4
+  sohee 첫 등장: 227/300 회차 · 중간값 D+2 · 최소 D+1 최대 D+15
+  yeeun 첫 등장: 223/300 회차 · 중간값 D+2 · 최소 D+1 최대 D+19
+  yuna 첫 등장: 85/300 회차 · 중간값 D+8 · 최소 D+5 최대 D+19
+
+=== 선호 f · 시드 300 · D+1~D+20 ===
+루트 이벤트 6000개 중 "번호가 뒤로 간" 경우 597개 (9.9%)
+한 번 이상 역행이 일어난 회차: 290/300 (96.7%)
+같은 사람이 다시 연락해 오기까지 걸린 날: 중간값 2일, p90 4일, 최대 18일
+가장 흔한 역행 (상위 12):
+   seoyeon: r13 뒤에 r5 — MapEntry(seoyeon: r13 뒤에 r5: 219).value회
+   seoyeon: r13 뒤에 r3 — MapEntry(seoyeon: r13 뒤에 r3: 141).value회
+   yeeun: r14 뒤에 r4 — MapEntry(yeeun: r14 뒤에 r4: 45).value회
+   yeeun: r14 뒤에 r5 — MapEntry(yeeun: r14 뒤에 r5: 44).value회
+   seoyeon: r2 뒤에 r1 — MapEntry(seoyeon: r2 뒤에 r1: 24).value회
+   seoyeon: r13 뒤에 r4 — MapEntry(seoyeon: r13 뒤에 r4: 24).value회
+   seoyeon: r13 뒤에 r2 — MapEntry(seoyeon: r13 뒤에 r2: 12).value회
+   seoyeon: r14 뒤에 r3 — MapEntry(seoyeon: r14 뒤에 r3: 11).value회
+   seoyeon: r5 뒤에 r3 — MapEntry(seoyeon: r5 뒤에 r3: 10).value회
+   daeun: r3 뒤에 r2 — MapEntry(daeun: r3 뒤에 r2: 9).value회
+   seoyeon: r13 뒤에 r1 — MapEntry(seoyeon: r13 뒤에 r1: 8).value회
+   yeeun: r2 뒤에 r1 — MapEntry(yeeun: r2 뒤에 r1: 7).value회
+
+=== 선호 m · 시드 300 · D+1~D+20 ===
+루트 이벤트 6000개 중 "번호가 뒤로 간" 경우 1088개 (18.1%)
+한 번 이상 역행이 일어난 회차: 300/300 (100.0%)
+같은 사람이 다시 연락해 오기까지 걸린 날: 중간값 2일, p90 4일, 최대 19일
+가장 흔한 역행 (상위 12):
+   haneul: r13 뒤에 r5 — MapEntry(haneul: r13 뒤에 r5: 268).value회
+   jeongwoo: r13 뒤에 r4 — MapEntry(jeongwoo: r13 뒤에 r4: 215).value회
+   haneul: r13 뒤에 r6 — MapEntry(haneul: r13 뒤에 r6: 199).value회
+   jeongwoo: r13 뒤에 r5 — MapEntry(jeongwoo: r13 뒤에 r5: 181).value회
+   geonwoo: r14 뒤에 r13 — MapEntry(geonwoo: r14 뒤에 r13: 39).value회
+   geonwoo: r14 뒤에 r4 — MapEntry(geonwoo: r14 뒤에 r4: 36).value회
+   jeongwoo: r13 뒤에 r3 — MapEntry(jeongwoo: r13 뒤에 r3: 28).value회
+   jeongwoo: r2 뒤에 r1 — MapEntry(jeongwoo: r2 뒤에 r1: 25).value회
+   haneul: r13 뒤에 r4 — MapEntry(haneul: r13 뒤에 r4: 19).value회
+   jeongwoo: r14 뒤에 r5 — MapEntry(jeongwoo: r14 뒤에 r5: 12).value회
+   jeongwoo: r13 뒤에 r2 — MapEntry(jeongwoo: r13 뒤에 r2: 7).value회
+   minjae: r13 뒤에 r5 — MapEntry(minjae: r13 뒤에 r5: 6).value회
