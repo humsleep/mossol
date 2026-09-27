@@ -148,9 +148,19 @@ class EventEngine {
   /// 이 회차 플레이어와 캐릭터 [id] 의 궁합 점수(0~4). 어느 쪽이든 MBTI 가 없으면 2.
   int compatWith(GameState s, String? id) => Mbti.compat(s.mbti, mbtiOf(id));
 
-  /// [ev] 를 볼 플레이어(MBTI + 이벤트 캐릭터와의 궁합).
+  /// [ev] 에서 **말하는 상대**. 줄 조건 `humor`·`register` 가 이 사람을 본다.
+  ///
+  /// 해소 규칙은 `{top}` 의 이름 규칙([topNameFor])과 **글자 그대로 같다** —
+  /// 1) 호감 1위 → 2) 이벤트가 지목한 캐릭터 → 3) null(화면에서는 "그 사람").
+  /// 같아야 하는 이유: 말풍선 머리에 "지우" 라고 찍히는데 대사는 다른 사람의 농담 코드로
+  /// 골라지면 이 기능이 고치려던 바로 그 어긋남이 자리만 옮긴 것이 된다.
+  CharacterDef? voiceOf(GameState s, StoryEvent ev) =>
+      bundle.characterById[topCharacter(s)] ??
+      bundle.characterById[ev.character];
+
+  /// [ev] 를 볼 시점(플레이어 MBTI + 이벤트 캐릭터와의 궁합 + 상대 목소리).
   MbtiView mbtiView(GameState s, StoryEvent ev) =>
-      MbtiView(s.mbti, compat: compatWith(s, ev.character));
+      MbtiView.of(s.mbti, mbtiOf(ev.character), voice: voiceOf(s, ev));
 
   /// [ev] 를 이 회차 플레이어에게 보이는 줄·선택지만 남긴 사본. 조건이 없으면 원본.
   /// 선택지 인덱스·힌트는 거른 목록 기준이다. `GameController.current` 가 이것이다.
@@ -179,11 +189,21 @@ class EventEngine {
   /// `applyChoice` 에서만 올라가고, 그때 그 장면은 이미 끝난다. `GameController.current`
   /// 는 넣을 때 한 번만 거르므로 화면에 뜬 대사가 도중에 바뀌지 않는다.
   StoryEvent variantOf(GameState s, StoryEvent ev) {
-    if (ev.variants.isEmpty) return ev;
+    final i = variantIndexOf(s, ev);
+    return i == 0 ? ev : ev.withLines(ev.variants[i - 1]);
+  }
+
+  /// [variantOf] 가 고를 대본의 번호(0 = 원본). 회전 공식은 한 군데만 둔다.
+  ///
+  /// 밖으로 낸 이유: 변형이 붙은 뒤에도 `StoryEvent.id` 는 그대로라, id 로 세는 계측은
+  /// **변형을 아예 못 본다.** 재방송 비율이 그 함정에 빠져 있었다(같은 id 를 두 번 읽으면
+  /// 대사가 전부 달라도 재방송으로 셌다 — docs/review/13_content_fixes.md).
+  /// 그래서 "플레이어가 실제로 다시 읽은 것" 을 세려면 id 가 아니라 `id#번호` 여야 한다.
+  int variantIndexOf(GameState s, StoryEvent ev) {
+    if (ev.variants.isEmpty) return 0;
     final n = ev.variants.length + 1;
     final start = stableSeed(s.seed, 0, 'variant:${ev.id}') % n;
-    final i = (start + viewsOf(s, ev)) % n;
-    return i == 0 ? ev : ev.withLines(ev.variants[i - 1]);
+    return (start + viewsOf(s, ev)) % n;
   }
 
   /// 캐릭터 [id] 호감이 오를 때 곱할 궁합 배율(config.mbti.compatMultiplier).

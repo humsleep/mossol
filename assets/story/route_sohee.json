@@ -314,7 +314,10 @@
      },
      "setFlags": [
       "sohee_guild"
-     ]
+     ],
+     "affection": {
+      "*": -1
+     }
     },
     "reply": [
      "ㅋㅋㅋㅋ 신입이 판 읽네",
@@ -435,7 +438,8 @@
     "critReply": [
      "야 그렇게 물어보면 울 것 같잖아",
      "성우 공채. 네 번째. 이제 너만 앎"
-    ]
+    ],
+    "failNext": "mo_fail_misread"
    },
    {
     "text": "그래 한 판 하자",
@@ -1794,7 +1798,8 @@
     "critReply": [
      "{name|아야}, 방금 나 진짜 몰입했다",
      "네 앞에서 하니까 연기가 보이는 것 같아"
-    ]
+    ],
+    "failNext": "mo_fail_call_cut"
    },
    {
     "text": "여섯 줄 다 외워서 갈게",

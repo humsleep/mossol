@@ -3039,7 +3039,8 @@
       "name": "태현",
       "text": "누구세요? ㅋㅋ 아니 진짜 누군데"
      }
-    ]
+    ],
+    "failNext": "mo_fail_mirror_shot"
    }
   ],
   "hint": 2

@@ -4,8 +4,18 @@
 /// - 조건 글자열(`"I"`, `"NF"`, `"ESTJ"`): 적힌 글자가 모두 플레이어 유형에 있어야 참,
 ///   플레이어가 null 이면 항상 거짓([Mbti.matches]).
 /// - 궁합([Mbti.compat]): 0~4. 플레이어나 캐릭터가 null 이면 2(보통).
-/// - 거르기([MbtiFilter.forMbti]): 줄·선택지·반응 줄의 `mbti`/`noMbti`/`compat` 을 보고
-///   화면에 낼 사본을 만든다. 조건이 하나도 없는 이벤트는 원본을 그대로 돌려준다.
+/// - 거르기([MbtiFilter.forMbti]): 줄·선택지·반응 줄의 조건을 보고 화면에 낼 사본을 만든다.
+///   조건이 하나도 없는 이벤트는 원본을 그대로 돌려준다.
+///
+/// 조건은 **축 두 개**다. 이 파일이 둘 다 맡는 이유는 거르는 곳이 한 곳이기 때문이다.
+///
+/// | 축 | 필드 | 보는 것 |
+/// |---|---|---|
+/// | 플레이어 | `mbti` · `noMbti` · `compat` | 이 회차 플레이어의 MBTI, 이벤트 캐릭터와의 궁합 |
+/// | 상대 목소리 | `humor` · `register` | **호감 1위**([MbtiView.humor] · [MbtiView.politeness]) |
+///
+/// 상대 축은 `character` 가 없는 씬(고백·첫 싸움·화해처럼 12명 중 누구와도 열리는 장면)을 위해
+/// 있다. 자세한 사정은 docs/review/13_engine_fixes.md, 요청 원문은 12_main_rewrite.md §5.3.
 library;
 
 import 'models.dart';
@@ -110,8 +120,8 @@ class Mbti {
   static String compatLabel(int score) =>
       compatLabels[score.clamp(0, maxCompat)];
 
-  /// 줄·선택지 하나의 조건이 이 플레이어에게 열리는지.
-  /// [compatScore] 는 이벤트 캐릭터와의 궁합 점수.
+  /// 줄·선택지 하나의 **플레이어 축** 조건이 이 회차에 열리는지.
+  /// [compatScore] 는 이벤트 캐릭터와의 궁합 점수. 상대 축은 [MbtiView._allowsVoice].
   static bool allows({
     required String? player,
     required int compatScore,
@@ -126,32 +136,71 @@ class Mbti {
   }
 }
 
-/// 한 이벤트를 볼 플레이어: MBTI 와 그 이벤트 캐릭터와의 궁합 점수.
+/// 한 이벤트를 **지금 화면에 낼 시점**: 플레이어(MBTI·궁합)와 상대 목소리(1위의 농담 코드·말높임).
+///
+/// 이름은 처음 MBTI 만 보던 때 그대로 두었다 — 거르는 자리가 한 곳이라 여기에 축을 더하는 것이
+/// 두 번째 거르개를 만드는 것보다 안전하다(빠뜨릴 자리가 늘지 않는다).
 class MbtiView {
   final String? player;
   final int compat;
 
-  const MbtiView(this.player, {this.compat = Mbti.neutralCompat});
+  /// 호감 1위의 농담 코드. 1위가 없으면 [Humor.fallback] — `{top}` 이 "그 사람" 이 되는 회차다.
+  /// 기본값을 두는 이유: 그래야 `humor` 조건이 **전함수**가 되어 다섯 값만 덮으면 빈 화면이 없다.
+  final String humor;
 
-  /// [player] 와 캐릭터 MBTI [characterMbti] 로 만든다.
-  factory MbtiView.of(String? player, String? characterMbti) =>
-      MbtiView(player, compat: Mbti.compat(player, characterMbti));
+  /// 호감 1위의 말높임. 1위가 없으면 [Politeness.casual](12명 중 9명).
+  final String politeness;
 
-  bool allowsLine(Line l) => Mbti.allows(
-    player: player,
-    compatScore: compat,
-    mbti: l.mbti,
-    noMbti: l.noMbti,
-    compat: l.compat,
+  const MbtiView(
+    this.player, {
+    this.compat = Mbti.neutralCompat,
+    this.humor = Humor.fallback,
+    this.politeness = Politeness.casual,
+  });
+
+  /// [player] 와 캐릭터 MBTI [characterMbti], 그리고 이 씬에서 말하는 상대 [voice] 로 만든다.
+  /// [voice] 는 `{top}` 이 이름을 꺼내는 바로 그 사람이어야 한다(`EventEngine.voiceOf`) —
+  /// 말풍선 머리에 "지우" 라고 찍히면서 대사를 서연 몫으로 고르면 안 된다.
+  factory MbtiView.of(
+    String? player,
+    String? characterMbti, {
+    CharacterDef? voice,
+  }) => MbtiView(
+    player,
+    compat: Mbti.compat(player, characterMbti),
+    humor: switch (voice?.humor) {
+      final String h when h.isNotEmpty => h,
+      _ => Humor.fallback,
+    },
+    politeness: voice?.politeness ?? Politeness.casual,
   );
 
-  bool allowsChoice(Choice c) => Mbti.allows(
-    player: player,
-    compatScore: compat,
-    mbti: c.mbti,
-    noMbti: c.noMbti,
-    compat: c.compat,
-  );
+  /// 상대 축 조건. 빈 목록·null 은 조건 없음.
+  bool _allowsVoice(List<String> humorCond, String? register) {
+    if (humorCond.isNotEmpty && !humorCond.contains(humor)) return false;
+    if (register != null && register != politeness) return false;
+    return true;
+  }
+
+  bool allowsLine(Line l) =>
+      Mbti.allows(
+        player: player,
+        compatScore: compat,
+        mbti: l.mbti,
+        noMbti: l.noMbti,
+        compat: l.compat,
+      ) &&
+      _allowsVoice(l.humor, l.register);
+
+  bool allowsChoice(Choice c) =>
+      Mbti.allows(
+        player: player,
+        compatScore: compat,
+        mbti: c.mbti,
+        noMbti: c.noMbti,
+        compat: c.compat,
+      ) &&
+      _allowsVoice(c.humor, c.register);
 
   List<Line> lines(List<Line> ls) => ls.any((l) => l.isGated)
       ? [
@@ -162,16 +211,29 @@ class MbtiView {
 }
 
 extension MbtiFilter on StoryEvent {
-  /// 줄·선택지·반응 줄 중 MBTI·궁합 조건이 붙은 것이 있는지.
-  bool get hasMbtiGates =>
-      lines.any((l) => l.isGated) ||
+  /// 줄·선택지·반응 줄 중 [onLine]·[onChoice] 에 걸리는 것이 있는지.
+  /// 변형 대사([StoryEvent.variants])도 본다 — 검증기가 변형 묶음까지 덮어야 하기 때문이다.
+  bool _anyGate(bool Function(Line) onLine, bool Function(Choice) onChoice) =>
+      lines.any(onLine) ||
+      variants.any((v) => v.any(onLine)) ||
       choices.any(
         (c) =>
-            c.isGated ||
-            c.reply.any((l) => l.isGated) ||
-            c.failReply.any((l) => l.isGated) ||
-            c.critReply.any((l) => l.isGated),
+            onChoice(c) ||
+            c.reply.any(onLine) ||
+            c.failReply.any(onLine) ||
+            c.critReply.any(onLine),
       );
+
+  /// 조건이 붙은 줄·선택지가 하나라도 있는지.
+  bool get hasMbtiGates => _anyGate((l) => l.isGated, (c) => c.isGated);
+
+  /// 플레이어 축(`mbti`·`noMbti`·`compat`) 조건이 있는지.
+  bool get hasPlayerGates =>
+      _anyGate((l) => l.isPlayerGated, (c) => c.isPlayerGated);
+
+  /// 상대 축(`humor`·`register`) 조건이 있는지.
+  bool get hasVoiceGates =>
+      _anyGate((l) => l.isVoiceGated, (c) => c.isVoiceGated);
 
   /// [v] 플레이어에게 보이는 사본. 맞지 않는 줄·선택지·반응 줄을 빼고, 힌트 인덱스를
   /// 남은 선택지 기준으로 다시 맞춘다(힌트 선택지가 빠지면 null). 조건이 없으면 원본.

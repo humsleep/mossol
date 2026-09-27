@@ -5297,7 +5297,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "요즘 말투가 좀 달라진 것 같은데"
+      "text": "요즘 말투가 좀 달라진 것 같은데",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 말투가 좀 달라진 것 같은데요",
+      "register": "polite"
      }
     ]
    },
@@ -5324,7 +5331,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "이게 더 원래 모습 같고"
+      "text": "이게 더 원래 모습 같고",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이게 더 원래 모습 같고요",
+      "register": "polite"
      }
     ],
     "failReply": [
@@ -5335,7 +5349,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "폰만 보고 있었는지"
+      "text": "폰만 보고 있었어?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "폰만 보고 있었어요?",
+      "register": "polite"
      }
     ],
     "critReply": [
@@ -5347,7 +5368,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "요즘 얘기하는 게 제일 편해서"
+      "text": "요즘 얘기하는 게 제일 편해서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 얘기하는 게 제일 편해서요",
+      "register": "polite"
      }
     ]
    },
@@ -5373,7 +5401,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "근데 그건 누구한테 배운 건지"
+      "text": "근데 그건 누구한테 배운 건지",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "근데 그건 누구한테 배운 거예요",
+      "register": "polite"
      }
     ]
    }
@@ -6250,12 +6285,56 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "괜찮은데"
+    "text": "괜찮아. 뛰면 돼",
+    "humor": "dry",
+    "register": "casual"
    },
    {
     "who": "them",
     "name": "{top}",
-    "text": "뛰어가면 되니까"
+    "text": "괜찮아요. 뛰면 됩니다.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 괜찮아 ㅋㅋ 뛰면 되지",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아 나 비 맞으면 키 큰다",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아요. 뛰면 3분이에요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮음. 뛰면 됨",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아. 뛰어가면 되니까",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아요. 뛰어가면 되니까요.",
+    "humor": "warm",
+    "register": "polite"
    }
   ],
   "choices": [
@@ -6277,7 +6356,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "왜 다 젖고 갔는지"
+      "text": "왜 다 젖고 갔어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "왜 다 젖고 가셨어요",
+      "register": "polite"
      }
     ]
    },
@@ -6302,7 +6388,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "그럼 우산은 이쪽에서"
+      "text": "그럼 우산은 내가 들게",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그럼 우산은 제가 들게요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -6313,7 +6406,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "괜찮은데 진짜로"
+      "text": "괜찮아 진짜로",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "괜찮아요 진짜로",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -6324,12 +6424,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "좁은데"
+      "text": "좁은데. 좁은 건 좋고",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "좁은 건 좋고"
+      "text": "좁은데요. 좁은 건 좋고요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -6352,12 +6454,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "편의점에서 샀는지"
+      "text": "이런 센스는 어디서 났어",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "이런 센스는 어디서 났길래"
+      "text": "이런 센스는 어디서 났어요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -6499,12 +6603,110 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "아까부터 좀 조용한 것 같아서"
+    "text": "야",
+    "humor": "dry",
+    "register": "casual"
    },
    {
     "who": "them",
     "name": "{top}",
-    "text": "무슨 할 말 있는 것 같던데"
+    "text": "아까부터 말 아끼는 거 티 나",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 말이 줄었어요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "하려던 말 있으면 들을게요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 뭐야 왜 조용해 ㅋㅋ",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "할 말 있는 사람 티 다 난다고",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 점 세 개만 보내는 사람 누구지 ㅋㅋ",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "말해 봐 안 웃어",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 답이 한 박자 느려요.",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "변론 준비 중인 것 같은데, 상대가 저인가요?",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 할 말 있는데 못 하는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "이거 너다",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘 좀 조용하네",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "하고 싶은 말 있으면 기다릴게",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘은 톡이 조용하시네요.",
+    "humor": "warm",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "호흡 고르고 말해도 됩니다.",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "sys",
@@ -6547,12 +6749,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "지금 손이 떨려서"
+      "text": "지금 손이 떨려서 답을 쓰다 지웠어",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "답을 쓰다 지우는 중"
+      "text": "지금 손이 떨려서 답을 쓰다 지웠어요",
+      "register": "polite"
      }
     ],
     "failReply": [
@@ -6564,12 +6768,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "아직 거기까지는 아닌 것 같아서"
+      "text": "아직 거기까지는 아닌 것 같아. 이런 말밖에 못 해서 미안해",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "이런 말밖에 못 하는 게 미안한데"
+      "text": "아직 거기까지는 아닌 것 같아요. 이런 말밖에 못 해서 미안해요",
+      "register": "polite"
      }
     ],
     "critReply": [
@@ -6581,12 +6787,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "이렇게 늦게 말해서"
+      "text": "지금 나올 수 있어?",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "지금 나올 수 있는지"
+      "text": "지금 나오실 수 있어요?",
+      "register": "polite"
      }
     ]
    },
@@ -6602,12 +6810,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "아까 그거 결국 안 말할 건지"
+      "text": "아까 하려던 말 안 할 거면 말고",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "아니면 말고"
+      "text": "하려던 말, 다음에 들을게요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -6632,17 +6842,19 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "요즘 우리 좀 이상한 것 같지 않은지"
+      "text": "요즘 우리 좀 이상한 것 같지 않아?",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "아니, 이건 얼굴 보고"
+      "text": "요즘 우리 좀 이상한 것 같지 않아요?",
+      "register": "polite"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "다음에 시간 될 때"
+      "text": "아니, 이건 얼굴 보고 다음에"
      }
     ]
    }
@@ -7141,16 +7353,78 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "요즘 관심 없는 것 같아서"
-   },
-   {
-    "who": "me",
-    "text": "무슨 소리"
+    "text": "자냐. 요즘 나 뒷순위 같은데",
+    "humor": "dry",
+    "register": "casual"
    },
    {
     "who": "them",
     "name": "{top}",
-    "text": "어제 세 번 물어봤는데"
+    "text": "요즘 제가 뒷순위인 것 같아요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 요즘 나한테 관심 없지 ㅋㅋ 아니 진짜로",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 나 읽음 담당 맡은 것 같아",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 제가 후순위인 것 같아요. 아니면 정정해 주세요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 혼자 떠드는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 내가 먼저만 보내는 것 같아서 좀 서운해",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 제가 먼저만 보내는 것 같아요. 참으면 더 굳어서요",
+    "humor": "warm",
+    "register": "polite"
+   },
+   {
+    "who": "me",
+    "text": "무슨 소리",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "무슨 소리예요",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "어제 세 번 물어봤는데",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "어제 세 번 물어봤는데요",
+    "register": "polite"
    },
    {
     "who": "them",
@@ -7189,7 +7463,14 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "오늘은 여기까지"
+    "text": "오늘은 여기까지 하자",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘은 여기까지 할게요",
+    "register": "polite"
    }
   ],
   "choices": [
@@ -7211,12 +7492,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "알았고"
+      "text": "알았어. 예민했던 건 나도 마찬가지야",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "예민했던 건 이쪽도 마찬가지라서"
+      "text": "알았어요. 예민했던 건 저도 마찬가지예요",
+      "register": "polite"
      }
     ]
    },
@@ -7249,19 +7532,28 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "말해 줘서 다행인데"
+      "text": "말해 줘서 다행이야. 다음엔 단답 말고 바쁘다고 해 줘",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "다음엔 단답 말고 바쁘다는 말이라도"
+      "text": "말해 줘서 다행이에요. 다음엔 단답 말고 바쁘다고 해 주세요",
+      "register": "polite"
      }
     ],
     "failReply": [
      {
       "who": "them",
       "name": "{top}",
-      "text": "결국 이쪽 탓이라는 말로 들리는데"
+      "text": "결국 내 탓이라는 말로 들려",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "결국 제 탓이라는 말로 들려요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -7272,12 +7564,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "너무 몰아붙인 건 이쪽인데"
+      "text": "몰아붙인 건 나야. 미안한 것도 나고",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "미안한 것도 이쪽이고"
+      "text": "몰아붙인 건 저예요. 미안한 것도 저고요",
+      "register": "polite"
      },
      {
       "who": "them",
@@ -7299,22 +7593,26 @@
     },
     "reply": [
      {
-      "who": "narr",
-      "text": "휴대폰을 뒤집었다. 알림이 쌓여도 열지 않았다."
+      "who": "them",
+      "name": "{top}",
+      "text": "자?",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "자는지"
+      "text": "자요?",
+      "register": "polite"
      },
      {
       "who": "narr",
-      "text": "사흘째, 알림이 멈췄다."
+      "text": "휴대폰을 뒤집었다. 알림이 쌓이다가 사흘째 멈췄다."
      }
     ]
    },
    {
     "text": "\"바쁠 땐 '밤에 톡할게' 하고 먼저 말할게\"",
+    "register": "casual",
     "mbti": "T",
     "effects": {
      "stats": {
@@ -7328,22 +7626,57 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "그건 언제 생각한 건지"
+      "text": "그건 언제 생각한 거야",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "좋은데"
+      "text": "그건 언제 생각한 거예요",
+      "register": "polite"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "이건 약속으로"
+      "text": "좋은데. 이건 약속으로"
+     }
+    ]
+   },
+   {
+    "text": "\"바쁠 땐 '밤에 톡할게요' 하고 먼저 말할게요\"",
+    "register": "polite",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거예요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "좋은데. 이건 약속으로"
      }
     ]
    },
    {
     "text": "\"세 번이나 물어봤는데 서운했겠다. 미안해\"",
+    "register": "casual",
     "mbti": "F",
     "effects": {
      "stats": {
@@ -7362,12 +7695,46 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "알아줘서 됐고"
+      "text": "알아줘서 됐어. 내일 통화 될까?",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "내일 통화 되는지"
+      "text": "알아줘서 됐어요. 내일 통화 될까요?",
+      "register": "polite"
+     }
+    ]
+   },
+   {
+    "text": "\"세 번이나 물어봤는데 서운했겠어요. 미안해요\"",
+    "register": "polite",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "서운했던 건 맞는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어. 내일 통화 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어요. 내일 통화 될까요?",
+      "register": "polite"
      }
     ]
    }
@@ -7387,7 +7754,13 @@
    },
    {
     "who": "me",
-    "text": "밥은"
+    "text": "밥은",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "밥은요",
+    "register": "polite"
    },
    {
     "who": "sys",
@@ -7401,7 +7774,56 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "사흘 만에 온 말이 그건지"
+    "text": "사흘 만에 온 말이 밥은?",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 온 말이 그건가요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 밥은? ㅋㅋㅋ 그게 다야?",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 고민한 게 두 글자면 좀 억울한데",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 두 글자. 진술이 너무 짧아요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 세 시간 고민한 결과.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 온 말이 밥 얘기라니",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 오신 말이 밥 얘기라니요.",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "narr",
@@ -7410,7 +7832,7 @@
   ],
   "choices": [
    {
-    "text": "미안했어. 내가 부족했어",
+    "text": "부족했다고 먼저 사과한다",
     "effects": {
      "stats": {
       "esteem": 2,
@@ -7430,17 +7852,19 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "말이 심했던 건 이쪽도 마찬가지고"
+      "text": "말이 심했던 건 나도 마찬가지야",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "그건 그거고"
+      "text": "말이 심했던 건 저도 마찬가지예요",
+      "register": "polite"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "밥 먹었는지부터"
+      "text": "그건 그거고. 밥 먹었는지부터"
      }
     ],
     "failReply": [
@@ -7451,19 +7875,28 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "읽는 데 오래 걸렸는데"
+      "text": "읽는 데 오래 걸렸어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "읽는 데 오래 걸렸어요",
+      "register": "polite"
      }
     ],
     "critReply": [
      {
       "who": "them",
       "name": "{top}",
-      "text": "그 말 기다렸는데"
+      "text": "그 말 기다렸어. 사흘 내내",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "사흘 내내"
+      "text": "그 말 기다렸어요. 사흘 내내",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -7473,6 +7906,7 @@
    },
    {
     "text": "나도 연락하려고 했어",
+    "register": "casual",
     "effects": {
      "stats": {
       "sincerity": -1
@@ -7485,7 +7919,44 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "그래서"
+      "text": "그래서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서요",
+      "register": "polite"
+     },
+     {
+      "who": "narr",
+      "text": "그 뒤로 한참 말이 없었다."
+     }
+    ]
+   },
+   {
+    "text": "저도 연락하려고 했어요",
+    "register": "polite",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "trust": {
+      "@top": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서요",
+      "register": "polite"
      },
      {
       "who": "narr",
@@ -7495,6 +7966,7 @@
    },
    {
     "text": "우리 얘기 좀 하자",
+    "register": "casual",
     "require": {
      "stats": {
       "talk": 55
@@ -7517,7 +7989,50 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "오늘 저녁 되는지"
+      "text": "오늘 저녁 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까요?",
+      "register": "polite"
+     }
+    ]
+   },
+   {
+    "text": "우리 얘기 좀 해요",
+    "register": "polite",
+    "require": {
+     "stats": {
+      "talk": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 4
+     },
+     "trust": {
+      "@top": 4
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "하고 싶은 말 많았는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까요?",
+      "register": "polite"
      }
     ]
    }
@@ -7776,20 +8291,46 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "밥"
-   },
-   {
-    "who": "me",
-    "text": "먹음"
+    "text": "밥",
+    "register": "casual"
    },
    {
     "who": "them",
     "name": "{top}",
-    "text": "뭐 하는지"
+    "text": "밥은요",
+    "register": "polite"
    },
    {
     "who": "me",
-    "text": "누워 있음"
+    "text": "먹음",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "먹었어요",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "뭐 함",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "뭐 하세요",
+    "register": "polite"
+   },
+   {
+    "who": "me",
+    "text": "누워 있음",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "누워 있어요",
+    "register": "polite"
    },
    {
     "who": "narr",
@@ -7820,12 +8361,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "갑자기 뭔지"
+      "text": "갑자기 뭐야. 좋은데",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "좋은데"
+      "text": "갑자기 뭐예요. 좋은데요",
+      "register": "polite"
      },
      {
       "who": "them",
@@ -7858,7 +8401,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "우리 잘하고 있는 건지"
+      "text": "우리 잘하고 있는 걸까",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "우리 잘하고 있는 걸까요",
+      "register": "polite"
      }
     ]
    },
@@ -7876,7 +8426,19 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "."
+      "text": "ㅇ",
+      "humor": "loud"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": ".",
+      "humor": [
+       "dry",
+       "witty",
+       "meme",
+       "warm"
+      ]
      },
      {
       "who": "narr",
@@ -8678,12 +9240,62 @@
    {
     "who": "them",
     "name": "{top}",
-    "text": "요즘 뭔가 정리하는 것 같던데"
+    "text": "요즘 뭐 정리하는 것 같은데. 물어봐도 되냐",
+    "humor": "dry",
+    "register": "casual"
    },
    {
     "who": "them",
     "name": "{top}",
-    "text": "그게 뭔지 물어봐도 되는지"
+    "text": "요즘 뭔가 정리하는 것 같아요. 물어봐도 될까요?",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 요즘 뭐 정리하지 ㅋㅋ 물어봐도 됨?",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하는 사람 같은데, 그 목록에 나도 있나",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 정리하는 게 있는 것 같아요. 그 목록에 저도 있나요?",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 뭔가 정리하는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "물어봐도 되는지",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하는 것 같아서. 물어봐도 돼?",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하시는 것 같아서요. 물어봐도 될까요?",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "narr",
@@ -8720,12 +9332,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "같은 마음인 건 진작"
+      "text": "같은 마음인 건 진작이었어. 말 못 한 건 나도 마찬가지야",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "말 못 한 건 이쪽도 마찬가지고"
+      "text": "같은 마음인 건 진작이었어요. 말 못 한 건 저도 마찬가지예요",
+      "register": "polite"
      }
     ],
     "failReply": [
@@ -8736,12 +9350,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "미안한데"
+      "text": "미안한데 지금은 대답 못 하겠어",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "지금은 대답 못 하겠어서"
+      "text": "미안한데 지금은 대답 못 하겠어요",
+      "register": "polite"
      }
     ],
     "critReply": [
@@ -8752,12 +9368,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "전화해도 되는지"
+      "text": "전화해도 돼? 이건 목소리로 할게",
+      "register": "casual"
      },
      {
       "who": "them",
       "name": "{top}",
-      "text": "이건 목소리로"
+      "text": "전화해도 돼요? 이건 목소리로 할게요",
+      "register": "polite"
      }
     ]
    },
@@ -8781,7 +9399,14 @@
      {
       "who": "them",
       "name": "{top}",
-      "text": "고마웠다는 말은 진심으로"
+      "text": "고마웠다는 말은 진심이야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "고마웠다는 말은 진심이에요",
+      "register": "polite"
      }
     ]
    },

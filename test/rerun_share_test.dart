@@ -73,11 +73,23 @@ class RerunTally {
   final Map<EventLayer, int> readByLayer = {};
   final Map<EventLayer, int> rerunByLayer = {};
 
-  /// id → 읽은 횟수.
+  /// 장면 열쇠(`id#변형번호`) → 읽은 횟수. **id 가 아니다.**
+  ///
+  /// `StoryEvent.variants` 가 붙어도 `id` 는 그대로라, id 로 세면 대사가 전부 다른 두
+  /// 장면을 같은 것으로 센다. 그러면 변형을 아무리 써도 이 숫자가 안 움직여서, 재방송을
+  /// 줄이려고 만든 도구를 재방송을 재는 계측이 못 보는 상태가 된다
+  /// (docs/review/13_content_fixes.md 의 지적이 정확히 이것이었다).
+  /// 열쇠는 [EventEngine.variantIndexOf] 로 만든다 — 회전 공식을 베끼지 않는다.
   final Map<String, int> count = {};
+
+  /// id 로만 센 것. 옛 숫자와 이어 보려고 남긴다 — 판정 기준은 [count] 다.
+  final Map<String, int> idCount = {};
 
   /// 일상 후보로 **한 번이라도** 올라온 이벤트 id. 재방송의 이론상 하한을 계산한다.
   final Set<String> dailyOffered = {};
+
+  /// 그 후보들이 낼 수 있는 서로 다른 대본 수(원본 + 변형). 하한은 이걸로 잰다.
+  int dailyOfferedScenes = 0;
 
   /// 일상 칸에서 뽑힌 횟수(같은 장면을 여러 번 뽑은 것도 센다).
   int dailyPicks = 0;
@@ -90,16 +102,23 @@ class RerunTally {
   /// 일상 후보를 **하나도 낭비하지 않고** 다 읽은 뒤에야 되풀이했다고 가정한 최소 재방송.
   /// 일상 칸이 요구하는 개수가 낼 수 있는 장면 종류보다 많으면, 그 차이는 어떤 추첨
   /// 규칙으로도 지울 수 없다. 즉 이 값이 **엔진만으로 도달 가능한 바닥**이다.
-  int get rerunFloor => max(0, dailyPicks - dailyOffered.length);
+  int get rerunFloor =>
+      max(0, dailyPicks - max(dailyOffered.length, dailyOfferedScenes));
 
-  void saw(StoryEvent e) {
-    order.add(e.id);
-    final n = (count[e.id] ?? 0) + 1;
-    count[e.id] = n;
+  void saw(StoryEvent e, int variant) {
+    final key = variant == 0 ? e.id : '${e.id}#$variant';
+    order.add(key);
+    final n = (count[key] ?? 0) + 1;
+    count[key] = n;
+    idCount[e.id] = (idCount[e.id] ?? 0) + 1;
     readByLayer[e.layer] = (readByLayer[e.layer] ?? 0) + 1;
     if (n > 1) rerunByLayer[e.layer] = (rerunByLayer[e.layer] ?? 0) + 1;
     if (e.layer == EventLayer.daily) dailyPicks++;
   }
+
+  /// id 로만 센 재방송 비율. 옛 보고와 잇기 위한 참고값이다.
+  double get idShare =>
+      read == 0 ? 0 : (read - idCount.length) / read;
 
   /// 한 회차에 같은 씬을 가장 많이 읽은 횟수.
   int get maxRepeat => count.values.fold(1, max);
@@ -147,12 +166,16 @@ RerunTally playFullRun(
     engine.applyRoulette(s, slot);
     engine.applyAction(s, strat.action(s, b.config.actions, r, b));
     for (final e in engine.candidates(s, EventLayer.daily)) {
-      t.dailyOffered.add(e.id);
+      if (t.dailyOffered.add(e.id)) {
+        t.dailyOfferedScenes += 1 + e.variants.length;
+      }
     }
     final queue = engine.planDay(s);
     while (queue.isNotEmpty) {
-      final ev = engine.viewFor(s, queue.removeAt(0));
-      t.saw(ev);
+      final queue0 = queue.removeAt(0);
+      final ev = engine.viewFor(s, queue0);
+      // 열쇠는 엔진의 회전 공식을 그대로 쓴다(공식을 테스트에 베끼지 않는다).
+      t.saw(ev, engine.variantIndexOf(s, queue0));
       final views = engine.choicesFor(s, ev);
       final open = views.where((v) => !v.locked).toList();
       simTop = engine.topCharacter(s);
@@ -248,10 +271,14 @@ void main() {
 
     // (1) 예전 엔진은 어느 회차에서도 25% 를 넘는다. 이 줄이 '전'을 고정한다 —
     //     문턱값이 예전 데이터에서도 통과해 버리는 헛 테스트가 아니라는 증거다.
+    // 옛 문턱은 25% 였다. 그때는 이 계측이 **id 로** 셌기 때문이다 — 대사가 전부 다른
+    // 변형까지 같은 장면으로 묶어서, 변형을 쓰면 쓸수록 실제와 멀어졌다
+    // (docs/review/13_content_fixes.md). 지금은 `id#변형번호` 로 세고, 같은 데이터에서
+    // 예전 엔진이 11.6% · 지금 엔진이 4.9% 다. 눈금이 바뀌었으니 문턱도 같이 바꾼다.
     expect(
       b.minShare,
-      greaterThan(0.25),
-      reason: '예전 엔진의 재방송이 25% 미만이면 이 테스트의 전후 비교가 의미 없다',
+      greaterThan(0.08),
+      reason: '예전 엔진 쪽이 이만큼도 안 되면 전후 비교 자체가 의미 없다',
     );
 
     // (2) 지금 엔진은 모든 회차가 25% 미만이어야 한다.
@@ -267,17 +294,18 @@ void main() {
     //       남은 일은 docs/review/12_engine_handoff.md §1 에 적었다.
     expect(
       a.maxShare,
-      lessThan(0.25),
-      reason: '재방송이 25% 로 되돌아갔다 — 감쇠·보충 칸 규칙이 살아 있는지 확인',
+      lessThan(0.10),
+      reason: '재방송이 10% 로 되돌아갔다 — 감쇠·보충 칸·변형이 살아 있는지 확인',
     );
 
-    // (3) 개선 폭이 실제로 있는지. 평균이 5%p 이상 내려가야 한다.
-    expect(b.avgShare - a.avgShare, greaterThan(0.05));
+    // (3) 개선 폭이 실제로 있는지. 실측 6.7%p(11.6 → 4.9)이고, 문턱은 3%p 로 둔다 —
+    //     데이터가 늘면 양쪽이 같이 내려가므로 여유를 둔다.
+    expect(b.avgShare - a.avgShare, greaterThan(0.03));
 
     // (4) 실측에서 가장 크게 체감된 것은 비율보다 '같은 씬이 일곱 번'이었다
     //     (`d_drink_02` 7회, 11_story_verdict §4-1). 회차당 최다 반복이 줄어야 한다.
     expect(a.maxRepeat, lessThan(b.maxRepeat));
-    expect(a.maxRepeat, lessThanOrEqualTo(5));
+    expect(a.maxRepeat, lessThanOrEqualTo(3));
   });
 
   test('100일 완주: once 이벤트는 한 번도 재등장하지 않는다', () {
@@ -287,14 +315,16 @@ void main() {
     for (final bundle in [release, legacy]) {
       for (final (label, strat, seed, pref) in runCases(bundle)) {
         final t = playFullRun(bundle, strat, seed, pref);
+        // 여기서는 **id 기준**이 맞다 — 묻는 것이 "이 이벤트를 두 번 읽었나" 이고,
+        // 어느 변형을 봤는지는 상관없다(`count` 는 `id#변형번호` 로 센다).
         final bad = [
-          for (final e in t.count.entries)
+          for (final e in t.idCount.entries)
             if (e.value > 1 && bundle.eventById[e.key]!.once)
               '${e.key}×${e.value}',
         ];
         expect(bad, isEmpty, reason: '$label: once 인데 재등장했다 — $bad');
         // 반복되는 것은 전부 `once: false` 이고, 지금 데이터에서는 전부 일상이다.
-        for (final e in t.count.entries) {
+        for (final e in t.idCount.entries) {
           if (e.value > 1) {
             expect(bundle.eventById[e.key]!.layer, EventLayer.daily);
           }

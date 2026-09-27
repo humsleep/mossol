@@ -80,6 +80,7 @@
    0.52
   ],
   "humor": "witty",
+  "politeness": "polite",
   "tags": [
    "전시",
    "조용한",
@@ -169,6 +170,7 @@
    0.45
   ],
   "humor": "warm",
+  "politeness": "polite",
   "tags": [
    "운동",
    "산책",
@@ -260,6 +262,7 @@
    0.35
   ],
   "humor": "dry",
+  "politeness": "polite",
   "tags": [
    "산책",
    "브런치",

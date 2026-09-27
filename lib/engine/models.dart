@@ -67,6 +67,52 @@ class Stat {
   static int maxOf(String key) => key == money ? 9999 : 100;
 }
 
+/// 캐릭터의 농담 코드(`characters.json` 의 `humor`). 짤 고르기 미니게임이 쓰던 값인데,
+/// 줄 조건 `Line.humor` 가 같은 값을 쓴다 — 상대가 정해지지 않은 씬에서 **호감 1위의 목소리**로
+/// 대사를 고르는 축이다(docs/review/12_main_rewrite.md §5.3 E1).
+///
+/// 한 쪽 5명이 다섯 값을 하나씩 나눠 갖도록 짜여 있어(docs/CAST_BIBLE.md §0.2) 이 축은
+/// 어느 회차에서도 상호배타다. 1위가 없는 회차(아무와도 호감이 0)에는 [fallback] 로 본다 —
+/// 미니게임이 이미 그렇게 하고 있다(`lib/minigames/minigame.dart` `MinigameContext.humor`).
+class Humor {
+  Humor._();
+
+  static const values = ['dry', 'loud', 'witty', 'meme', 'warm'];
+
+  /// 1위가 없거나 `humor` 가 비어 있을 때의 값.
+  static const fallback = 'warm';
+
+  static bool isValid(String v) => values.contains(v);
+}
+
+/// 말높임(`characters.json` 의 `politeness`, 줄·선택지의 `register`).
+///
+/// 한국어 말높임은 **문장 종결어미**에 붙으므로 한 줄은 반말이거나 존댓말이지 둘 다일 수 없다.
+/// 상대가 정해지지 않은 씬(`character` 없음 + `{top}`)은 12명 중 누구의 입에나 들어가야 하는데,
+/// 9명은 반말이고 지우·승현·도윤 3명은 끝까지 존댓말이다. 그래서 작가는 종결어미를 못 쓰고
+/// 명사구로만 썼다(docs/review/12_main_rewrite.md §3). 이 축이 그 제약을 푼다.
+///
+/// **정적 값으로 충분한 이유**(12_main_rewrite §5.3 E2 가 제기한 복잡성에 대한 답):
+/// 다은(r07)·유나(r08)는 루트 중간에 존댓말에서 반말로 갈아타고 도윤(r09)은 호칭만 바꾼다.
+/// 그런데 이 조건이 쓰이는 곳은 **상대가 정해지지 않은 씬**뿐이고(정해진 씬은 작가가 그 입에
+/// 맞춰 한 벌만 쓴다) 그런 씬은 `{top}` 이 성립할 만큼 호감이 쌓인 뒤 — 즉 다은 r07(D+25~),
+/// 유나 r08 이 지난 뒤 — 에 열린다. 전환 **후**의 값을 적으면 이 기능이 닿는 모든 시점에서 맞다.
+/// 전환 플래그까지 보는 동적 판정은 이 기능이 풀려는 문제를 하나도 더 풀지 못하면서 `characters.json`
+/// 에 루트 플래그를 끌어들인다. 좁고 맞는 기능을 고른다.
+class Politeness {
+  Politeness._();
+
+  /// 반말. 12명 중 9명이라 기본값이다 — `characters.json` 에 안 적으면 이것.
+  static const casual = 'casual';
+
+  /// 존댓말. 지우·승현·도윤만.
+  static const polite = 'polite';
+
+  static const values = [casual, polite];
+
+  static bool isValid(String v) => values.contains(v);
+}
+
 /// 새 게임에서 고르는 "누구를 만나고 싶나요?" 선호. 회차마다 하나.
 ///
 /// - [female] / [male]: 그 성별 캐릭터만 등장한다(이벤트·효과·엔딩·신호·홈 전부).
@@ -211,6 +257,16 @@ Map<String, int> _intMap(Object? j) => j == null
 
 List<String> _strList(Object? j) =>
     j == null ? const [] : (j as List).map((e) => e as String).toList();
+
+/// 값 하나도 한 항목짜리 목록으로 받는다 — `"humor": "dry"` = `"humor": ["dry"]`.
+/// 조건 하나를 쓰는 줄이 대부분이라 대괄호를 강요하면 데이터가 시끄러워진다.
+/// (`reply` 가 문자열 하나를 한 줄로 받는 것과 같은 관용.)
+List<String> _strListOrOne(Object? j) => switch (j) {
+  null => const [],
+  final String v => v.trim().isEmpty ? const [] : [v.trim()],
+  final List l => [for (final e in l) (e as String).trim()],
+  _ => throw StateError('문자열 또는 문자열 목록이어야 함: $j'),
+};
 
 /// "N명 이상이 호감도 min 이상" 같은 집계 조건.
 class CountCondition {
@@ -488,6 +544,16 @@ class Line {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// **호감 1위의 농담 코드** 조건([Humor.values] 중 하나 이상). 비어 있으면 조건 없음.
+  /// `mbti` 가 플레이어를 보는 것과 달리 이쪽은 **상대**를 본다 — `{top}` 이 이름을 꺼내는
+  /// 바로 그 사람이다(`EventEngine.voiceOf`). 상대가 정해지지 않은 씬에서 한 비트를 다섯
+  /// 목소리로 쓰는 축(docs/review/13_engine_fixes.md §1).
+  final List<String> humor;
+
+  /// **호감 1위의 말높임** 조건([Politeness.values]). null 이면 조건 없음.
+  /// 같은 줄을 반말·존댓말 두 벌로 쓰고 상대에 맞는 쪽만 화면에 낸다(같은 문서 §2).
+  final String? register;
+
   /// 이 줄 뒤에 붙는 스티커 id(선택, 06 §4). 파일 이름 그대로 `<캐릭터 id>_<감정>`.
   /// 규약은 [Sticker], 에셋이 없으면 아무것도 그리지 않는다(빈 줄도 없음).
   final String? sticker;
@@ -501,13 +567,21 @@ class Line {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.humor = const [],
+    this.register,
     this.sticker,
   });
 
   bool get isWait => who == 'sys' && wait > 0;
 
-  /// MBTI·궁합 조건이 붙은 줄인지.
-  bool get isGated => mbti != null || noMbti || compat != null;
+  /// 플레이어(MBTI·궁합) 조건이 붙은 줄인지.
+  bool get isPlayerGated => mbti != null || noMbti || compat != null;
+
+  /// 상대(1위) 목소리 조건이 붙은 줄인지.
+  bool get isVoiceGated => humor.isNotEmpty || register != null;
+
+  /// 조건이 하나라도 붙은 줄인지. 붙은 줄이 하나도 없으면 거르기 자체를 건너뛴다.
+  bool get isGated => isPlayerGated || isVoiceGated;
 
   /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
   ///
@@ -523,6 +597,8 @@ class Line {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
     sticker: sticker,
   );
 
@@ -537,6 +613,11 @@ class Line {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    humor: _strListOrOne(j['humor']),
+    register: switch ((j['register'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
     sticker: j['sticker'] as String?,
   );
 }
@@ -572,6 +653,14 @@ class Choice {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// 호감 1위의 농담 코드·말높임 조건. 뜻과 해소 규칙은 [Line.humor]·[Line.register] 와 같다.
+  ///
+  /// `register` 는 **플레이어가 상대에게 하는 말**을 상대에 맞춰 고르는 데 쓴다 — 지우·승현·도윤을
+  /// 공략하는 회차에서 선택지가 `미안했어` 라고 반말하던 문제(12_main_rewrite §6-3)가 이것이다.
+  /// `humor` 도 같은 모양으로 받지만 선택지에는 권하지 않는다(13_engine_fixes.md §2.3).
+  final List<String> humor;
+  final String? register;
+
   /// 자유 입력 보정(선택, docs/overhaul/07_free_input.md §2). 플레이어가 칠 법한 짧은 표현들.
   /// 문구 2-gram·태그에 합쳐진다. 없으면 빈 목록 — 스키마 호환.
   final List<String> intent;
@@ -592,11 +681,18 @@ class Choice {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.humor = const [],
+    this.register,
     this.intent = const [],
   });
 
-  /// MBTI·궁합 조건이 붙은 선택지인지.
-  bool get isGated => mbti != null || noMbti || compat != null;
+  /// 플레이어(MBTI·궁합) 조건이 붙은 선택지인지.
+  bool get isPlayerGated => mbti != null || noMbti || compat != null;
+
+  /// 상대(1위) 목소리 조건이 붙은 선택지인지.
+  bool get isVoiceGated => humor.isNotEmpty || register != null;
+
+  bool get isGated => isPlayerGated || isVoiceGated;
 
   /// 문구와 반응 줄을 [f] 로 바꾼 사본. 효과·조건·다음 이벤트는 그대로.
   Choice mapText(String Function(String) f) => Choice(
@@ -615,6 +711,8 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
     intent: intent,
   );
 
@@ -639,6 +737,8 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
     intent: intent,
   );
 
@@ -667,6 +767,11 @@ class Choice {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    humor: _strListOrOne(j['humor']),
+    register: switch ((j['register'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
     intent: _strList(j['intent']),
   );
 }
@@ -952,6 +1057,11 @@ class CharacterDef {
   /// [replyZone] 은 선호하는 답장 속도 구간(0 = 즉답, 1 = 하루 뒤).
   final List<double> replyZone;
   final String humor;
+
+  /// 말높임([Politeness.values]). 없으면 [Politeness.casual](12명 중 9명).
+  /// 줄·선택지의 `register` 조건이 이 값과 맞는 것만 화면에 낸다.
+  final String politeness;
+
   final List<String> tags;
   final int budget;
 
@@ -977,7 +1087,8 @@ class CharacterDef {
     this.mines = const [],
     this.hidden = false,
     this.replyZone = const [0.35, 0.6],
-    this.humor = 'warm',
+    this.humor = Humor.fallback,
+    this.politeness = Politeness.casual,
     this.tags = const [],
     this.budget = 40,
     this.tagline = '',
@@ -997,7 +1108,11 @@ class CharacterDef {
     replyZone: j['replyZone'] == null
         ? const [0.35, 0.6]
         : (j['replyZone'] as List).map((e) => (e as num).toDouble()).toList(),
-    humor: (j['humor'] as String?) ?? 'warm',
+    humor: (j['humor'] as String?) ?? Humor.fallback,
+    politeness: switch ((j['politeness'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => Politeness.casual,
+    },
     tags: _strList(j['tags']),
     budget: ((j['budget'] as num?) ?? 40).toInt(),
     tagline: ((j['tagline'] as String?) ?? '').trim(),

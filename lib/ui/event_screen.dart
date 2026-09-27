@@ -377,7 +377,23 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     if (identical(o, _replyFor)) return;
     _replyFor = o;
     // 결과가 새로 나온 순간의 성패음. 거절은 판정이 아니라 종료음(callEnd)만 낸다.
-    if (o != null && c.lastChoice?.decline != true) {
+    //
+    // 미니게임이 판정한 결과면 여기서 안 낸다 — `MinigameScaffold` 가 1.5초 전에
+    // 이미 냈고, 둘째 소리에는 새 정보가 0 이다: `_finishMinigame` 이 넘긴
+    // `minigameSuccess` 가 `game_controller.choose` → `applyChoice` 의
+    // `forcedSuccess` 로 들어가 `failed = !forcedSuccess` 가 되므로
+    // **둘째 큐의 성패는 첫째 큐가 이미 정해 둔 값**이다(다를 수가 없다).
+    // 이 저장소의 두 박자 어법은 90ms·120ms 이고, 1.5초는 그 열 배가 넘는 데다
+    // 사이에 전면 라우트 전환이 끼어 한 박자로 안 묶인다. 회차당 150판이라
+    // 가장 많이 듣는 소리가 두 배가 되고, 그건 전역 효과음 토글을 내리게 만드는
+    // 가장 빠른 길이다 — 그러면 나머지 큐 10개까지 함께 잃는다.
+    // (docs/review/13_minigame_handoff.md §2)
+    //
+    // 판별은 `minigameNote` 가 아니라 `lastChoice?.minigame` 으로 한다.
+    // `MinigameResult.message` 는 기본값이 `''` 라서 note 로 보면 조용히 샌다.
+    if (o != null &&
+        c.lastChoice?.decline != true &&
+        c.lastChoice?.minigame == null) {
       _sfx.cue(o.success ? Sfx.choiceOk : Sfx.choiceFail);
     }
     _replyTimer?.cancel();

@@ -93,6 +93,65 @@ class MinigameSfx {
   }
 }
 
+/// 미니게임의 **제한 시계**. 프레임으로 돈다 — `Stopwatch` 도 `Timer.periodic` 도
+/// 아니다(규격서 §2.13 이 날짜 카드에 대해 이미 같은 이유로 `Timer` 를 금지한다).
+///
+/// 왜 바꿨나. 예전 시계는 `Stopwatch` + `Timer.periodic(100ms)` 였다. `Timer` 는
+/// 위젯 테스트에서 **가짜 시계**를 타는데 `Stopwatch` 는 **진짜 시계**를 탄다.
+/// 그래서 테스트가 프레임을 도는 동안(특히 `pumpAndSettle`) 실제 시간이 흘러
+/// **판이 스스로 시간 초과로 끝났다.** 증상은 시계와 아무 상관없어 보이는
+/// "크리티컬! 을 못 찾겠다" 였고, 원인을 가리키는 단서가 메시지에 하나도 없었다
+/// (12_ui_handoff §2-1 의 `test/widget/flow_test.dart`). 점수에 경과 시간을 쓰는
+/// 게임(단톡방의 6초, 5초 삭제의 절반 기준)은 **판정까지** 실행 기계 속도에
+/// 좌우됐다. 프레임으로 돌면 흐른 시간이 곧 `pump` 한 시간이라 씨앗이 같으면
+/// 결과도 같다.
+///
+/// [AnimationBehavior.preserve] 는 장식이 아니다. 기본값(`normal`)은 기기에서
+/// **동작 줄이기**가 켜져 있으면 길이를 0.05배로 줄인다 — 연출이면 맞는 처리지만
+/// 이건 제한 시간이라, 접근성 설정을 켠 플레이어의 판이 0.3초 만에 끝나 버린다.
+class MinigameClock extends ChangeNotifier {
+  final AnimationController _c;
+
+  /// 시간이 다 됐다. 판을 끝내는 것은 게임의 몫이다.
+  final VoidCallback onExpire;
+
+  MinigameClock({
+    required TickerProvider vsync,
+    required Duration limit,
+    required this.onExpire,
+  }) : _c = AnimationController(
+         vsync: vsync,
+         duration: limit,
+         animationBehavior: AnimationBehavior.preserve,
+       ) {
+    _c
+      ..addListener(notifyListeners)
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) onExpire();
+      })
+      ..forward();
+  }
+
+  /// 남은 시간 0.0~1.0. [MinigameScaffold.timeLeft] 에 그대로 넣는다.
+  double get left => (1 - _c.value).clamp(0.0, 1.0);
+
+  /// 시작(또는 마지막 [restart])부터 흐른 밀리초. 점수를 매기는 자리가 쓴다.
+  int get elapsedMs => (_c.value * _c.duration!.inMilliseconds).round();
+
+  /// 시계를 되감아 다시 돌린다. 표정 읽기는 문제마다 되감는다.
+  void restart() => _c.forward(from: 0);
+
+  /// 시계를 세운다. 판이 끝났거나 정답을 공개하는 동안.
+  /// 멈춘 시계는 프레임을 더 잡아먹지 않는다.
+  void stop() => _c.stop();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+}
+
 /// 미니게임이 받는 입력. 스탯과 상대 캐릭터에 따라 난이도가 달라진다.
 class MinigameContext {
   final GameState state;
@@ -208,7 +267,14 @@ class MinigameScaffold extends StatefulWidget {
   final MinigameResult? result;
   final VoidCallback? onFinished;
 
-  /// 남은 시간 표시 (0.0 ~ 1.0). null 이면 숨김.
+  /// 남은 시간 표시 (0.0 ~ 1.0).
+  ///
+  /// **한 번이라도 값을 준 판에서는 null 이 "숨김" 이 아니라 "시계가 멈췄다" 다.**
+  /// 막대 자리는 그대로 두고 마지막 값에서 멈춘 막대를 그린다. 예전에는
+  /// null 이 오면 자리가 통째로 사라져서, 표정 읽기처럼 정답을 공개할 때마다
+  /// 시계를 내리는 게임은 **한 판에 네 번 놀이판 전체가 위아래로 들썩였다**
+  /// (12_ui_handoff §2-2). 시계가 아예 없는 게임(9종)은 한 번도 값을 주지 않으므로
+  /// 빈 자리가 생기지 않는다 — 자리는 "예약" 이 아니라 "쓰기 시작하면 안 없어짐" 이다.
   final double? timeLeft;
 
   /// 본문 아래에 고정되는 조작부. 스크롤과 함께 밀려서는 안 되는 버튼을 둔다.
@@ -249,9 +315,19 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
   /// (표정 읽기는 문제마다 시계를 되감는다). 매 틱 울리지 않게 하는 장치다.
   bool _lowArmed = true;
 
+  /// 마지막으로 받은 남은 시간. [MinigameScaffold.timeLeft] 가 null 이 돼도
+  /// 막대 자리를 비우지 않으려고 들고 있는다.
+  double? _lastTime;
+
   bool _finished = false;
   bool _skippable = false;
   Timer? _dwellTimer, _skipTimer, _critTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastTime = widget.timeLeft;
+  }
 
   @override
   void dispose() {
@@ -265,6 +341,7 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
   void didUpdateWidget(MinigameScaffold old) {
     super.didUpdateWidget(old);
     final time = widget.timeLeft;
+    if (time != null) _lastTime = time;
     if (time != null && widget.result == null) {
       // 막대가 위험색으로 바뀌는 그 경계(0.3)에서 한 번만 재촉한다.
       if (_lowArmed && time < 0.3) {
@@ -296,7 +373,8 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final r = widget.result;
-    final time = widget.timeLeft;
+    // null 은 "시계가 멈췄다" 다. 마지막 값으로 막대를 세워 둔다(자리가 안 사라진다).
+    final time = widget.timeLeft ?? _lastTime;
 
     final tone = r == null
         ? AppTone.neutral

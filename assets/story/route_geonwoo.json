@@ -208,7 +208,10 @@
      "setFlags": [
       "geonwoo_contact",
       "geonwoo_reunion"
-     ]
+     ],
+     "affection": {
+      "*": 1
+     }
     },
     "reply": [
      {
@@ -1024,7 +1027,8 @@
      },
      "그때 나도 저렇게 웃었지. 너 우유 쏟았을 때",
      "웃을 일 아니었는데."
-    ]
+    ],
+    "failNext": "mo_fail_misread"
    },
    {
     "text": "너 좋은 선생님이구나",
@@ -1270,7 +1274,8 @@
       "text": "됐다. 나는 여기까지 ㅋㅋ"
      },
      "스피커 끄고 다시 걸게. 이번엔 둘이"
-    ]
+    ],
+    "failNext": "mo_fail_call_cut"
    },
    {
     "text": "우리 아무 사이 아니야",
@@ -1639,7 +1644,10 @@
      },
      "setFlags": [
       "geonwoo_past"
-     ]
+     ],
+     "affection": {
+      "*": 2
+     }
     },
     "reply": [
      "더? 기차 창밖이 계속 논이었어",
@@ -2189,7 +2197,10 @@
      },
      "setFlags": [
       "geonwoo_stay"
-     ]
+     ],
+     "affection": {
+      "*": 2
+     }
     },
     "reply": [
      {
@@ -2549,6 +2560,9 @@
     "fail": {
      "stats": {
       "reputation": -2
+     },
+     "affection": {
+      "*": -1
      }
     },
     "reply": [

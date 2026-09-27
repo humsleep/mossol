@@ -8,6 +8,7 @@ import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/push_games.dart';
 import 'package:mossol/minigames/tap_games.dart';
 import 'package:mossol/minigames/timing_games.dart';
+import 'package:mossol/ui/widgets.dart';
 
 import 'widget/helpers.dart';
 
@@ -151,6 +152,25 @@ void main() {
   group('표정 읽기', () {
     String quoteOf(WidgetTester tester) =>
         texts(tester).firstWhere((s) => s.startsWith('"'));
+
+    // 12_ui_handoff §2-2 가 보고한 그 증상. 한 판에 네 번 일어난다.
+    testWidgets('답을 공개해도 놀이판이 위아래로 움직이지 않는다', (tester) async {
+      useTallScreen(tester);
+      await show(tester, ReadEmotionGame(ctx: ctx(), done: (_) {}));
+      // 읽어야 할 말풍선이 표식이다. 위쪽의 막대 자리가 사라지면 이것이 올라온다.
+      final probe = findTextContaining('괜찮아');
+      final y = tester.getTopLeft(probe).dy;
+      // round 0 첫 문제의 정답은 '서운함'. '화남' 은 오답 — 어느 쪽이든 공개는 같다.
+      await tester.tap(findText('화남'));
+      await tester.pump();
+      expect(
+        tester.getTopLeft(probe).dy,
+        y,
+        reason: '정답을 공개하자 놀이판이 올라왔다 — 한 판에 네 번 들썩인다',
+      );
+      // 다음 문제로 넘기는 550ms 를 흘려보낸다.
+      await tester.pump(const Duration(milliseconds: 600));
+    });
 
     testWidgets('판마다 문제가 바뀐다', (tester) async {
       useTallScreen(tester);
@@ -471,6 +491,127 @@ void main() {
   });
 
   // =====================================================================
+  // 남은 시간 막대 — 한 번 뜨면 자리가 사라지지 않는다 (12_ui_handoff §2-2)
+  // =====================================================================
+  group('남은 시간 막대 자리', () {
+    /// 같은 자리에 `timeLeft` 만 갈아 끼운다. 본문에 표식을 하나 둬서
+    /// 놀이판이 위아래로 움직였는지 **픽셀로** 잰다 — 증상이 그것이었다.
+    Future<void> setTime(WidgetTester tester, double? v) async {
+      await tester.pumpWidget(
+        wrapApp(
+          MinigameScaffold(
+            title: '판',
+            instruction: '설명',
+            timeLeft: v,
+            child: const SizedBox(key: Key('board'), height: 100),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('시계를 내려도 놀이판이 움직이지 않는다', (tester) async {
+      await setTime(tester, 1.0);
+      expect(find.byType(AppProgressBar), findsOneWidget);
+      final y = tester.getTopLeft(find.byKey(const Key('board'))).dy;
+      await setTime(tester, null);
+      expect(
+        find.byType(AppProgressBar),
+        findsOneWidget,
+        reason: 'timeLeft 가 null 이 되자 막대가 사라졌다',
+      );
+      expect(
+        tester.getTopLeft(find.byKey(const Key('board'))).dy,
+        y,
+        reason: '막대 자리가 사라져 놀이판이 위로 올라왔다 — 한 판에 네 번 들썩인다',
+      );
+    });
+
+    testWidgets('멈춘 막대는 마지막 값에 서 있다 (0 으로 떨어지지 않는다)', (tester) async {
+      await setTime(tester, 1.0);
+      await setTime(tester, 0.42);
+      await setTime(tester, null);
+      expect(
+        tester.widget<AppProgressBar>(find.byType(AppProgressBar)).value,
+        0.42,
+      );
+    });
+
+    testWidgets('시계가 없는 게임(9종)에는 빈 자리가 생기지 않는다', (tester) async {
+      await setTime(tester, null);
+      expect(
+        find.byType(AppProgressBar),
+        findsNothing,
+        reason: '값을 한 번도 안 준 판에 막대 자리를 예약하면 세로가 그냥 줄어든다',
+      );
+    });
+  });
+
+  // =====================================================================
+  // 제한 시계는 프레임으로 돈다 — `Stopwatch` 가 아니다 (규격서 §2.13)
+  //
+  // 세 시험 모두 **진짜 시계로는 통과할 수 없다**. 위젯 테스트에서 `Timer` 는
+  // 가짜 시계를 타지만 `Stopwatch` 는 진짜 시계를 타므로, `pump` 로 시간을
+  // 흘려보내도 `Stopwatch` 는 0 에 머물렀다.
+  // =====================================================================
+  group('제한 시계', () {
+    testWidgets('5초 삭제: 남은 시간이 pump 한 시간만큼 줄어든다', (tester) async {
+      useTallScreen(tester);
+      await show(tester, DeleteFastGame(ctx: ctx(), done: (_) {}));
+      expect(scaffoldOf(tester).timeLeft, closeTo(1.0, 0.01));
+      await tester.pump(const Duration(milliseconds: 1500));
+      expect(
+        scaffoldOf(tester).timeLeft,
+        lessThan(0.75),
+        reason: '1.5초를 흘려보냈는데 막대가 그대로다 — 막대가 진짜 시계를 본다',
+      );
+    });
+
+    testWidgets('표정 읽기: 시간이 다 되면 다음 문제로 넘어간다', (tester) async {
+      useTallScreen(tester);
+      await show(tester, ReadEmotionGame(ctx: ctx(), done: (_) {}));
+      expect(findTextContaining('괜찮아'), findsOneWidget);
+      // 제한은 5.6초 + 눈치×0.03초. 8초면 어느 눈치에서도 시간 초과다.
+      await tester.pump(const Duration(seconds: 8));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        findTextContaining('괜찮아'),
+        findsNothing,
+        reason: '시간이 다 됐는데 같은 문제가 그대로다 — 제한 시계가 진짜 시계다',
+      );
+    });
+
+    testWidgets('단톡방: 7초를 쓴 판은 순서를 다 맞혀도 크리티컬이 아니다', (tester) async {
+      useTallScreen(tester);
+      MinigameResult? out;
+      await show(
+        tester,
+        GroupChatGame(ctx: ctx(partner: 'seoyeon'), done: (r) => out = r),
+      );
+      const rank = ['서연', '엄마', '준호', '동아리', '태현'];
+      final labels = optionLabels(tester);
+      // 크리티컬 기준이 **경과 6초**다. 판정까지 실행 기계 속도에 딸려 가던
+      // 자리라 여기서 못 박는다.
+      await tester.pump(const Duration(seconds: 7));
+      for (final who in rank) {
+        await tester.tap(
+          find.byType(MinigameOption).at(
+            labels.indexWhere((l) => l.startsWith(who)),
+          ),
+        );
+        await tester.pump();
+      }
+      await tester.pump(const Duration(milliseconds: 1300));
+      expect(out!.success, isTrue, reason: '순서는 하나도 안 틀렸다');
+      expect(
+        out!.critical,
+        isFalse,
+        reason: '7초를 쓴 판이 6초 크리티컬을 받았다 — 경과 시간이 진짜 시계다',
+      );
+    });
+  });
+
+  // =====================================================================
   // 맞장구 — 미리 누르면 화면이 대답하고 잠긴다
   // =====================================================================
   group('맞장구', () {
@@ -487,6 +628,28 @@ void main() {
       // 잠금이 풀리면 다시 조용해진다.
       await tester.pump(const Duration(milliseconds: 500));
       expect(findText('아직'), findsNothing);
+    });
+
+    testWidgets('박자를 놓치면 다이얼에 "놓쳤다" 가 남는다', (tester) async {
+      useTallScreen(tester);
+      await show(
+        tester,
+        CallRhythmGame(ctx: ctx(partner: 'jiwoo'), done: (_) {}),
+      );
+      expect(findText('놓쳤다'), findsNothing);
+      // 창이 열리고(최대 1.0초) 닫히기까지(최소 0.77초) 기다린다. 뜨는 순간
+      // 멈추므로 다음 창이 열려 지워지는 것과 겹치지 않는다.
+      var seen = false;
+      for (var i = 0; i < 40 && !seen; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        seen = findText('놓쳤다').evaluate().isNotEmpty;
+      }
+      expect(
+        seen,
+        isTrue,
+        reason: '박자를 놓친 순간 시선이 머무는 자리에 아무 말이 없다 '
+            '— 알림이 진동 하나뿐이라 진동을 끈 손에는 아무 일도 안 일어난다',
+      );
     });
 
     testWidgets('판마다 다른 통화 대본이다', (tester) async {

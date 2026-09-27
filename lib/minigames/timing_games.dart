@@ -455,7 +455,8 @@ class DeleteFastGame extends StatefulWidget {
   State<DeleteFastGame> createState() => _DeleteFastGameState();
 }
 
-class _DeleteFastGameState extends State<DeleteFastGame> {
+class _DeleteFastGameState extends State<DeleteFastGame>
+    with SingleTickerProviderStateMixin {
   static const _hold = Duration(milliseconds: 550);
 
   /// 지울 메시지. 판마다 다르다 — 상대가 누구든 매번 "야 서연 선배…" 가 뜨면
@@ -483,36 +484,42 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
     return base + sense + jitter;
   }();
 
-  final _sw = Stopwatch()..start();
-  Timer? _tick, _readTimer, _holdTimer;
+  /// 상대가 읽기까지의 시계. 프레임으로 돈다([MinigameClock] 참고).
+  /// 예전에는 막대(진짜 `Stopwatch`)와 마감(`Timer`, 테스트에서는 가짜 시계)이
+  /// **서로 다른 시계**를 봐서 테스트 안에서 둘이 어긋났다.
+  late final MinigameClock _clock = MinigameClock(
+    vsync: this,
+    limit: Duration(milliseconds: _readMs),
+    onExpire: () =>
+        _finish(const MinigameResult.miss('읽음 1이 사라졌다. 상대가 봤다.')),
+  );
+  Timer? _holdTimer;
   MinigameResult? _result;
   bool _holding = false;
 
   @override
   void initState() {
     super.initState();
-    _tick = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      if (mounted && _result == null) setState(() {});
-    });
-    _readTimer = Timer(Duration(milliseconds: _readMs), () {
-      if (_result == null) {
-        _finish(const MinigameResult.miss('읽음 1이 사라졌다. 상대가 봤다.'));
-      }
-    });
+    _clock.addListener(_onTick);
+  }
+
+  void _onTick() {
+    if (mounted && _result == null) setState(() {});
   }
 
   @override
   void dispose() {
-    _tick?.cancel();
-    _readTimer?.cancel();
+    _clock
+      ..removeListener(_onTick)
+      ..dispose();
     _holdTimer?.cancel();
     super.dispose();
   }
 
   void _finish(MinigameResult r) {
-    _readTimer?.cancel();
+    if (_result != null) return;
+    _clock.stop();
     _holdTimer?.cancel();
-    _tick?.cancel();
     if (mounted) setState(() => _result = r);
   }
 
@@ -523,7 +530,7 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
     MinigameSfx.tap();
     setState(() => _holding = true);
     _holdTimer = Timer(_hold, () {
-      final ms = _sw.elapsedMilliseconds;
+      final ms = _clock.elapsedMs;
       // 크리티컬 기준은 고정 1.5초가 아니라 **남은 시간의 절반** 이다.
       // 마감이 판마다 다른데 기준만 고정이면 빨리 눌러도 안 되는 판이 생긴다.
       final fast = ms <= _readMs * 0.5;
@@ -549,7 +556,7 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final scheme = context.scheme;
-    final elapsed = _sw.elapsedMilliseconds;
+    final elapsed = _clock.elapsedMs;
     final read = elapsed >= _readMs;
     // 조작 대상은 말풍선 하나다. 이벤트 화면과 같은 말풍선 토큰을 써서
     // "방금 내가 보낸 그 메시지" 로 읽히게 한다.
@@ -561,9 +568,8 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
           '메시지를 ${(_hold.inMilliseconds / 1000).toStringAsFixed(1)}초 길게 눌러 삭제한다. '
           '위 막대가 다 닳으면 상대가 읽는다.',
       // 남은 시간을 보여 준다. 이 게임은 시계와 겨루는 게임인데 시계가 없었다.
-      timeLeft: _result == null
-          ? (1 - elapsed / _readMs).clamp(0.0, 1.0)
-          : null,
+      // 판이 끝나면 null = "시계가 멈췄다". 막대 자리는 그대로 남는다.
+      timeLeft: _result == null ? _clock.left : null,
       result: _result,
       child: CenteredScrollColumn(
         padding: AppInsets.screenX,

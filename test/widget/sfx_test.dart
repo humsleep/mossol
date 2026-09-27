@@ -172,6 +172,50 @@ void main() {
     await tester.pumpWidget(Container());
   });
 
+  testWidgets('미니게임이 판정한 결과는 채팅에서 성패음을 또 내지 않는다', (tester) async {
+    // 미니게임 결과 큐가 나고 1.5초 뒤 채팅 복귀에서 같은 소리가 한 번 더 났다.
+    // 둘째 소리의 성패는 첫째가 이미 정한 값이라(forcedSuccess) 정보가 0 이고,
+    // 회차당 150판이면 가장 많이 듣는 소리가 두 배가 된다
+    // (docs/review/13_minigame_handoff.md §2).
+    final ev = c.bundle.events.firstWhere(
+      (e) => e.choices.any((ch) => ch.minigame != null),
+    );
+    final idx = ev.choices.indexWhere((ch) => ch.minigame != null);
+    await show(tester, ev, revealed: true);
+    sfx.clear();
+
+    // EventScreen 의 _finishMinigame 이 하는 것과 같은 호출.
+    c.choose(idx, minigameSuccess: true);
+    await tester.pump();
+    expect(
+      sfx.played,
+      isNot(contains(Sfx.choiceOk)),
+      reason: '미니게임 스캐폴드가 이미 냈다',
+    );
+    expect(sfx.played, isNot(contains(Sfx.choiceFail)));
+    await settleReplies(tester);
+    await tester.pumpWidget(Container());
+  });
+
+  testWidgets('미니게임 없는 선택지는 그대로 한 번 낸다 (대조)', (tester) async {
+    // 위 조건이 "전부 건너뛰기" 로 구현되지 않았는지 보는 짝 시험.
+    final ev = c.bundle.events.firstWhere(
+      (e) =>
+          e.choices.isNotEmpty &&
+          e.choices.every((ch) => ch.minigame == null && ch.decline != true),
+    );
+    await show(tester, ev, revealed: true);
+    sfx.clear();
+    c.choose(0);
+    await tester.pump();
+    expect(
+      sfx.played.where((x) => x == Sfx.choiceOk || x == Sfx.choiceFail).length,
+      1,
+    );
+    await settleReplies(tester);
+    await tester.pumpWidget(Container());
+  });
+
   testWidgets('선택 실패: choiceFail + heavy 진동, 되돌리면 다시 안 울린다', (tester) async {
     await show(tester, c.bundle.eventById['m01']!, revealed: true);
     c.choose(0, minigameSuccess: false);

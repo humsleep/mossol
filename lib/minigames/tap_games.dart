@@ -39,7 +39,8 @@ class GroupChatGame extends StatefulWidget {
   State<GroupChatGame> createState() => _GroupChatGameState();
 }
 
-class _GroupChatGameState extends State<GroupChatGame> {
+class _GroupChatGameState extends State<GroupChatGame>
+    with SingleTickerProviderStateMixin {
   static const _limit = 10000;
 
   /// 단톡방 세 채. 판마다 한 채만 쓴다. `priority` 가 낮을수록 먼저 답해야 하고,
@@ -83,26 +84,31 @@ class _GroupChatGameState extends State<GroupChatGame> {
   }();
 
   final _order = <int>[];
-  final _sw = Stopwatch()..start();
-  Timer? _tick;
+
+  /// 10초 제한. 프레임으로 돈다([MinigameClock] 참고) — 크리티컬 기준이
+  /// **경과 시간 6초**라서, 진짜 시계로 재면 판정이 실행 기계 속도에 딸려 간다.
+  late final MinigameClock _clock = MinigameClock(
+    vsync: this,
+    limit: const Duration(milliseconds: _limit),
+    onExpire: _finish,
+  );
   MinigameResult? _result;
 
   @override
   void initState() {
     super.initState();
-    _tick = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (!mounted || _result != null) return;
-      if (_sw.elapsedMilliseconds >= _limit) {
-        _finish();
-      } else {
-        setState(() {});
-      }
-    });
+    _clock.addListener(_onTick);
+  }
+
+  void _onTick() {
+    if (mounted && _result == null) setState(() {});
   }
 
   @override
   void dispose() {
-    _tick?.cancel();
+    _clock
+      ..removeListener(_onTick)
+      ..dispose();
     super.dispose();
   }
 
@@ -160,9 +166,10 @@ class _GroupChatGameState extends State<GroupChatGame> {
   }
 
   void _finish() {
-    _tick?.cancel();
+    if (_result != null) return;
+    _clock.stop();
     final bad = _inversions;
-    final secs = _sw.elapsedMilliseconds / 1000;
+    final secs = _clock.elapsedMs / 1000;
     final ok = bad <= 2;
     final perfect = bad == 0;
     setState(() {
@@ -190,7 +197,8 @@ class _GroupChatGameState extends State<GroupChatGame> {
     return MinigameScaffold(
       title: '단톡방 대응',
       instruction: '10초 안에 답할 순서대로 누른다. 답이 늦으면 손해 보는 사람부터.',
-      timeLeft: done ? null : (1 - _sw.elapsedMilliseconds / _limit).clamp(0.0, 1.0),
+      // 판이 끝나면 null = "시계가 멈췄다". 막대는 마지막 값에 세워진 채로 남는다.
+      timeLeft: done ? null : _clock.left,
       result: _result,
       onFinished: () => widget.done(_result!),
       // 무르기는 놀이판의 일부다. 목록과 함께 스크롤되면 손이 닿지 않는다.
@@ -322,6 +330,17 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
 
   /// 창이 열리기 전에 눌러서 잠긴 상태. 표시와 잠금 두 몫을 한다.
   bool _early = false;
+
+  /// 박자를 놓쳤다. 다음 창이 열릴 때까지 다이얼에 남는다.
+  ///
+  /// 왜 필요한가. 놓친 박자는 **손가락을 안 댄 사건**이라 화면 쪽에서
+  /// 먼저 알려야 하는데, 알림이 `nudge()`(= 진동 하나, 소리 없음)뿐이었다.
+  /// 진동을 끈 플레이어에게는 아래 박자 줄의 작은 아이콘 하나가 유일한
+  /// 신호였고, 시선이 머무는 자리(가운데 다이얼)는 놓친 순간에도 `…` 로
+  /// 돌아가 **아무 일도 없었던 것처럼** 보였다. 미리 누른 탭이 `아직` 으로
+  /// 대답하는 것과 짝을 맞춘다. 창이 열리기까지의 빈 시간(_leadMs)에
+  /// 얹으므로 판의 길이는 한 틱도 달라지지 않는다.
+  bool _missed = false;
   Timer? _timer, _earlyTimer;
   MinigameResult? _result;
 
@@ -347,7 +366,10 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
     setState(() => _open = false);
     _timer = Timer(Duration(milliseconds: _leadMs), () {
       if (!mounted) return;
-      setState(() => _open = true);
+      setState(() {
+        _open = true;
+        _missed = false;
+      });
       // 화술이 높을수록 창이 넓다. 날이 갈수록 조금 좁아진다.
       final window =
           ((700 + widget.ctx.stat(Stat.talk) * 6) *
@@ -359,6 +381,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
         MinigameSfx.nudge();
         setState(() {
           _open = false;
+          _missed = true;
           _combo = 0;
           _index++;
           _marks.add(false);
@@ -428,6 +451,8 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
         ? (scheme.primary, scheme.primary, scheme.onPrimary, line.$2)
         : _early
         ? (t.warningContainer, t.warning, t.onWarningContainer, '아직')
+        : _missed
+        ? (t.dangerContainer, t.danger, t.onDangerContainer, '놓쳤다')
         : (
             scheme.surfaceContainer,
             scheme.outlineVariant,
@@ -487,7 +512,7 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
                   color: dialBg,
                   border: Border.all(
                     color: dialLine,
-                    width: _open || _early
+                    width: _open || _early || _missed
                         ? AppBorderWidth.emphasis
                         : AppBorderWidth.hairline,
                   ),

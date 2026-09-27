@@ -282,6 +282,19 @@ class StoryBundle {
           '캐릭터 mbti 는 대문자 4글자(E/I S/N T/F J/P): ${c.id} -> "$m"',
         );
       }
+      // 오타는 조용히 기본값으로 떨어진다 — `"politness": "polite"` 한 글자에 지우가
+      // 100일 내내 반말을 하게 되므로 여기서 막는다. 줄 조건 쪽 검사는 [_checkGate].
+      if (!Humor.isValid(c.humor)) {
+        throw StateError(
+          '캐릭터 humor 는 ${Humor.values.join('|')}: ${c.id} -> "${c.humor}"',
+        );
+      }
+      if (!Politeness.isValid(c.politeness)) {
+        throw StateError(
+          '캐릭터 politeness 는 ${Politeness.values.join('|')}: '
+          '${c.id} -> "${c.politeness}"',
+        );
+      }
     }
     final cm = config.compatMultiplier;
     if (cm.length != Mbti.maxCompat + 1 || cm.any((v) => v < 0.5 || v > 1.5)) {
@@ -464,9 +477,25 @@ class StoryBundle {
   /// 100일 후반의 일상 칸은 결국 이 목록 안에서만 돌아간다.
   List<StoryEvent> repeatableDaily(String pref) => [
     for (final e in events)
-      if (e.layer == EventLayer.daily && !e.once && eventInPreference(e, pref))
+      if (e.layer == EventLayer.daily &&
+          !e.once &&
+          _drawable(e) &&
+          eventInPreference(e, pref))
         e,
   ];
+
+  /// 일상 추첨에 오를 수 있는 날이 하나라도 있는가.
+  ///
+  /// `failNext` 로만 도달하는 뒷장면들은 `layer: daily` · `once: false` 로 두면서
+  /// `day: [0,0]` 으로 추첨을 막아 뒀다(그 두 값은 다른 테스트가 강제한다 —
+  /// docs/review/13_content_fixes.md §3). 그 10개를 [repeatableDaily] 가 같이 세면
+  /// 소프트락 방지선이 **실제 후보 24개를 34개로 읽어**, 여유가 없는데 있다고 말한다.
+  /// 그러면 다음 사람이 그 숫자를 믿고 `once: true` 를 더 붙이다 앱을 못 띄운다.
+  bool _drawable(StoryEvent e) {
+    final d = e.trigger.day;
+    if (d == null) return true;
+    return d.max >= 1 && d.min <= config.totalDays;
+  }
 
   /// `once` 소진으로 하루가 비지 않는지. **소프트락 방지선이다.**
   ///
@@ -618,8 +647,23 @@ class StoryBundle {
     required String? mbti,
     required bool noMbti,
     required Range? compat,
+    required List<String> humor,
+    required String? register,
     required bool hasCharacter,
   }) {
+    for (final h in humor) {
+      if (!Humor.isValid(h)) {
+        throw StateError('humor 조건은 ${Humor.values.join('|')}: $where -> "$h"');
+      }
+    }
+    if (humor.toSet().length != humor.length) {
+      throw StateError('humor 조건에 같은 값이 두 번: $where $humor');
+    }
+    if (register != null && !Politeness.isValid(register)) {
+      throw StateError(
+        'register 는 ${Politeness.values.join('|')}: $where -> "$register"',
+      );
+    }
     if (mbti != null) {
       final p = Mbti.conditionProblem(mbti);
       if (p != null) throw StateError('mbti 조건 오류: $where ($p) "$mbti"');
@@ -637,8 +681,58 @@ class StoryBundle {
     }
   }
 
-  /// 이벤트 하나의 MBTI 규칙: 조건 형식, 대체어 없는 `{mbti}` 위치, 그리고 플레이어 17가지
-  /// (모름 + 16유형) 각각에서 거른 뒤에도 대사·선택지·반응이 비지 않는지.
+  /// 조건 붙은 줄·선택지를 볼 **경우의 수**를 모두 만든다.
+  ///
+  /// - 플레이어 축(`mbti`·`noMbti`·`compat`): 17가지(모름 + 16유형).
+  /// - 상대 축(`humor`·`register`): 13가지(1위 없음 + 캐릭터 전원).
+  ///
+  /// 축이 안 쓰인 이벤트는 그 축을 한 경우로 접는다 — 조건이 붙지 않은 축을 17배·13배
+  /// 돌아 봐야 결과가 같다.
+  ///
+  /// **1위 후보를 이 회차 선호로 좁히지 않는다.** `trigger.pref: "f"` 이벤트도
+  /// [Preference.all] 회차에서는 열리고, 그 회차에는 남성 캐릭터가 1위일 수 있다
+  /// ([StoryBundle.absentIds] 가 all 에서 아무도 빼지 않는다). 좁히면 검증이 거짓말을 한다.
+  List<(String, MbtiView)> _viewCases(StoryEvent e) {
+    final t = e.trigger;
+    final charMbti = e.character != null
+        ? characterById[e.character]?.mbti
+        : null;
+    final voiced = e.hasVoiceGates;
+    final players = e.hasPlayerGates ? Mbti.playerCases : const <String?>[null];
+    final voices = voiced
+        ? <CharacterDef?>[null, ...characters]
+        : const <CharacterDef?>[null];
+    final out = <(String, MbtiView)>[];
+    for (final p in players) {
+      // 이벤트 트리거가 이 플레이어를 막으면 거른 결과는 볼 일이 없다.
+      if (t.mbti != null && !Mbti.matches(t.mbti!, p)) continue;
+      if (t.noMbti && p != null) continue;
+      if (t.compat != null && !t.compat!.contains(Mbti.compat(p, charMbti))) {
+        continue;
+      }
+      for (final voice in voices) {
+        final v = MbtiView.of(p, charMbti, voice: voice);
+        final label = [
+          if (e.hasPlayerGates) 'MBTI ${p ?? '모름'}',
+          if (voiced)
+            voice == null
+                ? '1위 없음(${v.humor}·${v.politeness})'
+                : '1위 ${voice.name}(${v.humor}·${v.politeness})',
+        ].join(' · ');
+        out.add((label, v));
+      }
+    }
+    return out;
+  }
+
+  /// 이벤트 하나의 조건 규칙: 조건 형식, 대체어 없는 `{mbti}` 위치, 그리고 [_viewCases]
+  /// 각각에서 거른 뒤에도 대사·선택지·반응이 비지 않는지.
+  ///
+  /// 마지막 것이 이 검사의 존재 이유다. 씬의 대사가 전부 `humor`·`register` 로 갈려
+  /// 있는데 다섯 값 중 하나가 빠지면 **그 값을 가진 캐릭터를 공략한 플레이어만 빈 화면**을
+  /// 본다. 고백·첫 싸움 씬이 무음이던 것이 원래 이 버그였고(docs/review/11_story_verdict.md
+  /// 4-7), 조건으로 다시 만들면 **데이터가 문법적으로 멀쩡해서** 나머지 테스트가 전부 초록인 채로
+  /// 되살아난다. 그래서 검증기가 잡는다.
   void _checkMbti(StoryEvent e) {
     final hasChar = e.character != null;
     final t = e.trigger;
@@ -660,6 +754,8 @@ class StoryBundle {
           mbti: l.mbti,
           noMbti: l.noMbti,
           compat: l.compat,
+          humor: l.humor,
+          register: l.register,
           hasCharacter: hasChar,
         );
         final k = known || l.mbti != null;
@@ -675,6 +771,9 @@ class StoryBundle {
       bare(e.cliffhanger!, '${e.id}.cliffhanger', eventKnows);
     }
     lines(e.lines, '${e.id}.lines', eventKnows);
+    for (var i = 0; i < e.variants.length; i++) {
+      lines(e.variants[i], '${e.id}.variants[$i]', eventKnows);
+    }
     for (var i = 0; i < e.choices.length; i++) {
       final c = e.choices[i];
       final where = '${e.id}.choices[$i]';
@@ -683,6 +782,8 @@ class StoryBundle {
         mbti: c.mbti,
         noMbti: c.noMbti,
         compat: c.compat,
+        humor: c.humor,
+        register: c.register,
         hasCharacter: hasChar,
       );
       final known = eventKnows || c.mbti != null;
@@ -693,26 +794,26 @@ class StoryBundle {
     }
     if (!e.hasMbtiGates) return;
 
-    final charMbti = hasChar ? characterById[e.character]?.mbti : null;
-    for (final p in Mbti.playerCases) {
-      final v = MbtiView.of(p, charMbti);
-      // 이벤트 트리거가 이 플레이어를 막으면 거른 결과는 볼 일이 없다.
-      if (t.mbti != null && !Mbti.matches(t.mbti!, p)) continue;
-      if (t.noMbti && p != null) continue;
-      if (t.compat != null && !t.compat!.contains(v.compat)) continue;
-      final who = p ?? '모름';
+    for (final (who, v) in _viewCases(e)) {
       final f = e.forMbti(v);
       if (e.lines.isNotEmpty && f.lines.isEmpty) {
-        throw StateError('MBTI $who 플레이어에게 대사가 0줄: ${e.id}');
+        throw StateError('$who 플레이어에게 대사가 0줄: ${e.id}');
+      }
+      // 변형 대사 묶음도 화면 하나다. 본편만 덮고 변형을 빠뜨리면 그 묶음이 뽑힌 회차만
+      // 무음이 되고, 그 회차는 시드가 정하므로 재현조차 어렵다([EventEngine.variantOf]).
+      for (var i = 0; i < e.variants.length; i++) {
+        if (e.variants[i].isNotEmpty && v.lines(e.variants[i]).isEmpty) {
+          throw StateError('$who 플레이어에게 대사가 0줄: ${e.id}.variants[$i]');
+        }
       }
       final need = e.choices.length >= 2 ? 2 : 1;
       if (f.choices.length < need) {
         throw StateError(
-          'MBTI $who 플레이어에게 선택지가 ${f.choices.length}개(최소 $need): ${e.id}',
+          '$who 플레이어에게 선택지가 ${f.choices.length}개(최소 $need): ${e.id}',
         );
       }
       if (e.isCall && f.declineIndex == null) {
-        throw StateError('MBTI $who 플레이어에게 전화 거절 선택지가 없음: ${e.id}');
+        throw StateError('$who 플레이어에게 전화 거절 선택지가 없음: ${e.id}');
       }
       final orig = [
         for (final c in e.choices)
@@ -727,9 +828,7 @@ class StoryBundle {
           ('critReply', o.critReply, c.critReply),
         ]) {
           if (a.isNotEmpty && b.isEmpty) {
-            throw StateError(
-              'MBTI $who 플레이어에게 반응이 0줄: ${e.id} "${o.text}".$name',
-            );
+            throw StateError('$who 플레이어에게 반응이 0줄: ${e.id} "${o.text}".$name');
           }
         }
       }
@@ -801,6 +900,11 @@ class StoryBundle {
       mbti: t.mbti,
       noMbti: t.noMbti,
       compat: t.compat,
+      // 트리거에는 상대 축이 없다. 1위의 농담 코드로 **이벤트**를 가르면 같은 날 열릴
+      // 후보가 5벌로 늘고(planDay 는 조건을 만족하는 main 을 전부 큐에 넣는다) 상호배타도
+      // 보장되지 않는다 — 가르는 자리는 줄이지 이벤트가 아니다(12_main_rewrite §5.2).
+      humor: const [],
+      register: null,
       hasCharacter: hasCharacter,
     );
     final fc = t.flagsAtLeast;
@@ -837,7 +941,18 @@ class StoryBundle {
     for (final e in events) {
       final h = e.hint;
       if (h != null && h >= 0 && h < e.choices.length && e.choices[h].isGated) {
-        out.add('${e.id}: hint 선택지에 MBTI 조건 (맞지 않는 플레이어에게는 힌트가 없음)');
+        // 조건의 종류를 밝힌다. `isGated` 는 플레이어 축(MBTI·궁합)과 상대 축
+        // (humor·register)을 함께 보는데, 문구가 "MBTI" 로만 되어 있어서 말높임 두 벌을
+        // 쓰려던 사람이 원인을 못 찾았다(docs/review/13_main_voices.md §2).
+        //
+        // 상대 축도 여기서 막는 것은 맞다: `hint` 는 **번호**이고 `forMbti` 는 그 번호가
+        // 살아남을 때만 힌트를 옮긴다. 그래서 한 선택지를 casual·polite 두 벌로 쪼개면
+        // 번호가 붙은 쪽만 힌트를 갖고 나머지 쪽 플레이어는 힌트를 잃는다.
+        // 두 벌로 쪼개려면 `hint` 를 번호가 아닌 표식으로 바꾸는 작업이 먼저다.
+        final kind = e.choices[h].isVoiceGated
+            ? (e.choices[h].isPlayerGated ? 'MBTI·목소리' : '목소리(humor/register)')
+            : 'MBTI';
+        out.add('${e.id}: hint 선택지에 $kind 조건 (맞지 않는 플레이어에게는 힌트가 없음)');
       }
     }
     for (final e in events) {

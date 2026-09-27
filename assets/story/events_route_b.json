@@ -277,6 +277,9 @@
      "stats": {
       "esteem": -3,
       "stress": 8
+     },
+     "affection": {
+      "*": 1
      }
     },
     "reply": [
@@ -633,6 +636,9 @@
     "fail": {
      "stats": {
       "reputation": -2
+     },
+     "affection": {
+      "*": -1
      }
     },
     "reply": [
@@ -1705,7 +1711,10 @@
      },
      "setFlags": [
       "minjae_met"
-     ]
+     ],
+     "affection": {
+      "*": 2
+     }
     },
     "reply": [
      "다행이다",
@@ -1722,7 +1731,8 @@
      "헐 진짜?",
      "나 지금 되게 바보같이 웃고 있지",
      "아 몰라. 일단 뭐 먹으러 가자"
-    ]
+    ],
+    "failNext": "mo_fail_call_cut"
    },
    {
     "text": "사진이랑 다르네",
@@ -2438,7 +2448,10 @@
      "setFlags": [
       "yeeun_contact",
       "yeeun_reunion"
-     ]
+     ],
+     "affection": {
+      "*": -1
+     }
     },
     "reply": [
      "ㅋㅋㅋㅋ 인정하는 거 뭐야",
@@ -3577,7 +3590,8 @@
       "text": "분위기를 살리려고 보낸 짤이 하필 우는 짤이었다."
      },
      "ㅋㅋ 이거 무슨 뜻이야?"
-    ]
+    ],
+    "failNext": "mo_fail_meme_missed"
    },
    {
     "text": "그럼 눈치 안 보고 말할게",
@@ -3767,6 +3781,9 @@
      "stats": {
       "talk": -1,
       "esteem": -1
+     },
+     "affection": {
+      "*": 2
      }
     },
     "minigame": "word_order",
@@ -4312,6 +4329,9 @@
     "fail": {
      "stats": {
       "reputation": -2
+     },
+     "affection": {
+      "*": -1
      }
     },
     "reply": [
@@ -4601,6 +4621,9 @@
     "fail": {
      "stats": {
       "reputation": -2
+     },
+     "affection": {
+      "*": -1
      }
     },
     "reply": [
@@ -5447,7 +5470,8 @@
       "text": "표정을 살피다 말이 꼬였다. 치킨만 세 번 말했다."
      },
      "그래서 몇 마리 드셨어요"
-    ]
+    ],
+    "failNext": "mo_fail_misread"
    },
    {
     "text": "샐러드 먹었어요",
@@ -5741,6 +5765,9 @@
      "stats": {
       "charm": -1,
       "esteem": -1
+     },
+     "affection": {
+      "*": 1
      }
     },
     "minigame": "outfit",

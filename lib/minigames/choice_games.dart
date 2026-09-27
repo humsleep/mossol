@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -19,7 +18,8 @@ class ReadEmotionGame extends StatefulWidget {
   State<ReadEmotionGame> createState() => _ReadEmotionGameState();
 }
 
-class _ReadEmotionGameState extends State<ReadEmotionGame> {
+class _ReadEmotionGameState extends State<ReadEmotionGame>
+    with SingleTickerProviderStateMixin {
   /// (한 말, 표정, 보기, 정답 index). 판마다 이 중 [_perRound] 개만 쓴다 —
   /// 열두 문제를 매번 네 개씩 돌려 쓰면 두 번째 판이 첫 판과 겹치지 않는다.
   static const _pool = [
@@ -62,8 +62,13 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
   int _round = 0;
   int _correct = 0;
   int? _picked;
-  final _sw = Stopwatch()..start();
-  Timer? _tick;
+
+  /// 문제마다 되감는 시계. 프레임으로 돈다([MinigameClock] 참고).
+  late final MinigameClock _clock = MinigameClock(
+    vsync: this,
+    limit: Duration(milliseconds: _limit),
+    onExpire: () => _pick(-1),
+  );
   MinigameResult? _result;
 
   /// 화면에 보이는 i 번째 보기의 원래 index.
@@ -75,19 +80,18 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
   @override
   void initState() {
     super.initState();
-    _tick = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (!mounted || _result != null) return;
-      if (_sw.elapsedMilliseconds >= _limit) {
-        _pick(-1);
-      } else {
-        setState(() {});
-      }
-    });
+    _clock.addListener(_onTick);
+  }
+
+  void _onTick() {
+    if (mounted && _result == null) setState(() {});
   }
 
   @override
   void dispose() {
-    _tick?.cancel();
+    _clock
+      ..removeListener(_onTick)
+      ..dispose();
     super.dispose();
   }
 
@@ -98,6 +102,9 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
     // 네 문제를 연달아 푸는 게임이라 문제마다 맞았는지가 그 자리에서 나야 한다.
     // 마지막 문제의 결과 큐는 스캐폴드가 따로 낸다(여기 것과 550ms 떨어져 있다).
     i == answer ? MinigameSfx.step() : MinigameSfx.nudge();
+    // 정답을 공개하는 550ms 동안 시계를 세운다. 막대는 그 자리에 멈춰 선다 —
+    // 예전에는 `timeLeft: null` 로 막대를 내려서 판 전체가 들썩였다.
+    _clock.stop();
     setState(() => _picked = i);
     Future.delayed(const Duration(milliseconds: 550), () {
       if (!mounted) return;
@@ -105,15 +112,13 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
       setState(() {
         _round++;
         _picked = null;
-        _sw
-          ..reset()
-          ..start();
       });
+      _clock.restart();
     });
   }
 
   void _finish() {
-    _tick?.cancel();
+    _clock.stop();
     setState(() {
       _result = MinigameResult(
         success: _correct >= 3,
@@ -147,9 +152,9 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
       instruction:
           '${(_limit / 1000).toStringAsFixed(1)}초 안에 고른다. '
           '눈치가 높을수록 시간이 늘어난다.',
-      timeLeft: _picked == null
-          ? (1 - _sw.elapsedMilliseconds / _limit).clamp(0.0, 1.0)
-          : null,
+      // 정답 공개 중에는 null = "시계가 멈췄다". 스캐폴드가 막대를 마지막 값에
+      // 세워 두므로 자리가 사라지지 않는다.
+      timeLeft: _picked == null ? _clock.left : null,
       result: _result,
       onFinished: () => widget.done(_result!),
       child: ListView(
