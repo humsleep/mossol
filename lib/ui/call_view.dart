@@ -20,6 +20,7 @@ import '../engine/models.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'portraits.dart';
+import 'profile_view.dart';
 import 'scene_card.dart';
 import 'scene_registry.dart';
 import 'widgets.dart';
@@ -471,15 +472,29 @@ class ActiveCallView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    ExcludeSemantics(
-                      child: _CallAvatar(
-                        name: name,
-                        characterId: characterId,
-                        accent: accent,
-                        size: AppSpace.huge,
+                    // 통화 머리줄의 아바타도 채팅 아바타와 같다 — 누르면 초상화가
+                    // 크게 열린다(§2.15). 프로필이 없는 상대면 그냥 그림이다.
+                    // 그림은 40 인데 탭 대상은 44 여야 하므로(§4.2) 상자만 44 로 잡고
+                    // 뒤 간격을 md → sm 로 줄인다(44 + 8 = 40 + 12, 이름 열은 제자리).
+                    PortraitTapTarget(
+                      characterId: characterId,
+                      name: name,
+                      child: SizedBox.square(
+                        dimension: AppSpace.minTouch,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: ExcludeSemantics(
+                            child: _CallAvatar(
+                              name: name,
+                              characterId: characterId,
+                              accent: accent,
+                              size: AppSpace.huge,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpace.md),
+                    const SizedBox(width: AppSpace.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

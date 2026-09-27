@@ -297,7 +297,10 @@ void main() {
           );
           expect(
             plan.where((e) => e.layer == EventLayer.daily).length,
-            greaterThanOrEqualTo(day <= 2 ? 2 : 3),
+            // 3일차는 2개다 — m_brief(태현이 다섯 명을 이름으로 소개한다)가
+            // 메인으로 들어가면서 일상 한 칸을 가져갔다. 하루 총량
+            // (openingMinEventsPerDay)은 그대로라 분량이 준 게 아니라 바뀐 것이다.
+            greaterThanOrEqualTo(2),
             reason: '시드 $seed $day일차: 일상이 목표치까지 채워져야 한다',
           );
           if (day <= 2) {

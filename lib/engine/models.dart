@@ -510,11 +510,15 @@ class Line {
   bool get isGated => mbti != null || noMbti || compat != null;
 
   /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
+  ///
+  /// [name] — 말풍선 머리에 뜨는 이름 — 도 함께 치환한다. `@top` 으로 호감이
+  /// 움직이는 장면은 상대를 `{top}` 으로 부르는데, 여기서 건너뛰면 지문은
+  /// "다은이한테" 라고 하면서 말풍선 머리에는 `{top}` 이 그대로 찍혔다.
   Line mapText(String Function(String) f) => Line(
     who: who,
     text: f(text),
     wait: wait,
-    name: name,
+    name: name == null ? null : f(name!),
     photo: photo?.mapText(f),
     mbti: mbti,
     noMbti: noMbti,
@@ -735,6 +739,17 @@ class StoryEvent {
   /// 상대가 먼저 거는 전화인지.
   bool get isCall => format == formatCall;
 
+  /// 루트 단계 번호. id 끝의 `_rNN`(`seoyeon_r03` → 3)에서 유도한다. 데이터에 새 칸을
+  /// 만들지 않는 이유는 189개 루트 이벤트가 이미 전부 `<캐릭터>_rNN` 이기 때문이다
+  /// (모먼트 루트 `mo_seoyeon_call_dawn` 48개만 번호가 없다 → null = 순서 제약 없음).
+  /// `_pickRoute` 가 같은 캐릭터의 단계 역행을 막는 데 쓴다(docs/review/07_story_flow.md (c)#3).
+  int? get stage {
+    final m = _stagePattern.firstMatch(id);
+    return m == null ? null : int.parse(m[1]!);
+  }
+
+  static final _stagePattern = RegExp(r'_r(\d+)$');
+
   /// 화면에 보이는 글(제목·대사·사진 캡션·선택지·반응·알림·클리프행어)을 [f] 로 바꾼
   /// 사본. id·조건·효과는 그대로라 엔진에는 원본을 넘긴다. `GameController.shownEvent`.
   StoryEvent mapText(String Function(String) f) => StoryEvent(
@@ -786,6 +801,10 @@ class StoryEvent {
     Iterable<(String, String)> linesOf(String where, List<Line> ls) sync* {
       for (var i = 0; i < ls.length; i++) {
         yield ('$where[$i]', ls[i].text);
+        // 말풍선 머리에 뜨는 이름도 화면에 나가는 글이다. 여기 빠뜨리면
+        // `"name": "{top}"` 이 치환 대상으로 안 잡혀 토큰이 그대로 찍힌다.
+        final n = ls[i].name;
+        if (n != null) yield ('$where[$i].name', n);
         final p = ls[i].photo;
         if (p != null) yield ('$where[$i].photo.caption', p.caption);
       }
@@ -1121,6 +1140,28 @@ class GameConfig {
   /// [GameController.startDay] 한 곳에서만 본다 — 엔진·밸런스 시뮬레이터는 이 값을 모른다.
   final int firstRunFreeHeartDays;
 
+  /// 같은 일상(daily) 이벤트를 다시 뽑기까지 비워 두는 날 수(`dailyCooldownDays`, 선택).
+  /// 0 이면 예전 그대로(무제한 반복). 기본 [defaultDailyCooldownDays].
+  ///
+  /// 왜: 일상 123개 중 105개가 `once:false` 라 같은 장면이 계속 재추첨됐다 — 300시드 **전부**
+  /// 20일 안에 같은 일상을 두 번 이상 받았고, `d_misc_01` 은 5일 안에 네 번까지 나왔다
+  /// (docs/review/07_story_flow.md (c)#8). [EventEngine.dailyPool] 이 이 기간 안에 본 일상을
+  /// 후보에서 빼고, 그러면 후보가 비는 날에는 원래 후보로 되돌린다(막히지 않는다).
+  final int dailyCooldownDays;
+
+  /// 1회차 D+1 에 **반드시**, 적힌 순서대로 먼저 재생할 이벤트 id 목록(`openingScript`, 선택).
+  /// 비어 있으면(기본) 예전과 똑같이 평소 추첨만 돈다.
+  ///
+  /// 왜: 100일 내기라는 전제를 세우는 `d_open_bet` 이 일상 풀에서 추첨되는 탓에 회차의
+  /// 30.3% 가 전제를 못 듣고 시작했다(docs/review/07_story_flow.md (c)#4).
+  /// 내용은 스토리 담당이 채운다 — 엔진은 "있으면 맨 앞에 순서대로 깐다"까지만 안다.
+  final List<String> openingScript;
+
+  /// [dailyCooldownDays] 기본값. 하루에 뽑는 일상은 1~2개(오프닝 3~4개)이므로 14일이면
+  /// 최대 30개 남짓이 냉각 중이고, 조건을 통과한 일상 후보는 그보다 훨씬 많다.
+  /// 2주면 플레이어가 같은 장면을 '방금 그거'로 알아채지 않는 선이기도 하다.
+  static const defaultDailyCooldownDays = 14;
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -1132,6 +1173,8 @@ class GameConfig {
     this.compatMultiplier = defaultCompatMultiplier,
     this.chapterTitles = const [],
     this.firstRunFreeHeartDays = 0,
+    this.dailyCooldownDays = defaultDailyCooldownDays,
+    this.openingScript = const [],
   });
 
   /// [chapter](1부터) 의 제목. 없거나 비어 있으면 null.
@@ -1170,6 +1213,16 @@ class GameConfig {
       final num v when v > 0 => v.toInt(),
       _ => 0,
     },
+    // 칸이 없는 예전 데이터는 기본값, 음수·이상한 값은 0(냉각 없음)으로 읽는다.
+    dailyCooldownDays: switch (j['dailyCooldownDays']) {
+      final num v when v > 0 => v.toInt(),
+      final num _ => 0,
+      _ => defaultDailyCooldownDays,
+    },
+    openingScript: [
+      for (final v in (j['openingScript'] as List?) ?? const [])
+        if ('$v'.trim().isNotEmpty) '$v'.trim(),
+    ],
   );
 }
 
@@ -1370,6 +1423,7 @@ class GameState {
     'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
     'overnightShifts': Map.of(overnightShifts),
     'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
+    'dailySeenDay': Map.of(dailySeenDay),
     'freeInputs': [for (final f in freeInputs) f.toJson()],
   };
 
@@ -1411,6 +1465,7 @@ class GameState {
           for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
             e.key as String: _intMap(e.value),
         })
+        ..dailySeenDay.addAll(_intMap(j['dailySeenDay']))
         ..freeInputs.addAll([
           for (final e in (j['freeInputs'] as List?) ?? const [])
             ?FreeInputEntry.fromJson(e),
@@ -1430,6 +1485,22 @@ class GameState {
   /// 오늘 쌓인 변화(`stats`/`affection`/`trust` → 키 → 변화량). 하루 도중 앱을 다시
   /// 켜도 정산이 이어지게 컨트롤러가 저장 직전에 채운다.
   final Map<String, Map<String, int>> dayDelta = {};
+
+  /// 일상(daily) 이벤트 id → 마지막으로 본 날. 같은 장면이 며칠 안에 또 나오지 않게
+  /// [GameConfig.dailyCooldownDays] 동안 후보에서 빼는 데 쓴다(`EventEngine.dailyPool`).
+  /// 칸이 없는 예전 세이브는 빈 맵 = 냉각 중인 일상이 없음 → 예전과 똑같이 굴러간다.
+  /// 냉각이 지난 기록은 [noteDailySeen] 이 지워서 세이브가 계속 커지지 않는다.
+  final Map<String, int> dailySeenDay = {};
+
+  /// 오늘 일상 [id] 를 봤다고 적고, 냉각이 지난 기록은 버린다.
+  void noteDailySeen(String id, {required int cooldownDays}) {
+    dailySeenDay[id] = day;
+    if (cooldownDays <= 0) {
+      dailySeenDay.clear();
+      return;
+    }
+    dailySeenDay.removeWhere((_, d) => day - d >= cooldownDays);
+  }
 
   /// 자유 입력 기록(최근 [maxFreeInputs] 건, 추가만). 없는 예전 세이브는 빈 목록.
   final List<FreeInputEntry> freeInputs = [];

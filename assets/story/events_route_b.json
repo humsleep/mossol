@@ -2430,7 +2430,7 @@
       "yeeun_reunion"
      ]
     },
-    "minigame": "group_chat",
+    "minigame": "drink_limit",
     "fail": {
      "stats": {
       "reputation": -2
@@ -3323,7 +3323,10 @@
      "stats": {
       "esteem": -3,
       "stress": 8
-     }
+     },
+     "setFlags": [
+      "told_junho"
+     ]
     },
     "minigame": "call_rhythm",
     "reply": [

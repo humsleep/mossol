@@ -307,7 +307,7 @@
       "sohee_guild"
      ]
     },
-    "minigame": "group_chat",
+    "minigame": "drink_limit",
     "fail": {
      "stats": {
       "reputation": -1
@@ -414,7 +414,7 @@
       "sohee_audition"
      ]
     },
-    "minigame": "nerve_gauge",
+    "minigame": "read_emotion",
     "fail": {
      "stats": {
       "esteem": -3,

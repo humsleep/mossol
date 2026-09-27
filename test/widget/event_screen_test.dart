@@ -113,8 +113,11 @@ void main() {
     expect(find.byType(OutlinedButton), findsNothing);
     await tester.tap(findText('계속'));
     await tester.pump();
-    // 큐가 비어 있으니 정산으로.
-    expect(c.phase, Phase.summary);
+    // m01 은 어느 선택지로 가도 100일 약속(d_open_bet)으로 이어진다 — 전제를
+    // 못 듣고 1일차가 끝나는 회차가 없게 한 장치다. 그래서 여기서 정산이 아니라
+    // 다음 이벤트가 선다. 이 줄이 깨지면 전제 보장이 풀렸다는 뜻이다.
+    expect(c.phase, Phase.event);
+    expect(c.current!.id, 'd_open_bet');
   });
 
   testWidgets('결과 패널: 실패면 되돌리기 제안이 뜨고 광고 실패 시 그대로다', (tester) async {

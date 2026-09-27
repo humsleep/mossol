@@ -20,20 +20,57 @@ class ReadEmotionGame extends StatefulWidget {
 }
 
 class _ReadEmotionGameState extends State<ReadEmotionGame> {
-  static const _rounds = [
+  /// (한 말, 표정, 보기, 정답 index). 판마다 이 중 [_perRound] 개만 쓴다 —
+  /// 열두 문제를 매번 네 개씩 돌려 쓰면 두 번째 판이 첫 판과 겹치지 않는다.
+  static const _pool = [
     ('괜찮아 ㅎㅎ 신경 쓰지 마', '🙂', ['서운함', '진짜 괜찮음', '화남', '피곤함'], 0),
     ('아 그렇구나', '…', ['관심 있음', '대화 끊고 싶음', '기분 좋음', '졸림'], 1),
     ('너 마음대로 해', '🙃', ['허락', '삐짐', '무관심', '신남'], 1),
     ('오늘 좀 피곤하다', '😮‍💨', ['위로 원함', '약속 취소 원함', '자랑', '화남'], 0),
+    ('ㅇㅇ', '😐', ['동의', '대화 끊고 싶음', '바쁨', '삐짐'], 1),
+    ('아니 뭐 별건 아닌데', '🫤', ['진짜 별거 아님', '꺼내고 싶은 말이 있음', '변명', '자랑'], 1),
+    ('넌 참 좋은 사람이야', '🙂', ['호감', '선 긋기', '고마움', '놀림'], 1),
+    ('나 내일 시간 비어', '👀', ['일정 공유', '만나자는 뜻', '자랑', '거절'], 1),
+    ('ㅋ', '🫥', ['재밌음', '기분 상함', '바쁨', '수줍음'], 1),
+    ('그 얘기는 나중에 하자', '😶', ['미루기', '지금 불편함', '까먹음', '관심 없음'], 1),
+    ('사진 잘 나왔네', '🙂', ['칭찬', '떠보기', '무성의', '질투'], 0),
+    ('먼저 자', '🌙', ['잘 자라는 뜻', '더 붙잡히고 싶음', '화남', '귀찮음'], 1),
   ];
 
-  late final int _limit = 5000 + widget.ctx.stat(Stat.sense) * 30;
+  /// 한 판에 푸는 문제 수. 성공 기준(3개)이 여기에 묶여 있다.
+  static const _perRound = 4;
+
+  /// 이 판에 나올 문제. 등장 순번마다 다른 네 개가 잘려 나온다.
+  late final List<(String, String, List<String>, int)> _rounds =
+      widget.ctx.vary.some('read_emotion', _pool, _perRound);
+
+  /// 보기 순서도 판마다 섞는다. 정답이 늘 같은 자리에 있으면 두 번째부터는
+  /// 문장이 아니라 위치를 외우게 된다.
+  late final List<List<int>> _optionOrder = [
+    for (var i = 0; i < _rounds.length; i++)
+      widget.ctx.vary.shuffled(
+        'read_emotion_opt$i',
+        List<int>.generate(_rounds[i].$3.length, (k) => k),
+      ),
+  ];
+
+  /// 눈치가 높을수록 시간이 늘고, 날이 갈수록 조금 짧아진다.
+  late final int _limit =
+      (widget.ctx.vary.byPhase(const [5600, 5000, 4600]) +
+              widget.ctx.stat(Stat.sense) * 30)
+          .round();
   int _round = 0;
   int _correct = 0;
   int? _picked;
   final _sw = Stopwatch()..start();
   Timer? _tick;
   MinigameResult? _result;
+
+  /// 화면에 보이는 i 번째 보기의 원래 index.
+  int _slot(int i) => _optionOrder[_round][i];
+
+  /// 이 문제의 정답이 화면에서 몇 번째 자리인지.
+  int get _answerSlot => _optionOrder[_round].indexOf(_rounds[_round].$4);
 
   @override
   void initState() {
@@ -56,7 +93,7 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
 
   void _pick(int i) {
     if (_picked != null || _result != null) return;
-    final answer = _rounds[_round].$4;
+    final answer = _answerSlot;
     if (i == answer) _correct++;
     setState(() => _picked = i);
     Future.delayed(const Duration(milliseconds: 550), () {
@@ -107,7 +144,9 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
       instruction:
           '${(_limit / 1000).toStringAsFixed(1)}초 안에 고른다. '
           '눈치가 높을수록 시간이 늘어난다.',
-      timeLeft: _picked == null ? 1 - _sw.elapsedMilliseconds / _limit : null,
+      timeLeft: _picked == null
+          ? (1 - _sw.elapsedMilliseconds / _limit).clamp(0.0, 1.0)
+          : null,
       result: _result,
       onFinished: () => widget.done(_result!),
       child: ListView(
@@ -130,13 +169,13 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
           const SizedBox(height: AppSpace.lg),
           for (var i = 0; i < r.$3.length; i++)
             MinigameOption(
-              label: r.$3[i],
+              label: r.$3[_slot(i)],
               selected: _picked == i,
-              sub: _picked != null && i == r.$4 ? '정답' : null,
-              tone: _toneFor(i, r.$4),
+              sub: _picked != null && i == _answerSlot ? '정답' : null,
+              tone: _toneFor(i, _answerSlot),
               dimmed:
                   _picked != null &&
-                  _toneFor(i, r.$4) == MinigameOptionTone.neutral,
+                  _toneFor(i, _answerSlot) == MinigameOptionTone.neutral,
               onTap: () => _pick(i),
             ),
           const SizedBox(height: AppSpace.md),
@@ -189,14 +228,46 @@ class _PickMemeGameState extends State<PickMemeGame> {
       'haneul',
     ),
     ('warm', '하트 뿅뿅 곰', '따뜻한 파스텔톤', Icons.favorite_outline, 'yeeun'),
+    ('dry', '무표정 정장 아저씨', '아무 말 없이 엄지만 세운 짤', Icons.thumb_up_outlined, 'doyun'),
+    ('loud', '테이블 치는 짤', '"ㅋㅋㅋㅋㅋㅋㅋ" 가 화면을 덮는다', Icons.celebration_outlined, 'jiwoo'),
+    ('witty', '한 줄 자막 밈', '"그건 좀…" 한 줄이 전부', Icons.format_quote_outlined, 'minjae'),
+    ('meme', '저화질 개구리', '2012년 짤방 특유의 깨진 화질', Icons.blur_on_outlined, 'haneul'),
+    ('warm', '이불 덮은 강아지', '"푹 자" 자막', Icons.bedtime_outlined, 'yeeun'),
   ];
+
+  /// 답해야 할 상대의 말. 판마다 다르다. 같은 말에 같은 짤을 고르는 게 아니라
+  /// 무슨 상황인지 읽고 고르게 하려는 것이다.
+  static const _prompts = [
+    '방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ',
+    '아 오늘 진짜 최악이었다…',
+    '나 방금 지하철에서 넘어짐',
+    '야 이거 봐봐 (사진)',
+    '나 시험 망함 ㅋㅋㅋ 인생 끝',
+  ];
+
+  static const _candidates = 4;
 
   int? _picked;
   MinigameResult? _result;
+
+  late final String _prompt = widget.ctx.vary.one('pick_meme_msg', _prompts);
+
+  /// 후보 네 장. **상대 취향에 맞는 짤은 반드시 한 장 들어간다** —
+  /// 취향 짤이 빠진 판은 화술 45 미만이면 어떻게 눌러도 실패라, 플레이어가
+  /// 자기 잘못이 아닌 실패를 먹었다(감사 N4·09 §1).
   late final List<int> _order = () {
-    final idx = List.generate(_memes.length, (i) => i);
-    idx.shuffle(Random(widget.ctx.state.seed ^ widget.ctx.state.day));
-    return idx.take(4).toList()..shuffle(Random(widget.ctx.state.day));
+    final v = widget.ctx.vary;
+    final all = List<int>.generate(_memes.length, (i) => i);
+    final match = all.where((i) => _memes[i].$1 == widget.ctx.humor).toList();
+    if (match.isEmpty) return v.some('pick_meme', all, _candidates);
+    // 취향 짤 하나를 먼저 잡고, 나머지 자리는 다른 취향에서 채운다.
+    final answer = match[v.round % match.length];
+    final rest = all.where((i) => _memes[i].$1 != widget.ctx.humor).toList();
+    final picked = [
+      answer,
+      ...v.some('pick_meme', rest, _candidates - 1),
+    ];
+    return v.shuffled('pick_meme_slot', picked);
   }();
 
   bool get _hasAnswer => _order.any((i) => _memes[i].$1 == widget.ctx.humor);
@@ -261,7 +332,7 @@ class _PickMemeGameState extends State<PickMemeGame> {
                     width: AppBorderWidth.hairline,
                   ),
                 ),
-                child: Text(keepAll('"방금 진짜 웃긴 일 있었는데 ㅋㅋㅋ"'),
+                child: Text(keepAll('"$_prompt"'),
                   style: t.bubbleText.copyWith(color: t.onBubbleTheirs),
                 ),
               ),
@@ -328,26 +399,70 @@ class _OutfitGameState extends State<OutfitGame> {
     Icons.dry_cleaning,
     Icons.hiking,
   ];
-  static const _items = [
+  /// 옷장 전체. 판마다 칸당 [_perSlot] 벌만 걸려 있다 — 매번 같은 열두 벌이면
+  /// 두 번째 판부터는 고르는 게 아니라 외운 걸 다시 누르는 일이 된다.
+  static const _closet = [
     [
       ('검정 니트', ['조용한', '전시']),
       ('후드티', ['가성비', '실내', '게임']),
       ('셔츠', ['브런치', '전시']),
       ('맨투맨', ['산책', '추억']),
+      ('카디건', ['조용한', '브런치']),
+      ('체크 셔츠', ['추억', '길거리']),
+      ('반팔 티', ['운동', '가성비', '실내']),
+      ('블루종', ['야경', '길거리']),
     ],
     [
       ('슬랙스', ['전시', '브런치']),
       ('청바지', ['가성비', '산책', '길거리']),
       ('트레이닝 팬츠', ['실내', '게임', '운동']),
       ('면바지', ['추억', '산책']),
+      ('반바지', ['운동', '가성비']),
+      ('코듀로이 팬츠', ['조용한', '전시']),
+      ('블랙진', ['야경', '야시장', '길거리']),
+      ('린넨 팬츠', ['브런치', '산책']),
     ],
     [
       ('구두', ['브런치', '전시']),
       ('운동화', ['산책', '가성비', '운동']),
       ('슬리퍼', ['실내', '게임']),
       ('부츠', ['야경', '야시장']),
+      ('로퍼', ['조용한', '브런치']),
+      ('컨버스', ['추억', '길거리', '가성비']),
+      ('러닝화', ['운동', '산책']),
+      ('샌들', ['야시장', '실내']),
     ],
   ];
+
+  /// 칸마다 걸리는 벌 수.
+  static const _perSlot = 4;
+
+  /// 칸마다 **취향에 맞는 벌이 최소 한 벌은 걸려 있게** 뽑는다. 세 칸 중 두 칸을
+  /// 맞춰야 성공인데 맞는 벌이 아예 없는 칸이 나오면 실패가 플레이어 탓이 아니게 된다.
+  late final List<List<(String, List<String>)>> _items = [
+    for (var s = 0; s < _closet.length; s++) _slotItems(s),
+  ];
+
+  List<(String, List<String>)> _slotItems(int s) {
+    final v = widget.ctx.vary;
+    final rack = _closet[s];
+    final fits = rack.where((e) => e.$2.any(widget.ctx.tags.contains)).toList();
+    if (fits.isEmpty) return v.some('outfit$s', rack, _perSlot);
+    final keep = fits[v.round % fits.length];
+    final rest = rack.where((e) => e != keep).toList();
+    return v.shuffled('outfit${s}_slot', [
+      keep,
+      ...v.some('outfit$s', rest, _perSlot - 1),
+    ]);
+  }
+
+  /// 결과가 나온 뒤 고른 벌이 취향에 맞았는지 알려 준다. 고르지 않은 벌은 중립.
+  MinigameOptionTone _toneFor(int slot, int i) {
+    if (_result == null || _picked[slot] != i) return MinigameOptionTone.neutral;
+    return _items[slot][i].$2.any(widget.ctx.tags.contains)
+        ? MinigameOptionTone.correct
+        : MinigameOptionTone.wrong;
+  }
 
   final _picked = <int, int>{};
   MinigameResult? _result;
@@ -409,6 +524,9 @@ class _OutfitGameState extends State<OutfitGame> {
               MinigameOption(
                 label: _items[s][i].$1,
                 selected: _picked[s] == i,
+                tone: _toneFor(s, i),
+                // 결과가 나오면 고른 벌만 남기고 물러난다.
+                dimmed: _result != null && _picked[s] != i,
                 leading: Icon(
                   _slotIcons[s],
                   size: AppSpace.xl,
@@ -438,7 +556,9 @@ class DateCourseGame extends StatefulWidget {
 }
 
 class _DateCourseGameState extends State<DateCourseGame> {
-  static const _places = [
+  /// 갈 수 있는 곳 전부. 값은 돈 스탯 단위다(1 = 1,000원, [Stat.won]).
+  /// 판마다 이 중 [_shown] 곳만 목록에 오른다.
+  static const _allPlaces = [
     ('한강 산책', 0, ['산책', '가성비', '야경']),
     ('동네 전시회', 12, ['전시', '조용한']),
     ('분식집', 8, ['분식', '가성비', '추억']),
@@ -447,7 +567,33 @@ class _DateCourseGameState extends State<DateCourseGame> {
     ('오마카세', 90, ['조용한']),
     ('보드게임 카페', 18, ['실내', '게임']),
     ('옛날 학교 앞', 5, ['추억', '사진', '산책']),
+    ('독립 서점', 10, ['조용한', '전시']),
+    ('포장마차', 14, ['야시장', '길거리', '추억']),
+    ('영화관 조조', 11, ['실내', '가성비']),
+    ('남산 전망대', 7, ['야경', '산책', '사진']),
+    ('실내 클라이밍', 22, ['운동', '실내', '게임']),
+    ('동네 목욕탕 앞 커피', 3, ['추억', '가성비']),
+    ('루프탑 바', 45, ['야경', '조용한']),
+    ('벼룩시장', 6, ['길거리', '사진', '가성비']),
   ];
+
+  /// 한 판에 보이는 후보 수.
+  static const _shown = 8;
+
+  /// 이 판의 후보. 취향에 맞는 곳이 최소 세 군데는 들어가야 크리티컬(취향 3개)이
+  /// 가능하다 — 애초에 불가능한 판을 내주면 안 된다.
+  late final List<(String, int, List<String>)> _places = () {
+    final v = widget.ctx.vary;
+    final fits = _allPlaces
+        .where((p) => p.$3.any(widget.ctx.tags.contains))
+        .toList();
+    final keep = v.some('date_fit', fits, min(3, fits.length));
+    final rest = _allPlaces.where((p) => !keep.contains(p)).toList();
+    return v.shuffled('date_slot', [
+      ...keep,
+      ...v.some('date_course', rest, _shown - keep.length),
+    ]);
+  }();
 
   final _picked = <int>[];
   MinigameResult? _result;
@@ -482,7 +628,7 @@ class _DateCourseGameState extends State<DateCourseGame> {
         critical: !over && m >= 3,
         score: over ? 0 : m / 3,
         message: over
-            ? '예산 $budget을 ${_cost - budget} 초과했다. 계산대에서 얼어붙었다.'
+            ? '예산 ${Stat.won(budget)}을 ${Stat.won(_cost - budget)} 초과했다. 계산대에서 얼어붙었다.'
             : m >= 3
             ? '취향 $m개 적중. 다음 약속을 상대가 먼저 잡았다.'
             : m >= 2
@@ -503,7 +649,7 @@ class _DateCourseGameState extends State<DateCourseGame> {
     return MinigameScaffold(
       title: '코스 짜기',
       instruction:
-          '3곳을 고른다. 예산 $budget · '
+          '3곳을 고른다. 예산 ${Stat.won(budget)} · '
           '${widget.ctx.partnerName}의 취향: ${widget.ctx.tags.join(", ")}',
       result: _result,
       onFinished: () => widget.done(_result!),
@@ -526,7 +672,10 @@ class _DateCourseGameState extends State<DateCourseGame> {
                 const SizedBox(width: AppSpace.xs),
               ],
               Flexible(
-                child: Text(keepAll('합계 $_cost / $budget${over ? "  (예산 초과)" : ""}'),
+                child: Text(keepAll(
+                  '합계 ${Stat.won(_cost)} / ${Stat.won(budget)}'
+                  '${over ? "  (예산 초과)" : ""}',
+                ),
                   textAlign: TextAlign.center,
                   style: t.numericMedium.copyWith(
                     color: over ? t.danger : scheme.onSurface,
@@ -555,7 +704,9 @@ class _DateCourseGameState extends State<DateCourseGame> {
             MinigameOption(
               label: _places[i].$1,
               // 값은 오른쪽에 tabular 로 세워 줄마다 자리수가 흔들리지 않는다.
-              trailingLabel: _places[i].$2 == 0 ? '무료' : '${_places[i].$2}',
+              trailingLabel: _places[i].$2 == 0
+                  ? '무료'
+                  : Stat.won(_places[i].$2),
               selected: _picked.contains(i),
               dimmed: !_picked.contains(i) && _picked.length >= 3,
               leading: Icon(

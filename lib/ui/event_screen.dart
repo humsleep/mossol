@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import '../analytics/analytics.dart';
 import '../audio/sfx_service.dart';
 import '../engine/event_engine.dart';
+import '../engine/mbti.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart';
@@ -14,6 +15,7 @@ import 'call_view.dart';
 import 'design_system.dart';
 import 'notification_card.dart';
 import 'onboarding_mbti_screen.dart';
+import 'profile_view.dart';
 import 'scene_card.dart';
 import 'scene_registry.dart';
 import 'widgets.dart';
@@ -571,8 +573,46 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   /// 광고를 기다리는 동안은 이 화면의 탭을 전부 막는다. 힌트 버튼이 무반응으로 보여
   /// 다시 탭했을 때 그 탭이 선택지에 떨어져 원치 않은 선택이 확정됐다(01 P1-1).
   @override
-  Widget build(BuildContext context) =>
-      RewardedBusyScope(child: _body(context));
+  Widget build(BuildContext context) => RewardedBusyScope(
+    // 말풍선·통화 머리줄의 아바타가 자기 프로필을 찾는 곳(§2.15).
+    child: ProfileScope(resolve: _profileFor, child: _body(context)),
+  );
+
+  /// 아바타를 눌렀을 때 뜨는 프로필. **플레이어가 이미 본 것만** 담는다.
+  ///
+  /// 이름·호칭·한 줄 매력·MBTI·궁합은 새 게임마다 캐스트 소개(§2.9)가 보여 주고,
+  /// 호감은 홈 사람들 줄(§2.10)이 보여 준다. 그 밖의 값(취향·지뢰·신뢰)은 화면 어디에도
+  /// 없으므로 여기서도 내지 않는다. 히든은 홈과 같은 규칙으로 호감이 생기기 전까지
+  /// `???` 라 아예 열리지 않고, 캐스트 밖 화자(태현·엄마·모르는 번호)는 이름뿐이다.
+  CharacterProfile? _profileFor(String? id, String name) {
+    final ch = c.characterOf(id);
+    if (ch == null) {
+      return CharacterProfile(
+        name: name,
+        mystery: ChatBubble.isMysteryName(name),
+      );
+    }
+    final s = c.state;
+    // 이 회차에 나오지 않는 사람이면 호감은 이번 판의 값이 아니다 — 비운다.
+    final aff = s != null && ch.appearsIn(s.preference)
+        ? s.affectionOf(ch.id)
+        : null;
+    if (ch.hidden && (aff ?? 0) <= 0) {
+      return CharacterProfile(id: ch.id, name: name, mystery: true);
+    }
+    final mine = c.runMbti ?? c.playerMbti;
+    return CharacterProfile(
+      id: ch.id,
+      name: c.characterName(ch.id),
+      title: ch.displayTitle,
+      tagline: ch.tagline,
+      mbti: ch.mbti,
+      compat: mine == null || ch.mbti == null
+          ? null
+          : Mbti.compat(mine, ch.mbti),
+      affection: aff,
+    );
+  }
 
   Widget _body(BuildContext context) {
     // 화면에는 이름을 치환한 사본(docs/NAME_GUIDE.md). 엔진 호출은 c.current(원본).

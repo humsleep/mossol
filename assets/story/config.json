@@ -3,6 +3,8 @@
  "chapterLength": 20,
  "maxHearts": 5,
  "firstRunFreeHeartDays": 3,
+ "dailyCooldownDays": 14,
+ "openingScript": [],
  "heartRegenMinutes": 15,
  "earlyAffection": {
   "curve": [

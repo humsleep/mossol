@@ -1233,7 +1233,10 @@
      "stats": {
       "esteem": -3,
       "stress": 8
-     }
+     },
+     "setFlags": [
+      "told_junho"
+     ]
     },
     "reply": [
      {

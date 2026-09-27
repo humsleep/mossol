@@ -4,6 +4,7 @@ import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
 import '../ui/keep_all.dart';
+import 'variation.dart';
 
 /// 미니게임 한 판의 결과.
 /// [success] 는 선택지의 효과를 적용할지, [critical] 은 호감 상승을 2배로 할지 결정한다.
@@ -35,7 +36,23 @@ class MinigameContext {
   final GameState state;
   final CharacterDef? partner;
 
-  const MinigameContext({required this.state, this.partner});
+  /// 이 미니게임이 이 회차에서 몇 번째로 등장했는지. [playMinigame] 이 채워 준다.
+  /// 직접 만든 컨텍스트(디버그 갤러리·테스트)는 0 이 기본이다.
+  final int round;
+
+  const MinigameContext({
+    required this.state,
+    this.partner,
+    this.round = 0,
+  });
+
+  /// 등장 순번만 갈아 낀 사본. [playMinigame] 이 쓴다.
+  MinigameContext atRound(int r) =>
+      MinigameContext(state: state, partner: partner, round: r);
+
+  /// 판을 짜는 데 쓰는 변주기. 같은 씨앗·같은 순번이면 언제나 같은 판이 나온다.
+  MinigameVariation get vary =>
+      MinigameVariation(seed: state.seed, round: round, day: state.day);
 
   int stat(String key) => state.stat(key);
 
@@ -70,10 +87,18 @@ Future<MinigameResult> playMinigame(
     debugPrint('등록되지 않은 미니게임: $id');
     return const MinigameResult(success: true);
   }
+  // 같은 미니게임의 몇 번째 판인지 여기서 센다. 이 값 하나로 문제·배치·난이도가
+  // 판마다 갈린다(variation.dart). 앱을 다시 켜면 "지금까지 본 이벤트 수" 에서
+  // 이어 세므로 첫 판으로 되돌아가지 않는다.
+  // 씨앗까지 키에 넣는다. 새 게임은 씨앗이 바뀌므로 순번이 0 부터 다시 시작해
+  // 기준 판을 다시 만난다 — 같은 프로세스에서 두 번째 새 게임을 시작해도 그렇다.
+  final round = MinigameRotation.next(
+    '${ctx.state.seed}:${ctx.state.run}:$id',
+  );
   final result = await Navigator.of(context).push<MinigameResult>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => _MinigameHost(builder: builder, ctx: ctx),
+      builder: (_) => _MinigameHost(builder: builder, ctx: ctx.atRound(round)),
     ),
   );
   return result ?? const MinigameResult.miss('중단했다');

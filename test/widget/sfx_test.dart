@@ -202,7 +202,13 @@ void main() {
   });
 
   testWidgets('정산 진입에 summary 큐 (앱 phase 전환에서)', (tester) async {
-    final ev = c.bundle.eventById['m01']!;
+    // 정산 소리를 보는 테스트다. m01 은 이제 어느 선택지로도 d_open_bet 으로
+    // 이어져 큐가 안 비므로, "뒤가 없는" 이벤트를 데이터에서 골라 쓴다.
+    final ev = c.bundle.events.firstWhere(
+      (e) =>
+          e.choices.isNotEmpty &&
+          e.choices.every((ch) => ch.next == null && ch.failNext == null),
+    );
     c.current = ev;
     c.revealed = ev.lines.length;
     c.phase = Phase.event;

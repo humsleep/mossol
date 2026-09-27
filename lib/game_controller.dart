@@ -336,6 +336,36 @@ class GameController extends ChangeNotifier {
 
   String? cliffhanger;
 
+  /// [cliffhanger] 를 남긴 이벤트의 층 순위([cliffhangerRank]). 아직 없으면 [_noCliffRank].
+  int _cliffRank = _noCliffRank;
+  static const _noCliffRank = 1 << 20;
+
+  /// 오늘의 클리프행어가 어느 층에서 왔는지(작을수록 센 층). 테스트·디버그용.
+  int get cliffhangerRank => _cliffRank;
+
+  /// 층 우선순위: 메인 > 위기 > 히든 > 루트 > 일상.
+  ///
+  /// 왜: 하루 큐가 메인 → 일상 → 루트 순이라 `if (ev.cliffhanger != null)` 로 덮어쓰면
+  /// **메인 줄기의 클리프행어를 뒤에 온 일상이 지운다**. 다음 날 아침 카드와 예고가
+  /// 보는 "어젯밤"은 그날 마지막 이벤트의 것뿐이었다(docs/review/07_story_flow.md (c)#12, S7).
+  /// 이제 가장 센 층의 것을 남기고, 같은 층이면 예전처럼 나중 것이 이긴다.
+  static int cliffhangerRankOf(EventLayer l) => switch (l) {
+    EventLayer.main => 0,
+    EventLayer.crisis => 1,
+    EventLayer.hidden => 2,
+    EventLayer.route => 3,
+    EventLayer.daily => 4,
+  };
+
+  /// [ev] 의 클리프행어를 오늘의 것으로 삼을지 정한다. 같은 층이면 나중 것이 이긴다.
+  void _noteCliffhanger(StoryEvent ev) {
+    if (ev.cliffhanger == null) return;
+    final rank = cliffhangerRankOf(ev.layer);
+    if (rank > _cliffRank) return;
+    cliffhanger = ev.cliffhanger;
+    _cliffRank = rank;
+  }
+
   /// 되돌리기용 스냅샷. 선택 직전 상태와 그 시점의 하루 합계.
   Map<String, dynamic>? _undoSnapshot;
   AppliedDelta? _undoDayDelta;
@@ -634,6 +664,7 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
+    TextTemplate.currentTop = null;
     _applySfxPrefs(m);
     analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
@@ -650,6 +681,8 @@ class GameController extends ChangeNotifier {
   /// 메모리의 dayDelta 가 비어 있으므로 세이브에 있던 값을 건드리지 않는다.
   Future<void> _save(GameState s) {
     if (identical(s, state)) {
+      // 컨트롤러를 받지 않는 화면(StoryBundle.firstLineOf)이 볼 `{top}` 이름.
+      TextTemplate.currentTop = topName;
       // 하루 도중 끊겨도 이어서 할 수 있게, 아직 끝나지 않은 이벤트(선택 전의 현재 이벤트 포함)를 남긴다.
       s.dayQueue = [
         if (current != null && lastOutcome == null) current!.id,
@@ -699,6 +732,7 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = null;
     TextTemplate.currentMbti = null;
+    TextTemplate.currentTop = null;
     _applySfxPrefs(m);
     state = null;
     _peek = null;
@@ -928,11 +962,23 @@ class GameController extends ChangeNotifier {
   String epilogueOf(Ending e, {String? mbti}) =>
       e.epilogueForTemperament(Mbti.temperament(mbti ?? runMbti));
 
+  /// 지금 화면의 `{top}` 에 들어갈 이름. 지금 이벤트([current])를 함께 넘겨 1위가 아직
+  /// 없는 날(D+1)에는 그 이벤트의 상대 이름으로 내려간다(lib/engine/text_template.dart).
+  /// 회차가 없으면 null → 화면에는 `그 사람`.
+  String? get topName {
+    final s = state;
+    return s == null ? null : engine.topNameFor(s, event: current);
+  }
+
   /// 대사 문자열의 자리표시자(`{name|아야}` 등)를 지금 이름으로 바꾼다. 화면에 내기
   /// 직전에 부르고, `keepAll` 은 그 결과에 씌운다. 저장·비교에는 원문을 쓴다.
-  /// `{mbti}` 는 이 회차 MBTI([runMbti]).
-  String say(String text) =>
-      TextTemplate.fill(text, name: playerName, mbti: runMbti);
+  /// `{mbti}` 는 이 회차 MBTI([runMbti]), `{top}` 은 지금 호감 1위([topName]).
+  String say(String text) => TextTemplate.fill(
+    text,
+    name: playerName,
+    mbti: runMbti,
+    top: topName,
+  );
 
   /// [say] 의 null 허용판.
   String? sayOrNull(String? text) => text == null ? null : say(text);
@@ -942,7 +988,7 @@ class GameController extends ChangeNotifier {
   StoryEvent? get shownEvent {
     final ev = current;
     if (ev == null) return null;
-    final key = '$playerName|$runMbti';
+    final key = '$playerName|$runMbti|$topName';
     final cached = _shown;
     if (cached != null && identical(cached.$1, ev) && cached.$2 == key) {
       return cached.$3;
@@ -1226,6 +1272,7 @@ class GameController extends ChangeNotifier {
   void _resetDay() {
     dayDelta.clear();
     cliffhanger = null;
+    _cliffRank = _noCliffRank;
     rouletteSlot = null;
     rouletteRerolled = false;
     _queue.clear();
@@ -1287,6 +1334,7 @@ class GameController extends ChangeNotifier {
     s.dayStarted = true;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;
+    _cliffRank = _noCliffRank;
     _queue
       ..clear()
       ..addAll(engine.planDay(s));
@@ -1388,7 +1436,7 @@ class GameController extends ChangeNotifier {
     lastOutcome = outcome;
     _lastChoice = ev.choices[index];
     dayDelta.merge(outcome.delta);
-    if (ev.cliffhanger != null) cliffhanger = ev.cliffhanger;
+    _noteCliffhanger(ev);
     final next = outcome.nextEventId == null
         ? null
         : engine.byId(outcome.nextEventId!);
@@ -1432,6 +1480,9 @@ class GameController extends ChangeNotifier {
       ..flags.addAll(restored.flags)
       ..seen.clear()
       ..seen.addAll(restored.seen)
+      // 일상 냉각 기록도 `seen` 과 짝이다 — 되돌리면 같이 되돌아간다.
+      ..dailySeenDay.clear()
+      ..dailySeenDay.addAll(restored.dailySeenDay)
       ..album.clear()
       ..album.addAll(restored.album)
       ..combo = restored.combo

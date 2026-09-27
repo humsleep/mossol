@@ -357,7 +357,11 @@ class AdManager with WidgetsBindingObserver {
   static int _calendarDay(DateTime t) => t.year * 10000 + t.month * 100 + t.day;
 
   /// 정책상 지금 전면 광고를 보여도 되는가. 상태를 바꾸지 않는다.
-  bool canShowInterstitial(int day) {
+  ///
+  /// [isLastDay] 는 100일째 정산이다. 그 버튼은 "엔딩 보기" 이고, 100일을 걸어온
+  /// 사람에게 엔딩 직전에 광고를 끼우지 않는다 — 별점이 깎이는 자리가 여기다.
+  bool canShowInterstitial(int day, {bool isLastDay = false}) {
+    if (isLastDay) return false;
     if (day < interstitialMinDay) return false;
     final now = DateTime.now();
     final shownToday = _countedCalendarDay == _calendarDay(now) ? _interstitialsShown : 0;
@@ -378,9 +382,12 @@ class AdManager with WidgetsBindingObserver {
   }
 
   /// 전면 광고. 정책에 걸리거나 로드가 안 됐으면 즉시 false 로 끝나 흐름을 막지 않는다.
-  Future<bool> showInterstitial({required int day}) async {
+  Future<bool> showInterstitial({
+    required int day,
+    bool isLastDay = false,
+  }) async {
     if (!supported || !_sdkInitialized || _fullScreenBusy) return false;
-    if (!canShowInterstitial(day)) return false;
+    if (!canShowInterstitial(day, isLastDay: isLastDay)) return false;
     if (_interstitial.isStale(_adMaxAge)) _interstitial.discard();
     final ad = _interstitial.take();
     if (ad == null) {

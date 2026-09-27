@@ -105,6 +105,20 @@ class EventEngine {
   /// 선호 밖 캐릭터를 뺀 호감 1위. 효과 키 `@top` 과 같은 사람이다.
   String? topCharacter(GameState s) => topCharacterOf(s, absent: absentFor(s));
 
+  /// 대사의 `{top}` 에 넣을 이름. 규칙 전문은 lib/engine/text_template.dart 의 해소 규칙.
+  /// 1) 호감 1위([topCharacter], `@top` 효과와 같은 사람) → 2) [event] 가 지목한 캐릭터
+  /// → 3) null(= 화면에서는 `그 사람`). characters.json 에 없는 id 는 이름이 없으므로
+  /// 다음 단계로 내려간다 — id 를 그대로 화면에 내지 않는다.
+  String? topNameFor(GameState s, {StoryEvent? event}) {
+    String? nameOf(String? id) {
+      if (id == null) return null;
+      final n = bundle.characterById[id]?.name.trim();
+      return (n == null || n.isEmpty) ? null : n;
+    }
+
+    return nameOf(topCharacter(s)) ?? nameOf(event?.character);
+  }
+
   bool _available(GameState s, StoryEvent e) {
     if (e.once && s.seen.contains(e.id)) return false;
     if (e.day != null && e.day != s.day) return false;
@@ -143,6 +157,30 @@ class EventEngine {
   List<StoryEvent> candidates(GameState s, EventLayer layer) =>
       bundle.eventsByLayer[layer]!.where((e) => _available(s, e)).toList();
 
+  /// 일상 [e] 가 아직 냉각 중인지(최근 [GameConfig.dailyCooldownDays]일 안에 봤는지).
+  bool inDailyCooldown(GameState s, StoryEvent e) {
+    final cool = bundle.config.dailyCooldownDays;
+    if (cool <= 0) return false;
+    final last = s.dailySeenDay[e.id];
+    return last != null && s.day - last < cool;
+  }
+
+  /// 오늘 뽑을 수 있는 일상 후보. 최근에 본 일상은 빼되([inDailyCooldown]),
+  /// 그러면 후보가 하나도 안 남는 날에는 **원래 후보를 그대로 쓴다** — 냉각 때문에
+  /// 하루가 비는 일은 없다(docs/review/07_story_flow.md (c)#8 의 수선).
+  /// [exclude] 는 오늘 이미 계획에 들어간 id.
+  List<StoryEvent> dailyPool(GameState s, {Set<String> exclude = const {}}) {
+    final all = [
+      for (final e in candidates(s, EventLayer.daily))
+        if (!exclude.contains(e.id)) e,
+    ];
+    final fresh = [
+      for (final e in all)
+        if (!inDailyCooldown(s, e)) e,
+    ];
+    return fresh.isEmpty ? all : fresh;
+  }
+
   /// 형식을 깨는 이벤트(전화·알림·사진)인지. docs/MOMENTS_SPEC.md §2.
   bool isMoment(StoryEvent e) => e.isMoment;
 
@@ -177,7 +215,24 @@ class EventEngine {
     return list.last;
   }
 
-  /// 오늘 재생할 이벤트 목록. 순서: 메인 → 위기 또는 일상 → 캐릭터 루트 → 히든.
+  /// 오늘이 오프닝 대본(`config.openingScript`)을 까는 날인지. **1회차 D+1 뿐이다** —
+  /// 이어하기·2회차는 평소대로 돈다.
+  bool usesOpeningScript(GameState s) =>
+      s.run == 1 && s.day == 1 && bundle.config.openingScript.isNotEmpty;
+
+  /// 오프닝 대본에 적힌 이벤트를 적힌 순서대로. 건너뛰는 경우는 둘뿐이다.
+  /// - **없는 id**: 데이터가 앞서 나가거나 이벤트 이름이 바뀌어도 앱이 죽지 않게 조용히 넘긴다.
+  /// - **오늘 낼 수 없는 이벤트**([_available]): 선호(`pref`)·플래그가 맞지 않는 장면을
+  ///   대본이라는 이유로 억지로 틀면 남성 회차에 여성 쪽 장면이 나오는 식으로 깨진다.
+  ///   이미 본 이벤트(`next` 로 먼저 본 경우)도 여기서 걸린다.
+  List<StoryEvent> openingScriptEvents(GameState s) => [
+    for (final id in bundle.config.openingScript)
+      if (byId(id) case final e?)
+        if (_available(s, e)) e,
+  ];
+
+  /// 오늘 재생할 이벤트 목록. 순서: (1회차 D+1 오프닝 대본 →) 메인 → 위기 또는 일상
+  /// → 캐릭터 루트 → 히든.
   List<StoryEvent> planDay(GameState s) {
     final plan = <StoryEvent>[];
     final planned = <String>{};
@@ -185,6 +240,14 @@ class EventEngine {
 
     void add(StoryEvent? e) {
       if (e != null && planned.add(e.id)) plan.add(e);
+    }
+
+    // 전제를 세우는 장면은 추첨에 맡기지 않는다(docs/review/07_story_flow.md (c)#4).
+    // 대본이 비어 있으면(기본) 이 줄은 아무 일도 하지 않는다.
+    if (usesOpeningScript(s)) {
+      for (final e in openingScriptEvents(s)) {
+        add(e);
+      }
     }
 
     for (final e in candidates(s, EventLayer.main)) {
@@ -198,7 +261,7 @@ class EventEngine {
     } else {
       add(
         _weightedPick(
-          candidates(s, EventLayer.daily),
+          dailyPool(s, exclude: planned),
           rng(s, 'daily'),
           boost: boost,
         ),
@@ -220,10 +283,7 @@ class EventEngine {
     final target = opening ? openingMinEventsPerDay : minEventsPerDay;
     final maxFill = opening ? target : 1;
     for (var i = 0; i < maxFill && plan.length < target; i++) {
-      final more = candidates(
-        s,
-        EventLayer.daily,
-      ).where((e) => !planned.contains(e.id)).toList();
+      final more = dailyPool(s, exclude: planned);
       final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'), boost: boost);
       if (pick == null) break;
       add(pick);
@@ -231,9 +291,62 @@ class EventEngine {
     return plan;
   }
 
+  /// 캐릭터 [id] 에게서 **이미 본** 루트 중 가장 높은 단계([StoryEvent.stage]). 없으면 null.
+  /// 진행 상황을 읽는 용도(테스트·진단)다 — [nextStageEvents] 는 이 값으로 후보를 막지 않는다.
+  int? highestSeenStage(GameState s, String id) {
+    if (id.isEmpty) return null;
+    int? best;
+    for (final seen in s.seen) {
+      final e = bundle.eventById[seen];
+      if (e == null || e.layer != EventLayer.route || e.character != id) {
+        continue;
+      }
+      final st = e.stage;
+      if (st != null && (best == null || st > best)) best = st;
+    }
+    return best;
+  }
+
+  /// [list](한 캐릭터의 오늘 후보) 중 **오늘 낼 차례인 단계**만.
+  ///
+  /// 규칙 하나다: **오늘 낼 수 있는 것 중 가장 낮은 단계부터.** 같은 단계가 여럿이면
+  /// 그 안에서 예전처럼 가중치 추첨. 그래서 `r05` 와 `r13` 이 같은 날 후보로 같이 올라오면
+  /// **언제나 `r05` 가 먼저** 나간다(docs/review/07_story_flow.md (c)#3 — 수정 전에는
+  /// 후보 전체에서 무작위라 `r13` → `r05` 같은 역행이 회차의 96.7~100% 에서 일어났다).
+  ///
+  /// **후보에서 빼지는 않는다.** "이미 본 단계보다 큰 것만" 으로 잠가 봤더니
+  /// `r13` 처럼 조건이 느슨한 사이드 장면이 초반에 한 번 뽑히면 그 앞 단계가 영구히 막히고,
+  /// 그 앞 단계의 플래그를 요구하는 `r15`(마지막 장면, 엔딩 조건)에 **아무도 못 닿았다**
+  /// (MBTI 17종 도달성 테스트에서 f·m 각 4명이 0%). 그래서 순서는 '우선순위'로만 지키고,
+  /// 늦게 열리는 앞 단계를 막는 일은 데이터(트리거) 쪽에 맡긴다 — 09_engine_handoff.md §3.
+  ///
+  /// 번호가 없는 루트 모먼트(`mo_seoyeon_call_dawn` 등 48개)는 단계 개념이 없으므로
+  /// 언제나 함께 후보에 남는다.
+  List<StoryEvent> nextStageEvents(GameState s, List<StoryEvent> list) {
+    if (list.isEmpty) return const [];
+    final free = [
+      for (final e in list)
+        if (e.stage == null) e,
+    ];
+    final numbered = [
+      for (final e in list)
+        if (e.stage != null) e,
+    ];
+    if (numbered.isEmpty) return free;
+    final lowest = numbered.map((e) => e.stage!).reduce(min);
+    return [
+      ...free,
+      for (final e in numbered)
+        if (e.stage == lowest) e,
+    ];
+  }
+
   /// 호감도가 가장 높은 캐릭터를 우선하되, 후보가 있는 캐릭터 중에서 고른다.
   /// 오프닝(1~[openingDays]일차)에는 호감을 보지 않고 균등하게 고른다.
   /// [boost] 면 고른 캐릭터의 후보 안에서 모먼트 가중치를 올린다(캐릭터 선택은 그대로).
+  ///
+  /// 캐릭터를 고른 다음에는 [nextStageEvents] 가 단계 순서를 지킨다. 그러다 오늘 낼
+  /// 것이 하나도 없는 사람이 나오면 루트 칸을 비우지 않고 다음 우선순위로 넘긴다.
   StoryEvent? _pickRoute(GameState s, {bool boost = false}) {
     final routes = candidates(s, EventLayer.route);
     if (routes.isEmpty) return null;
@@ -247,17 +360,28 @@ class EventEngine {
         final diff = s.affectionOf(b) - s.affectionOf(a);
         return diff != 0 ? diff : a.compareTo(b);
       });
+    final String chosen;
     // 오프닝에는 호감이 아직 의미가 없다. 첫날 동전 던지기 결과가 며칠씩
     // 같은 캐릭터를 밀어주지 않도록 후보가 있는 캐릭터 중 균등 무작위.
     if (isOpening(s)) {
-      final chosen = chars[r.nextInt(chars.length)];
-      return _weightedPick(byChar[chosen]!, r, boost: boost);
+      chosen = chars[r.nextInt(chars.length)];
+    } else {
+      // 최상위와 호감도가 같은 캐릭터들 사이에서는 무작위.
+      final top = s.affectionOf(chars.first);
+      final tied = chars.where((c) => s.affectionOf(c) == top).toList();
+      chosen = tied[r.nextInt(tied.length)];
     }
-    // 최상위와 호감도가 같은 캐릭터들 사이에서는 무작위.
-    final top = s.affectionOf(chars.first);
-    final tied = chars.where((c) => s.affectionOf(c) == top).toList();
-    final chosen = tied[r.nextInt(tied.length)];
-    return _weightedPick(byChar[chosen]!, r, boost: boost);
+    for (final c in [
+      chosen,
+      for (final x in chars)
+        if (x != chosen) x,
+    ]) {
+      final pool = nextStageEvents(s, byChar[c]!);
+      if (pool.isEmpty) continue;
+      final pick = _weightedPick(pool, r, boost: boost);
+      if (pick != null) return pick;
+    }
+    return null;
   }
 
   StoryEvent? byId(String id) => bundle.eventById[id];
@@ -333,6 +457,10 @@ class EventEngine {
     final r = random ?? rng(s, '${ev.id}:${c.text}');
     double compat(String id) => compatMultiplier(s, id);
     s.seen.add(ev.id);
+    // 같은 일상이 며칠 안에 또 나오지 않게 본 날을 적는다(GameConfig.dailyCooldownDays).
+    if (ev.layer == EventLayer.daily) {
+      s.noteDailySeen(ev.id, cooldownDays: bundle.config.dailyCooldownDays);
+    }
     // 모먼트를 본 날. 다음 모먼트 보정의 기준이 된다(거절한 전화도 본 것이다).
     if (isMoment(ev)) s.lastMomentDay = s.day;
     final self = ev.character;

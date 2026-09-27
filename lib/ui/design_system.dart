@@ -177,6 +177,10 @@ abstract final class AppSize {
   /// 캐스트 카드.
   static const double avatarXl = 72;
 
+  /// 프로필 크게 보기(§2.15). 아바타를 눌렀을 때 Hero 가 날아가 앉는 크기다.
+  /// 320pt 화면에서도 좌우 여백 20 을 두고 들어간다(200 + 40 + 40 = 280).
+  static const double avatarHero = 200;
+
   /// 채팅 스티커 한 변.
   static const double sticker = 120;
 

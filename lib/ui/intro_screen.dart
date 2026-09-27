@@ -8,27 +8,36 @@ import '../ads/ad_manager.dart';
 import '../audio/sfx_service.dart';
 import '../engine/models.dart';
 import '../engine/player_name.dart';
+import '../engine/text_template.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'notification_card.dart';
 import 'onboarding_gender_screen.dart';
 import 'onboarding_name_screen.dart';
+import 'preference_screen.dart';
+import 'title_screen.dart';
 import 'widgets.dart';
 
 /// 첫 실행 화면. 규격은 docs/DESIGN_SYSTEM.md §2.14.
 ///
 /// 홈(세이브 카드·하트·앨범이 있는 관리 화면)은 이미 이 게임을 아는 사람의 화면이다.
-/// 처음 켠 사람에게는 설명 대신 **문자 한 통**을 준다 — 태현의 알림 카드가 내려오고
+/// 처음 켠 사람에게는 **타이틀 한 장**([TitleScreen], §2.16)으로 무슨 앱인지 먼저 말하고,
+/// 그다음 설명 대신 **문자 한 통**을 준다 — 태현의 알림 카드가 내려오고
 /// (`Sfx.msgIn` + 진동), 탭해서 열면 그 대화 안에서 대답·이름·"나는?" 까지 끝난다.
-/// 마지막 답이 곧 시작 버튼이라 "시작하기" 라는 버튼이 따로 없다.
+/// 대화 안에는 여전히 "시작하기" 버튼이 없다 — 마지막 답이 곧 시작 버튼이다.
 /// 근거: docs/review/00_VERDICT.md §3, docs/overhaul/01_benchmark.md §2 #5·#12.
+///
+/// 마지막 답 뒤에는 캐스트 소개([PreferenceScreen], §2.9)가 한 장 선다. 누구를 만나는지
+/// 모르고 100일에 들어가지 않게 하려고 새 게임 흐름이 원래 갖고 있던 단계인데, 인트로가
+/// `newGame` 을 직접 부르면서 첫 실행에서만 빠져 있었다. 거기서 뒤로 가면 인트로의
+/// 마지막 질문으로 돌아온다(아무것도 저장되지 않는다).
 ///
 /// MBTI 는 여기서 묻지 않는다. D+4 `m_mbti_chat` 대화 안에서 받는다(R6,
 /// `GameController.shouldAskMbti` · `event_screen.dart` 의 MBTI 시트).
 ///
-/// 이 화면은 아무것도 저장하지 않다가 마지막 답에서 한 번에 저장한다 — 도중에 앱을
-/// 닫으면 다음 실행에 인트로가 처음부터 다시 선다.
+/// 이 화면은 아무것도 저장하지 않다가 **캐스트 소개의 `시작하기`** 에서 한 번에 저장한다 —
+/// 그 전에 앱을 닫으면 다음 실행에 타이틀부터 다시 선다.
 class IntroScreen extends StatefulWidget {
   final GameController c;
   const IntroScreen({super.key, required this.c});
@@ -61,15 +70,23 @@ class IntroScreen extends StatefulWidget {
   static const sideQuestion = '그럼 누구부터 소개해 줄까?';
   static const startReply = '좋아. 그럼 시작이다';
 
-  /// 마지막 답 뒤 태현의 한 줄을 읽을 시간. 이만큼 뒤에 첫날이 열린다.
+  /// 캐스트 소개로 넘어가기 직전의 한 줄. 다음 화면(`이 사람들을 만나게 돼요`)이
+  /// 대화에서 튀어나온 것이 아니라 태현이 보여 주는 것으로 읽히게 한다.
+  static const castIntro = '누가 있는지부터 보여 줄게';
+
+  /// 마지막 답 뒤 태현의 두 줄을 읽을 시간. 이만큼 뒤에 캐스트 소개가 열린다.
   static const startDelay = Duration(milliseconds: 900);
 
   @override
   State<IntroScreen> createState() => _IntroScreenState();
 }
 
-/// 인트로의 단계. 화면은 하나이고 하단 패널만 바뀐다.
+/// 인트로의 단계. 0단계(타이틀)와 1단계(알림)만 화면을 통째로 바꾸고,
+/// 그 뒤로는 화면 하나에 하단 패널만 바뀐다.
 enum IntroStep {
+  /// 앱의 첫 프레임. 이름·부제·그림 한 장([TitleScreen]).
+  title,
+
   /// 잠금화면 알림 카드(탭해서 열기).
   notice,
 
@@ -85,14 +102,14 @@ enum IntroStep {
   /// "선택 안 할래요" 일 때만. 어느 쪽 캐스트부터 만날지.
   side,
 
-  /// 답이 끝났다. 태현의 마지막 줄을 읽는 동안 첫날을 연다.
+  /// 답이 끝났다. 태현의 마지막 줄을 읽는 동안 캐스트 소개를 연다.
   starting,
 }
 
 class _IntroScreenState extends State<IntroScreen> {
   GameController get c => widget.c;
 
-  IntroStep _step = IntroStep.notice;
+  IntroStep _step = IntroStep.title;
 
   /// 지금까지의 대화. 태현 줄·내 줄이 온 순서대로 쌓인다.
   final List<Line> _lines = [];
@@ -110,9 +127,17 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void initState() {
     super.initState();
-    // 첫 화면의 첫 신호는 소리와 진동이다(04 §2.1과 같은 큐).
-    SfxService.instance.cue(Sfx.msgIn);
     c.logOnboardingStep(Analytics.stepIntro);
+  }
+
+  /// 타이틀의 `시작하기`. 여기서부터가 예전의 첫 화면이다 — 문자 도착음과 진동도
+  /// 알림 카드가 실제로 내려올 때 낸다(04 §2.1과 같은 큐). 타이틀 위에서 울리면
+  /// 화면에 없는 알림의 소리가 된다.
+  void _enterNotice() {
+    if (!mounted || _step != IntroStep.title) return;
+    SfxService.instance.cue(Sfx.msgIn);
+    setState(() => _step = IntroStep.notice);
+    _timer?.cancel();
     _timer = Timer(NotificationPreview.autoOpen, _openChat);
   }
 
@@ -188,9 +213,10 @@ class _IntroScreenState extends State<IntroScreen> {
     c.logOnboardingStep(Analytics.stepGender);
   }
 
-  /// "나는?" 의 답. 남자·여자면 만날 쪽이 정해지므로 여기서 첫날이 열리고,
-  /// "선택 안 할래요" 면 한 번 더 묻는다(기존 캐스트 소개의 비교 모드와 같은 뜻).
+  /// "나는?" 의 답. 남자·여자면 만날 쪽이 정해지므로 여기서 캐스트 소개가 열리고,
+  /// "선택 안 할래요" 면 어느 쪽부터 볼지 한 번 더 묻는다.
   void _answerGender(String gender, String label) {
+    _markCastReturn();
     SfxService.instance.cue(Sfx.msgOut);
     _gender = gender;
     final side = PlayerGender.sideFor(gender);
@@ -207,22 +233,80 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 
   void _answerSide(String preference) {
+    _markCastReturn();
     SfxService.instance.cue(Sfx.msgOut);
     setState(() => _say(Preference.label(preference)));
     _finish(preference);
   }
 
-  /// 마지막 답. 고른 값을 저장하고 태현의 한 줄을 읽는 동안 첫날을 연다.
-  /// 여기서 홈을 거치지 않는다 — 인트로 다음 화면은 D+1 날짜 카드다.
+  /// 캐스트 소개에서 뒤로 왔을 때 돌아갈 자리. 마지막 답 **직전**의 대화 길이와 단계다.
+  int? _castReturnLines;
+  IntroStep? _castReturnStep;
+
+  void _markCastReturn() {
+    _castReturnLines = _lines.length;
+    _castReturnStep = _step;
+  }
+
+  /// 마지막 답. 태현의 두 줄을 읽는 동안 캐스트 소개를 연다. 저장은 아직 안 한다 —
+  /// 캐스트 소개에서 뒤로 가면 이 대화로 돌아오고 아무것도 남지 않아야 한다.
   void _finish(String preference) {
     setState(() {
       _them(IntroScreen.startReply);
+      _them(IntroScreen.castIntro);
       _step = IntroStep.starting;
     });
     _timer?.cancel();
-    _timer = Timer(IntroScreen.startDelay, () => unawaited(_start(preference)));
+    _timer = Timer(
+      IntroScreen.startDelay,
+      () => unawaited(_openCast(preference)),
+    );
   }
 
+  /// 캐스트 소개(§2.9). 인트로에서 고른 쪽을 먼저 펼치고, 거기서 반대쪽으로 넘어가면
+  /// 실제로 시작하는 쪽은 **보고 있던 쪽**이다(홈에서 여는 새 게임과 같은 규칙).
+  Future<void> _openCast(String side) async {
+    if (!mounted) return;
+    // 이름·MBTI 는 아직 저장 전이다. 캐스트 카드의 첫 메시지가 `{name}` 을 그대로
+    // 드러내지 않도록 잠깐만 올려 둔다(onboarding_gender_screen 의 `cast` 와 같은 처리).
+    final savedName = TextTemplate.currentName;
+    final savedMbti = TextTemplate.currentMbti;
+    TextTemplate.currentName = _pickedName;
+    TextTemplate.currentMbti = c.playerMbti;
+    final String? picked;
+    try {
+      picked = await PreferenceScreen.show(
+        context,
+        c.bundle,
+        side: side,
+        playerMbti: c.playerMbti,
+      );
+    } finally {
+      TextTemplate.currentName = savedName;
+      TextTemplate.currentMbti = savedMbti;
+    }
+    if (!mounted) return;
+    if (picked == null) {
+      _revertToLastQuestion();
+      return;
+    }
+    await _start(picked);
+  }
+
+  /// 캐스트 소개에서 뒤로 온 경우. 마지막 답과 그 뒤 태현의 줄을 지우고 질문으로
+  /// 되돌린다. 이 화면에는 다른 출구가 없으므로 되돌리지 않으면 막다른 길이 된다.
+  void _revertToLastQuestion() {
+    final n = _castReturnLines;
+    final step = _castReturnStep;
+    if (n == null || step == null || n > _lines.length) return;
+    setState(() {
+      _lines.removeRange(n, _lines.length);
+      _step = step;
+    });
+  }
+
+  /// 고른 값을 한 번에 저장하고 첫날을 연다. 여기서 홈을 거치지 않는다 —
+  /// 캐스트 소개 다음 화면은 D+1 날짜 카드다.
   Future<void> _start(String preference) async {
     if (!mounted) return;
     final g = _gender;
@@ -243,6 +327,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_step == IntroStep.title) {
+      return TitleScreen(onStart: _enterNotice);
+    }
     if (_step == IntroStep.notice) {
       return NotificationPreview(
         name: IntroScreen.friendName,

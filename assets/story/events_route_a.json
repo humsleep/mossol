@@ -42,7 +42,7 @@
       "seoyeon_met"
      ]
     },
-    "minigame": "group_chat",
+    "minigame": "word_order",
     "fail": {
      "stats": {
       "reputation": -2
@@ -241,15 +241,16 @@
     100
    ],
    "flags": [
-    "seoyeon_met"
+    "seoyeon_met",
+    "club_afterparty"
    ]
   },
   "weight": 2,
-  "title": "뒤풀이 자리 배치",
+  "title": "두 번째 뒤풀이",
   "lines": [
    {
     "who": "narr",
-    "text": "자리가 두 개 남았다. 서연 옆자리와 출입문 쪽."
+    "text": "그날 이후 두 번째 뒤풀이. 자리가 두 개 남았다. 서연 옆자리와 출입문 쪽."
    },
    {
     "who": "them",
@@ -2055,7 +2056,8 @@
     100
    ],
    "flags": [
-    "seoyeon_met"
+    "seoyeon_met",
+    "club_afterparty"
    ]
   },
   "weight": 2,
@@ -2063,7 +2065,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "진실게임. 서연 차례에 화살이 나에게 왔다."
+    "text": "몇 번째 뒤풀이인지 모르겠다. 진실게임, 서연 차례에 화살이 나에게 왔다."
    },
    {
     "who": "them",
@@ -4746,7 +4748,7 @@
       "jiwoo_texted"
      ]
     },
-    "minigame": "reply_timing",
+    "minigame": "word_order",
     "fail": {
      "stats": {
       "esteem": -1
@@ -6990,7 +6992,7 @@
       "seoyeon_met"
      ]
     },
-    "minigame": "group_chat",
+    "minigame": "reply_timing",
     "fail": {
      "stats": {
       "reputation": -2
@@ -7681,7 +7683,7 @@
     100
    ],
    "flags": [
-    "jiwoo_texted"
+    "jiwoo_met"
    ]
   },
   "weight": 2,

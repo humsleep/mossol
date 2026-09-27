@@ -239,6 +239,13 @@ void main() {
       expect(ads.canShowInterstitial(6), isFalse);
       expect(ads.canShowInterstitial(7), isTrue);
       expect(ads.canShowInterstitial(100), isTrue);
+      // 마지막 날 정산 버튼은 "엔딩 보기" 다. 100일을 걸어온 사람에게
+      // 엔딩 직전 전면 광고를 끼우지 않는다(11_polish_verdict §9).
+      expect(
+        ads.canShowInterstitial(100, isLastDay: true),
+        isFalse,
+        reason: '엔딩 직전에는 전면 광고 금지',
+      );
       expect(AdManager.interstitialMinDay, 7);
       expect(AdManager.interstitialMinInterval, const Duration(minutes: 6));
       expect(AdManager.interstitialMaxPerDay, 6);

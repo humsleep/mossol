@@ -17,6 +17,7 @@ import 'design_system.dart';
 
 import 'photo_card.dart';
 import 'portraits.dart';
+import 'profile_view.dart';
 import 'scene_registry.dart';
 import 'keep_all.dart';
 
@@ -1103,7 +1104,7 @@ class ChatBubble extends StatelessWidget {
                     accent: a,
                     show: showAvatar && isFirstOfGroup,
                   ),
-                  const SizedBox(width: AppSpace.sm),
+                  const SizedBox(width: ChatAvatarSlot.gap),
                   Expanded(child: body),
                 ],
               ),
@@ -1115,6 +1116,14 @@ class ChatBubble extends StatelessWidget {
 /// 상대 줄의 아바타 열. [show] 면 `CharacterAvatar(avatarMd)`, 아니면 같은 폭의 빈 칸 —
 /// 묶음 둘째 줄부터 말풍선 왼쪽 선이 흔들리지 않게 폭만 차지한다. 이름 Text 가 이미
 /// 화자를 읽어 주므로 아바타는 스크린리더에서 뺀다.
+///
+/// 프로필을 열 수 있는 상대([ProfileScope])면 누르는 순간 초상화가 전체 화면으로
+/// 날아오른다(§2.15). 그때만 스크린리더에 버튼 하나가 다시 생긴다 —
+/// [PortraitTapTarget] 이 라벨을 붙인다. 열 수 없는 상대면 지금 화면 그대로다.
+///
+/// 아바타는 40 인데 탭 대상은 44 여야 한다(§4.2). 그래서 **열의 상자만** [width] 44 로
+/// 잡고 아바타를 왼쪽 위에 붙인 뒤, 뒤따르는 간격을 [gap] 4 로 줄였다. 둘을 더한
+/// [indent] 48 은 예전(40 + `sm` 8)과 같아서 말풍선 왼쪽 선은 1px 도 움직이지 않는다.
 class ChatAvatarSlot extends StatelessWidget {
   final String name;
   final String? characterId;
@@ -1128,17 +1137,37 @@ class ChatAvatarSlot extends StatelessWidget {
     required this.show,
   });
 
+  /// 아바타 열의 폭(= 탭 대상 한 변). 그림은 여전히 [AppSize.avatarMd] 다.
+  static const double width = AppSpace.minTouch;
+
+  /// 아바타 열과 말풍선 사이. 보이는 간격은 아바타 오른쪽 끝부터 재면 `sm` 그대로다.
+  static const double gap = AppSpace.xs;
+
+  /// 말풍선 왼쪽 선까지의 들여쓰기(스티커도 이 값에 맞춘다).
+  static const double indent = width + gap;
+
   @override
   Widget build(BuildContext context) {
-    if (!show) return const SizedBox(width: AppSize.avatarMd);
+    if (!show) return const SizedBox(width: width);
     final mystery = ChatBubble.isMysteryName(name);
-    return ExcludeSemantics(
-      child: CharacterAvatar(
-        name: name,
-        characterId: characterId,
-        accent: mystery ? null : accent,
-        mystery: mystery,
-        size: AppSize.avatarMd,
+    return PortraitTapTarget(
+      characterId: characterId,
+      name: name,
+      child: SizedBox(
+        width: width,
+        height: width,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: ExcludeSemantics(
+            child: CharacterAvatar(
+              name: name,
+              characterId: characterId,
+              accent: mystery ? null : accent,
+              mystery: mystery,
+              size: AppSize.avatarMd,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1242,8 +1271,9 @@ class StickerBubble extends StatelessWidget {
   static String? Function(String characterId, String emotion) resolve =
       (id, emotion) => SceneImages.forSticker('${id}_$emotion');
 
-  /// 말풍선 왼쪽 선. 아바타(avatarMd) + sm, 바깥 여백 md 는 [ChatBubble] 과 같다.
-  static const double indent = AppSize.avatarMd + AppSpace.sm;
+  /// 말풍선 왼쪽 선. 아바타 열 + 간격([ChatAvatarSlot.indent] 48), 바깥 여백 md 는
+  /// [ChatBubble] 과 같다.
+  static const double indent = ChatAvatarSlot.indent;
 
   @override
   Widget build(BuildContext context) {
@@ -1354,7 +1384,7 @@ class TypingIndicator extends StatelessWidget {
             accent: a,
             show: showAvatar,
           ),
-          const SizedBox(width: AppSpace.sm),
+          const SizedBox(width: ChatAvatarSlot.gap),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -2143,6 +2173,8 @@ Future<T?> showAppDialog<T>(
 /// (`accentFor` 가 돌려준 강조색이면 찾힌다. 예전 호출부 호환).
 ///
 /// [mystery] 는 히든 미해금. 그림이 있어도 글자 대신 사람 실루엣, 배경은 중립 표면(스포일러 방지).
+///
+/// 크기는 §1.11 의 `avatarSm/Md/Lg/Xl` 네 값과, 프로필 크게 보기의 `avatarHero` 하나뿐이다.
 class CharacterAvatar extends StatelessWidget {
   final String name;
   final CharacterAccent? accent;
@@ -2150,7 +2182,8 @@ class CharacterAvatar extends StatelessWidget {
   /// 초상화를 찾을 캐릭터 id. null 이면 [accent] 로 찾는다.
   final String? characterId;
 
-  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)만 쓴다. 72 는 캐스트 소개 카드.
+  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)와 `avatarHero`(200)만 쓴다.
+  /// 72 는 캐스트 소개 카드, 200 은 프로필 크게 보기(§2.15).
   final double size;
   final bool mystery;
 
@@ -2181,6 +2214,8 @@ class CharacterAvatar extends StatelessWidget {
     final style =
         (size <= AppSize.avatarSm
                 ? context.text.labelMedium
+                : size >= AppSize.avatarHero
+                ? context.text.displayMedium
                 : size >= AppSize.avatarLg
                 ? context.text.titleLarge
                 : context.text.labelLarge)
