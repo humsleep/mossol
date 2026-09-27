@@ -51,11 +51,15 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
   void _joke() {
     if (_result != null) return;
     if (_rng.nextInt(100) < _bustPercent) {
+      // 결과 큐는 스캐폴드가 낸다(실패 = choiceFail + heavy).
       setState(() {
         _result = const MinigameResult.miss('선을 넘었다. 방금 그 드립은 흑역사가 됐다.');
       });
       return;
     }
+    // 한 발 더 갔고 아직 살아 있다. 이 게임은 "한 번 더" 를 누르는 사이의
+    // 정적이 전부라 그 정적에 한 박자가 필요하다.
+    MinigameSfx.step();
     setState(() => _jokes++);
     if (_jokes >= 5) _stop();
   }
@@ -232,8 +236,7 @@ class _WordOrderGameState extends State<WordOrderGame> {
     (['답장', '늦어서', '미안'], ['답장', '이렇게', '늦어서', '미안']),
   ];
 
-  /// 틀린 뒤 몇 번째부터 다음 카드를 짚어 줄지. 두 번 헤매면 길을 알려 준다 —
-  /// 이 게임은 실패가 없고 크리티컬만 걸려 있어서, 막히는 시간이 길어질 이유가 없다.
+  /// 틀린 뒤 몇 번째부터 다음 카드를 짚어 줄지. 두 번 헤매면 길을 알려 준다.
   static const _hintAfter = 2;
 
   late final bool _long = widget.ctx.stat(Stat.talk) >= 50;
@@ -243,6 +246,15 @@ class _WordOrderGameState extends State<WordOrderGame> {
   }();
   late final List<String> _pool =
       widget.ctx.vary.shuffled('word_order_pool', _answer);
+
+  /// 허용하는 실수 횟수. **여기를 넘기면 진다.**
+  ///
+  /// 예전에는 실패가 없었다(`success: true` 고정). 19번 등장하는 게임이 질 수
+  /// 없으면 그건 게임이 아니라 "탭 앞에 붙은 지연" 이다(11 §1-3위).
+  /// 카드 수 + 1 로 잡는다: 두 번 틀리면 다음 카드를 브랜드색 테두리 + 화살표로
+  /// 짚어 주므로([_hintAfter]), 이 한도에 닿으려면 **짚어 준 카드를 두 번 이상
+  /// 무시해야** 한다. 헤매다 지는 게 아니라 안 보고 눌러야 지는 값이다.
+  late final int _mistakeLimit = _answer.length + 1;
 
   final _built = <String>[];
   int _mistakes = 0;
@@ -276,12 +288,17 @@ class _WordOrderGameState extends State<WordOrderGame> {
         _mistakes++;
         _wrong = w;
       });
+      if (_mistakes >= _mistakeLimit) return _fail();
+      // 틀렸지만 판은 살아 있다. 실패음이 아니라 진동 한 번으로만 말한다.
+      MinigameSfx.nudge();
       _wrongTimer?.cancel();
       _wrongTimer = Timer(_wrongHold, () {
         if (mounted) setState(() => _wrong = null);
       });
       return;
     }
+    // 맞는 카드. 한 장씩 밝은 확인음이 붙어야 문장이 쌓이는 게 손에 남는다.
+    MinigameSfx.step();
     setState(() {
       _built.add(w);
       _wrong = null;
@@ -304,6 +321,18 @@ class _WordOrderGameState extends State<WordOrderGame> {
     });
   }
 
+  /// 실수 한도를 넘겼다. 보낼 문장이 끝까지 안 만들어진 채로 끝난다.
+  void _fail() {
+    _wrongTimer?.cancel();
+    setState(() {
+      _result = MinigameResult(
+        success: false,
+        score: _built.length / _answer.length,
+        message: '$_mistakes번 엉켰다. 쓰다 만 문장을 결국 지웠다.',
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -313,8 +342,10 @@ class _WordOrderGameState extends State<WordOrderGame> {
       title: '문장 만들기',
       badge: '${Stat.label(Stat.talk)} ${widget.ctx.stat(Stat.talk)}',
       instruction: _long
-          ? '화술 50 이상이라 카드가 4장이다. 순서대로 눌러 문장을 만든다.'
-          : '카드를 순서대로 눌러 문장을 만든다. 화술 50이 넘으면 카드가 늘어난다.',
+          ? '화술 50 이상이라 카드가 4장이다. 순서대로 눌러 문장을 만든다. '
+                '$_mistakeLimit번 틀리면 문장을 못 보낸다.'
+          : '카드를 순서대로 눌러 문장을 만든다. $_mistakeLimit번 틀리면 실패다. '
+                '화술 50이 넘으면 카드가 늘어난다.',
       result: _result,
       onFinished: () => widget.done(_result!),
       child: CenteredScrollColumn(
@@ -364,9 +395,11 @@ class _WordOrderGameState extends State<WordOrderGame> {
               alignment: Alignment.center,
               child: ResultBadge(
                 tone: AppTone.danger,
+                // 남은 기회를 숫자로 보여 준다. 실패가 있는 게임이 되었으므로
+                // 몇 번 남았는지가 화면에 없으면 지는 이유를 모른다.
                 label: _hint == null
-                    ? '$_mistakes번 잘못 골랐다'
-                    : '$_mistakes번 잘못 골랐다 · 다음은 테두리 친 카드',
+                    ? '잘못 고름 $_mistakes / $_mistakeLimit'
+                    : '잘못 고름 $_mistakes / $_mistakeLimit · 다음은 테두리 친 카드',
               ),
             ),
           ],

@@ -697,6 +697,7 @@
    ]
   },
   "weight": 3,
+  "once": false,
   "title": "답장 대참사",
   "lines": [
    {
@@ -940,6 +941,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "새벽 감성 메시지",
   "lines": [
    {
@@ -1177,7 +1179,7 @@
   "character": "seoyeon",
   "trigger": {
    "day": [
-    3,
+    15,
     100
    ]
   },
@@ -1249,7 +1251,7 @@
     ]
    }
   ],
-  "once": false
+  "once": true
  },
  {
   "id": "d_sns_01_m",
@@ -1257,7 +1259,7 @@
   "character": "jeongwoo",
   "trigger": {
    "day": [
-    3,
+    15,
     100
    ]
   },
@@ -1329,7 +1331,7 @@
     ]
    }
   ],
-  "once": false
+  "once": true
  },
  {
   "id": "d_sns_02",
@@ -1546,7 +1548,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 0
  },
  {
@@ -2000,7 +2002,7 @@
     ]
    }
   ],
-  "once": false
+  "once": true
  },
  {
   "id": "d_meet_02",
@@ -2012,6 +2014,7 @@
    ]
   },
   "weight": 3,
+  "once": false,
   "title": "옆 테이블",
   "lines": [
    {
@@ -2097,7 +2100,7 @@
   "layer": "daily",
   "trigger": {
    "day": [
-    20,
+    24,
     100
    ]
   },
@@ -2107,11 +2110,15 @@
    {
     "who": "narr",
     "text": "프로필 10장이 남았다. 오늘의 무료 한도다."
+   },
+   {
+    "who": "narr",
+    "text": "손이 한 프로필에서 멈췄다. 엄마가 밀던 그 사람과 분위기가 비슷하다."
    }
   ],
   "choices": [
    {
-    "text": "신중하게 고른다",
+    "text": "그 분위기 쪽으로 신중하게 고른다",
     "effects": {
      "stats": {
       "sense": 2
@@ -2172,7 +2179,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 0
  },
  {
@@ -2372,6 +2379,10 @@
     "who": "them",
     "text": "선배님 안녕하세요!",
     "name": "신입"
+   },
+   {
+    "who": "narr",
+    "text": "문가에 동아리 선배가 서 있다. 내 말투를 가르쳐 준 사람이다."
    }
   ],
   "choices": [
@@ -2428,7 +2439,7 @@
     ]
    },
    {
-    "text": "선배가 해 줬던 대로 한다",
+    "text": "문가의 선배가 해 줬던 대로 한다",
     "require": {
      "stats": {
       "talk": 42
@@ -2570,6 +2581,7 @@
    ]
   },
   "weight": 3,
+  "once": false,
   "title": "도서관 옆자리",
   "lines": [
    {
@@ -2781,6 +2793,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "막차",
   "lines": [
    {
@@ -3010,6 +3023,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "예산 초과",
   "lines": [
    {
@@ -3124,6 +3138,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "사진 찍어주기",
   "lines": [
    {
@@ -3394,7 +3409,7 @@
     ]
    },
    {
-    "text": "발라드에 도전한다",
+    "text": "다른 노래에 도전한다",
     "effects": {
      "stats": {
       "charm": 4
@@ -3573,6 +3588,9 @@
    "day": [
     12,
     100
+   ],
+   "flags": [
+    "club_afterparty"
    ]
   },
   "weight": 3,
@@ -3692,6 +3710,9 @@
    "day": [
     10,
     100
+   ],
+   "flags": [
+    "club_afterparty"
    ]
   },
   "weight": 3,
@@ -3800,6 +3821,9 @@
    "day": [
     15,
     100
+   ],
+   "flags": [
+    "club_afterparty"
    ]
   },
   "weight": 2,
@@ -4133,7 +4157,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "? 너 이제 그런 사이야?"
+      "text": "? 국밥집에 그 사람을 부른다고?"
      },
      {
       "who": "narr",
@@ -4156,7 +4180,10 @@
    "anyAffection": {
     "min": 20,
     "count": 1
-   }
+   },
+   "flags": [
+    "club_afterparty"
+   ]
   },
   "weight": 2,
   "title": "2차 제안",
@@ -4385,7 +4412,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 1
  },
  {
@@ -4490,7 +4517,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 0
  },
  {
@@ -4737,11 +4764,15 @@
     "who": "them",
     "text": "제 친구 소개해 드릴까요?",
     "name": "준호 여친"
+   },
+   {
+    "who": "narr",
+    "text": "소개라는 말에 엄마가 밀던 그 사람 이름이 먼저 떠올랐다."
    }
   ],
   "choices": [
    {
-    "text": "좋아요",
+    "text": "좋아요. 소개는 소개니까",
     "effects": {
      "stats": {
       "charm": 2,
@@ -4933,6 +4964,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "단톡방 뒷담화",
   "lines": [
    {
@@ -5287,6 +5319,10 @@
    {
     "who": "me",
     "text": "요즘은 편지 안 써"
+   },
+   {
+    "who": "narr",
+    "text": "아빠가 갑자기 6학년 얘기를 꺼냈다. 우유 사건, 그 동창."
    }
   ],
   "choices": [
@@ -5313,7 +5349,7 @@
     ]
    },
    {
-    "text": "조언을 구한다",
+    "text": "그 동창 얘기를 꺼내며 조언을 구한다",
     "effects": {
      "stats": {
       "sense": 3,
@@ -5449,7 +5485,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 1
  },
  {
@@ -5626,6 +5662,7 @@
    ]
   },
   "weight": 3,
+  "once": false,
   "title": "회식 \"애인 없냐\"",
   "lines": [
    {
@@ -5783,7 +5820,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 1
  },
  {
@@ -5802,6 +5839,7 @@
    }
   },
   "weight": 3,
+  "once": false,
   "title": "발표 성공",
   "lines": [
    {
@@ -5923,11 +5961,15 @@
     "who": "them",
     "text": "거절해도 돼. 근데 사진은 봐",
     "name": "과장"
+   },
+   {
+    "who": "narr",
+    "text": "과장이 사진을 내민다. 소개라는 말에 엄마가 밀던 그 사람이 먼저 떠올랐다."
    }
   ],
   "choices": [
    {
-    "text": "만나본다",
+    "text": "그래도 만나본다",
     "effects": {
      "stats": {
       "charm": 1,
@@ -6120,7 +6162,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "통장 이름을 '데이트 자금'으로 바꾸는 데 5분 걸렸다."
+      "text": "'데이트 자금' 통장에 이번 달 몫을 옮겼다. 숫자가 조금 든든해졌다."
      }
     ]
    },
@@ -7119,7 +7161,7 @@
     ]
    }
   ],
-  "once": false,
+  "once": true,
   "hint": 2
  },
  {
@@ -7168,7 +7210,7 @@
     ]
    },
    {
-    "text": "계속 계산한다",
+    "text": "전부에게 똑같이 답한다",
     "effects": {
      "stats": {
       "sincerity": -6
@@ -7621,6 +7663,7 @@
    ]
   },
   "weight": 2,
+  "once": false,
   "title": "사장님 서비스",
   "lines": [
    {
@@ -8705,7 +8748,7 @@
     ]
    }
   ],
-  "once": false
+  "once": true
  },
  {
   "id": "d_misc_02",
@@ -8956,7 +8999,7 @@
     ]
    }
   ],
-  "once": false
+  "once": true
  },
  {
   "id": "d_misc_04",
@@ -9110,7 +9153,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "알람을 지웠다. '매일 05:30' 반복 설정까지 전부."
+      "text": "알람을 지웠다. 반복 설정까지 전부. 그러고는 다음 주 월요일로 하나를 새로 맞췄다."
      }
     ]
    }
@@ -11516,17 +11559,17 @@
     "reply": [
      {
       "who": "them",
-      "text": "…나 한 번도 안 해봤어",
+      "text": "그 조언들 어디서 났냐면 말이야",
       "name": "태현"
      },
      {
       "who": "them",
-      "text": "코치가 무면허였다 ㅋㅋ 이제 알았지",
+      "text": "아니다. 그건 나중에. 하나만 말하면 나 무면허야",
       "name": "태현"
      },
      {
       "who": "narr",
-      "text": "조언 절반이 왜 위험했는지 이제 알 것 같다."
+      "text": "무엇이 무면허인지는 말하지 않았다. 조언 절반이 왜 위험했는지는 알 것 같다."
      }
     ]
    },

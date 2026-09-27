@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../engine/meta_service.dart';
+
 /// 같은 미니게임이 두 번째·세 번째 나올 때 **다른 판**이 되게 하는 장치.
 ///
 /// 규칙 세 가지로 만들어져 있다.
@@ -122,22 +124,90 @@ class MinigameVariation {
 
 /// 미니게임 id 별 등장 순번을 센다. [MinigameVariation.round] 의 출처다.
 ///
-/// 프로세스가 살아 있는 동안만 센다. 앱을 껐다 켜면 0 부터 다시 세므로 그 회차의
-/// 기본 판이 한 번 더 나올 수 있다 — 한 판 겹치는 대신 "첫 판은 언제나 같다" 를
-/// 얻는 쪽을 택했다(테스트·시뮬레이션이 이 성질에 기대고 있다).
+/// **기기에 남는다.** 하트 경제가 한 세션을 10분쯤으로 끊으므로 거의 모든 세션이
+/// 콜드 스타트다. 메모리에만 세면 앱을 켤 때마다 순번이 0 으로 돌아가고, 그러면
+/// 플레이어는 이 파일이 만들려던 변주를 **평생 한 번도 못 본다** — 매번 기준 판만
+/// 다시 만난다. 그래서 순번을 `MetaService` 의 별도 키에 적는다.
+///
+/// 규칙 셋.
+/// 1. **첫 판은 여전히 기준 판이다.** 저장은 회차(`seed:run`) 단위라 새 게임을
+///    시작하면 키가 달라지고 순번이 0 부터 다시 시작한다([MinigameVariation.pick]).
+/// 2. **회차가 바뀌면 옛 기록은 버린다**([next] 가 현재 회차 접두사만 남긴다).
+///    안 버리면 회차마다 12개씩 쌓여 무한히 자란다.
+/// 3. **읽기는 비동기, 세기는 동기.** 판정 경로를 비동기로 만들지 않으려고
+///    [next] 는 그대로 동기고, 저장은 기다리지 않는다. 읽기는 [ready] 로
+///    미니게임이 뜨기 전에 한 번만 한다.
 class MinigameRotation {
   MinigameRotation._();
 
   static final Map<String, int> _counts = {};
 
-  /// `<회차>:<미니게임 id>` 의 다음 순번. 부를 때마다 정확히 1씩 오른다.
+  /// 저장소. 테스트가 갈아 끼울 수 있게 밖으로 뺀다.
+  static MetaService store = MetaService();
+
+  static bool _loaded = false;
+  static Future<void>? _loading;
+
+  /// 저장된 순번을 **프로세스당 한 번만** 읽어 온다. 실패하면 빈 채로 진행한다.
+  /// `registerMinigames()` 가 앱 시작 때 기다리지 않고 건다 — 세기([next])는
+  /// 동기여야 하기 때문이다. 읽기가 늦게 도착해도 [_load] 가 **큰 쪽을 남기므로**
+  /// 순번이 뒤로 감기지는 않는다.
+  static Future<void> ready() {
+    if (_loaded) return Future<void>.value();
+    return _loading ??= _load();
+  }
+
+  static Future<void> _load() async {
+    try {
+      final saved = await store.loadMinigameRounds();
+      for (final e in saved.entries) {
+        // 이 프로세스에서 이미 더 센 값이 있으면 그쪽을 남긴다(되감기지 않는다).
+        final n = _counts[e.key];
+        if (n == null || e.value > n) _counts[e.key] = e.value;
+      }
+    } catch (_) {
+      // 못 읽으면 0번째 판부터. 순번 때문에 앱이 죽어서는 안 된다.
+    }
+    _loaded = true;
+    _loading = null;
+    // 읽기를 기다리지 않고 센 판이 있으면 여기서 함께 적는다([next] 의 저장 유보).
+    if (_counts.isNotEmpty) _save();
+  }
+
+  /// `<씨앗>:<회차>:<미니게임 id>` 의 다음 순번. 부를 때마다 정확히 1씩 오른다.
   /// 첫 판은 0 — 변주 없는 기본 판이다([MinigameVariation.pick]).
   static int next(String key) {
+    final cut = key.lastIndexOf(':');
+    if (cut > 0) {
+      // 회차 접두사(`씨앗:회차:`)가 다른 기록은 지난 회차 것이다. 여기서 버린다.
+      final prefix = key.substring(0, cut + 1);
+      _counts.removeWhere((k, _) => !k.startsWith(prefix));
+    }
     final n = (_counts[key] ?? -1) + 1;
     _counts[key] = n;
+    // **읽기가 끝나기 전에는 적지 않는다.** 여기서 적어 버리면 아직 못 읽은
+    // 저장값(예: 5)을 0 으로 덮어써서, 읽기를 미리 걸어 둔 보람이 사라진다.
+    // 유보한 값은 [_load] 가 병합한 뒤 함께 적는다.
+    if (_loaded) _save();
     return n;
   }
 
-  /// 새 회차를 시작하거나 테스트를 격리할 때.
-  static void reset() => _counts.clear();
+  /// 기다리지 않는다. 실패는 `MetaService` 가 삼키므로 던지는 일이 없다.
+  static void _save() => store.saveMinigameRounds(Map<String, int>.of(_counts));
+
+  /// 새 회차를 시작하거나 테스트를 격리할 때. 저장된 기록도 다시 읽지 않는다
+  /// (읽어 오면 방금 비운 값이 되살아나 격리가 깨진다).
+  static void reset() {
+    _counts.clear();
+    _loaded = true;
+    _loading = null;
+  }
+
+  /// 저장된 기록을 다시 읽을 수 있는 상태로 되돌린다. 저장소를 갈아 끼우는
+  /// 테스트만 쓴다.
+  static void resetForLoad() {
+    _counts.clear();
+    _loaded = false;
+    _loading = null;
+  }
 }

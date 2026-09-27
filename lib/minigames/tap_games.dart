@@ -108,6 +108,9 @@ class _GroupChatGameState extends State<GroupChatGame> {
 
   void _tap(int i) {
     if (_order.contains(i) || _result != null) return;
+    // 순서를 하나 정했다. 다섯 번 누르는 동안 눌린 것이 손에 남아야
+    // "미끄러졌나" 를 눈으로만 확인하지 않는다.
+    MinigameSfx.tap();
     setState(() => _order.add(i));
     if (_order.length == _msgs.length) _finish();
   }
@@ -116,6 +119,7 @@ class _GroupChatGameState extends State<GroupChatGame> {
   /// 플레이어는 자기가 진 이유를 자기 실수로 받아들이지 못한다.
   void _undo() {
     if (_result != null || _order.isEmpty) return;
+    MinigameSfx.undo();
     setState(_order.removeLast);
   }
 
@@ -215,6 +219,9 @@ class _GroupChatGameState extends State<GroupChatGame> {
               trailingLabel: done ? '정답 ${_msgs[i].priority + 1}' : null,
               selected: _order.contains(i),
               dimmed: _order.contains(i) && !done,
+              // 이미 답한 칸을 다시 눌렀다. 무르기 버튼이 있다는 걸 모르고
+              // 같은 칸을 두드리는 손이 있어서, 안 된다는 것만 알린다.
+              onDimmedTap: MinigameSfx.nudge,
               // 끝나면 칸마다 순서가 맞았는지 공개한다(색 + 테두리 + 아이콘).
               tone: !done
                   ? MinigameOptionTone.neutral
@@ -348,6 +355,8 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
               .round();
       _timer = Timer(Duration(milliseconds: window), () {
         if (!mounted || !_open) return;
+        // 창을 놓쳤다. 리듬 게임에서 놓친 박자가 조용하면 박자가 아니다.
+        MinigameSfx.nudge();
         setState(() {
           _open = false;
           _combo = 0;
@@ -365,6 +374,8 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
       // 창이 열리기 전 탭. 아무 반응도 없던 자리라 "먹혔나?" 싶었다.
       // 이제 화면이 대답하고, 잠깐 잠긴다.
       _earlyTimer?.cancel();
+      // 너무 일렀다. 화면은 "아직" 을 띄우고 손에는 무거운 진동 한 번.
+      MinigameSfx.nudge();
       setState(() => _early = true);
       _earlyTimer = Timer(_earlyLock, () {
         if (mounted) setState(() => _early = false);
@@ -373,6 +384,8 @@ class _CallRhythmGameState extends State<CallRhythmGame> {
     }
     if (_early) return;
     _timer?.cancel();
+    // 맞췄다. 28번 등장하는 리듬 게임에서 이 한 박자가 게임의 전부다.
+    MinigameSfx.step();
     setState(() {
       _hits++;
       _combo++;
@@ -599,11 +612,15 @@ class _ProfileSwipeGameState extends State<ProfileSwipeGame> {
     if (right) {
       final hit = _rng.nextDouble() < _chanceOf(_index);
       if (hit) _matches++;
+      // 매칭됐는지가 카드 여덟 장 동안 매번 갈린다. 그 여덟 번을 손으로 센다.
+      hit ? MinigameSfx.step() : MinigameSfx.nudge();
       _log.add('${p.$1} · ${hit ? '매칭' : '무응답'}');
       _lastHit = hit;
     } else {
       // 벽 높은 프로필을 넘긴 것은 판단이다. 낮은 확률에 시간을 안 쓴 값을 쳐준다.
       if (_chanceOf(_index) < 0.25) _passedWalls++;
+      // 넘기기는 판정이 아니라 조작이다. 가벼운 탭 큐만.
+      MinigameSfx.tap();
       _log.add('${p.$1} · 넘김');
       _lastHit = null;
     }

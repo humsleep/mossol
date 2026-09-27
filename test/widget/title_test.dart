@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/ui/call_view.dart';
 import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/scene_card.dart';
 import 'package:mossol/ui/scene_registry.dart';
@@ -95,6 +96,82 @@ void main() {
       await expectLater(tester, meetsGuideline(textContrastGuideline));
     });
   }
+
+  // docs/review/11_polish_verdict.md 7위: ① 아래 45% 가 빈 자수정 띠였고
+  // ② 로고가 본문과 같은 `displaySmall` 이었다. 그 둘을 각각 본다.
+  group('구성과 서체 (11_polish_verdict 7위)', () {
+    testWidgets('그림이 화면을 꽉 채운다 — 아래 45% 가 비어 있지 않다', (tester) async {
+      useScenes(paths: [sceneAsset(TitleScreen.fallbackArtKey)]);
+      await tester.pumpWidget(wrapApp(TitleScreen(onStart: () {})));
+      await tester.pumpAndSettle();
+
+      // 통화 화면의 0.55 를 물려받지 않는다.
+      final backdrop = tester.widget<CallBackdrop>(find.byType(CallBackdrop));
+      expect(backdrop.heightFactor, 1.0);
+      expect(backdrop.heightFactor, isNot(CallBackdrop.sceneHeightFactor));
+      expect(backdrop.bottomScrim, isTrue, reason: '글자가 앉을 어둠');
+
+      // 그림이 놓이는 상자가 화면 높이 전체다(그림 파일 자체는 테스트에서 디코딩되지
+      // 않으므로 그림이 아니라 그 자리를 본다).
+      final slot = find.ancestor(
+        of: find.byType(SceneImage),
+        matching: find.byType(FractionallySizedBox),
+      );
+      expect(
+        tester.widget<FractionallySizedBox>(slot.first).heightFactor,
+        1.0,
+      );
+      final screen = tester.getSize(find.byType(TitleScreen));
+      expect(tester.getSize(slot.first).height, closeTo(screen.height, 1));
+    });
+
+    testWidgets('워드마크 묶음과 시작 버튼이 한 덩어리로 아래에 앉는다', (tester) async {
+      await tester.pumpWidget(wrapApp(TitleScreen(onStart: () {})));
+      await tester.pumpAndSettle();
+
+      final screen = tester.getSize(find.byType(TitleScreen));
+      final tagline = tester.getRect(findText(TitleScreen.tagline));
+      final start = tester.getRect(find.byKey(const Key('title-start')));
+
+      // 예전에는 가운데 묶음과 하단 버튼 사이가 화면 절반쯤 비어 있었다.
+      expect(
+        start.top - tagline.bottom,
+        lessThan(screen.height * 0.2),
+        reason: '부제와 버튼 사이가 여전히 벌어져 있다',
+      );
+      // 묶음 전체가 화면 아래쪽 절반에 있다(위쪽은 그림 자리).
+      expect(tagline.top, greaterThan(screen.height * 0.5));
+      expect(start.bottom, lessThanOrEqualTo(screen.height));
+    });
+
+    testWidgets('앱 이름은 본문 서체가 아니다 — 더 크고 더 좁다', (tester) async {
+      await tester.pumpWidget(wrapApp(TitleScreen(onStart: () {})));
+      await tester.pumpAndSettle();
+
+      final wordmark = tester.widget<Text>(findText(TitleScreen.title));
+      final style = wordmark.style!;
+      // 타이틀 바탕은 항상 다크 테마다(CallBackdrop).
+      final body = AppTheme.dark.textTheme;
+      expect(
+        style.fontSize,
+        greaterThan(body.displaySmall!.fontSize!),
+        reason: '예전에는 홈 헤더와 같은 displaySmall 이었다',
+      );
+      expect(
+        style.fontSize,
+        greaterThan(body.displayLarge!.fontSize!),
+        reason: '앱에서 가장 큰 글자 한 낱말',
+      );
+      expect(
+        style.letterSpacing,
+        lessThan(body.displayLarge!.letterSpacing!),
+        reason: '로고 수준으로 자간을 좁힌다',
+      );
+      // 한 줄로 고정. 폭이 모자라면 줄바꿈이 아니라 통째로 줄어든다.
+      expect(wordmark.maxLines, 1);
+      expect(find.byType(FittedBox), findsWidgets);
+    });
+  });
 
   testWidgets('동작 줄이기: 연출 없이 완성된 화면으로 선다', (tester) async {
     await tester.pumpWidget(

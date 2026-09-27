@@ -31,8 +31,26 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// 태현의 답이 **한 줄씩** 다 뜰 때까지 기다린다.
+  ///
+  /// 인트로는 본편과 같은 타이핑 박자를 쓴다(`EventScreen.themDelayMs`, 줄당
+  /// 800~2400ms). 다음 줄을 기다리는 동안에는 예약된 프레임이 없어서 `pumpAndSettle`
+  /// 이 곧바로 돌아온다 — 그래서 줄 수만큼 직접 시간을 준다.
+  Future<void> settleTyping(WidgetTester tester) async {
+    // 방금 누른 탭을 한 프레임 그린다 — 그래야 `…` 가 트리에 나타난다.
+    await tester.pump();
+    for (var i = 0; i < 12; i++) {
+      if (find.byType(TypingIndicator).evaluate().isEmpty) break;
+      await tester.pump(const Duration(milliseconds: 2500));
+    }
+    await tester.pumpAndSettle();
+    expect(find.byType(TypingIndicator), findsNothing);
+  }
+
   /// 마지막 답 뒤 캐스트 소개가 뜨면 `시작하기` 로 닫아 첫날로 들어간다.
   Future<void> startFromCast(WidgetTester tester) async {
+    // 태현의 마지막 두 줄이 다 뜬 **뒤에** 900ms 가 흐른다.
+    await settleTyping(tester);
     await tester.pump(IntroScreen.startDelay);
     await tester.pumpAndSettle();
     expect(find.byType(PreferenceScreen), findsOneWidget);
@@ -97,7 +115,7 @@ void main() {
 
     // 대화 안에는 "시작하기" 버튼이 없다 — 대답이 곧 다음 단계다.
     await tester.tap(find.byKey(const Key('intro-yes')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     expect(findText(IntroScreen.yesLabel), findsOneWidget);
     expect(findText(IntroScreen.nameQuestion), findsOneWidget);
     expect(findText(PreferenceScreen.startLabel), findsNothing);
@@ -106,7 +124,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('intro-name-field')), '민지');
     await tester.pump();
     await tester.tap(find.byKey(const Key('intro-name-submit')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     expect(findText(IntroScreen.genderQuestion), findsOneWidget);
 
     // "나는?" 의 기존 문구 그대로. 남자 → 여성 캐릭터 회차.
@@ -116,6 +134,7 @@ void main() {
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
 
     // 마지막 답 뒤에는 캐스트 소개가 선다 — 누구를 만나는지 보고 시작한다(§2.9).
+    await settleTyping(tester);
     await tester.pump(IntroScreen.startDelay);
     await tester.pumpAndSettle();
     expect(find.byType(PreferenceScreen), findsOneWidget);
@@ -146,13 +165,135 @@ void main() {
     expect(c.current, isNotNull);
   });
 
+  // docs/review/11_polish_verdict.md 8위: 내 답과 태현의 두세 줄이 `setState` 하나로
+  // 한꺼번에 들어가 실기에서 말풍선 여섯 개가 동시에 쏟아졌다. 이 게임의 대표 연출을
+  // 첫 대화에서 한 번도 못 보고 본편이 시작됐다는 뜻이다.
+  group('태현의 답은 한 줄씩 온다 (11_polish_verdict 8위)', () {
+    testWidgets('답하면 `…` 가 먼저 뜨고, 줄이 하나씩 쌓인다', (tester) async {
+      final c = await makeController(firstLaunch: true);
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await tester.pump();
+      // 내 말은 곧바로, 태현의 답은 아직 하나도 없다. 대신 `…` 가 떠 있다.
+      expect(findText(IntroScreen.yesLabel), findsOneWidget);
+      expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(findText(IntroScreen.dealReply), findsNothing);
+      expect(findText(IntroScreen.nameQuestion), findsNothing);
+
+      // 첫 줄이 뜬다. 아직 다음 줄은 없고 `…` 는 그대로 하나다(§4.1).
+      await tester.pump(
+        Duration(milliseconds: EventScreen.themDelayMs(IntroScreen.dealReply)),
+      );
+      expect(findText(IntroScreen.dealReply), findsOneWidget);
+      expect(findText(IntroScreen.nameQuestion), findsNothing);
+      expect(find.byType(TypingIndicator), findsOneWidget);
+
+      // 둘째 줄이 뜨면 `…` 가 사라진다.
+      await tester.pump(
+        Duration(
+          milliseconds: EventScreen.themDelayMs(IntroScreen.nameQuestion),
+        ),
+      );
+      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
+      expect(find.byType(TypingIndicator), findsNothing);
+    });
+
+    testWidgets('타이핑 시간은 본편과 같은 식이다 (글자 수 비례)', (tester) async {
+      final c = await makeController(firstLaunch: true);
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await tester.pump();
+
+      // 한 밀리초 모자라면 아직 안 뜬다 — 두 번째 구현이 아니라 그 식 그대로다.
+      final wait = EventScreen.themDelayMs(IntroScreen.dealReply);
+      await tester.pump(Duration(milliseconds: wait - 1));
+      expect(findText(IntroScreen.dealReply), findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(findText(IntroScreen.dealReply), findsOneWidget);
+    });
+
+    testWidgets('치는 동안 하단 패널은 비어 있다 — 답을 두 번 누를 수 없다', (tester) async {
+      final c = await makeController(firstLaunch: true);
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+
+      expect(find.byKey(const Key('intro-yes')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await tester.pump();
+      // 방금 누른 버튼도, 다음 단계의 입력창도 없다.
+      expect(find.byKey(const Key('intro-yes')), findsNothing);
+      expect(find.byKey(const Key('intro-maybe')), findsNothing);
+      expect(find.byKey(const Key('intro-name-field')), findsNothing);
+
+      // 태현이 말을 마치면 그때 이름 입력이 올라온다.
+      await settleTyping(tester);
+      expect(find.byKey(const Key('intro-name-field')), findsOneWidget);
+      // 내 말풍선은 하나뿐이다(두 번 들어가지 않았다).
+      expect(findText(IntroScreen.yesLabel), findsOneWidget);
+    });
+
+    testWidgets('캐스트 소개는 마지막 두 줄이 다 뜬 뒤에 열린다', (tester) async {
+      final c = await makeController(firstLaunch: true);
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await settleTyping(tester);
+      await tester.tap(find.byKey(const Key('intro-name-skip')));
+      await settleTyping(tester);
+      await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
+
+      // 마지막 답 직후: 900ms 가 지나도 아직 태현이 치고 있으므로 안 열린다.
+      await tester.pump();
+      await tester.pump(IntroScreen.startDelay);
+      expect(findText(IntroScreen.startReply), findsOneWidget, reason: '첫 줄');
+      expect(find.byType(TypingIndicator), findsOneWidget, reason: '둘째 줄 치는 중');
+      expect(find.byType(PreferenceScreen), findsNothing);
+
+      // 둘째 줄까지 뜨고 나서야 900ms 가 시작된다.
+      await tester.pump(
+        Duration(milliseconds: EventScreen.themDelayMs(IntroScreen.castIntro)),
+      );
+      expect(findText(IntroScreen.castIntro), findsOneWidget);
+      expect(find.byType(TypingIndicator), findsNothing);
+      expect(find.byType(PreferenceScreen), findsNothing);
+
+      await tester.pump(IntroScreen.startDelay);
+      await tester.pumpAndSettle();
+      expect(find.byType(PreferenceScreen), findsOneWidget);
+    });
+
+    testWidgets('동작 줄이기: 그래도 한 줄씩 온다 (타이핑 시간은 박자다, §1.10)', (tester) async {
+      useReducedMotion(tester);
+      final c = await makeController(firstLaunch: true);
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await tester.pump();
+      expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(findText(IntroScreen.nameQuestion), findsNothing);
+      await settleTyping(tester);
+      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
+      // 반복 애니메이션은 없다 — `…` 는 정적인 Text 한 개다(§3.2).
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('이름 건너뛰기: 이름 없이도 끝까지 간다, 규칙에 어긋난 이름은 버튼이 꺼진다', (tester) async {
     final c = await makeController(firstLaunch: true);
     await tester.pumpWidget(fullApp(c));
     await tester.pump();
     await openIntroChat(tester);
     await tester.tap(find.byKey(const Key('intro-maybe')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
 
     // 빈 값이면 1차 버튼이 꺼져 있다(이름 화면과 같은 규칙).
     FilledButton submit() => tester.widget<FilledButton>(
@@ -171,12 +312,12 @@ void main() {
     );
 
     await tester.tap(find.byKey(const Key('intro-name-skip')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     expect(findText(IntroScreen.genderQuestion), findsOneWidget);
 
     // "선택 안 할래요" 는 어느 쪽을 먼저 만날지 한 번 더 묻는다.
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.none}')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     expect(findText(IntroScreen.sideQuestion), findsOneWidget);
     await tester.tap(find.byKey(const Key('intro-side-${Preference.male}')));
     await startFromCast(tester);
@@ -192,9 +333,9 @@ void main() {
     await tester.pump();
     await openIntroChat(tester);
     await tester.tap(find.byKey(const Key('intro-yes')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.female}')));
     await startFromCast(tester);
     expect(c.hasSave, isTrue);
@@ -218,10 +359,11 @@ void main() {
     await tester.pump();
     await openIntroChat(tester);
     await tester.tap(find.byKey(const Key('intro-yes')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
+    await settleTyping(tester);
     await tester.pump(IntroScreen.startDelay);
     await tester.pumpAndSettle();
     expect(find.byType(PreferenceScreen), findsOneWidget);
@@ -265,9 +407,9 @@ void main() {
     // 대화(가장 긴 단계인 "나는?" 패널까지).
     await openIntroChat(tester);
     await tester.tap(find.byKey(const Key('intro-yes')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
-    await tester.pumpAndSettle();
+    await settleTyping(tester);
     expect(tester.takeException(), isNull);
     for (final g in PlayerGender.values) {
       // 세 번째 버튼은 예전부터 패널 안 스크롤에 걸린다(하단 패널 최대 높이 55%).
@@ -286,6 +428,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
+    await settleTyping(tester);
     await tester.pump(IntroScreen.startDelay);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);

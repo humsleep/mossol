@@ -161,6 +161,9 @@ void main() {
 
       // 새 회차가 시작되면 controller.ending 은 비워지므로 미리 잡아 둔다.
       final endedId = c.ending!.id;
+      // 기념품 아래에 `엔딩 공유` 가 하나 늘어 1차 버튼이 첫 화면 밖으로 밀렸다.
+      await tester.ensureVisible(findText('2회차 시작'));
+      await tester.pumpAndSettle();
       await tester.tap(findText('2회차 시작'));
       await tester.pump();
       // 새 회차는 first 카드를 지나 행동 화면으로. spinRouletteSheet 의 pumpAndSettle 이 통과한다.
@@ -176,6 +179,9 @@ void main() {
       c.state!.day = c.config.totalDays;
       await c.endDay();
       await tester.pumpWidget(fullApp(c));
+      // `엔딩 공유` 가 늘어 마지막 링크가 첫 화면 밖으로 밀렸다.
+      await tester.ensureVisible(findText('홈으로'));
+      await tester.pumpAndSettle();
       await tester.tap(findText('홈으로'));
       await tester.pump();
       expect(c.phase, Phase.home);
@@ -292,6 +298,14 @@ void main() {
       // 매력 막대 옆에 변화량(+3)과 오늘 값이 따로 보인다.
       expect(findText('+3'), findsOneWidget);
       expect(findText('${c.state!.stat(Stat.charm)}'), findsWidgets);
+      // 맨 위에 100일 카운트다운이 한 덩어리 늘어 버튼이 첫 화면 밖으로 밀렸다.
+      // `ListView` 는 화면 밖 항목을 만들지 않으므로 끌어 내려서 찾는다(flow_test 와 같은 방법).
+      await tester.dragUntilVisible(
+        findText('다음 날로'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(findText('다음 날로'));
       await tester.pump();
       expect(c.state!.day, 2);

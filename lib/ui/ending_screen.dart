@@ -5,6 +5,7 @@ import '../game_controller.dart';
 import '../minigames/minigame.dart' show CenteredScrollColumn;
 import 'album_screen.dart' show endingHintFor;
 import 'design_system.dart';
+import 'keepsake_share.dart';
 import 'preference_screen.dart';
 import 'retention_widgets.dart';
 import 'scene_card.dart';
@@ -21,13 +22,27 @@ import 'keep_all.dart';
 /// 기념품 아래에는 "다음 판" 카드([NextRunCard])가 붙는다(docs/ROADMAP.md Phase 1):
 /// 권하는 캐릭터 · 못 본 엔딩 힌트 · (한쪽만 해 봤으면) 반대쪽 권유. 광고는 없고 흐름을
 /// 막지 않는다 — 1차 버튼은 여전히 `N회차 시작` 하나다. 카드는 공유 캡처 경계 밖이다.
+///
+/// 기념품 바로 아래에 2차 버튼 하나가 더 붙는다: `엔딩 공유`([_ShareButton]).
+/// [shareBoundaryKey] 는 진작 트리에 꽂혀 있었지만 `toImage()` 를 부르는 곳이 없어서
+/// **죽은 경계**였다(docs/review/11_polish_verdict.md 10위). 이 장르의 자연 유입은
+/// 전부 엔딩 인증샷에서 오므로, 그 하나를 잇는다([KeepsakeShare]).
 class EndingScreen extends StatelessWidget {
   final GameController c;
   const EndingScreen({super.key, required this.c});
 
-  /// 공유용 캡처 경계. `RenderRepaintBoundary.toImage()` 를 붙이면
-  /// 버튼 없이 기념품 카드만 이미지로 나온다.
+  /// 공유용 캡처 경계. [KeepsakeShare] 가 이 경계만 PNG 로 구워
+  /// 버튼 없이 기념품 카드만 이미지로 내보낸다.
   static final GlobalKey shareBoundaryKey = GlobalKey();
+
+  static const shareLabel = '엔딩 공유';
+
+  /// 카드에 곁들여 나가는 문구. **앱 이름 한 줄로 고정이다** — 플레이어의 이름이나
+  /// 기록을 붙이지 않는다. 나가는 개인적인 것은 카드에 이미 보이는 것뿐이어야 한다.
+  static const shareText = '모쏠 탈출기 · 100일 연애 시뮬레이션';
+
+  /// 그림을 못 굽거나 시트를 못 띄웠을 때. 던지지 않고 이 한 줄로 끝낸다.
+  static const shareFailedText = '지금은 공유할 수 없어요';
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +71,9 @@ class EndingScreen extends StatelessWidget {
                 tierLabel: _tierLabel(e.tier),
               ),
             ),
+            const SizedBox(height: AppSpace.md),
+            // 기념품에 딸린 2차 버튼. 1차는 여전히 `N회차 시작` 하나다.
+            const _ShareButton(),
             const SizedBox(height: AppSpace.xxl),
             if (showNext) ...[
               SizedBox(
@@ -132,6 +150,61 @@ class EndingScreen extends StatelessWidget {
     if (score >= 20) return 'D';
     return 'F';
   }
+}
+
+/// `엔딩 공유` 한 개. 누르면 기념품 카드를 PNG 로 굽고 시스템 공유 시트를 띄운다.
+///
+/// 누르는 동안 한 번만 돈다(두 번 눌러 시트가 두 장 뜨는 것을 막는다). 못 하면
+/// 스낵바 한 줄([EndingScreen.shareFailedText]) — 예외는 밖으로 나가지 않는다.
+class _ShareButton extends StatefulWidget {
+  const _ShareButton();
+
+  @override
+  State<_ShareButton> createState() => _ShareButtonState();
+}
+
+class _ShareButtonState extends State<_ShareButton> {
+  bool _busy = false;
+
+  Future<void> _share() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final ratio = MediaQuery.devicePixelRatioOf(context);
+    // 아이패드는 시트를 누른 자리에 띄운다. 버튼의 화면 좌표를 넘긴다.
+    final box = context.findRenderObject();
+    final origin = box is RenderBox && box.hasSize
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+    var ok = false;
+    try {
+      ok = await KeepsakeShare.instance.shareBoundary(
+        EndingScreen.shareBoundaryKey,
+        pixelRatio: ratio,
+        text: EndingScreen.shareText,
+        origin: origin,
+      );
+    } catch (_) {
+      // 어떤 이유로든 못 했으면 스낵바 한 줄로 끝낸다. 엔딩 화면이 예외로
+      // 무너지면 3시간 걸어온 사람이 보상 화면을 잃는다.
+      ok = false;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!ok) {
+      messenger?.showSnackBar(
+        const SnackBar(content: Text(EndingScreen.shareFailedText)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    key: const Key('ending-share'),
+    onPressed: _busy ? null : _share,
+    icon: const Icon(Icons.ios_share),
+    label: const Text(EndingScreen.shareLabel),
+  );
 }
 
 /// 기념품 덩어리: 티어 → 이름 → 에필로그 → 등급 카드.

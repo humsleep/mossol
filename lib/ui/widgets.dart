@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../ads/ad_manager.dart';
@@ -125,7 +126,17 @@ String signed(int v) => v > 0 ? '+$v' : '$v';
 ///
 /// 채움 방향은 `Directionality` 를 따른다. 값이 오르면 나쁜 스탯
 /// (스트레스)은 rtl 로 감싸 오른쪽에서 자라게 해 형태로 구분한다.
-class AppProgressBar extends StatelessWidget {
+///
+/// **채움은 흐른다, 튀지 않는다.** 예전에는 맨 `FractionallySizedBox` 라서 값을
+/// 미는 쪽의 박자가 그대로 보였다 — 미니게임의 `Timer.periodic(100ms)` 는
+/// **초당 열 번 계단처럼** 튀었다(docs/review/11_polish_verdict.md 15위).
+/// 그래서 막대가 스스로 새 값까지 흐른다. 흐르는 시간은 **값이 바뀐 간격**이다:
+/// 100ms 마다 밀면 100ms 동안, 1초마다 밀면 1초 동안 흐르므로 어느 박자에서도
+/// 이음매가 없고 뒤처지지도 않는다. 부모가 이미 프레임마다 값을 밀고 있으면
+/// (간격 ≤ [liveInterval]) 겹쳐 돌리지 않고 그대로 따라간다 — 겹치면 막대가
+/// 부모보다 늦게 도착한다(`timing_games.dart` 의 "길게 누르기" 막대).
+/// 상한은 [AppMotion.dGaugeMax], 동작 줄이기면 흐르지 않고 곧바로 새 값이다(§1.10).
+class AppProgressBar extends StatefulWidget {
   final double value;
   final String semanticLabel;
   final double height;
@@ -141,27 +152,87 @@ class AppProgressBar extends StatelessWidget {
     this.track,
   });
 
+  /// 이보다 촘촘히 값이 바뀌면 "부모가 프레임마다 민다" 로 본다(60fps ≈ 16.7ms).
+  static const Duration liveInterval = Duration(milliseconds: 34);
+
+  @override
+  State<AppProgressBar> createState() => _AppProgressBarState();
+}
+
+class _AppProgressBarState extends State<AppProgressBar>
+    with SingleTickerProviderStateMixin {
+  static double _clamped(double v) =>
+      v.isNaN ? 0.0 : v.clamp(0.0, 1.0).toDouble();
+
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    value: _clamped(widget.value),
+  );
+
+  /// 값이 마지막으로 바뀐 프레임의 시각. 다음 변화까지의 간격이 흐르는 시간이다.
+  Duration? _lastChange;
+
+  /// 지금 프레임의 시각. 프레임 밖에서 다시 그리는 경우도 있어서(테스트가
+  /// `pumpWidget` 을 두 번 부를 때) 그때는 null — "간격을 모른다" 로 다룬다.
+  static Duration? _frameNow() {
+    final b = SchedulerBinding.instance;
+    return b.schedulerPhase == SchedulerPhase.idle
+        ? null
+        : b.currentFrameTimeStamp;
+  }
+
+  @override
+  void didUpdateWidget(AppProgressBar old) {
+    super.didUpdateWidget(old);
+    if (old.value == widget.value) return;
+    final target = _clamped(widget.value);
+    final now = _frameNow();
+    final gap = (now == null || _lastChange == null)
+        ? AppMotion.dBase
+        : now - _lastChange!;
+    if (now != null) _lastChange = now;
+    if (AppMotion.reduced(context) || gap <= AppProgressBar.liveInterval) {
+      _c.value = target;
+      return;
+    }
+    _c.animateTo(
+      target,
+      duration: gap > AppMotion.dGaugeMax ? AppMotion.dGaugeMax : gap,
+      curve: AppMotion.curve(context, AppMotion.gauge),
+    );
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final v = value.isNaN ? 0.0 : value.clamp(0.0, 1.0);
+    // 스크린리더에게는 지금 값(목표)을 그대로 읽어 준다 — 흐르는 중간값이 아니다.
+    final v = _clamped(widget.value);
     return Semantics(
-      label: semanticLabel,
+      label: widget.semanticLabel,
       value: '${(v * 100).round()}%',
       child: ExcludeSemantics(
         child: SizedBox(
-          height: height,
+          height: widget.height,
           child: ClipRRect(
             borderRadius: AppRadius.rXs,
             child: ColoredBox(
-              color: track ?? context.tokens.gaugeTrack,
+              color: widget.track ?? context.tokens.gaugeTrack,
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: FractionallySizedBox(
-                  widthFactor: v,
-                  heightFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: fill ?? context.scheme.primary,
+                child: AnimatedBuilder(
+                  animation: _c,
+                  builder: (context, _) => FractionallySizedBox(
+                    widthFactor: _c.value,
+                    heightFactor: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: widget.fill ?? context.scheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -170,6 +241,98 @@ class AppProgressBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 100일 마감 카운트다운. 하루 정산(§2.4) 맨 위에 한 덩어리로 선다.
+///
+/// **왜 있는가.** 이 게임의 전제는 100일이고 제목도 `100일 연애 시뮬레이션` 인데,
+/// `D-xx` 를 말해 주는 건 대사뿐이었다. 100일 실측에서 카운트다운이 화면에 뜬 날은
+/// **4~5일**이다(D+1, D+7, 그다음은 빨라야 D+24 — docs/review/11_story_verdict.md §2·4-3).
+/// 정산은 100일 중 100일 지나가는 화면이라, 여기 한 덩어리를 두면 그대로 100일이 된다.
+///
+/// **왜 이 모양인가.** 대본이 쓰는 축척을 그대로 쓴다 — `D-(총일수 − 오늘)`. 대본의
+/// 두 기준점이 이 식이다(`m_week1` 은 D+7 에 "오늘로 D-93", `d_bet_settle` 은
+/// 90일째에 "오늘부로 D-10"). 화면이 대사와 다른 숫자를 말하면 둘 다 못 믿는다.
+/// 숫자만으로는 처음 보는 사람에게 `D-93` 이 아무 뜻이 없으므로 아래에 우리말 한 줄을
+/// 붙이고, 마지막 10일은 **아이콘 모양 + 색 + 낱말** 셋이 같이 바뀐다(§4.2).
+/// 정산의 주인공은 여전히 오늘 바뀐 수치다 — 그래서 카드가 아니라 앨범 수집 진행도
+/// (§2.6)와 같은 맨 블록이고, 숫자는 `headlineSmall` 에서 멈춘다.
+class DeadlineBand extends StatelessWidget {
+  /// 오늘. 정산 화면이 `D+N 정산` 이라고 부르는 그 N.
+  final int day;
+
+  /// 회차 전체 길이(`config.totalDays`, 100).
+  final int totalDays;
+
+  const DeadlineBand({
+    super.key,
+    required this.day,
+    required this.totalDays,
+  });
+
+  /// 내기의 이름. 대본이 부르는 이름과 같다(`m01`, `d_open_bet`).
+  static const title = '100일 프로젝트';
+
+  /// 여기서부터 막대와 낱말이 위험 쪽으로 넘어간다. 대본의 `내기 정산 D-10` 과 같은 선.
+  static const dangerDays = 10;
+
+  /// 남은 날. 오늘은 세지 않는다 — 오늘이 마지막이면 0 이다.
+  static int remaining(int day, int totalDays) =>
+      (totalDays - day).clamp(0, totalDays);
+
+  static String label(int left) => 'D-$left';
+
+  static String note(int left) => left == 0 ? '오늘이 마지막 날' : '$left일 남았다';
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final left = remaining(day, totalDays);
+    final urgent = left <= dangerDays;
+    final accent = urgent ? t.danger : context.scheme.primary;
+    final noteText = note(left);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              // 모래가 아래로 다 내려간 모양. 색을 못 보는 사람에게도 남은 양이 보인다.
+              urgent ? Icons.hourglass_bottom : Icons.hourglass_empty,
+              size: 20,
+              color: accent,
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                keepAll(title),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.titleMedium,
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Text(
+              label(left),
+              maxLines: 1,
+              style: AppTypography.tabular(
+                context.text.headlineSmall ?? const TextStyle(),
+              ).copyWith(color: accent),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.sm),
+        AppProgressBar(
+          value: totalDays <= 0 ? 0 : (day / totalDays).clamp(0.0, 1.0),
+          fill: accent,
+          height: AppSpace.xs + 2,
+          semanticLabel: '$title $day일째, $noteText',
+        ),
+        const SizedBox(height: AppSpace.xs),
+        Text(keepAll(noteText), style: context.text.bodySmall),
+      ],
     );
   }
 }

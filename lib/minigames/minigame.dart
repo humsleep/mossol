@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../audio/sfx_service.dart';
 import '../engine/models.dart';
 import '../ui/design_system.dart';
 import '../ui/widgets.dart';
@@ -29,6 +32,65 @@ class MinigameResult {
     : success = false,
       critical = false,
       score = 0;
+}
+
+/// 미니게임의 손맛. 12종이 **같은 낱말 여섯 개**로만 말한다.
+///
+/// 새 큐는 만들지 않는다 — `Sfx` enum 은 `lib/audio/sfx_service.dart` 소유라
+/// 여기서 못 늘린다. 그래서 있는 큐 중 뜻이 가장 가까운 것을 골라 쓰고, 모자란
+/// 자리는 진동만으로 대답한다. 모자란 큐 목록은 docs/review/12_audio_handoff.md
+/// 에 요청으로 남겼다.
+///
+/// 규칙 셋.
+/// 1. **토글은 서비스가 본다.** 여기서 `sfxOn`·`hapticOn` 을 다시 보지 않는다
+///    (`SfxService.play`·`haptic` 이 이미 걸러 준다).
+/// 2. **타이머는 큐를 내지 않는다.** 남은 시간이 매 틱(50~100ms) 울리면 소리가
+///    아니라 잡음이다. 시간 경고는 [MinigameScaffold] 가 30% 경계를 **한 번만**
+///    넘을 때 낸다.
+/// 3. **입력과 결과가 같은 프레임이면 결과만 낸다.** 멈추기 게임처럼 탭이 곧
+///    판정인 자리에서 둘을 다 내면 소리가 두 번 겹친다.
+class MinigameSfx {
+  MinigameSfx._();
+
+  static SfxService get _s => SfxService.instance;
+
+  /// 크리티컬의 둘째 박자. 성공과 **손으로** 구별되게 한 번 더 친다
+  /// (엔딩이 heavy → 120ms → light 로 두 박자를 쓰는 것과 같은 방식).
+  static const critBeat = Duration(milliseconds: 90);
+
+  /// 놀이판을 건드렸다. 카드·선택지·스와이프·길게 누르기 시작.
+  /// `msgOut`(P2 · selection) — "내가 방금 뭘 했다" 에 가장 가까운 큐다.
+  static void tap() => _s.cue(Sfx.msgOut);
+
+  /// 한 칸 나아갔다. 맞는 카드, 맞춘 박자, 매칭된 프로필.
+  /// `waitRead`(P2 · light) — 짧고 밝은 확인음.
+  static void step() => _s.cue(Sfx.waitRead);
+
+  /// 헛디뎠다. **판은 아직 살아 있다** — 그래서 실패음(`choiceFail`)을 쓰지 않는다.
+  /// 결과 실패와 섞이면 "졌다" 와 "틀렸다" 가 같은 소리가 된다. 전용 큐가 없어
+  /// 지금은 진동만으로 말한다(요청: `tap_bad`).
+  static void nudge() => _s.haptic(HapticKind.heavy);
+
+  /// 무르기·취소. 되돌렸다는 것만 알리면 된다(요청: `undo`).
+  static void undo() {
+    _s.play(Sfx.waitRead);
+    _s.haptic(HapticKind.medium);
+  }
+
+  /// 남은 시간이 30% 아래로 떨어졌다. 판당 한 번뿐이다(규칙 2).
+  /// `callEnd`(P1 · medium) — "이제 끝난다" 쪽 소리라 재촉으로 읽힌다(요청: `timer_low`).
+  static void timeLow() => _s.cue(Sfx.callEnd);
+
+  /// 판이 끝났다. 세 결과가 **글자를 읽지 않고도** 갈리는 유일한 자리다.
+  /// 크리티컬 = choiceOk + medium + 90ms 뒤 heavy(두 박자),
+  /// 성공 = choiceOk + medium(한 박자), 실패 = choiceFail + heavy(무거운 한 박자).
+  ///
+  /// 돌려주는 [Timer] 는 크리티컬의 둘째 박자다. 위젯이 사라질 때 취소해야 한다.
+  static Timer? result(MinigameResult r) {
+    _s.cue(r.success ? Sfx.choiceOk : Sfx.choiceFail);
+    if (!r.critical) return null;
+    return Timer(critBeat, () => _s.haptic(HapticKind.heavy));
+  }
 }
 
 /// 미니게임이 받는 입력. 스탯과 상대 캐릭터에 따라 난이도가 달라진다.
@@ -88,10 +150,14 @@ Future<MinigameResult> playMinigame(
     return const MinigameResult(success: true);
   }
   // 같은 미니게임의 몇 번째 판인지 여기서 센다. 이 값 하나로 문제·배치·난이도가
-  // 판마다 갈린다(variation.dart). 앱을 다시 켜면 "지금까지 본 이벤트 수" 에서
-  // 이어 세므로 첫 판으로 되돌아가지 않는다.
-  // 씨앗까지 키에 넣는다. 새 게임은 씨앗이 바뀌므로 순번이 0 부터 다시 시작해
+  // 판마다 갈린다(variation.dart).
+  // 순번은 **기기에 남는다**. 앱을 껐다 켜도 이어 세므로 세션마다 기준 판으로
+  // 되돌아가지 않는다(하트 경제 탓에 거의 모든 세션이 콜드 스타트다).
+  // 씨앗·회차까지 키에 넣는다. 새 게임은 키가 바뀌므로 순번이 0 부터 다시 시작해
   // 기준 판을 다시 만난다 — 같은 프로세스에서 두 번째 새 게임을 시작해도 그렇다.
+  // 세기는 동기다. 여기에 `await` 를 하나 끼우면 "버튼을 누른 그 프레임에
+  // 미니게임 라우트가 덮는다" 는 성질이 깨진다. 저장된 값은 앱이 뜰 때
+  // [registerMinigames] 가 미리 읽어 둔다([MinigameRotation.ready]).
   final round = MinigameRotation.next(
     '${ctx.state.seed}:${ctx.state.run}:$id',
   );
@@ -170,21 +236,64 @@ class MinigameScaffold extends StatefulWidget {
 class _MinigameScaffoldState extends State<MinigameScaffold> {
   /// 결과를 읽을 시간. 애니메이션이 아니라 체류 시간이므로 동작 줄이기
   /// 설정과 무관하게 유지한다(이벤트 흐름과 위젯 테스트가 이 길이를 기다린다).
+  /// **탭하면 이 시간을 건너뛴다**([_skipFloor] 이후).
   static const _dwell = Duration(milliseconds: 1100);
+
+  /// 건너뛰기를 열어 주기까지의 최소 체류. 회차당 150판을 1.1초씩 쳐다보는 건
+  /// 약 3분이라 넘길 수 있어야 하지만, 0 으로 두면 **판정을 만든 그 탭**의
+  /// 손가락이 결과 화면까지 그대로 밀고 들어가 결과를 못 본다. 350ms 는
+  /// 배지가 뜨고 색이 바뀌는 것(`AppMotion.base` 급)이 끝나는 길이다.
+  static const _skipFloor = Duration(milliseconds: 350);
+
+  /// 시간 경고를 낼 준비가 됐는지. 30% 위로 올라가면 다시 장전된다
+  /// (표정 읽기는 문제마다 시계를 되감는다). 매 틱 울리지 않게 하는 장치다.
+  bool _lowArmed = true;
+
+  bool _finished = false;
+  bool _skippable = false;
+  Timer? _dwellTimer, _skipTimer, _critTimer;
+
+  @override
+  void dispose() {
+    _dwellTimer?.cancel();
+    _skipTimer?.cancel();
+    _critTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(MinigameScaffold old) {
     super.didUpdateWidget(old);
+    final time = widget.timeLeft;
+    if (time != null && widget.result == null) {
+      // 막대가 위험색으로 바뀌는 그 경계(0.3)에서 한 번만 재촉한다.
+      if (_lowArmed && time < 0.3) {
+        _lowArmed = false;
+        MinigameSfx.timeLow();
+      } else if (time >= 0.3) {
+        _lowArmed = true;
+      }
+    }
     if (old.result == null && widget.result != null) {
-      Future.delayed(_dwell, () {
-        if (mounted) widget.onFinished?.call();
+      _lowArmed = false;
+      _critTimer = MinigameSfx.result(widget.result!);
+      _dwellTimer = Timer(_dwell, _finish);
+      _skipTimer = Timer(_skipFloor, () {
+        if (mounted) setState(() => _skippable = true);
       });
     }
   }
 
+  /// 결과 화면을 닫는다. 자동(dwell)이든 탭이든 한 번만 통과한다.
+  void _finish() {
+    if (_finished || !mounted) return;
+    _finished = true;
+    _dwellTimer?.cancel();
+    widget.onFinished?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final t = context.tokens;
     final scheme = context.scheme;
     final r = widget.result;
     final time = widget.timeLeft;
@@ -207,7 +316,42 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
-        child: Column(
+        child: Stack(
+          // 본문이 예전(SafeArea 의 유일한 자식)과 **같은 제약**을 받게 한다.
+          // 기본 loose 로 두면 세로·가로 최소 제약이 0 이 되어 레이아웃이 미묘하게
+          // 달라진다 — 덮개를 얹으려고 Stack 을 끼운 것이지 배치를 바꾸려는 게 아니다.
+          fit: StackFit.expand,
+          children: [
+            _body(context, r, time, tone),
+            // 결과가 뜬 뒤에는 화면 아무 데나 눌러 넘긴다. 버튼 위까지 덮으려고
+            // 본문 위에 깔아 둔다 — 결과 뒤의 버튼은 전부 비활성이라 가릴 것이 없다.
+            if (r != null && _skippable)
+              Positioned.fill(
+                child: Semantics(
+                  button: true,
+                  label: '결과 넘기기',
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _finish,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 결과 배지까지 포함한 화면 본문. [build] 가 이 위에 건너뛰기 덮개를 얹는다.
+  Widget _body(
+    BuildContext context,
+    MinigameResult? r,
+    double? time,
+    AppTone tone,
+  ) {
+    final t = context.tokens;
+    final scheme = context.scheme;
+    return Column(
           children: [
             // 제목 블록. 제목 한 줄 + 난이도 배지, 그 아래 설명.
             Padding(
@@ -304,16 +448,31 @@ class _MinigameScaffoldState extends State<MinigameScaffold> {
                   AppSpace.screenX,
                   AppSpace.xl,
                 ),
-                child: ResultBadge(
-                  tone: tone,
-                  label: r.critical ? '크리티컬!' : (r.success ? '성공' : '실패'),
-                  detail: r.message,
-                  large: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ResultBadge(
+                      tone: tone,
+                      label: r.critical ? '크리티컬!' : (r.success ? '성공' : '실패'),
+                      detail: r.message,
+                      large: true,
+                    ),
+                    // 넘길 수 있게 된 뒤에만 알린다. 처음부터 적어 두면 아직
+                    // 안 먹히는 안내를 읽히게 된다.
+                    if (_skippable) ...[
+                      const SizedBox(height: AppSpace.sm),
+                      Text(
+                        keepAll('아무 데나 눌러서 넘기기'),
+                        textAlign: TextAlign.center,
+                        style: context.text.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
           ],
-        ),
-      ),
     );
   }
 }
@@ -370,6 +529,10 @@ class MinigameOption extends StatelessWidget {
   final bool dimmed;
   final VoidCallback? onTap;
 
+  /// [dimmed] 라서 못 누르는 칸을 눌렀을 때. 없으면 예전처럼 탭이 조용히 먹힌다.
+  /// "3곳이 다 찼다" 처럼 **막혀 있다는 것 자체가 알려야 할 정보**인 자리에 쓴다.
+  final VoidCallback? onDimmedTap;
+
   /// 좌측 아이콘·번호 등. 없으면 좌측 여백 없음.
   final Widget? leading;
 
@@ -386,6 +549,7 @@ class MinigameOption extends StatelessWidget {
     this.selected = false,
     this.dimmed = false,
     this.onTap,
+    this.onDimmedTap,
     this.leading,
     this.trailingLabel,
     this.tone = MinigameOptionTone.neutral,
@@ -440,7 +604,7 @@ class MinigameOption extends StatelessWidget {
           side: BorderSide(color: line, width: w),
         ),
         child: InkWell(
-          onTap: dimmed ? null : onTap,
+          onTap: dimmed ? onDimmedTap : onTap,
           child: ConstrainedBox(
             // 탭 대상 최소 48. 고정 높이가 아니라 최소 높이라 큰 글꼴에서 늘어난다.
             constraints: const BoxConstraints(

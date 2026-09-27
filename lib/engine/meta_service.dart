@@ -149,6 +149,15 @@ class PlayerMeta {
 class MetaService {
   static const _key = 'mossol_meta_v1';
 
+  /// 미니게임 등장 순번([MinigameRotation])을 담는 별도 키.
+  ///
+  /// **왜 `PlayerMeta` 안이 아닌가.** 순번은 미니게임이 뜰 때마다(회차당 약 150번)
+  /// 오르는 값이고, `PlayerMeta` 를 읽어-고쳐-쓰면 그 사이 `GameController` 가
+  /// 메모리에서 바꿔 둔 하트·출석 같은 필드를 되돌려 쓸 위험이 있다. 키를 갈라 두면
+  /// 두 저장이 서로를 덮지 않고, 예전 메타 JSON 은 형식이 그대로라 세이브 호환이
+  /// 아예 문제가 되지 않는다(`save_migration_test` 규칙).
+  static const _roundsKey = 'mossol_minigame_rounds_v1';
+
   Future<PlayerMeta> load() async {
     final p = await SharedPreferences.getInstance();
     final raw = p.getString(_key);
@@ -168,7 +177,40 @@ class MetaService {
     await p.setString(_key, jsonEncode(m.toJson()));
   }
 
+  /// 미니게임 id 별 등장 순번. 키가 없거나 깨져 있으면 **빈 map** 이다 —
+  /// 예전 기기는 이 키가 없으므로 그때는 0번째 판부터 시작한다(안전한 기본값).
+  /// 던지지 않는다: 순번을 못 읽는 것이 게임을 못 켜는 것보다 낫다.
+  Future<Map<String, int>> loadMinigameRounds() async {
+    try {
+      final raw = (await SharedPreferences.getInstance()).getString(_roundsKey);
+      if (raw == null) return {};
+      final j = jsonDecode(raw);
+      if (j is! Map) return {};
+      return {
+        for (final e in j.entries)
+          if (e.key is String && e.value is num)
+            e.key as String: (e.value as num).toInt(),
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// 순번을 덮어쓴다. [MinigameRotation] 이 현재 회차 것만 남겨서 넘기므로
+  /// 이 map 은 미니게임 수(12) 이상으로 자라지 않는다.
+  Future<void> saveMinigameRounds(Map<String, int> rounds) async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_roundsKey, jsonEncode(rounds));
+    } catch (_) {
+      // 저장 실패는 다음 실행에서 순번이 되감기는 것으로만 드러난다. 조용히 넘긴다.
+    }
+  }
+
   /// 설정의 "저장 데이터 초기화". 출석·연속·재도전권까지 전부 지운다.
-  Future<void> clear() async =>
-      (await SharedPreferences.getInstance()).remove(_key);
+  Future<void> clear() async {
+    final p = await SharedPreferences.getInstance();
+    await p.remove(_key);
+    await p.remove(_roundsKey);
+  }
 }

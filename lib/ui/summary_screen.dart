@@ -14,6 +14,12 @@ import 'keep_all.dart';
 /// 주인공은 오늘 바뀐 수치다. 절대값은 막대에 남기고 변화량을 색 + 부호 +
 /// 화살표 3중으로 앞세운다. 마지막은 클리프행어 — 내일을 궁금하게 만드는 줄.
 ///
+/// 맨 위에는 100일 카운트다운([DeadlineBand])이 한 덩어리 선다 — §2.4 구성에 없던
+/// 것이고, 규격서 갱신 요청은 docs/review/12_ui_handoff.md 에 적었다. 이유:
+/// `D-xx` 가 화면에 뜨는 날이 100일 중 **4~5일**이었다(docs/review/11_story_verdict.md
+/// §2·4-3). 정산은 100일 중 100일 지나가는 화면이라 여기 두면 그대로 100일이 된다.
+/// 주인공 자리는 건드리지 않는다 — 카드가 아닌 맨 블록이고 숫자는 `headlineSmall` 이다.
+///
 /// 단, 오늘 누군가와 호감 구간을 넘었으면 그 "관계 변화" 카드(서사 신호)가 맨 위에
 /// 먼저 뜬다. 숫자보다 이야기로 가까워진 걸 먼저 느끼게 하는 자리다(최대 2장).
 ///
@@ -67,7 +73,12 @@ class SummaryScreen extends StatelessWidget {
                 AppSpace.xxl,
               ),
               children: [
-                // 0. 관계 변화 카드. 오늘 구간을 넘은 사람(오른 쪽 먼저). 없으면 자리도 없다.
+                // 0. 100일 카운트다운. 이 화면은 100일 중 100일 지나간다 —
+                // 게임이 자기가 며칠째인지 말하는 유일한 상시 자리다(§3.2 DeadlineBand).
+                DeadlineBand(day: s.day, totalDays: c.config.totalDays),
+                const SizedBox(height: AppSpace.sectionGap),
+
+                // 1. 관계 변화 카드. 오늘 구간을 넘은 사람(오른 쪽 먼저). 없으면 자리도 없다.
                 for (var i = 0; i < shifts.length; i++) ...[
                   _Reveal(
                     index: i,
@@ -86,14 +97,14 @@ class SummaryScreen extends StatelessWidget {
                     height: AppSpace.sectionGap - AppSpace.listGap,
                   ),
 
-                // 1. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
+                // 2. 오늘 바뀐 수치. 막대가 오늘 값으로 흘러가고 오른쪽에 '+3  42'.
                 const SectionHeader(title: '오늘의 변화'),
                 AppCard(
                   padding: AppInsets.cardTight,
                   child: StatBars(state: s, delta: d.stats),
                 ),
 
-                // 2. 관계 변화. 한 줄씩 차례로 쌓인다.
+                // 3. 관계 변화. 한 줄씩 차례로 쌓인다.
                 if (hasRelation) ...[
                   const SizedBox(height: AppSpace.sectionGap),
                   const SectionHeader(title: '관계 변화'),
@@ -110,7 +121,7 @@ class SummaryScreen extends StatelessWidget {
                     ),
                 ],
 
-                // 3. 클리프행어. 하루의 마지막 줄이자 내일의 첫 줄.
+                // 4. 클리프행어. 하루의 마지막 줄이자 내일의 첫 줄.
                 if (cliffhanger != null) ...[
                   const SizedBox(height: AppSpace.sectionGap),
                   _Reveal(
@@ -119,7 +130,7 @@ class SummaryScreen extends StatelessWidget {
                   ),
                 ],
 
-                // 3-1. 내일 예고. 클리프행어 뒤의 조용한 한 줄(모먼트면 알림 미리보기도).
+                // 4-1. 내일 예고. 클리프행어 뒤의 조용한 한 줄(모먼트면 알림 미리보기도).
                 if (tomorrow != null) ...[
                   SizedBox(
                     height: cliffhanger != null
@@ -138,7 +149,7 @@ class SummaryScreen extends StatelessWidget {
                   ),
                 ],
 
-                // 4. 하루를 닫는 버튼.
+                // 5. 하루를 닫는 버튼.
                 const SizedBox(height: AppSpace.xxl),
                 SizedBox(
                   width: double.infinity,

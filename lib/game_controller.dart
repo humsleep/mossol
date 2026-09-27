@@ -124,6 +124,9 @@ class SaveSummary {
   /// 캐릭터 id → 호감. [affectionOf] 로 읽는다. 이 회차에 등장하는 사람만 담긴다.
   final Map<String, int> affection;
 
+  /// 카운트다운 분기점(`config.countdownMilestones`). [countdownMilestone] 이 본다.
+  final List<int> countdownMilestones;
+
   /// 이 회차의 선호([Preference]). 홈 카드의 "1회차 · 여성 캐릭터" 와 사람들 줄이 쓴다.
   final String preference;
 
@@ -140,6 +143,7 @@ class SaveSummary {
     this.topSignal,
     this.overnight = const {},
     required this.affection,
+    this.countdownMilestones = GameConfig.defaultCountdownMilestones,
   });
 
   factory SaveSummary.fromState(
@@ -172,10 +176,26 @@ class SaveSummary {
       topSignal: best == null ? null : signals.todaySignal(s, best),
       overnight: Map.unmodifiable(overnightOf(s, characters)),
       affection: Map.unmodifiable(aff),
+      countdownMilestones: config.countdownMilestones,
     );
   }
 
   int affectionOf(String id) => affection[id] ?? 0;
+
+  /// 오늘 이후로 남은 날 수. 화면이 `D-{daysLeft}` 로 찍으면 대본(`m_week1` 의 "오늘로
+  /// D-93")과 어긋나지 않는다. 계산 근거는 [GameState.daysLeft] 의 주석에 있다.
+  ///
+  /// 왜 요약에까지 두는가: 정산·홈 화면은 [GameState] 를 받지 않고 이 요약만 받는다.
+  /// 100일 게임이 자기가 며칠째인지 100일 중 4~5번만 말한다는 실측
+  /// (docs/review/11_story_verdict.md §4-3)에 대한 엔진 쪽 답이 이 두 줄이다.
+  int get daysLeft {
+    final left = totalDays - day;
+    return left < 0 ? 0 : left;
+  }
+
+  /// 오늘이 카운트다운 분기점인지([GameConfig.countdownMilestones]).
+  /// 화면이 평소보다 세게(크게·색으로) 보여 줄 날을 고르는 데 쓴다.
+  bool get countdownMilestone => countdownMilestones.contains(daysLeft);
 
   /// [GameState.overnightShifts] 를 characters.json 순서로. 선호 밖 캐릭터는 뺀다.
   static Map<String, String> overnightOf(
@@ -665,6 +685,8 @@ class GameController extends ChangeNotifier {
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
     TextTemplate.currentTop = null;
+    // 컨트롤러를 받지 않는 화면(캐스트 소개·자유 입력 미리보기)이 볼 `{char:<id>}` 이름표.
+    TextTemplate.currentChars = bundle.charNames;
     _applySfxPrefs(m);
     analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
@@ -978,7 +1000,15 @@ class GameController extends ChangeNotifier {
     name: playerName,
     mbti: runMbti,
     top: topName,
+    chars: runCharNames,
   );
+
+  /// `{char:<id>}` 가 볼 이름표. 회차가 있으면 **그 회차에 등장하는 사람만** —
+  /// 선호 밖 캐릭터를 부르는 대사는 이름 대신 중립 명사로 떨어진다.
+  Map<String, String> get runCharNames {
+    final s = state ?? _peek;
+    return s == null ? bundle.charNames : bundle.charNamesFor(s.preference);
+  }
 
   /// [say] 의 null 허용판.
   String? sayOrNull(String? text) => text == null ? null : say(text);
@@ -1483,6 +1513,10 @@ class GameController extends ChangeNotifier {
       // 일상 냉각 기록도 `seen` 과 짝이다 — 되돌리면 같이 되돌아간다.
       ..dailySeenDay.clear()
       ..dailySeenDay.addAll(restored.dailySeenDay)
+      // 본 횟수(반복 감쇠의 지수)도 짝이다. 안 되돌리면 되돌린 장면이 '한 번 본 것'으로
+      // 남아 다음 추첨에서 부당하게 뒤로 밀린다.
+      ..seenCount.clear()
+      ..seenCount.addAll(restored.seenCount)
       ..album.clear()
       ..album.addAll(restored.album)
       ..combo = restored.combo

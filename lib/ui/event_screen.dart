@@ -104,6 +104,16 @@ class EventScreen extends StatefulWidget {
   /// 한 줄씩 넣어 주면 시트가 그 질문의 답으로 읽힌다. 지금도 동작은 한다(모름 판 대사 뒤에 시트).
   static const mbtiEventPrefix = 'm_mbti_chat';
 
+  /// 상대 줄의 타이핑 시간. 긴 말은 오래 친다: `clamp(600 + 글자×18, 800, 2400)`ms.
+  /// 글자는 공백을 뺀 수(치는 건 글자다).
+  ///
+  /// 이 화면 밖에서도 쓴다 — 첫 실행 인트로(`intro_screen.dart`)가 태현의 답을 한 줄씩
+  /// 띄울 때 같은 식을 쓴다. 두 벌이 되면 첫 대화와 본편의 박자가 갈린다.
+  static int themDelayMs(String text) {
+    final chars = text.replaceAll(RegExp(r'\s'), '').length;
+    return (600 + chars * 18).clamp(800, 2400);
+  }
+
   @override
   State<EventScreen> createState() => _EventScreenState();
 }
@@ -411,13 +421,6 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     });
   }
 
-  /// 상대 줄의 타이핑 시간. 긴 말은 오래 친다: `clamp(600 + 글자×18, 800, 2400)`ms.
-  /// 글자는 공백을 뺀 수(치는 건 글자다).
-  static int themDelayMs(String text) {
-    final chars = text.replaceAll(RegExp(r'\s'), '').length;
-    return (600 + chars * 18).clamp(800, 2400);
-  }
-
   /// 이벤트 안 `them` 줄 중 가장 긴 줄인지(같은 길이면 앞쪽 하나만).
   static bool isLongestThem(StoryEvent ev, int index) {
     final line = ev.lines[index];
@@ -466,7 +469,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
       milliseconds: switch (next.who) {
         'me' => 450,
         'narr' => 350,
-        'them' => themDelayMs(next.text),
+        'them' => EventScreen.themDelayMs(next.text),
         _ => 800,
       },
     );

@@ -85,6 +85,7 @@ class StoryBundle {
             raw,
             name: TextTemplate.currentName,
             mbti: TextTemplate.currentMbti,
+            chars: charNames,
           );
   }
 
@@ -162,6 +163,7 @@ class StoryBundle {
     String? signals,
     Set<String>? knownMinigames,
     bool requireEndingHints = false,
+    bool requireDailyDepth = false,
   }) {
     final bundle = StoryBundle(
       config: GameConfig.fromJson(jsonDecode(config) as Map<String, dynamic>),
@@ -184,6 +186,7 @@ class StoryBundle {
     bundle.validate(
       knownMinigames: knownMinigames,
       requireEndingHints: requireEndingHints,
+      requireDailyDepth: requireDailyDepth,
     );
     return bundle;
   }
@@ -224,8 +227,26 @@ class StoryBundle {
       knownMinigames: knownMinigames,
       // 출시 데이터는 엔딩마다 사람이 쓴 힌트가 있어야 한다(홈·앨범의 "아직 못 본 엔딩").
       requireEndingHints: true,
+      // 출시 데이터는 100일을 버틸 만큼 반복 가능한 일상이 있어야 한다([_checkRepeatables]).
+      requireDailyDepth: true,
     );
   }
+
+  /// 캐릭터 id → 이름(전원). 길이 계산과 회차가 없는 화면이 쓴다.
+  late final Map<String, String> charNames = {
+    for (final c in characters) c.id: c.name,
+  };
+
+  /// [pref] 회차에 **등장하는** 캐릭터만 담은 이름표. `{char:<id>}` 치환이 쓴다.
+  /// 선호 밖 캐릭터를 부르는 대사는 이름을 못 찾아 중립 명사로 떨어진다 —
+  /// 여성 회차 대사가 남성 쪽 이름을 실수로 부르는 일이 없다.
+  Map<String, String> charNamesFor(String pref) => _charNames.putIfAbsent(
+    pref,
+    () => Map.unmodifiable({
+      for (final c in charactersFor(pref)) c.id: c.name,
+    }),
+  );
+  final Map<String, Map<String, String>> _charNames = {};
 
   /// 이벤트가 참조하는 미니게임 id 전부.
   Set<String> get referencedMinigames => {
@@ -237,10 +258,12 @@ class StoryBundle {
   /// 데이터 오류를 출시 전에 잡기 위한 검사. 문제가 있으면 예외.
   /// [knownMinigames] 를 주면 없는 미니게임 참조도 함께 잡는다.
   /// [requireEndingHints] 면 엔딩마다 비어 있지 않은 `hint` 가 있어야 한다.
-  /// 테스트용 합성 번들은 힌트를 생략하므로 기본은 끈다.
+  /// [requireDailyDepth] 면 반복 가능한 일상이 100일을 버틸 만큼 있어야 한다([_checkRepeatables]).
+  /// 둘 다 **출시 데이터에만** 해당한다 — 테스트용 합성 번들은 이벤트가 몇 개뿐이라 기본은 끈다.
   void validate({
     Set<String>? knownMinigames,
     bool requireEndingHints = false,
+    bool requireDailyDepth = false,
   }) {
     final ids = <String>{};
     final charIds = <String>{};
@@ -308,6 +331,7 @@ class StoryBundle {
       _checkMoment(e);
       _checkImage(e.image, '${e.id}.image');
       _checkLines(e.lines, '${e.id}.lines');
+      _checkVariants(e);
       for (var i = 0; i < e.choices.length; i++) {
         final c = e.choices[i];
         final where = '${e.id}.choices[$i]';
@@ -381,6 +405,7 @@ class StoryBundle {
       }
     }
     if (!endings.any((e) => e.isDefault)) throw StateError('default 엔딩이 없음');
+    if (requireDailyDepth) _checkRepeatables();
 
     if (knownMinigames != null) {
       final missing = referencedMinigames.difference(knownMinigames);
@@ -402,6 +427,74 @@ class StoryBundle {
         throw StateError('main 날짜 중복: ${e.day}일 ($clash, ${e.id})');
       }
       slots[p] = e.id;
+    }
+  }
+
+  /// 변형 대사([StoryEvent.variants]) 규칙.
+  ///
+  /// - 빈 묶음은 빈 화면이 된다 → 오류.
+  /// - **원본만 있고 변형 하나뿐인데 `once: true`** 면 변형이 영원히 안 쓰인다 → 낭비를 알린다.
+  ///   (`once` 는 한 회차에 한 번이므로 두 번째 대사를 볼 기회가 없다.)
+  /// - 사진 줄 유무는 원본과 같아야 한다. 다르면 같은 이벤트가 어떤 회차에서는 모먼트,
+  ///   어떤 회차에서는 아닌 것이 되어 하루 계획의 가중치가 회차마다 달라진다
+  ///   ([StoryEvent.hasPhoto] 주석).
+  void _checkVariants(StoryEvent e) {
+    if (e.variants.isEmpty) return;
+    if (e.once) {
+      throw StateError(
+        'once 이벤트에 변형 대사: ${e.id} — 한 회차에 한 번만 나오므로 변형을 볼 기회가 없다',
+      );
+    }
+    final basePhoto = e.lines.any((l) => l.photo != null);
+    for (var i = 0; i < e.variants.length; i++) {
+      final v = e.variants[i];
+      final where = '${e.id}.variants[$i]';
+      if (v.isEmpty) throw StateError('변형 대사가 비어 있음: $where');
+      _checkLines(v, '$where.lines');
+      if (v.any((l) => l.photo != null) != basePhoto) {
+        throw StateError(
+          '변형의 사진 줄 유무가 원본과 다름: $where (모먼트 판정이 회차마다 달라진다)',
+        );
+      }
+    }
+  }
+
+  /// [pref] 회차에서 **반복될 수 있는** 일상(`once: false`) 이벤트.
+  /// `once: true` 는 한 번 보면 후보에서 사라지므로([EventEngine] 의 `_available`),
+  /// 100일 후반의 일상 칸은 결국 이 목록 안에서만 돌아간다.
+  List<StoryEvent> repeatableDaily(String pref) => [
+    for (final e in events)
+      if (e.layer == EventLayer.daily && !e.once && eventInPreference(e, pref))
+        e,
+  ];
+
+  /// `once` 소진으로 하루가 비지 않는지. **소프트락 방지선이다.**
+  ///
+  /// 왜 검사가 필요한가: `once: true` 를 붙이면 재방송은 사라지지만 후보도 사라진다.
+  /// 일상 전부에 붙이면 후반 100일차에는 뽑을 일상이 하나도 없어
+  /// `planDay` 의 일상 칸과 채움 칸이 통째로 비고, 하루가 메인·루트 두 장면으로 끝난다.
+  /// [EventEngine.dailyPool] 의 되돌림은 '냉각 때문에 빈 날'만 구제하고
+  /// '전부 소진된 날'은 구제하지 못한다.
+  ///
+  /// 기준은 [GameConfig.dailyCooldownDays] 다. 냉각이 N일이면 최근 N일에 본 일상은
+  /// 후보에서 빠지므로, 반복 가능한 일상이 N개보다 적으면 후반에 **냉각을 뚫고**
+  /// 같은 장면을 다시 틀 수밖에 없다. 그래서 회차마다 최소 N개를 요구한다.
+  /// (여유 있는 선은 하루에 일상을 최대 2개 뽑으므로 2N 이다. 지금 데이터는 24개로
+  /// 그 선에 못 미치고, 그것이 재방송이 아직 20% 대에 남아 있는 이유다 —
+  /// 숫자와 필요한 분량은 docs/review/12_engine_fixes.md §3 에 적었다.)
+  void _checkRepeatables() {
+    final need = config.dailyCooldownDays;
+    if (need <= 0) return;
+    for (final pref in Preference.genders) {
+      if (charactersFor(pref).isEmpty) continue;
+      final n = repeatableDaily(pref).length;
+      if (n < need) {
+        throw StateError(
+          '${Preference.label(pref)} 회차에 반복 가능한 일상(once:false)이 $n개뿐 — '
+          '냉각 $need일을 버티려면 최소 $need개가 필요하다 '
+          '(부족하면 100일 후반에 일상 칸이 빈다)',
+        );
+      }
     }
   }
 
@@ -464,7 +557,7 @@ class StoryBundle {
     if (preview != null) {
       if (e.isCall) throw StateError('preview 는 chat 이벤트에만: ${e.id}');
       // 이름이 들어가는 문장은 가장 긴 이름(6자)으로 바꾼 길이로 잰다.
-      final n = TextTemplate.maxLength(preview);
+      final n = TextTemplate.maxLength(preview, chars: charNames);
       if (n > StoryEvent.maxPreview) {
         throw StateError('preview ${StoryEvent.maxPreview}자 초과: ${e.id} ($n)');
       }
@@ -507,6 +600,13 @@ class StoryBundle {
       throw StateError(
         '{mbti} 는 mbti 조건이 붙은 줄·선택지에서만(아니면 {mbti|대체어}): $where "$text"',
       );
+    }
+    // `{char:<id>}` 는 런타임에 조용히 '그 사람'으로 떨어지므로, 오타를 여기서 잡아야
+    // 아무도 모르게 이름이 사라지는 일이 없다(요청: 런타임이 아니라 검증 시점에 거부).
+    for (final id in TextTemplate.charIdsIn(text)) {
+      if (!characterById.containsKey(id)) {
+        throw StateError('{char:$id} 가 없는 캐릭터를 지목: $where "$text"');
+      }
     }
   }
 
@@ -657,7 +757,7 @@ class StoryBundle {
       final p = line.photo;
       if (p == null) continue;
       _checkImage(p.image, '$where[$i].photo.image');
-      final n = TextTemplate.maxLength(p.caption);
+      final n = TextTemplate.maxLength(p.caption, chars: charNames);
       if (n > Photo.maxCaption) {
         throw StateError(
           'photo caption ${Photo.maxCaption}자 초과: $where[$i] ($n)',
@@ -733,6 +833,7 @@ class StoryBundle {
       for (final e in castGaps.entries)
         '$castLintPrefix ${Preference.label(e.key)} 쪽에 역할 없음: ${e.value.join(', ')}',
     ];
+
     for (final e in events) {
       final h = e.hint;
       if (h != null && h >= 0 && h < e.choices.length && e.choices[h].isGated) {

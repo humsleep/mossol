@@ -39,6 +39,9 @@ Map<String, dynamic> legacySave({int day = 12, int hearts = 3, int? lastHeartMs}
     'rouletteDay',
     'combo',
     'lastCliffhanger',
+    // 반복 감쇠(GameConfig.repeatWeightPercent)의 '본 횟수'. 없으면 감쇠가 꺼진
+    // 것과 같아 예전 세이브가 그대로 굴러간다(test/engine_fixes_test.dart G).
+    'seenCount',
   ]) {
     j.remove(k);
   }

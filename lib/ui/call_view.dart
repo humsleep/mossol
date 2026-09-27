@@ -45,10 +45,29 @@ class CallBackdrop extends StatelessWidget {
   /// 삽화를 얼마나 어둡게 얹는지. 06 §1 "30% 어둡게" — 글자 대비를 지키는 선이다.
   static const double dim = 0.3;
 
-  /// 삽화가 차지하는 화면 높이 비율. 아래쪽은 자막·패널이 읽혀야 하므로 비운다.
+  /// 삽화가 차지하는 화면 높이 비율. **통화 화면의 값이다** — 아래쪽 45% 는
+  /// 발신자 정보·자막·끊기 버튼이 채우므로 비운다.
   static const double sceneHeightFactor = 0.55;
 
-  const CallBackdrop({super.key, required this.child, this.image});
+  /// 이 화면에서 삽화가 차지할 높이 비율. 기본은 통화 화면 값([sceneHeightFactor]).
+  ///
+  /// 타이틀 화면(§2.16)은 1 을 준다. 아래를 채울 자막도 버튼 줄도 없어서 0.55 를
+  /// 그대로 물려받으면 **아래 45% 가 빈 자수정색으로 남고 그림이 끊기는 가로 이음매가
+  /// 보였다**(docs/review/11_polish_verdict.md 7위). 꽉 채운 뒤 글자 자리는
+  /// [bottomScrim] 으로 만든다.
+  final double heightFactor;
+
+  /// 아래쪽에 깔 어둠. 그림이 화면을 꽉 채울 때 글자가 앉을 자리를 만든다.
+  /// 그림이 없으면(그라데이션만) 아무 일도 하지 않는다 — 덮을 것이 없다.
+  final bool bottomScrim;
+
+  const CallBackdrop({
+    super.key,
+    required this.child,
+    this.image,
+    this.heightFactor = sceneHeightFactor,
+    this.bottomScrim = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +91,33 @@ class CallBackdrop extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  if (image case final path?)
-                    Positioned.fill(child: _CallScenery(path: path)),
+                  if (image case final path?) ...[
+                    Positioned.fill(
+                      child: _CallScenery(
+                        path: path,
+                        heightFactor: heightFactor,
+                      ),
+                    ),
+                    if (bottomScrim)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  context.scheme.surface.withValues(alpha: 0),
+                                  context.scheme.surface,
+                                ],
+                                // 위 40% 는 그림 그대로, 아래로 가면서 바탕색으로 잠긴다.
+                                stops: const [0.4, 0.95],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                   SafeArea(bottom: false, child: child),
                 ],
               ),
@@ -92,7 +136,16 @@ class CallBackdrop extends StatelessWidget {
 /// 그리지 않아 지금까지의 그라데이션만 남는다.
 class _CallScenery extends StatelessWidget {
   final String path;
-  const _CallScenery({required this.path});
+  final double heightFactor;
+  const _CallScenery({required this.path, required this.heightFactor});
+
+  /// 그림이 아래로 사라지기 시작하는 지점(그림 높이 기준).
+  ///
+  /// 통화 화면은 그림 **아래에** 자막이 흐르니 절반쯤에서 지워 자리를 비운다.
+  /// 화면을 꽉 채우는 쪽(타이틀)은 지우지 않고 거의 끝까지 살려 둔다 — 여기서 0.55
+  /// 로 지우면 화면 중간에 그림이 끊기는 가로 이음매가 생긴다. 글자 자리는
+  /// `CallBackdrop.bottomScrim` 이 만든다.
+  double get _fadeFrom => heightFactor >= 1 ? 0.88 : 0.55;
 
   @override
   Widget build(BuildContext context) {
@@ -101,14 +154,14 @@ class _CallScenery extends StatelessWidget {
       child: Align(
         alignment: Alignment.topCenter,
         child: FractionallySizedBox(
-          heightFactor: CallBackdrop.sceneHeightFactor,
+          heightFactor: heightFactor,
           child: ShaderMask(
             blendMode: BlendMode.dstIn,
-            shaderCallback: (rect) => const LinearGradient(
+            shaderCallback: (rect) => LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
-              stops: [0.55, 1],
+              colors: const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
+              stops: [_fadeFrom, 1],
             ).createShader(rect),
             child: Opacity(
               opacity: 1 - CallBackdrop.dim,

@@ -697,6 +697,24 @@ class StoryEvent {
   final bool once;
   final String title;
   final List<Line> lines;
+
+  /// 같은 장면을 또 볼 때 쓸 **대체 대사 묶음**(`variants`, 선택). 비어 있으면 늘 [lines].
+  ///
+  /// 왜: 100일 완주 회차에서 읽는 씬의 20% 남짓은 이미 읽은 씬이고, 그 바닥은 추첨
+  /// 규칙이 아니라 분량이 정한다 — 일상 칸이 회차당 약 150번 뽑는데 트리거를 통과하는
+  /// 일상은 94~99종뿐이다(docs/review/12_engine_fixes.md §3). 장면 수를 늘리는 것 말고
+  /// **한 장면이 여러 대사를 들고 있게** 하는 길이 하나 더 있고, 이게 그것이다.
+  /// `d_meet_01`(엘리베이터)이 세 번째로 나올 때 다른 8초를 쓰면 재방송이 아니다.
+  ///
+  /// 고르는 규칙은 [EventEngine.variantOf] 에 있다 — **회차 시드 + 이 회차에 본 횟수**로
+  /// 정해지므로 시드가 같으면 늘 같고, 연속해서 같은 대사가 나오지 않는다.
+  /// 세이브에는 아무것도 더 안 적는다(본 횟수 [GameState.seenCount] 를 그대로 쓴다).
+  ///
+  /// 바꾸는 것은 대사뿐이다 — 선택지·효과·조건·알림·삽화는 원본 그대로다. 그래서
+  /// 작가가 변형을 붙여도 밸런스·루트 순서·엔딩 조건이 흔들리지 않는다.
+  /// 사진 줄 유무는 모먼트 판정([isMoment])을 바꾸므로 검증기가 원본과 같기를 요구한다.
+  final List<List<Line>> variants;
+
   final List<Choice> choices;
 
   /// 힌트 리워드 광고가 가리킬 정답 선택지 인덱스.
@@ -728,6 +746,7 @@ class StoryEvent {
     this.once = true,
     this.title = '',
     this.lines = const [],
+    this.variants = const [],
     this.choices = const [],
     this.hint,
     this.cliffhanger,
@@ -762,6 +781,9 @@ class StoryEvent {
     once: once,
     title: f(title),
     lines: [for (final l in lines) l.mapText(f)],
+    variants: [
+      for (final v in variants) [for (final l in v) l.mapText(f)],
+    ],
     choices: [for (final c in choices) c.mapText(f)],
     hint: hint,
     cliffhanger: cliffhanger == null ? null : f(cliffhanger!),
@@ -785,6 +807,28 @@ class StoryEvent {
     once: once,
     title: title,
     lines: lines,
+    variants: variants,
+    choices: choices,
+    hint: hint,
+    cliffhanger: cliffhanger,
+    format: format,
+    preview: preview,
+    image: image,
+  );
+
+  /// 대사 묶음만 갈아 끼운 사본([EventEngine.variantOf]). 변형 목록은 그대로 들고 간다 —
+  /// 같은 이벤트라는 사실이 바뀌지 않아야 검증기·진단이 원본과 짝지어 볼 수 있다.
+  StoryEvent withLines(List<Line> newLines) => StoryEvent(
+    id: id,
+    layer: layer,
+    character: character,
+    trigger: trigger,
+    weight: weight,
+    day: day,
+    once: once,
+    title: title,
+    lines: newLines,
+    variants: variants,
     choices: choices,
     hint: hint,
     cliffhanger: cliffhanger,
@@ -811,6 +855,11 @@ class StoryEvent {
     }
 
     yield* linesOf('$id.lines', lines);
+    // 변형 대사도 화면에 나가는 글이다 — 여기 빠뜨리면 변형 안의 `{top}` 오타를
+    // 검증기가 못 잡는다(StoryBundle.validate 가 이 목록만 본다).
+    for (var i = 0; i < variants.length; i++) {
+      yield* linesOf('$id.variants[$i].lines', variants[i]);
+    }
     for (var i = 0; i < choices.length; i++) {
       final c = choices[i];
       final w = '$id.choices[$i]';
@@ -822,6 +871,9 @@ class StoryEvent {
   }
 
   /// 사진 줄이 있는지. 대사와 반응(reply/failReply/critReply) 전부를 본다.
+  /// **변형([variants])은 보지 않는다** — 모먼트 판정([isMoment])이 보는 회차마다
+  /// 달라지면 하루 계획의 가중치가 흔들린다. 그래서 검증기가 변형의 사진 줄 유무를
+  /// 원본과 같게 맞추도록 요구한다(`StoryBundle._checkVariants`).
   bool get hasPhoto =>
       lines.any((l) => l.photo != null) ||
       choices.any(
@@ -855,6 +907,15 @@ class StoryEvent {
       lines: ((j['lines'] as List?) ?? const [])
           .map((e) => Line.fromJson(e as Map<String, dynamic>))
           .toList(),
+      // `"variants": [{"lines": [...]}, ...]`. 칸이 없으면 변형 없음 = 예전 그대로.
+      variants: [
+        for (final v in (j['variants'] as List?) ?? const [])
+          [
+            for (final l in ((v as Map<String, dynamic>)['lines'] as List?) ??
+                const [])
+              Line.fromJson(l as Map<String, dynamic>),
+          ],
+      ],
       choices: ((j['choices'] as List?) ?? const [])
           .map((e) => Choice.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -1162,6 +1223,48 @@ class GameConfig {
   /// 2주면 플레이어가 같은 장면을 '방금 그거'로 알아채지 않는 선이기도 하다.
   static const defaultDailyCooldownDays = 14;
 
+  /// 한 번 본 장면의 추첨 가중치를 **볼 때마다** 이 비율(%)로 줄인다
+  /// (`repeatWeightPercent`, 선택). 100 이면 감쇠 없음 = 예전 그대로.
+  ///
+  /// 왜: [dailyCooldownDays] 는 '14일 안에는 안 나온다'까지만 보장한다. 15일째가 되면
+  /// 이미 여섯 번 본 `d_drink_02`(weight 3)가 한 번도 안 본 weight 1 장면보다 **세 배**
+  /// 유리하게 다시 추첨에 들어간다. 그래서 100일 완주 회차의 재방송이 26~30% 였고
+  /// 한 장면이 최대 7번 나왔다(docs/review/11_story_verdict.md §4-1).
+  /// 냉각이 '언제'를 막는다면 이 값은 '몇 번째냐'를 벌점으로 매긴다 —
+  /// 가중치는 1 아래로 내려가지 않으므로 후보가 감쇠 때문에 비는 일은 없다.
+  final int repeatWeightPercent;
+
+  /// [repeatWeightPercent] 기본값. weight 3(가장 센 일상)이 한 번 보고 나면 0.6,
+  /// 두 번 보고 나면 0.12 로 떨어져 **한 번도 안 본 weight 1 장면에게 확실히 진다.**
+  /// 0 으로 두면 본 장면이 사실상 사라져 후보가 마르는 날 폭이 커지므로 20 으로 둔다.
+  static const defaultRepeatWeightPercent = 20;
+
+  /// 보충 칸이 **이미 본 장면으로도** 채워도 되는 하루 길이(`fillSeenBelow`, 선택).
+  /// 오늘 잡힌 장면이 이 개수보다 적을 때만 재방송으로 채운다.
+  /// 0 = 절대 안 쓴다, [EventEngine.minEventsPerDay] 이상 = 예전 그대로.
+  ///
+  /// 왜 칸을 나누는가: `planDay` 는 일상을 두 군데서 뽑는다 — ① 위기가 없는 날의 일상 칸
+  /// ② 하루가 [EventEngine.minEventsPerDay] 보다 짧을 때의 보충 칸. ②는 "하트 하나 쓴
+  /// 보람"을 위해 분량을 맞추는 칸인데, **이미 본 장면으로 채우면 분량은 늘고 보람은 줄어든다.**
+  /// 실측(docs/review/12_engine_fixes.md §3): ②가 재방송을 쓰지 않으면 재방송 비율이
+  /// 28.0% → 17.7% 로 떨어지는 대신 200일 중 28일이 **장면 하나뿐인 날**이 된다.
+  /// 그래서 기본 [defaultFillSeenBelow] = 2 — 장면 하나뿐인 날만 재방송으로 구제하고,
+  /// 둘 이상 잡힌 날은 굳이 재방송으로 늘리지 않는다.
+  final int fillSeenBelow;
+
+  /// [fillSeenBelow] 기본값. 하트 하나에 장면 하나는 너무 얇다는 판단선이다.
+  static const defaultFillSeenBelow = 2;
+
+  /// 카운트다운을 강조할 '분기점'(남은 날 수, `countdownMilestones`, 선택).
+  /// 화면이 `D-xx` 를 평소보다 크게 낼 날을 정하는 표시 전용 값이다 — 엔진의 하루
+  /// 계획에는 들어가지 않는다([GameState.isCountdownMilestone]).
+  final List<int> countdownMilestones;
+
+  /// [countdownMilestones] 기본값. 100일 중 카운트다운이 화면에 4~5번만 떴다는
+  /// docs/review/11_story_verdict.md §4-3 의 실측에 대한 엔진 쪽 답이다 —
+  /// 남은 날이 이 숫자가 되는 날은 화면이 반드시 카운트다운을 세게 보여 준다.
+  static const defaultCountdownMilestones = [90, 75, 50, 30, 20, 10, 5, 3, 1, 0];
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -1174,6 +1277,9 @@ class GameConfig {
     this.chapterTitles = const [],
     this.firstRunFreeHeartDays = 0,
     this.dailyCooldownDays = defaultDailyCooldownDays,
+    this.repeatWeightPercent = defaultRepeatWeightPercent,
+    this.fillSeenBelow = defaultFillSeenBelow,
+    this.countdownMilestones = defaultCountdownMilestones,
     this.openingScript = const [],
   });
 
@@ -1218,6 +1324,26 @@ class GameConfig {
       final num v when v > 0 => v.toInt(),
       final num _ => 0,
       _ => defaultDailyCooldownDays,
+    },
+    // 칸이 없는 예전 데이터는 기본값. 범위 밖(음수·100 초과)은 100 = 감쇠 없음으로 읽어
+    // 데이터 오타가 장면을 몰래 지우지 않게 한다.
+    repeatWeightPercent: switch (j['repeatWeightPercent']) {
+      final num v when v >= 0 && v <= 100 => v.toInt(),
+      final num _ => 100,
+      _ => defaultRepeatWeightPercent,
+    },
+    // 칸이 없으면 기본값, 음수는 0(절대 안 씀)으로 읽는다.
+    fillSeenBelow: switch (j['fillSeenBelow']) {
+      final num v when v > 0 => v.toInt(),
+      final num _ => 0,
+      _ => defaultFillSeenBelow,
+    },
+    countdownMilestones: switch (j['countdownMilestones']) {
+      final List l => [
+        for (final v in l)
+          if (v is num && v >= 0) v.toInt(),
+      ],
+      _ => defaultCountdownMilestones,
     },
     openingScript: [
       for (final v in (j['openingScript'] as List?) ?? const [])
@@ -1424,6 +1550,7 @@ class GameState {
     'overnightShifts': Map.of(overnightShifts),
     'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
     'dailySeenDay': Map.of(dailySeenDay),
+    'seenCount': Map.of(seenCount),
     'freeInputs': [for (final f in freeInputs) f.toJson()],
   };
 
@@ -1466,6 +1593,7 @@ class GameState {
             e.key as String: _intMap(e.value),
         })
         ..dailySeenDay.addAll(_intMap(j['dailySeenDay']))
+        ..seenCount.addAll(_intMap(j['seenCount']))
         ..freeInputs.addAll([
           for (final e in (j['freeInputs'] as List?) ?? const [])
             ?FreeInputEntry.fromJson(e),
@@ -1501,6 +1629,36 @@ class GameState {
     }
     dailySeenDay.removeWhere((_, d) => day - d >= cooldownDays);
   }
+
+  /// 이벤트 id → 이 회차에 본 횟수. **반복될 수 있는 이벤트만** 센다
+  /// (`once: true` 는 두 번 나오지 않으므로 세도 쓸 데가 없고 세이브만 커진다 —
+  /// 지금 데이터에서 반복 가능한 것은 일상 25개 + 위기 1개로 26개뿐이다).
+  ///
+  /// [GameConfig.repeatWeightPercent] 감쇠의 지수로 쓴다([EventEngine.viewsOf]).
+  /// 칸이 없는 예전 세이브는 빈 맵 = 아직 아무것도 두 번 안 본 상태 → 감쇠가 꺼진 것과
+  /// 같아 예전 세이브가 그대로 굴러간다(test/save_migration_test.dart).
+  /// [dailySeenDay] 와 달리 **지우지 않는다** — '몇 번째냐'는 회차 내내 유효해야 한다.
+  final Map<String, int> seenCount = {};
+
+  /// 이 회차에 [id] 를 본 횟수. 기록이 없으면 0.
+  int viewsOf(String id) => seenCount[id] ?? 0;
+
+  /// [id] 를 한 번 더 봤다고 적는다.
+  void noteSeenCount(String id) => seenCount[id] = viewsOf(id) + 1;
+
+  /// 오늘 이후로 남은 날 수. 마지막 날([GameConfig.totalDays])에는 0 이다.
+  ///
+  /// 기준을 '오늘을 뺀 나머지'로 잡은 근거는 대본이다 — `m_week1`(D+7)이 "오늘로 D-93",
+  /// "93일 남았다"로 말한다. 100 − 7 = 93. D+1 의 "오늘부터 D-100" 은 구호(제목)이지
+  /// 계산값이 아니다. 화면이 `D-{daysLeft}` 로 찍으면 대본과 어긋나지 않는다.
+  int daysLeft(GameConfig cfg) {
+    final left = cfg.totalDays - day;
+    return left < 0 ? 0 : left;
+  }
+
+  /// 오늘이 카운트다운 분기점인지([GameConfig.countdownMilestones]). 표시 전용이다.
+  bool isCountdownMilestone(GameConfig cfg) =>
+      cfg.countdownMilestones.contains(daysLeft(cfg));
 
   /// 자유 입력 기록(최근 [maxFreeInputs] 건, 추가만). 없는 예전 세이브는 빈 목록.
   final List<FreeInputEntry> freeInputs = [];

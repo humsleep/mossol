@@ -15,6 +15,15 @@
 /// 추적 동의 팝업은 여전히 이 화면과 태현의 문자 **뒤에** 뜬다.
 ///
 /// 배너는 두지 않는다(§2 공통). 앱의 첫 프레임이 광고일 수 없다.
+///
+/// **구성이 §2.16 과 두 군데 다르다**(docs/review/11_polish_verdict.md 7위 판정 반영,
+/// 규격서 갱신 요청은 docs/review/12_ui_handoff.md):
+/// ① 그림이 상단 55% 가 아니라 **화면 전체**다([TitleScreen.artHeightFactor]) — 0.55 는
+///    아래 45% 를 자막·버튼이 채우는 통화 화면의 값이고, 타이틀에는 채울 것이 없어서
+///    빈 자수정 띠와 가로 이음매만 남았다. 글자 자리는 하단 스크림이 만든다.
+/// ② 워드마크 묶음이 화면 가운데가 아니라 **버튼과 함께 아래쪽**에 앉는다. 가운데
+///    정렬 + 하단 버튼이던 예전 구성은 부제와 버튼 사이에 큰 공백을 남겼다.
+/// 그리고 앱 이름은 본문과 같은 `displaySmall` 이 아니라 [AppTypography.wordmark] 다.
 library;
 
 import 'package:flutter/material.dart';
@@ -46,6 +55,16 @@ class TitleScreen extends StatefulWidget {
   /// 둘 다 없으면 통화·알림 화면과 같은 자수정 그라데이션만 남는다.
   static const artKey = 'title';
   static const fallbackArtKey = 'm01';
+
+  /// 그림이 차지하는 화면 높이 비율. **화면을 꽉 채운다.**
+  ///
+  /// 예전에는 [CallBackdrop] 의 기본값 0.55 를 그대로 물려받았다. 그건 아래 45% 에
+  /// 발신자 정보·자막·끊기 버튼이 차는 **통화 화면의 값**이고, 타이틀에는 그 자리를
+  /// 채울 것이 없어서 아래 45% 가 빈 자수정색으로 남았다 — 그림이 끊기는 가로 이음매와
+  /// 부제·버튼 사이의 큰 공백이 실기 스크린샷에서 바로 보였다
+  /// (docs/review/11_polish_verdict.md 7위). 그래서 1.0 + 하단 스크림으로 바꾸고,
+  /// 워드마크 묶음과 버튼을 **아래쪽에 함께** 앉혔다(게임 타이틀의 기본 구성).
+  static const artHeightFactor = 1.0;
 
   static String? artOf(SceneRegistry r) =>
       r.scene(artKey) ?? r.scene(fallbackArtKey);
@@ -96,77 +115,106 @@ class _TitleScreenState extends State<TitleScreen>
     ),
   );
 
+  /// 워드마크 묶음: 눈썹 줄 → 앱 이름 → 짧은 선 → 한 줄 소개.
+  ///
+  /// 이름은 [AppTypography.wordmark] — 본문과 같은 `displaySmall` 이 아니다(§1.7).
+  /// 눈썹 줄(`100일 연애 시뮬레이션`)은 반대로 자간을 **넓혀** 큰 낱말과 대비를 만든다.
+  /// 로고 이미지는 없으므로 처리는 크기·자간·행간과 선 하나로만 한다.
+  Widget _lockup(BuildContext context) {
+    final scheme = context.scheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          keepAll(TitleScreen.genre),
+          textAlign: TextAlign.center,
+          style: context.text.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+            // 큰 낱말 위의 눈썹 줄. 좁히는 게 아니라 벌려서 로고 묶음으로 읽히게 한다.
+            letterSpacing: 2.4,
+          ),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        // 워드마크는 언제나 한 줄이다. 320pt · 1.3배에서 폭이 모자라면 줄바꿈 대신
+        // 통째로 줄어든다 — 회전하는 줄바꿈 위치보다 작아진 로고가 낫다(§4.2).
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            TitleScreen.title,
+            maxLines: 1,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: AppTypography.wordmark(
+              context.text.displayLarge ?? const TextStyle(),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpace.md),
+        // 이름과 한 줄 소개를 갈라 주는 짧은 선 하나. 화면의 유일한 장식이다.
+        SizedBox(
+          width: AppSpace.xxxl,
+          child: Divider(
+            height: AppBorderWidth.hairline,
+            thickness: AppBorderWidth.hairline,
+            color: scheme.outline,
+          ),
+        ),
+        const SizedBox(height: AppSpace.md),
+        Text(
+          keepAll(TitleScreen.tagline),
+          textAlign: TextAlign.center,
+          style: context.text.bodyLarge?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) => SceneScope(
     builder: (context, registry) => CallBackdrop(
       image: TitleScreen.artOf(registry),
+      heightFactor: TitleScreen.artHeightFactor,
+      bottomScrim: true,
       child: Builder(
-        builder: (context) {
-          final scheme = context.scheme;
-          return SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    // 1.3배 글꼴에서도 잘리지 않게 세로로 모자라면 스크롤한다(§4.2).
-                    child: SingleChildScrollView(
-                      padding: AppInsets.screen,
-                      child: _rise(
-                        _wordmark,
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              keepAll(TitleScreen.genre),
-                              textAlign: TextAlign.center,
-                              style: context.text.labelMedium?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpace.sm),
-                            Text(
-                              TitleScreen.title,
-                              textAlign: TextAlign.center,
-                              style: context.text.displaySmall,
-                            ),
-                            const SizedBox(height: AppSpace.md),
-                            Text(
-                              keepAll(TitleScreen.tagline),
-                              textAlign: TextAlign.center,
-                              style: context.text.bodyLarge?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+        builder: (context) => SafeArea(
+          top: false,
+          // 그림은 화면 전체, 글자와 버튼은 아래쪽 한 덩어리다. 세로로 모자라면
+          // (320×568 · 1.3배) 스크롤한다 — 잘리지 않는다(§4.2).
+          child: LayoutBuilder(
+            builder: (context, box) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.screenY,
+                AppSpace.screenX,
+                AppSpace.xxl,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: box.maxHeight - AppSpace.screenY - AppSpace.xxl,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpace.screenX,
-                    0,
-                    AppSpace.screenX,
-                    AppSpace.xxl,
-                  ),
-                  child: _rise(
-                    _entry,
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
+                child: Column(
+                  // 남는 높이는 위(그림)로 간다. 묶음은 늘 아래에 앉는다.
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _rise(_wordmark, _lockup(context)),
+                    const SizedBox(height: AppSpace.xxxl),
+                    _rise(
+                      _entry,
+                      FilledButton(
                         key: const Key('title-start'),
                         onPressed: widget.onStart,
                         child: const Text(TitleScreen.startLabel),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     ),
   );

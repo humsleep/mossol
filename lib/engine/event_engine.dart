@@ -119,7 +119,13 @@ class EventEngine {
     return nameOf(topCharacter(s)) ?? nameOf(event?.character);
   }
 
+  /// 오늘 [e] 를 후보로 올릴 수 있는지. **모든 층이 이 한 곳을 지난다**
+  /// ([candidates] → [planDay] 의 main·crisis·route·hidden, [dailyPool] 의 daily,
+  /// [openingScriptEvents] 의 1회차 D+1 대본). 그래서 `once` 도 여기 한 줄로 전 층에 걸린다.
   bool _available(GameState s, StoryEvent e) {
+    // `once`(기본 true): 한 회차에 한 번. 본 목록은 세이브에 남으므로 앱을 껐다 켜도,
+    // 회차를 이어서 해도 다시 나오지 않는다. `once: false` 인 것만 반복될 수 있고,
+    // 그것들은 [dailyPool] 의 냉각과 [_weightOf] 의 감쇠가 다시 걸러 낸다.
     if (e.once && s.seen.contains(e.id)) return false;
     if (e.day != null && e.day != s.day) return false;
     final absent = absentFor(s);
@@ -148,7 +154,37 @@ class EventEngine {
 
   /// [ev] 를 이 회차 플레이어에게 보이는 줄·선택지만 남긴 사본. 조건이 없으면 원본.
   /// 선택지 인덱스·힌트는 거른 목록 기준이다. `GameController.current` 가 이것이다.
-  StoryEvent viewFor(GameState s, StoryEvent ev) => ev.forMbti(mbtiView(s, ev));
+  ///
+  /// 변형 대사([StoryEvent.variants])를 먼저 고르고 그 위에 MBTI 조건을 거른다 —
+  /// 순서가 반대면 변형 안의 `mbti` 조건 줄이 걸러지지 않는다.
+  StoryEvent viewFor(GameState s, StoryEvent ev) =>
+      variantOf(s, ev).forMbti(mbtiView(s, ev));
+
+  /// [ev] 를 이 회차에 **몇 번째로 보는지**에 따라 대사 묶음을 고른 사본.
+  /// 변형이 없으면 원본 그대로다.
+  ///
+  /// 규칙은 회전이다. 대사 묶음이 N개(원본 1 + 변형 N−1)일 때
+  ///
+  ///     보여 줄 묶음 = (회차 시드로 정한 시작점 + 이 회차에 본 횟수) % N
+  ///
+  /// - **결정적이다.** 시작점은 [stableSeed] 로 (회차 시드, 이벤트 id)에서만 나온다 —
+  ///   날짜를 섞지 않으므로 며칠에 보든 같은 회차에서는 같은 순서다. 저장·복원 뒤에도 같다.
+  /// - **연속해서 같은 대사가 나오지 않는다.** 무작위로 고르면 두 번째에 또 같은 것이
+  ///   나올 수 있는데(변형을 붙인 보람이 사라진다), 회전은 N번째까지 반드시 다 다르다.
+  /// - **회차마다 첫 대사가 다르다.** 시작점이 시드에 달려 있어 2회차에 같은 장면을
+  ///   만나도 첫인상이 같지 않다.
+  /// - 본 횟수는 [GameState.seenCount] 다. 세이브에 변형 때문에 더 적는 것은 없다.
+  ///
+  /// 화면이 한 장면 도중에 이 값을 다시 계산해도 안전하다 — 본 횟수는 선택을 확정하는
+  /// `applyChoice` 에서만 올라가고, 그때 그 장면은 이미 끝난다. `GameController.current`
+  /// 는 넣을 때 한 번만 거르므로 화면에 뜬 대사가 도중에 바뀌지 않는다.
+  StoryEvent variantOf(GameState s, StoryEvent ev) {
+    if (ev.variants.isEmpty) return ev;
+    final n = ev.variants.length + 1;
+    final start = stableSeed(s.seed, 0, 'variant:${ev.id}') % n;
+    final i = (start + viewsOf(s, ev)) % n;
+    return i == 0 ? ev : ev.withLines(ev.variants[i - 1]);
+  }
 
   /// 캐릭터 [id] 호감이 오를 때 곱할 궁합 배율(config.mbti.compatMultiplier).
   double compatMultiplier(GameState s, String id) =>
@@ -195,22 +231,67 @@ class EventEngine {
   bool momentBoostActive(GameState s) =>
       s.day >= momentBoostFromDay && s.day - s.lastMomentDay >= momentGapDays;
 
-  /// 그날 후보 추첨 가중치. 모먼트 보정이 켜져 있으면 모먼트는 [momentBoost]배.
-  int _weightOf(StoryEvent e, bool boost) =>
-      max(1, e.weight) * (boost && isMoment(e) ? momentBoost : 1);
+  /// 이 회차에 [e] 를 이미 몇 번 봤는지. `once` 이벤트는 두 번 나오지 않으므로 항상 0 —
+  /// 세지도 않는다([GameState.seenCount]).
+  int viewsOf(GameState s, StoryEvent e) => e.once ? 0 : s.viewsOf(e.id);
+
+  /// 감쇠를 **정수**로 하려고 가중치에 먼저 곱하는 척도.
+  ///
+  /// 가중치 추첨은 `Random.nextInt` 라 정수여야 하는데, 20% 감쇠를 정수에서 바로 하면
+  /// weight 1 이 한 번에 1 로 바닥을 쳐서 '한 번 본 것'과 '다섯 번 본 것'이 같아진다.
+  /// 그러면 장면 하나가 6~7번까지 나오는 것을 못 막는다 — 실측에서 가장 크게 체감된 게
+  /// 비율보다 이 쪽이었다(`d_drink_02` 7회, docs/review/11_story_verdict.md §4-1).
+  /// 4096 이면 20% 감쇠가 4096 → 819 → 163 → 32 → 6 → 1 로 **다섯 번째 시청까지**
+  /// 구분되어, 후보가 마른 뒤에도 '적게 본 것'이 먼저 나간다.
+  /// 최악의 합계는 3(weight) × 3(모먼트) × 4096 × 후보 100여 개 ≈ 370만으로
+  /// `nextInt` 한계(2^32)에서 한참 멀다.
+  static const repeatWeightScale = 4096;
+
+  /// 그날 후보 추첨 가중치. 모먼트 보정이 켜져 있으면 모먼트는 [momentBoost]배,
+  /// 이미 본 장면은 본 횟수만큼 [GameConfig.repeatWeightPercent] 를 곱한다.
+  /// [scale] 은 [_weightedPick] 이 넘기는 정수 척도다.
+  int _weightOf(StoryEvent e, bool boost, {int views = 0, int scale = 1}) {
+    var w = max(1, e.weight) * (boost && isMoment(e) ? momentBoost : 1) * scale;
+    if (views <= 0) return w;
+    final p = bundle.config.repeatWeightPercent;
+    if (p >= 100) return w;
+    for (var i = 0; i < views && w > 1; i++) {
+      // 1 이 하한이다 — 감쇠만으로 후보가 사라지는 일은 없다(빈 하루 방지).
+      w = max(1, w * p ~/ 100);
+    }
+    return w;
+  }
+
+  /// 오늘 [e] 가 추첨에서 갖는 가중치. [_weightedPick] 이 쓰는 값과 같은 척도다
+  /// (감쇠가 없는 날에는 [_weightedPick] 이 척도를 곱하지 않지만, 그건 후보 전체에
+  /// 같은 배수라 순위·비율에는 영향이 없다). 진단·테스트가 감쇠를 눈으로 확인하는 창구다.
+  int pickWeight(GameState s, StoryEvent e, {bool boost = false}) =>
+      _weightOf(e, boost, views: viewsOf(s, e), scale: repeatWeightScale);
 
   /// 난수는 항상 한 번만 뽑는다. 가중치만 바뀌므로 salt 순서·호출 횟수는 그대로다.
+  ///
+  /// **후보 전부가 처음 보는 장면인 날에는 척도를 곱하지 않는다.** 곱하면 합계가 64배가
+  /// 되어 같은 `nextInt` 값에서 다른 장면이 뽑히고, 감쇠가 할 일이 없는 날까지 기존
+  /// 회차·테스트가 통째로 흔들린다. 감쇠는 '이미 본 것을 뒤로 미루는' 장치이므로
+  /// 미룰 것이 없으면 아무 일도 하지 않는 게 맞다.
   StoryEvent? _weightedPick(
+    GameState s,
     List<StoryEvent> list,
     Random r, {
     bool boost = false,
   }) {
     if (list.isEmpty) return null;
-    final total = list.fold<int>(0, (a, e) => a + _weightOf(e, boost));
+    final views = [for (final e in list) viewsOf(s, e)];
+    final scale = views.any((v) => v > 0) ? repeatWeightScale : 1;
+    int w(int i) => _weightOf(list[i], boost, views: views[i], scale: scale);
+    var total = 0;
+    for (var i = 0; i < list.length; i++) {
+      total += w(i);
+    }
     var roll = r.nextInt(total);
-    for (final e in list) {
-      roll -= _weightOf(e, boost);
-      if (roll < 0) return e;
+    for (var i = 0; i < list.length; i++) {
+      roll -= w(i);
+      if (roll < 0) return list[i];
     }
     return list.last;
   }
@@ -261,6 +342,7 @@ class EventEngine {
     } else {
       add(
         _weightedPick(
+          s,
           dailyPool(s, exclude: planned),
           rng(s, 'daily'),
           boost: boost,
@@ -273,7 +355,7 @@ class EventEngine {
     final hidden = candidates(s, EventLayer.hidden);
     if (hidden.isNotEmpty &&
         rng(s, 'hidden').nextInt(100) < hiddenChancePercent) {
-      add(_weightedPick(hidden, rng(s, 'hidden-pick'), boost: boost));
+      add(_weightedPick(s, hidden, rng(s, 'hidden-pick'), boost: boost));
     }
 
     // 하루가 너무 짧으면 하트 하나를 쓴 보람이 없다.
@@ -283,8 +365,21 @@ class EventEngine {
     final target = opening ? openingMinEventsPerDay : minEventsPerDay;
     final maxFill = opening ? target : 1;
     for (var i = 0; i < maxFill && plan.length < target; i++) {
-      final more = dailyPool(s, exclude: planned);
-      final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'), boost: boost);
+      // 보충 칸은 분량을 맞추려고 있는 칸이다. 이미 본 장면으로 채우면 분량만 늘고
+      // 하루의 가치는 오히려 떨어지므로 처음 보는 장면만 쓴다. 단, 오늘이 정말 얇은
+      // 날(장면이 GameConfig.fillSeenBelow 개보다 적은 날)은 재방송으로라도 채운다 —
+      // 하트 하나에 장면 하나는 재방송보다 나쁘다.
+      final allowSeen = plan.length < bundle.config.fillSeenBelow;
+      final more = [
+        for (final e in dailyPool(s, exclude: planned))
+          if (allowSeen || !s.seen.contains(e.id)) e,
+      ];
+      final pick = _weightedPick(
+        s,
+        more,
+        rng(s, 'daily-${i + 2}'),
+        boost: boost,
+      );
       if (pick == null) break;
       add(pick);
     }
@@ -378,7 +473,7 @@ class EventEngine {
     ]) {
       final pool = nextStageEvents(s, byChar[c]!);
       if (pool.isEmpty) continue;
-      final pick = _weightedPick(pool, r, boost: boost);
+      final pick = _weightedPick(s, pool, r, boost: boost);
       if (pick != null) return pick;
     }
     return null;
@@ -457,6 +552,9 @@ class EventEngine {
     final r = random ?? rng(s, '${ev.id}:${c.text}');
     double compat(String id) => compatMultiplier(s, id);
     s.seen.add(ev.id);
+    // 반복될 수 있는 이벤트는 '몇 번째냐'도 적는다. 다음 추첨에서 그만큼 가중치가
+    // 깎인다(GameConfig.repeatWeightPercent). `once` 는 두 번 안 나오므로 세지 않는다.
+    if (!ev.once) s.noteSeenCount(ev.id);
     // 같은 일상이 며칠 안에 또 나오지 않게 본 날을 적는다(GameConfig.dailyCooldownDays).
     if (ev.layer == EventLayer.daily) {
       s.noteDailySeen(ev.id, cooldownDays: bundle.config.dailyCooldownDays);

@@ -95,6 +95,9 @@ class _ReadEmotionGameState extends State<ReadEmotionGame> {
     if (_picked != null || _result != null) return;
     final answer = _answerSlot;
     if (i == answer) _correct++;
+    // 네 문제를 연달아 푸는 게임이라 문제마다 맞았는지가 그 자리에서 나야 한다.
+    // 마지막 문제의 결과 큐는 스캐폴드가 따로 낸다(여기 것과 550ms 떨어져 있다).
+    i == answer ? MinigameSfx.step() : MinigameSfx.nudge();
     setState(() => _picked = i);
     Future.delayed(const Duration(milliseconds: 550), () {
       if (!mounted) return;
@@ -274,6 +277,8 @@ class _PickMemeGameState extends State<PickMemeGame> {
 
   void _pick(int slot) {
     if (_picked != null) return;
+    // 탭 큐를 따로 내지 않는다 — 한 번 누르면 곧 판정이라 [MinigameScaffold] 의
+    // 결과 큐가 같은 프레임에 나간다(MinigameSfx 규칙 3).
     final meme = _memes[_order[slot]];
     final match = meme.$1 == widget.ctx.humor;
     // 상대 취향이 후보에 없으면 화술로 커버한다.
@@ -536,7 +541,11 @@ class _OutfitGameState extends State<OutfitGame> {
                 ),
                 onTap: _result != null
                     ? null
-                    : () => setState(() => _picked[s] = i),
+                    // 세 칸을 채우는 동안 유일한 조작이다. 고를 때마다 대답한다.
+                    : () {
+                        MinigameSfx.tap();
+                        setState(() => _picked[s] = i);
+                      },
               ),
           ],
         ],
@@ -611,8 +620,10 @@ class _DateCourseGameState extends State<DateCourseGame> {
     if (_result != null) return;
     setState(() {
       if (_picked.contains(i)) {
+        MinigameSfx.undo();
         _picked.remove(i);
       } else if (_picked.length < 3) {
+        MinigameSfx.tap();
         _picked.add(i);
       }
     });
@@ -709,6 +720,9 @@ class _DateCourseGameState extends State<DateCourseGame> {
                   : Stat.won(_places[i].$2),
               selected: _picked.contains(i),
               dimmed: !_picked.contains(i) && _picked.length >= 3,
+              // 3곳이 다 찼는데 네 번째를 눌렀다. 예전에는 탭이 조용히 먹혀
+              // 화면이 고장난 것처럼 보였다. 진동으로 "안 된다" 를 말한다.
+              onDimmedTap: MinigameSfx.nudge,
               leading: Icon(
                 Icons.place_outlined,
                 size: AppSpace.xl,

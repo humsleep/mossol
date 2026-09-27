@@ -520,7 +520,7 @@ class SignalBook {
       if (t.trim().isEmpty) throw StateError('signals 빈 문장: $where');
       // 이름 자리표시자는 가장 긴 이름으로 바꾼 길이로 잰다.
       final n = TextTemplate.hasToken(t)
-          ? TextTemplate.maxLength(t)
+          ? TextTemplate.maxLength(t, chars: TextTemplate.currentChars)
           : t.runes.length;
       if (n > maxLength) {
         throw StateError('signals 문장이 $maxLength자 초과($n자): $where "$t"');

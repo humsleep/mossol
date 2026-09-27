@@ -111,7 +111,14 @@ void main() {
     expect(c.current!.id, 'm02');
     await revealAll(tester, c);
     await tester.tap(findWidgetWithText(OutlinedButton, '알겠어, 연습해 볼게'));
-    await tester.pumpAndSettle();
+    // 미니게임이 떠 있는 동안에는 `pumpAndSettle` 을 쓰지 않는다. 남은 시간 막대가
+    // 값이 바뀔 때마다 흐르므로(`AppProgressBar`) 판이 돌아가는 내내 다음 프레임이
+    // 예약돼 있고, `pumpAndSettle` 은 "예약된 프레임이 없을 때까지" 라서 돌아오지
+    // 않는다(반복 애니메이션을 띄운 화면의 일반적인 규칙이다). 게다가 이 게임의
+    // 제한 시간은 실제 시계(`Stopwatch`)라서, 그렇게 겉도는 동안 판이 시간 초과로
+    // 끝나 버린다. 라우트 전환에 필요한 만큼만 정확히 흘린다.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(MinigameScaffold), findsOneWidget);
     expect(findText('진짜 감정은?'), findsOneWidget);
     for (final answer in ['서운함', '대화 끊고 싶음', '삐짐', '위로 원함']) {

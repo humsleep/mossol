@@ -71,6 +71,18 @@ void useSmallScreenLargeFont(
   });
 }
 
+/// 시스템 "동작 줄이기" 를 켠다(`MediaQuery.disableAnimations`). tearDown 에서 복원.
+///
+/// 조상에 `MediaQuery(data: MediaQueryData(disableAnimations: true))` 를 씌우는 방법도
+/// 있지만, 그러면 `MediaQueryData()` 의 기본값인 **크기 0×0** 까지 함께 덮어써서 화면이
+/// 레이아웃되지 않는다 — 탭이 아무것도 맞히지 못하는 테스트가 된다. 앱의 `MediaQuery` 는
+/// 뷰에서 만들어지므로 접근성 설정을 뷰에 꽂는 쪽이 실제 기기와 같다.
+void useReducedMotion(WidgetTester tester) {
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+}
+
 void useDarkMode(WidgetTester tester) {
   tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);

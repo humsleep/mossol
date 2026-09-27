@@ -19,6 +19,10 @@ class _SweepBar extends StatefulWidget {
   final double speed;
   final List<double> zone;
   final bool zoneVisible;
+
+  /// 진한 크리티컬 칸을 보여 줄지. [zoneVisible] 이 켜져도 이 값이 false 면
+  /// 안전 구간만 보인다(답장 타이밍의 2단 공개 — `ReplyTimingGame` 참고).
+  final bool critVisible;
   final double critWidth;
   final void Function(double value) onStop;
 
@@ -34,6 +38,7 @@ class _SweepBar extends StatefulWidget {
     required this.zone,
     required this.zoneVisible,
     required this.onStop,
+    this.critVisible = true,
     this.critWidth = 0.25,
     this.outcome,
     this.header,
@@ -63,6 +68,8 @@ class _SweepBarState extends State<_SweepBar>
     if (_stopped) return;
     _c.stop();
     setState(() => _stopped = true);
+    // 탭 큐를 따로 내지 않는다 — 이 탭이 곧 판정이라 [MinigameScaffold] 의
+    // 결과 큐가 같은 프레임에 나간다. 둘을 다 내면 소리가 겹친다(MinigameSfx 규칙 3).
     widget.onStop(_c.value);
   }
 
@@ -138,7 +145,7 @@ class _SweepBarState extends State<_SweepBar>
                         ),
                       ),
                       // 크리티컬 구간. 안전 구간보다 한 단 진하다.
-                      Positioned(
+                      if (widget.critVisible) Positioned(
                         top: barTop,
                         left: box.maxWidth * (mid - half),
                         width: box.maxWidth * half * 2,
@@ -227,6 +234,22 @@ class ReplyTimingGame extends StatefulWidget {
   final void Function(MinigameResult) done;
   const ReplyTimingGame({super.key, required this.ctx, required this.done});
 
+  /// 안전 구간이 보이기 시작하는 눈치. **30 이다.**
+  ///
+  /// 40 이었다. 그런데 시작 눈치가 25(`config.json` `initialStats`)이고 이야기가
+  /// 주는 눈치는 한 번에 +1~+3 이라, 40 까지는 눈치가 오르는 선택을 대여섯 번
+  /// 골라야 닿는다. 이 미니게임이 가장 자주 붙어 있는 구간이 바로 그 앞이므로,
+  /// **이 장치가 존재하는지도 모르는 채로 초반을 다 지나가게 돼 있었다.**
+  ///
+  /// 30 은 25 에서 +5 — 눈치가 오르는 선택 두세 번이면 닿는다. "눈치를 올리면
+  /// 구간이 보인다" 를 초반에 한 번은 겪게 하려면 그 정도여야 하고, 그러면서도
+  /// 시작값보다는 위라서 공짜로 주는 것이 아니다.
+  static const senseToSeeZone = 30;
+
+  /// 진한 크리티컬 칸까지 보이는 눈치. 옛 문턱(40)을 여기로 옮겼다 —
+  /// 공개를 두 단으로 쪼개면 40 이 여전히 뭔가를 의미하고, 난이도도 그대로다.
+  static const senseToSeeCrit = 40;
+
   @override
   State<ReplyTimingGame> createState() => _ReplyTimingGameState();
 }
@@ -270,19 +293,24 @@ class _ReplyTimingGameState extends State<ReplyTimingGame> {
     final ctx = widget.ctx;
     final t = context.tokens;
     final sense = ctx.stat(Stat.sense);
-    final visible = sense >= 40;
+    final visible = sense >= ReplyTimingGame.senseToSeeZone;
+    final critVisible = sense >= ReplyTimingGame.senseToSeeCrit;
     return MinigameScaffold(
       title: '답장 타이밍',
       badge: '${Stat.label(Stat.sense)} $sense',
-      instruction: visible
+      instruction: critVisible
           ? '${ctx.partnerName}이(가) 좋아하는 속도 구간이 보인다. 진한 칸이 크리티컬.'
-          : '눈치가 40을 넘으면 상대가 좋아하는 구간이 보인다. 지금은 감으로.',
+          : visible
+          ? '${ctx.partnerName}이(가) 좋아하는 구간이 보인다. '
+                '눈치 ${ReplyTimingGame.senseToSeeCrit}을 넘으면 크리티컬 칸까지 보인다.'
+          : '눈치가 ${ReplyTimingGame.senseToSeeZone}을 넘으면 상대가 좋아하는 구간이 보인다. 지금은 감으로.',
       result: _result,
       onFinished: () => widget.done(_result!),
       child: _SweepBar(
         speed: _speed,
         zone: _zone,
         zoneVisible: visible,
+        critVisible: critVisible,
         outcome: _outcomeTone(_result),
         onStop: _judge,
         // 무엇에 답하는지 먼저 보여 준다. 막대만 있으면 2초 안에 목표를 읽을 수 없다.
@@ -490,6 +518,9 @@ class _DeleteFastGameState extends State<DeleteFastGame> {
 
   void _down() {
     if (_result != null) return;
+    // 손가락이 말풍선에 닿은 그 순간에 대답한다. 0.55초를 누르고 있어야 하는
+    // 게임이라 "먹혔나?" 를 가장 오래 참아야 하는 자리다.
+    MinigameSfx.tap();
     setState(() => _holding = true);
     _holdTimer = Timer(_hold, () {
       final ms = _sw.elapsedMilliseconds;

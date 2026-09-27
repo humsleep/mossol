@@ -11,6 +11,7 @@ import '../engine/player_name.dart';
 import '../engine/text_template.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'event_screen.dart' show EventScreen;
 import 'keep_all.dart';
 import 'notification_card.dart';
 import 'onboarding_gender_screen.dart';
@@ -38,6 +39,19 @@ import 'widgets.dart';
 ///
 /// 이 화면은 아무것도 저장하지 않다가 **캐스트 소개의 `시작하기`** 에서 한 번에 저장한다 —
 /// 그 전에 앱을 닫으면 다음 실행에 타이틀부터 다시 선다.
+///
+/// **태현의 답은 한 줄씩 온다.** 예전에는 내 답과 태현의 두세 줄을 `setState` 하나로
+/// 한꺼번에 넣어서, 실기에서 말풍선 여섯 개가 동시에 쏟아졌다
+/// (docs/review/11_polish_verdict.md 8위). 이 게임의 대표 연출 — 글자 수에 비례한
+/// 타이핑 시간과 `…` 표시 — 을 **첫 대화에서 한 번도 못 보고** 본편이 시작됐다는 뜻이다.
+/// 그래서 본편과 **같은 것**을 쓴다: 시간은 [EventScreen.themDelayMs], 표시는
+/// [TypingIndicator]. 두 번째 구현을 만들지 않는다.
+///
+/// 타이핑이 끝나기 전에는 하단 패널이 비어 있다(본편에서 대사 중에 선택지가 없는 것과
+/// 같다) — 그래야 답을 두 번 누르거나 다음 질문을 미리 볼 수 없다.
+/// 동작 줄이기에서도 한 줄씩 온다: 타이핑 **시간**은 연출이 아니라 게임의 박자이고
+/// (§1.10 "박자와 모션의 구분"), 본편도 축소 설정에서 이 시간을 줄이지 않는다.
+/// 줄이는 것은 말풍선의 등장 연출이고 그건 `ChatBubble` 이 이미 처리한다.
 class IntroScreen extends StatefulWidget {
   final GameController c;
   const IntroScreen({super.key, required this.c});
@@ -114,6 +128,12 @@ class _IntroScreenState extends State<IntroScreen> {
   /// 지금까지의 대화. 태현 줄·내 줄이 온 순서대로 쌓인다.
   final List<Line> _lines = [];
 
+  /// 아직 안 뜬 태현의 줄. 한 줄씩 [_lines] 로 옮긴다(본편과 같은 박자).
+  final List<Line> _pending = [];
+
+  /// 다음 줄을 띄우는 타이머.
+  Timer? _reveal;
+
   /// 알림 자동 열림 · 시작 지연. 화면이 내려가면 끊는다.
   Timer? _timer;
 
@@ -144,6 +164,7 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _reveal?.cancel();
     _name.dispose();
     super.dispose();
   }
@@ -161,7 +182,43 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 
   void _say(String text) => _lines.add(Line(who: 'me', text: text));
-  void _them(String text) => _lines.add(Line(who: 'them', text: text));
+
+  /// 태현의 줄을 **대기 줄에 넣는다.** 바로 뜨지 않고 [_scheduleReveal] 이 한 줄씩 옮긴다.
+  void _them(String text) => _pending.add(Line(who: 'them', text: text));
+
+  /// 태현이 아직 치고 있는지. 이 동안 하단 패널은 비어 있다.
+  bool get _typing => _pending.isNotEmpty;
+
+  /// 다음 줄을 글자 수에 비례한 시간 뒤에 띄운다(본편과 같은 식 —
+  /// `clamp(600 + 글자×18, 800, 2400)ms`, [EventScreen.themDelayMs]).
+  void _scheduleReveal() {
+    _reveal?.cancel();
+    if (_pending.isEmpty) return;
+    final next = _pending.first;
+    _reveal = Timer(
+      Duration(milliseconds: EventScreen.themDelayMs(next.text)),
+      () {
+        if (!mounted || _pending.isEmpty) return;
+        setState(() => _lines.add(_pending.removeAt(0)));
+        if (_pending.isEmpty) {
+          _onTypingDone();
+        } else {
+          _scheduleReveal();
+        }
+      },
+    );
+  }
+
+  /// 태현이 할 말을 다 한 순간. 마지막 답 뒤였으면 여기서 캐스트 소개로 넘어간다.
+  void _onTypingDone() {
+    final side = _preference;
+    if (_step != IntroStep.starting || side == null) return;
+    _timer?.cancel();
+    _timer = Timer(
+      IntroScreen.startDelay,
+      () => unawaited(_openCast(side)),
+    );
+  }
 
   /// "진짜 할 거야?" 에 대한 답. 어느 쪽이든 판은 시작된다 — 이 답이 시작 버튼이다.
   void _answerDeal(String label) {
@@ -172,6 +229,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _them(IntroScreen.nameQuestion);
       _step = IntroStep.name;
     });
+    _scheduleReveal();
     c.logOnboardingStep(Analytics.stepName);
   }
 
@@ -198,6 +256,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _them(IntroScreen.genderAsk);
       _step = IntroStep.gender;
     });
+    _scheduleReveal();
     c.logOnboardingStep(Analytics.stepGender);
   }
 
@@ -210,6 +269,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _them(IntroScreen.genderAsk);
       _step = IntroStep.gender;
     });
+    _scheduleReveal();
     c.logOnboardingStep(Analytics.stepGender);
   }
 
@@ -230,6 +290,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _them(IntroScreen.sideQuestion);
       _step = IntroStep.side;
     });
+    _scheduleReveal();
   }
 
   void _answerSide(String preference) {
@@ -248,19 +309,22 @@ class _IntroScreenState extends State<IntroScreen> {
     _castReturnStep = _step;
   }
 
-  /// 마지막 답. 태현의 두 줄을 읽는 동안 캐스트 소개를 연다. 저장은 아직 안 한다 —
-  /// 캐스트 소개에서 뒤로 가면 이 대화로 돌아오고 아무것도 남지 않아야 한다.
+  /// 마지막 답으로 정해진 쪽. 태현의 마지막 두 줄이 다 뜬 뒤 캐스트 소개를 여는 데 쓴다.
+  String? _preference;
+
+  /// 마지막 답. 태현의 두 줄이 **한 줄씩 뜨고 나서** 그 두 줄을 읽을 시간
+  /// ([IntroScreen.startDelay])이 지나면 캐스트 소개가 열린다([_onTypingDone]).
+  /// 저장은 아직 안 한다 — 캐스트 소개에서 뒤로 가면 이 대화로 돌아오고 아무것도
+  /// 남지 않아야 한다.
   void _finish(String preference) {
+    _preference = preference;
     setState(() {
       _them(IntroScreen.startReply);
       _them(IntroScreen.castIntro);
       _step = IntroStep.starting;
     });
     _timer?.cancel();
-    _timer = Timer(
-      IntroScreen.startDelay,
-      () => unawaited(_openCast(preference)),
-    );
+    _scheduleReveal();
   }
 
   /// 캐스트 소개(§2.9). 인트로에서 고른 쪽을 먼저 펼치고, 거기서 반대쪽으로 넘어가면
@@ -299,8 +363,13 @@ class _IntroScreenState extends State<IntroScreen> {
     final n = _castReturnLines;
     final step = _castReturnStep;
     if (n == null || step == null || n > _lines.length) return;
+    _reveal?.cancel();
+    _preference = null;
     setState(() {
       _lines.removeRange(n, _lines.length);
+      // 아직 안 뜬 줄도 없던 일이 된다. 남겨 두면 질문으로 돌아온 화면에서
+      // 태현이 계속 치고 있는 것처럼 보인다.
+      _pending.clear();
       _step = step;
     });
   }
@@ -366,6 +435,14 @@ class _IntroScreenState extends State<IntroScreen> {
                             i == _lines.length - 1 ||
                             _lines[i + 1].who != l.who,
                       ),
+                    // 태현이 치는 동안 `…` 하나(§4.1: 화면에 정확히 한 개).
+                    // 직전 줄이 이미 태현이면 아바타 자리는 비운다(묶음 규칙).
+                    if (_typing)
+                      TypingIndicator(
+                        name: IntroScreen.friendName,
+                        showAvatar:
+                            _lines.isEmpty || _lines.last.who != 'them',
+                      ),
                   ],
                 ),
               ),
@@ -407,7 +484,13 @@ class _IntroScreenState extends State<IntroScreen> {
     ),
   );
 
-  Widget _panel(BuildContext context) => switch (_step) {
+  /// 하단 패널. 태현이 치고 있는 동안은 **비어 있다** — 본편에서 대사가 흐르는 중에
+  /// 선택지가 없는 것과 같은 규칙이다. 답을 두 번 누르거나 다음 질문을 미리 볼 수 없다.
+  Widget _panel(BuildContext context) => _typing
+      ? const SizedBox.shrink()
+      : _panelFor(context);
+
+  Widget _panelFor(BuildContext context) => switch (_step) {
     IntroStep.deal => BottomPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
