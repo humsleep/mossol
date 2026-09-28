@@ -140,6 +140,8 @@ class StoryBundle {
     'events_route_a.json',
     'events_route_b.json',
     'events_daily.json',
+    // 아침 행동(config.actions)마다 그날 첫 장면. trigger.action 으로 거른다.
+    'events_action.json',
     'events_special.json',
     'route_jeongwoo.json',
     'route_daeun.json',

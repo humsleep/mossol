@@ -129,6 +129,26 @@ abstract final class AppPalette {
 // ---------------------------------------------------------------------------
 
 /// 4 배수 간격 체계. 여기 없는 숫자는 쓰지 않는다.
+/// 타이틀(인트로) 화면 전용 색. 라이트·다크와 무관하게 늘 같은 밤 장면이다
+/// (게임 타이틀은 테마를 따르지 않는다). 스토어 홍보 이미지 00a 와 같은 톤.
+/// iOS LaunchScreen.storyboard·Android launch_background 배경도 [base] 와 같다.
+abstract final class IntroPalette {
+  static const base = Color(0xFF1B1030);
+  static const glow = Color(0xFF6E1A48);
+  static const deep = Color(0xFF120A20);
+  static const title = Color(0xFFFFFFFF);
+  static const accent = AppPalette.rose300;
+  static const body = Color(0xFFE6D8F0);
+  static const soft = Color(0xFFB9A6CC);
+  static const pillBorder = Color(0x55FFFFFF);
+  static const card = Color(0xFFFFFFFF);
+  static const cardText = AppPalette.inkText;
+  static const cardShadow = Color(0x66000000);
+  static const scrimClear = Color(0x001B1030);
+  static const hiddenBadge = Color(0xFF2A1F22);
+  static const hiddenBadgeText = Color(0xFFFFD27A);
+}
+
 abstract final class AppSpace {
   static const double xxs = 2;
   static const double xs = 4;

@@ -19,6 +19,7 @@ import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
+import 'ui/intro_screen.dart';
 import 'ui/portraits.dart';
 import 'ui/summary_screen.dart';
 
@@ -47,7 +48,7 @@ Future<void> main() async {
     final controller = GameController(bundle: bundle, save: SaveService());
     await controller.init();
     unawaited(AdManager.instance.init());
-    runApp(MossolApp(controller: controller));
+    runApp(MossolApp(controller: controller, intro: true));
   } catch (e, stack) {
     // 여기서 죽으면 유저는 흰 화면만 본다. 이유를 보여 주고 빠져나갈 길을 준다.
     debugPrint('시작 실패: $e\n$stack');
@@ -141,12 +142,26 @@ class StartupFailureApp extends StatelessWidget {
   }
 }
 
-class MossolApp extends StatelessWidget {
+class MossolApp extends StatefulWidget {
   final GameController controller;
-  const MossolApp({super.key, required this.controller});
+
+  /// 켤 때 타이틀 화면([IntroScreen])부터 보여 줄지. 실제 실행(main)은 true,
+  /// 위젯 테스트는 기본값 false 로 바로 홈에서 시작한다.
+  final bool intro;
+
+  const MossolApp({super.key, required this.controller, this.intro = false});
+
+  @override
+  State<MossolApp> createState() => _MossolAppState();
+}
+
+class _MossolAppState extends State<MossolApp> {
+  /// 앱 프로세스가 살아 있는 동안 한 번. 앱을 완전히 껐다 켜면 다시 나온다.
+  late bool _showIntro = widget.intro;
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return MaterialApp(
       title: '모쏠 탈출기',
       debugShowCheckedModeBanner: false,
@@ -155,15 +170,28 @@ class MossolApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => switch (controller.phase) {
-          Phase.home => HomeScreen(c: controller),
-          Phase.action => ActionScreen(c: controller),
-          Phase.event => EventScreen(c: controller),
-          Phase.summary => SummaryScreen(c: controller),
-          Phase.ending => EndingScreen(c: controller),
-        },
+      home: Builder(
+        builder: (context) => AnimatedSwitcher(
+          duration: AppMotion.sheet(context),
+          switchInCurve: AppMotion.standard,
+          child: _showIntro
+              ? IntroScreen(
+                  key: const ValueKey('intro'),
+                  cast: controller.bundle.characters,
+                  onStart: () => setState(() => _showIntro = false),
+                )
+              : ListenableBuilder(
+                  key: const ValueKey('game'),
+                  listenable: controller,
+                  builder: (context, _) => switch (controller.phase) {
+                    Phase.home => HomeScreen(c: controller),
+                    Phase.action => ActionScreen(c: controller),
+                    Phase.event => EventScreen(c: controller),
+                    Phase.summary => SummaryScreen(c: controller),
+                    Phase.ending => EndingScreen(c: controller),
+                  },
+                ),
+        ),
       ),
     );
   }

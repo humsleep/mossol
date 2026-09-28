@@ -841,6 +841,7 @@ class GameController extends ChangeNotifier {
     }
     s.hearts -= 1;
     s.dayStarted = true;
+    s.todayAction = action.id;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;
     _queue
@@ -1019,6 +1020,7 @@ class GameController extends ChangeNotifier {
     _resetDay();
     s.dayStarted = false;
     s.dayQueue = [];
+    s.todayAction = null;
     _tomorrow = null;
     analytics.dayReach(s.day);
     await _recordBestDay(s.day);

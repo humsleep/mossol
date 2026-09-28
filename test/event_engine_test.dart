@@ -51,7 +51,7 @@ void main() {
 
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 12);
-      expect(baseEvents().length, 393);
+      expect(baseEvents().length, 448); // + 아침 행동 장면(events_action.json) 55
       expect(bundle.endings.length, 60);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
@@ -116,7 +116,8 @@ void main() {
       expect(byLayer, {
         EventLayer.main: 55, // + MBTI 자기소개·궁합 테스트 f/m
         EventLayer.route: 189,
-        EventLayer.daily: 117, // 105 + 캐릭터별 MBTI 대화(<id>_mbti_talk) 12 — 루트 슬롯을 뺏지 않게 일상층
+        EventLayer.daily: 172, // 105 + 캐릭터별 MBTI 대화(<id>_mbti_talk) 12 — 루트 슬롯을 뺏지 않게 일상층
+        // + 아침 행동 장면(events_action.json, trigger.action) 55
         EventLayer.crisis: 16,
         EventLayer.hidden: 16, // h_* 15 + 유나 첫 만남(yuna_r00)
       });

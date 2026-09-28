@@ -158,38 +158,74 @@ class EventEngine {
       s.day >= momentBoostFromDay && s.day - s.lastMomentDay >= momentGapDays;
 
   /// 그날 후보 추첨 가중치. 모먼트 보정이 켜져 있으면 모먼트는 [momentBoost]배.
-  int _weightOf(StoryEvent e, bool boost) =>
-      max(1, e.weight) * (boost && isMoment(e) ? momentBoost : 1);
+  /// 오늘 아침 행동([DayAction.affinity])과 어울리는 일상은 [DayAction.affinityBoost]배.
+  int _weightOf(StoryEvent e, bool boost, [DayAction? act]) =>
+      max(1, e.weight) *
+      (boost && isMoment(e) ? momentBoost : 1) *
+      (act != null && act.fits(e.id) ? DayAction.affinityBoost : 1);
 
   /// 난수는 항상 한 번만 뽑는다. 가중치만 바뀌므로 salt 순서·호출 횟수는 그대로다.
   StoryEvent? _weightedPick(
     List<StoryEvent> list,
     Random r, {
     bool boost = false,
+    DayAction? act,
   }) {
     if (list.isEmpty) return null;
-    final total = list.fold<int>(0, (a, e) => a + _weightOf(e, boost));
+    final total = list.fold<int>(0, (a, e) => a + _weightOf(e, boost, act));
     var roll = r.nextInt(total);
     for (final e in list) {
-      roll -= _weightOf(e, boost);
+      roll -= _weightOf(e, boost, act);
       if (roll < 0) return e;
     }
     return list.last;
   }
 
-  /// 오늘 재생할 이벤트 목록. 순서: 메인 → 위기 또는 일상 → 캐릭터 루트 → 히든.
+  /// 오늘 아침에 고른 행동. 행동을 고르기 전(또는 모르는 id)이면 null.
+  DayAction? todayAction(GameState s) {
+    final id = s.todayAction;
+    if (id == null) return null;
+    for (final a in bundle.config.actions) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  /// 행동 장면(`trigger.action` 이 있는 일상). 오늘 행동과 맞는 것만 후보가 된다.
+  bool isActionScene(StoryEvent e) => e.trigger.action.isNotEmpty;
+
+  /// 일반 일상 후보. 행동 장면은 하루 첫 장면 자리에서만 뽑으므로 뺀다.
+  List<StoryEvent> _dailyPool(GameState s) => [
+    for (final e in candidates(s, EventLayer.daily))
+      if (!isActionScene(e)) e,
+  ];
+
+  /// 오늘 재생할 이벤트 목록.
+  /// 순서: 행동 장면 → 메인 → 위기 또는 일상 → 캐릭터 루트 → 히든.
+  /// 오프닝에는 메인(프로젝트 시작 이야기)이 먼저고 행동 장면이 그 뒤다.
   List<StoryEvent> planDay(GameState s) {
     final plan = <StoryEvent>[];
     final planned = <String>{};
     final boost = momentBoostActive(s);
+    final act = todayAction(s);
 
     void add(StoryEvent? e) {
       if (e != null && planned.add(e.id)) plan.add(e);
     }
 
+    // 아침에 고른 행동이 그날의 첫 장면이 된다("헬스장" 을 골랐으면 헬스장에서 시작).
+    final scene = act == null
+        ? null
+        : _weightedPick([
+            for (final e in candidates(s, EventLayer.daily))
+              if (isActionScene(e)) e,
+          ], rng(s, 'action'));
+    if (!isOpening(s)) add(scene);
+
     for (final e in candidates(s, EventLayer.main)) {
       add(e);
     }
+    add(scene);
 
     final crisis = candidates(s, EventLayer.crisis)
       ..sort((a, b) => b.weight - a.weight);
@@ -197,11 +233,7 @@ class EventEngine {
       add(crisis.first);
     } else {
       add(
-        _weightedPick(
-          candidates(s, EventLayer.daily),
-          rng(s, 'daily'),
-          boost: boost,
-        ),
+        _weightedPick(_dailyPool(s), rng(s, 'daily'), boost: boost, act: act),
       );
     }
 
@@ -220,11 +252,13 @@ class EventEngine {
     final target = opening ? openingMinEventsPerDay : minEventsPerDay;
     final maxFill = opening ? target : 1;
     for (var i = 0; i < maxFill && plan.length < target; i++) {
-      final more = candidates(
-        s,
-        EventLayer.daily,
-      ).where((e) => !planned.contains(e.id)).toList();
-      final pick = _weightedPick(more, rng(s, 'daily-${i + 2}'), boost: boost);
+      final more = _dailyPool(s).where((e) => !planned.contains(e.id)).toList();
+      final pick = _weightedPick(
+        more,
+        rng(s, 'daily-${i + 2}'),
+        boost: boost,
+        act: act,
+      );
       if (pick == null) break;
       add(pick);
     }

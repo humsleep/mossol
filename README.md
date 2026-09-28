@@ -38,6 +38,8 @@ assets/story/            스토리 데이터 (코드 수정 없이 콘텐츠 추
   events_route_a.json    서연·하늘·지우 루트 47 (서연·하늘 r00 첫 접촉 포함)
   events_route_b.json    민재·예은·도윤 루트 47 (민재·예은 r00 첫 접촉 포함)
   events_daily.json      일상 랜덤 98 (12개 상황 카테고리 + 오프닝 d_open_* 12 + 후속 d_fu_* 3 + 내기 정산 d_bet_settle* 3)
+  events_action.json     아침 행동 장면 55 (`trigger.action`). 고른 행동의 장면이 그날 첫 장면이 된다
+                         (오프닝 1~3일은 메인 뒤). config.json 행동의 `affinity` 접두어는 일상 추첨 가중치 ×4
   events_special.json    위기 16 + 히든 14
   endings.json           엔딩 30개와 조건, 앨범용 한 줄 힌트(`hint`)
 assets/icon/app_icon.png 아이콘 원본 1024px

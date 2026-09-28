@@ -28,6 +28,7 @@ extension TriggerMatch on Trigger {
     }
     final fc = flagsAtLeast;
     if (fc != null && fc.of.where(s.flags.contains).length < fc.n) return false;
+    if (action.isNotEmpty && !action.contains(s.todayAction)) return false;
     if (day != null && !day!.contains(s.day)) return false;
     if (run != null && !run!.contains(s.run)) return false;
     for (final e in stats.entries) {

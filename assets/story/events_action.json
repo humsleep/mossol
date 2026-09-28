@@ -1,0 +1,5153 @@
+[
+ {
+  "id": "a_gym_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "한 세트만 더",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "헬스장 전신 거울 앞. 벤치프레스 세 번째 세트."
+   },
+   {
+    "who": "narr",
+    "text": "팔이 떨린다. 옆 사람은 나보다 두 배 무거운 걸 콧노래 부르며 든다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "무게를 한 칸 올린다",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "charm": 1
+     }
+    },
+    "minigame": "nerve_gauge",
+    "fail": {
+     "stats": {
+      "stress": 3,
+      "esteem": -1
+     },
+     "album": "바벨 밑에서 \"괜찮아요\""
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "마지막 한 개가 올라갔다. 거울 속 내가 조금 멋있어 보였다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "바벨이 가슴 위에서 멈췄다. 옆 사람이 말없이 들어 줬다."
+     },
+     {
+      "who": "me",
+      "text": "…감사합니다. 괜찮아요."
+     }
+    ]
+   },
+   {
+    "text": "오늘은 폼만 확인한다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "가벼운 무게로 천천히. 거울 속 팔꿈치 각도가 처음으로 보였다."
+     }
+    ]
+   },
+   {
+    "text": "거울 셀카를 찍는다",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 1
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "reputation": -1,
+      "esteem": -1
+     },
+     "album": "셀카 뒤에 찍힌 관장님 얼굴"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "조명이 좋았다. 오늘 사진은 건졌다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "사진 구석에 관장님이 브이를 하고 있었다. 언제부터 계셨지."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_gym_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "옆 러닝머신",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "러닝머신. 내 속도는 6."
+   },
+   {
+    "who": "narr",
+    "text": "옆 사람은 12. 숨소리 하나 안 흐트러진다."
+   },
+   {
+    "who": "narr",
+    "text": "괜히 내 손가락이 속도 버튼 위에 올라가 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "슬쩍 10으로 올린다",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "stress": 3,
+      "esteem": -2
+     },
+     "album": "러닝머신 뒤로 하차"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "3분을 버텼다. 옆 사람이 살짝 고개를 끄덕였다. 기분 탓일 수도 있다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "다리가 속도를 못 따라갔다. 뒤로 밀려나며 안전 끈이 뽑혔다."
+     },
+     {
+      "who": "narr",
+      "text": "옆 사람이 조용히 속도를 6으로 낮췄다. 그게 더 아팠다."
+     }
+    ]
+   },
+   {
+    "text": "내 속도를 지킨다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "sincerity": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "6으로 40분. 옆 사람은 10분 만에 내려갔다. 이긴 것 같기도 하다."
+     }
+    ]
+   },
+   {
+    "text": "이어폰 볼륨을 올리고 딴생각한다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "노래 세 곡이 지나고 나니 옆자리가 비어 있었다. 경쟁은 나만 했다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_gym_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ]
+  },
+  "weight": 3,
+  "title": "기구 사용법",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "처음 보는 기구. 앉는 곳이 두 군데다."
+   },
+   {
+    "who": "narr",
+    "text": "일단 앉았는데, 거울을 보니 아무래도 반대로 앉은 것 같다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "당당하게 그대로 한다",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "reputation": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "열 개를 했다. 어디가 운동됐는지는 끝까지 몰랐다."
+     }
+    ]
+   },
+   {
+    "text": "옆 사람에게 물어본다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "옆 사람",
+      "text": "아 이거 반대로 앉는 거예요. 저도 첫날 그랬어요"
+     },
+     {
+      "who": "narr",
+      "text": "기구 세 개를 더 알려 주고 갔다. 헬스장 인심이 좋다."
+     }
+    ]
+   },
+   {
+    "text": "화장실에서 영상을 찾아본다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "3분짜리 영상을 보고 돌아왔다. 그새 다른 사람이 앉아 있었다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_gym_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "day": [
+    1,
+    15
+   ]
+  },
+  "weight": 4,
+  "title": "첫 등록 상담",
+  "lines": [
+   {
+    "who": "them",
+    "name": "상담 실장",
+    "text": "3개월 끊으시면 1개월 무료! 오늘까지만이에요"
+   },
+   {
+    "who": "narr",
+    "text": "벽에 붙은 포스터에도 \"오늘까지만\"이라고 적혀 있다. 날짜는 없다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "3개월 끊는다",
+    "effects": {
+     "stats": {
+      "money": -5,
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "카드를 내밀었다. 이제 돈이 아까워서라도 나온다."
+     }
+    ]
+   },
+   {
+    "text": "일단 한 달만 한다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "상담 실장",
+      "text": "네~ 한 달 해 보시고 오세요. 다들 다시 오시더라고요"
+     }
+    ]
+   },
+   {
+    "text": "\"오늘까지만\"이 언제부터인지 묻는다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "상담 실장",
+      "text": "…음. 작년부터요"
+     },
+     {
+      "who": "narr",
+      "text": "실장이 웃었다. 나도 웃었다. 할인은 그대로였다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_gym_05",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "day": [
+    8,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "단백질 쉐이크",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "큰맘 먹고 산 초코맛 단백질 가루."
+   },
+   {
+    "who": "narr",
+    "text": "물에 타서 한 입 마셨다. 초코가 아니라 흙이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "참고 원샷한다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다 마셨다. 근육보다 인내심이 먼저 붙는 기분이다."
+     }
+    ]
+   },
+   {
+    "text": "우유에 타서 라떼처럼 마신다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "…먹을 만하다. 아니, 맛있다. 방금 인생 팁 하나 얻었다."
+     }
+    ]
+   },
+   {
+    "text": "사진 찍어 준호에게 보낸다",
+    "effects": {
+     "stats": {
+      "reputation": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "그거 3킬로짜리냐? ㅋㅋ 다 먹으면 나 한 통 사줘라"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "아 흙맛 나는 거 맞음. 나도 버렸음"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_gym_06",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "stats": {
+    "charm": [
+     55,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "3주 전 사진",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "거울 앞에서 3주 전 사진과 지금을 비교해 본다."
+   },
+   {
+    "who": "narr",
+    "text": "…미세하게 달라졌다. 어깨가, 아마도."
+   }
+  ],
+  "choices": [
+   {
+    "text": "비교 사진을 올린다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "reputation": 2
+     }
+    },
+    "chance": 65,
+    "fail": {
+     "stats": {
+      "reputation": -2,
+      "esteem": -1
+     },
+     "album": "인증샷 뒤 스쿼트 중인 타인"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "오 뭐야 진짜 달라졌네"
+     },
+     {
+      "who": "narr",
+      "text": "좋아요가 평소의 세 배 달렸다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "사진 뒤에서 누군가 스쿼트 중이었다. 댓글이 전부 그 사람 얘기였다."
+     }
+    ]
+   },
+   {
+    "text": "혼자만 알고 뿌듯해한다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "아무도 몰라도 괜찮다. 거울 속 나는 알고 있다."
+     }
+    ]
+   },
+   {
+    "text": "숫자 말고 오늘 기분을 적는다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "\"오늘 기분: 좀 괜찮음.\" 어깨보다 이 한 줄이 더 반가웠다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_gym_07",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "stats": {
+    "stress": [
+     70,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "허리가 보내는 신호",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "요즘 쌓인 게 많다. 오늘은 무겁게 들고 다 잊고 싶다."
+   },
+   {
+    "who": "narr",
+    "text": "그런데 데드리프트 바를 잡자 허리가 작게 \"음?\" 한다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "무시하고 든다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "stress": -2
+     }
+    },
+    "chance": 40,
+    "fail": {
+     "stats": {
+      "stress": 5,
+      "esteem": -2
+     },
+     "album": "허리 잡고 퇴장한 20대"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "들었다. 내려놓았다. 허리는 조용했다. 오늘은 운이 좋았다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "\"뚝.\" 소리가 난 것 같았다. 할머니처럼 걸어서 집에 갔다."
+     }
+    ]
+   },
+   {
+    "text": "스트레칭만 하고 간다",
+    "effects": {
+     "stats": {
+      "stress": -4,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "매트에서 20분. 몸이 풀리니 머리도 조금 풀렸다."
+     }
+    ]
+   },
+   {
+    "text": "사우나로 직행한다",
+    "effects": {
+     "stats": {
+      "stress": -5,
+      "money": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "뜨거운 물에 들어가자 오늘 운동 목표가 기억나지 않았다. 괜찮았다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_gym_08",
+  "layer": "daily",
+  "character": "yuna",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "flags": [
+    "yuna_met"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "오늘 기분은 몇 점",
+  "lines": [
+   {
+    "who": "them",
+    "name": "유나",
+    "text": "회원님!! 오늘도 오셨네요!"
+   },
+   {
+    "who": "them",
+    "name": "유나",
+    "text": "운동 전에 하나만. 오늘 기분 몇 점이에요? 숫자 말고 기분!"
+   },
+   {
+    "who": "narr",
+    "text": "숫자 말고 기분을 점수로 말하라는 건지 헷갈린다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"쌤 보니까 좀 좋아졌어요\"",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "유나",
+      "text": "오 멘트 좋은데요? ㅋㅋ 그럼 오늘은 하체 한 개 더!"
+     }
+    ]
+   },
+   {
+    "text": "\"솔직히 좀 피곤해요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "stress": -3
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "유나",
+      "text": "말해 줘서 좋아요. 진짜로."
+     },
+     {
+      "who": "them",
+      "name": "유나",
+      "text": "오늘은 가볍게 하고 떡볶이 생각이나 해요 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "\"몸 좀 좋아졌죠?\"",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "유나",
+      "text": "음~ 몸 말고요!"
+     },
+     {
+      "who": "them",
+      "name": "유나",
+      "text": "기분이요, 기분. 저 그거 물어본 거예요"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_gym_08_m",
+  "layer": "daily",
+  "character": "doyun",
+  "trigger": {
+   "action": [
+    "gym"
+   ],
+   "flags": [
+    "doyun_met"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "허리부터 푸세요",
+  "lines": [
+   {
+    "who": "them",
+    "name": "도윤",
+    "text": "오셨어요, 회원님."
+   },
+   {
+    "who": "them",
+    "name": "도윤",
+    "text": "무게 잡기 전에 허리부터 푸세요. 오늘 컨디션은 어때요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"좋아요. 무게 올릴게요\"",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "도윤",
+      "text": "좋은데, 오늘은 5킬로만요. 허리 먼저."
+     },
+     {
+      "who": "narr",
+      "text": "도윤이 원판 하나를 도로 가져갔다."
+     }
+    ]
+   },
+   {
+    "text": "\"솔직히 좀 피곤해요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "stress": -3
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "도윤",
+      "text": "말해 줘서 고마워요."
+     },
+     {
+      "who": "them",
+      "name": "도윤",
+      "text": "오늘은 가볍게 가죠. 다치면 한 달 쉬어야 돼요"
+     }
+    ]
+   },
+   {
+    "text": "일지에 기록을 조금 부풀려 적는다",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "*": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "도윤",
+      "text": "…이거 지난주보다 10킬로 늘었네요?"
+     },
+     {
+      "who": "them",
+      "name": "도윤",
+      "text": "거짓말로 쓰면 몸이 먼저 알아요. 다시 적어 주세요"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_read_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "알고리즘의 부름",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "\"호감 가는 대화법 5가지\" 영상을 틀었다."
+   },
+   {
+    "who": "narr",
+    "text": "옆에 추천 영상이 뜬다. \"고양이가 박스에 들어가는 영상 모음.\""
+   }
+  ],
+  "choices": [
+   {
+    "text": "끝까지 대화법 영상을 본다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "5가지를 다 적었다. 3번째는 \"상대 이름을 자주 불러 주기\". 부를 사람부터 찾자."
+     }
+    ]
+   },
+   {
+    "text": "고양이 영상 한 편만 본다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "한 편이 열두 편이 됐다. 대화법은 내일 배운다."
+     }
+    ]
+   },
+   {
+    "text": "배운 걸 바로 문장으로 만들어 본다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 1
+     }
+    },
+    "minigame": "word_order",
+    "fail": {
+     "stats": {
+      "stress": 2,
+      "esteem": -1
+     },
+     "album": "거울 보고 연습하다 엄마랑 눈 마주침"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "입에 붙었다. 누가 말을 걸면 바로 써먹을 수 있다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "거울 보며 \"오늘 하루 어땠어요?\" 하는데 방문이 열렸다."
+     },
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "…누구랑 얘기해?"
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_read_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "밑줄 친 한 문장",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "책 \"대화가 편해지는 기술\" 3장."
+   },
+   {
+    "who": "narr",
+    "text": "\"상대의 말을 한 번 되풀이해 주면 사람은 이해받았다고 느낀다.\""
+   },
+   {
+    "who": "narr",
+    "text": "형광펜으로 밑줄을 쳤다. 바로 실험해 보고 싶다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "준호에게 실험해 본다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 1
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "stress": 2
+     },
+     "album": "맞장구 과다로 준호가 무서워함"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "야 오늘 팀장이 또 야근시킴"
+     },
+     {
+      "who": "me",
+      "text": "팀장님이 또 야근시키셨구나. 힘들었겠다"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…어 맞아. 진짜 힘들었어. 너 오늘 좀 괜찮다?"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "야 왜 내 말을 계속 따라 해"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "무섭게 진짜. 무슨 일 있냐"
+     }
+    ]
+   },
+   {
+    "text": "노트에 정리만 한다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "노트 한 쪽이 꽉 찼다. 써먹을 날이 오면 좋겠다."
+     }
+    ]
+   },
+   {
+    "text": "책을 얼굴에 덮고 잔다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "책 냄새가 좋았다. 3장은 꿈에서 읽은 걸로 하자."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_read_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ]
+  },
+  "weight": 3,
+  "title": "도서관 옆자리",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "도서관 창가 자리. 옆 사람이 읽는 책 제목이 눈에 들어온다."
+   },
+   {
+    "who": "narr",
+    "text": "나랑 같은 책이다. 심지어 같은 페이지 근처다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"저도 그 책 읽어요\" 속삭인다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "reputation": -1,
+      "esteem": -1
+     },
+     "album": "도서관에서 \"저도요!\" 외침"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "옆 사람",
+      "text": "아 진짜요? 여기 이 부분 좋지 않아요?"
+     },
+     {
+      "who": "narr",
+      "text": "짧게 몇 마디 나눴다. 괜히 하루가 좋았다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "속삭인다는 게 목소리가 컸다. 열람실 전체가 나를 봤다."
+     }
+    ]
+   },
+   {
+    "text": "모른 척 계속 읽는다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "옆 사람이 먼저 일어났다. 책갈피 위치가 나보다 한 장 앞이었다. 괜히 졌다."
+     }
+    ]
+   },
+   {
+    "text": "같은 부분에서 웃음을 참는다",
+    "effects": {
+     "stats": {
+      "stress": -2,
+      "charm": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "둘이 동시에 \"흡\" 했다. 눈이 마주쳤고, 둘 다 못 본 척했다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_read_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "day": [
+    1,
+    20
+   ]
+  },
+  "weight": 4,
+  "title": "모쏠 탈출 10계명",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "영상 제목: \"이것만 알면 연애 성공! 모쏠 탈출 10계명.\""
+   },
+   {
+    "who": "narr",
+    "text": "제일 위 댓글: \"이거 보고 3년째 모쏠입니다 ^^\""
+   }
+  ],
+  "choices": [
+   {
+    "text": "10계명을 필기한다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "1계명: 먼저 연락하기. 2계명: 너무 자주 연락하지 않기. 벌써 헷갈린다."
+     }
+    ]
+   },
+   {
+    "text": "댓글창만 정독한다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "영상보다 댓글이 더 현실적이었다. \"결국 사람 by 사람임.\" 명언이다."
+     }
+    ]
+   },
+   {
+    "text": "태현에게 링크를 보낸다",
+    "effects": {
+     "stats": {
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "이거 내 강의랑 내용이 똑같은데?"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…아니 내가 먼저 말한 거임. 저작권 있음"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_read_05",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "stats": {
+    "talk": [
+     40,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "표정 읽기 강좌",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "강연 영상 \"말보다 먼저 보이는 것: 표정.\""
+   },
+   {
+    "who": "narr",
+    "text": "강연자가 사진 여섯 장을 띄운다. \"이 중 진짜 웃음은 몇 번일까요?\""
+   }
+  ],
+  "choices": [
+   {
+    "text": "영상 퀴즈를 풀어 본다",
+    "effects": {
+     "stats": {
+      "sense": 3
+     }
+    },
+    "minigame": "read_emotion",
+    "fail": {
+     "stats": {
+      "esteem": -1,
+      "stress": 2
+     },
+     "album": "화난 얼굴을 미소로 읽은 사람"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "여섯 개 중 다섯. 강연자가 \"상위 10%\"라고 했다. 녹화 영상인데도 뿌듯하다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "정답 공개. 내가 웃음이라고 고른 건 \"몹시 화남\"이었다."
+     },
+     {
+      "who": "narr",
+      "text": "지난주 준호 표정이 떠올랐다. 그때 웃는 게 아니었구나."
+     }
+    ]
+   },
+   {
+    "text": "필기만 한다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "\"진짜 웃음은 눈가가 먼저 움직인다.\" 오늘의 수확."
+     }
+    ]
+   },
+   {
+    "text": "창밖 사람들 표정을 분석한다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "reputation": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "카페 창밖을 30분 쳐다봤다. 지나가던 사람이 나를 이상하게 봤다. 저 표정은 안다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_read_06",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "day": [
+    20,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "읽씹의 심리학",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "책 7장 제목: \"답장이 늦는 사람의 마음 7가지.\""
+   },
+   {
+    "who": "narr",
+    "text": "첫 줄을 읽자마자 괜히 톡방 목록을 한 번 내려 본다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "7장을 끝까지 읽는다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "결론: 대부분은 그냥 바빴다. 7가지 중 6가지가 \"바빠서\"였다."
+     }
+    ]
+   },
+   {
+    "text": "7장은 건너뛴다",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "모르는 게 약일 때도 있다. 8장은 \"좋은 질문 하는 법\". 이게 더 쓸모 있다."
+     }
+    ]
+   },
+   {
+    "text": "톡방을 다시 정독한다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "마지막 대화가 3일 전 \"ㅋㅋ\"였다. 이 \"ㅋㅋ\"의 뜻을 30분 동안 분석했다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_read_07",
+  "layer": "daily",
+  "character": "seoyeon",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "선배가 추천한 책",
+  "lines": [
+   {
+    "who": "them",
+    "name": "서연",
+    "text": "그 책 읽고 있어?"
+   },
+   {
+    "who": "them",
+    "name": "서연",
+    "text": "지난번에 말한 거."
+   },
+   {
+    "who": "narr",
+    "text": "3쪽 읽었다. 그것도 두 번."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"벌써 다 읽었어요\"",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     }
+    },
+    "chance": 30,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "album": "읽은 척하다 결말 질문 받음"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "그래? 빠르네."
+     },
+     {
+      "who": "narr",
+      "text": "다행히 더 묻지 않았다. 오늘 밤에 다 읽어야 한다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "그럼 결말 어땠어?"
+     },
+     {
+      "who": "narr",
+      "text": "…결말을 몰랐다."
+     },
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "천천히 읽어. 급한 책 아니야."
+     }
+    ]
+   },
+   {
+    "text": "\"아직 앞부분이에요. 근데 좋아요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "talk": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "앞부분 지나면 더 좋아."
+     },
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "다 읽으면 말해 줘. 얘기하고 싶어."
+     }
+    ]
+   },
+   {
+    "text": "\"선배는 어디가 제일 좋았어요?\"",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "…마지막 장 한 문장."
+     },
+     {
+      "who": "them",
+      "name": "서연",
+      "text": "다 읽으면 알려 줄게. 지금 말하면 스포니까."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_read_07_m",
+  "layer": "daily",
+  "character": "jeongwoo",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "선배가 추천한 책",
+  "lines": [
+   {
+    "who": "them",
+    "name": "정우",
+    "text": "그 책. 아직 읽고 있어?"
+   },
+   {
+    "who": "them",
+    "name": "정우",
+    "text": "부담 주려는 건 아니고. 하하. 궁금해서."
+   },
+   {
+    "who": "narr",
+    "text": "3쪽 읽었다. 그것도 두 번."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"벌써 다 읽었어요\"",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     }
+    },
+    "chance": 30,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -2
+     },
+     "album": "읽은 척하다 결말 질문 받음"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "와. 빠르다."
+     },
+     {
+      "who": "narr",
+      "text": "다행히 더 묻지 않았다. 오늘 밤에 다 읽어야 한다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "그럼 마지막 장면 어땠어?"
+     },
+     {
+      "who": "narr",
+      "text": "…마지막 장면을 몰랐다."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "하하. 괜찮아. 천천히 읽어도 돼."
+     }
+    ]
+   },
+   {
+    "text": "\"아직 앞부분이에요. 근데 좋아요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "talk": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "다행이다."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "다 읽으면 말해 줘. 나도 그 얘기 할 사람이 없었거든."
+     }
+    ]
+   },
+   {
+    "text": "\"선배는 어디가 제일 좋았어요?\"",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "음. 마지막 장."
+     },
+     {
+      "who": "them",
+      "name": "정우",
+      "text": "지금 말하면 스포라서. 다 읽으면 그때 말할게."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_read_08",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ],
+   "stats": {
+    "stress": [
+     65,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "세 쪽의 저주",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "책을 폈다. 세 쪽째에서 눈꺼풀이 무거워진다."
+   },
+   {
+    "who": "narr",
+    "text": "요즘 너무 지쳐서인지 글자가 춤을 춘다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "오디오북으로 바꾼다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "누워서 들으니 머리에 쏙쏙 들어온다. 한 챕터 다 들었다."
+     }
+    ]
+   },
+   {
+    "text": "책을 베고 잔다",
+    "effects": {
+     "stats": {
+      "stress": -4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "두 시간 잤다. 볼에 목차가 찍혔다."
+     }
+    ]
+   },
+   {
+    "text": "강연 영상으로 갈아탄다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "강연자가 말했다. \"지칠 땐 쉬는 것도 공부입니다.\" 허락받은 기분이다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_work_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "뜨겁지만 안 뜨겁게",
+  "lines": [
+   {
+    "who": "them",
+    "name": "손님",
+    "text": "아메리카노 뜨겁게요. 근데 너무 뜨겁지 않게."
+   },
+   {
+    "who": "narr",
+    "text": "카페 알바 넉 달째. 아직도 이 주문의 정답을 모른다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "손님 표정을 읽는다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "reputation": 1
+     }
+    },
+    "minigame": "read_emotion",
+    "fail": {
+     "stats": {
+      "stress": 4
+     },
+     "album": "손님 앞에서 \"네?\" 세 번"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "얼음 두 개를 넣어 드렸다. 손님이 한 모금 마시고 고개를 끄덕였다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "손님",
+      "text": "제 말 이해 못 하셨죠?"
+     },
+     {
+      "who": "narr",
+      "text": "못 했다. 지금도 못 했다."
+     }
+    ]
+   },
+   {
+    "text": "그냥 뜨겁게 드린다",
+    "effects": {
+     "stats": {
+      "stress": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "손님",
+      "text": "뜨겁잖아요!"
+     },
+     {
+      "who": "narr",
+      "text": "뜨겁게 달라고 하셨다. 입 밖으로 내지는 않았다."
+     }
+    ]
+   },
+   {
+    "text": "\"드셔 보시고 말씀 주세요\" 한다",
+    "effects": {
+     "stats": {
+      "talk": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "손님",
+      "text": "…아 괜찮네요. 친절하시다"
+     },
+     {
+      "who": "narr",
+      "text": "정답은 주문이 아니라 말투였다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_work_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "마감 정산",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 정산. 포스기 금액과 현금이 안 맞는다."
+   },
+   {
+    "who": "narr",
+    "text": "2천 원이 빈다. 여섯 번 셌다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "한 번 더 구석구석 찾는다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "냉장고 밑에서 오백 원 동전 네 개가 나왔다. 오늘의 보물찾기 완료."
+     }
+    ]
+   },
+   {
+    "text": "내 돈으로 채운다",
+    "effects": {
+     "stats": {
+      "money": -2,
+      "sincerity": 1,
+      "esteem": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "지갑에서 천 원짜리 두 장. 아무도 모르는 2천 원짜리 평화."
+     }
+    ]
+   },
+   {
+    "text": "사장님께 바로 말씀드린다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "괜찮아 괜찮아. 월급에서 빼면 되지"
+     },
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "…농담이야. 얼굴 좀 펴. 내일 같이 찾아보자"
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_work_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ]
+  },
+  "weight": 3,
+  "title": "점심 12시 10분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "주문서가 여덟 장. 뒤에 줄이 문밖까지 섰다."
+   },
+   {
+    "who": "narr",
+    "text": "머릿속에서 누가 계속 \"아이스 둘, 따뜻한 하나\"를 외친다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "두 잔씩 동시에 만든다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "esteem": 2
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "stress": 4,
+      "reputation": -1
+     },
+     "album": "라떼에 설탕 대신 소금"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "양손이 따로 움직였다. 12시 30분, 줄이 사라졌다. 전설이 된 기분이다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "손님",
+      "text": "저기요… 이거 짠데요?"
+     },
+     {
+      "who": "narr",
+      "text": "설탕 통과 소금 통은 왜 똑같이 생겼을까."
+     }
+    ]
+   },
+   {
+    "text": "한 잔씩 차근차근",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "느렸지만 틀린 잔은 없었다. 마지막 손님이 \"수고하세요\" 해 줬다."
+     }
+    ]
+   },
+   {
+    "text": "줄 선 손님들께 먼저 양해를 구한다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "\"조금만 기다려 주세요!\" 한마디에 줄이 조용해졌다. 말 한마디가 이렇게 세다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_work_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "day": [
+    1,
+    20
+   ]
+  },
+  "weight": 4,
+  "title": "버튼 마흔 개",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "알바 첫 주. 포스기에 버튼이 마흔 개다."
+   },
+   {
+    "who": "narr",
+    "text": "\"아이스 바닐라 라떼 샷 추가 시럽 반\"은 어디를 눌러야 하지."
+   }
+  ],
+  "choices": [
+   {
+    "text": "감으로 누른다",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "stress": 3,
+      "esteem": -1
+     },
+     "album": "라떼 주문에 따뜻한 우유 출력"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "맞았다. 손이 먼저 알았다. 재능인가."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "영수증에 \"따뜻한 우유 1\"이 찍혀 나왔다. 손님이 나를 봤다."
+     }
+    ]
+   },
+   {
+    "text": "버튼 위치를 메모장에 그린다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "쉬는 시간에 지도를 그렸다. 내일부터는 안 헤맨다."
+     }
+    ]
+   },
+   {
+    "text": "사장님께 하나하나 묻는다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "다들 처음엔 그래. 나도 아직 몇 개 몰라"
+     },
+     {
+      "who": "narr",
+      "text": "…사장님인데요?"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_work_05",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "stats": {
+    "money": [
+     0,
+     25
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "월급날까지 9일",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "통장 잔고를 확인했다. 숫자가 작다."
+   },
+   {
+    "who": "narr",
+    "text": "월급날까지 9일. 편의점 삼각김밥 가격을 외우기 시작했다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "주말 대타를 자원한다",
+    "effects": {
+     "stats": {
+      "money": 5,
+      "stress": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "오 고마워. 대타비 조금 더 넣어 줄게"
+     }
+    ]
+   },
+   {
+    "text": "폐기 도시락으로 버틴다",
+    "effects": {
+     "stats": {
+      "money": 2,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "폐기 샌드위치가 생각보다 맛있다. 이게 청춘인가."
+     }
+    ]
+   },
+   {
+    "text": "가계부 앱을 깐다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "지난달 배달비 합계를 봤다. 앱을 지우고 싶었다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_work_06",
+  "layer": "daily",
+  "character": "daeun",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "affection": {
+    "*": [
+     25,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "영수증 뒷면",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 후. 다은이 카운터에서 영수증 뒷면에 뭔가 그리고 있다."
+   },
+   {
+    "who": "narr",
+    "text": "내가 다가가자 펜이 멈췄다. 영수증을 뒤집지는 않는다."
+   },
+   {
+    "who": "them",
+    "name": "다은",
+    "text": "…봤어?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"뭐 그렸어?\" 묻는다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "손님."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…오늘은 한 명만 그렸어."
+     },
+     {
+      "who": "narr",
+      "text": "펜 끝이 앞치마 끈을 두 번 감은 사람을 가리켰다. 나였다."
+     }
+    ]
+   },
+   {
+    "text": "모른 척 걸레질을 한다",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…고마워. 안 물어봐서."
+     },
+     {
+      "who": "narr",
+      "text": "걸레질이 끝날 때까지 펜 소리가 났다."
+     }
+    ]
+   },
+   {
+    "text": "말없이 옆에 앉는다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": -2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다은이 이어폰 한쪽을 내밀었다."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "마감 노래. 들을래?"
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_work_06_m",
+  "layer": "daily",
+  "character": "haneul",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "affection": {
+    "*": [
+     25,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "마감 후 국밥",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 셔터를 내리는데 하늘이 앞치마를 빙빙 돌린다."
+   },
+   {
+    "who": "them",
+    "name": "하늘",
+    "text": "야 오늘 진상 세 명 버틴 기념으로 국밥 콜?"
+   },
+   {
+    "who": "them",
+    "name": "하늘",
+    "text": "반반. 계란은 내가 양보함 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"반반 콜\"",
+    "effects": {
+     "stats": {
+      "money": -3,
+      "stress": -3
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "역시 ㅋㅋ 이거지"
+     },
+     {
+      "who": "narr",
+      "text": "국밥집 사장님이 계란을 하나 더 얹어 줬다. 하늘이 윙크했다."
+     }
+    ]
+   },
+   {
+    "text": "\"오늘은 내가 쏜다\"",
+    "effects": {
+     "stats": {
+      "money": -5
+     },
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "허세 금지 ㅋㅋ 너 통장 내가 앎"
+     },
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "반반이다. 대신 다음에 커피는 네가"
+     }
+    ]
+   },
+   {
+    "text": "\"피곤해서 먼저 갈게\"",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "ㅇㅋ 푹 자라. 내일 오픈 늦으면 국밥 네가 산다"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_work_07",
+  "layer": "daily",
+  "character": "daeun",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "affection": {
+    "*": [
+     5,
+     24
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "스팀 연습",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "우유 스팀 연습. 스팀기에서 비행기 이륙하는 소리가 난다."
+   },
+   {
+    "who": "them",
+    "name": "다은",
+    "text": "소리가 너무 커요."
+   },
+   {
+    "who": "them",
+    "name": "다은",
+    "text": "괜찮아요. 다시 하면 돼요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"한 번만 시범 보여 주세요\"",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다은이 말없이 피처를 기울였다. 소리가 거의 안 났다."
+     },
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "각도. 이만큼."
+     }
+    ]
+   },
+   {
+    "text": "\"혼자 연습해 볼게요\"",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "네."
+     },
+     {
+      "who": "narr",
+      "text": "열 번째 만에 소리가 작아졌다. 뒤에서 다은이 고개를 끄덕였다."
+     }
+    ]
+   },
+   {
+    "text": "\"이 소리가 제 매력이죠\"",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "다은",
+      "text": "…그거 좀 웃기네요."
+     },
+     {
+      "who": "narr",
+      "text": "입꼬리가 한쪽만 올라갔다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_work_07_m",
+  "layer": "daily",
+  "character": "haneul",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "affection": {
+    "*": [
+     5,
+     24
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "스팀 연습",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "우유 스팀 연습. 스팀기에서 비행기 이륙하는 소리가 난다."
+   },
+   {
+    "who": "them",
+    "name": "하늘",
+    "text": "ㅋㅋㅋ 야 그거 공항이냐"
+   },
+   {
+    "who": "them",
+    "name": "하늘",
+    "text": "각도 틀렸어. 이리 줘 봐"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"한 번만 보여 줘\"",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "sense": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "하늘이 피처를 기울였다. 소리가 거의 안 났다."
+     },
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "봤지? 이게 알바 1년 차의 손목이다"
+     }
+    ]
+   },
+   {
+    "text": "\"혼자 해 볼게\"",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "ㅇㅋ 열 번 안에 성공하면 내가 음료 쏜다"
+     },
+     {
+      "who": "narr",
+      "text": "아홉 번째에 성공했다. 하늘이 진짜 음료를 사 왔다."
+     }
+    ]
+   },
+   {
+    "text": "\"이 소리가 내 매력이야\"",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "하늘",
+      "text": "ㅋㅋㅋㅋ 매력 맞네. 손님들 다 쳐다봄"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_work_08",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "stats": {
+    "stress": [
+     70,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "사장님의 한마디",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "계산하다 거스름돈을 두 번 틀렸다. 요즘 머리가 꽉 찼다."
+   },
+   {
+    "who": "them",
+    "name": "사장님",
+    "text": "학생, 오늘 얼굴이 안 좋네."
+   },
+   {
+    "who": "them",
+    "name": "사장님",
+    "text": "30분 일찍 들어가. 시급은 다 쳐 줄게"
+   }
+  ],
+  "choices": [
+   {
+    "text": "감사히 먼저 들어간다",
+    "effects": {
+     "stats": {
+      "stress": -5,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "집에 가는 길이 평소보다 밝았다. 사장님 복 받으세요."
+     }
+    ]
+   },
+   {
+    "text": "괜찮다고 끝까지 버틴다",
+    "effects": {
+     "stats": {
+      "money": 3,
+      "stress": 3,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "고집은. 그럼 이거라도 마셔"
+     },
+     {
+      "who": "narr",
+      "text": "사장님이 초코 라떼를 내밀었다."
+     }
+    ]
+   },
+   {
+    "text": "사장님께 고민을 털어놓는다",
+    "effects": {
+     "stats": {
+      "stress": -4,
+      "sincerity": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "연애 고민이구만. 딱 보니까"
+     },
+     {
+      "who": "them",
+      "name": "사장님",
+      "text": "나 때는 말이야… 아니다. 그냥 잘해 줘. 그게 다야"
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_style_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "옷장 앞 30분",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷장 문을 열고 30분째. 옷은 많은데 입을 옷이 없다."
+   },
+   {
+    "who": "narr",
+    "text": "침대 위에 탈락한 옷이 산처럼 쌓였다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "오늘의 코디를 제대로 짠다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 1
+     }
+    },
+    "minigame": "outfit",
+    "fail": {
+     "stats": {
+      "esteem": -2,
+      "stress": 2
+     },
+     "album": "위아래 체크무늬 대참사"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "거울 앞에서 한 바퀴. 오늘은 사진 찍히고 싶은 날이다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "위도 체크, 아래도 체크. 거울 속에 바둑판이 서 있었다."
+     }
+    ]
+   },
+   {
+    "text": "어제 입은 거 또 입는다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "편하다. 아무도 모를 거다. 아마도."
+     }
+    ]
+   },
+   {
+    "text": "엄마에게 사진 보내서 묻는다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "그거 아빠 옷 아니니?"
+     },
+     {
+      "who": "narr",
+      "text": "…맞았다. 언제부터 내 옷장에 있었지."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "다 잘 어울린다는 점원",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷가게 탈의실. 커튼을 열자마자 점원이 손뼉을 친다."
+   },
+   {
+    "who": "them",
+    "name": "점원",
+    "text": "어머 고객님 딱이에요!"
+   },
+   {
+    "who": "narr",
+    "text": "방금 전 옷에도 똑같이 말했다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "믿고 산다",
+    "effects": {
+     "stats": {
+      "money": -5,
+      "charm": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "쇼핑백을 들고 나오니 발걸음이 가볍다. 지갑도 가볍다."
+     }
+    ]
+   },
+   {
+    "text": "거울 앞에서 한 번 더 따져 본다",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "어깨선이 조금 크다. 한 사이즈 작은 걸로 바꾸니 진짜 딱이었다."
+     },
+     {
+      "who": "them",
+      "name": "점원",
+      "text": "어머 이게 더 딱이네요!"
+     }
+    ]
+   },
+   {
+    "text": "\"다른 색도 있어요?\" 하고 빠져나온다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "점원이 창고에 간 사이 조용히 나왔다. 미안합니다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_style_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ]
+  },
+  "weight": 3,
+  "title": "어떻게 해 드릴까요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "미용실 의자. 디자이너가 가위를 든다."
+   },
+   {
+    "who": "them",
+    "name": "디자이너",
+    "text": "오늘 어떻게 해 드릴까요?"
+   },
+   {
+    "who": "narr",
+    "text": "참고 사진을 안 챙겨 왔다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"알아서 예쁘게요\"",
+    "effects": {
+     "stats": {
+      "charm": 3,
+      "esteem": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "charm": -2,
+      "esteem": -2
+     },
+     "album": "알아서 해 달랬다가 바가지 머리"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "디자이너",
+      "text": "오 이거 얼굴형이랑 잘 맞네요"
+     },
+     {
+      "who": "narr",
+      "text": "거울 속에 새 사람이 앉아 있다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "거울 속에 바가지가 앉아 있다."
+     },
+     {
+      "who": "them",
+      "name": "디자이너",
+      "text": "…2주 지나면 자리 잡아요"
+     }
+    ]
+   },
+   {
+    "text": "휴대폰에서 급히 사진을 찾는다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "디자이너",
+      "text": "아 이 느낌이요? 가능해요. 조금 다듬어 볼게요"
+     },
+     {
+      "who": "narr",
+      "text": "사진이랑 똑같진 않지만 나한테 더 맞는 버전이 됐다."
+     }
+    ]
+   },
+   {
+    "text": "\"지금이랑 똑같이, 조금만요\"",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "1센티 잘렸다. 아무도 모르겠지만 나는 안다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_style_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "day": [
+    1,
+    20
+   ]
+  },
+  "weight": 4,
+  "title": "3년 된 후드티",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷장 정리. 소매가 늘어난 회색 후드티를 발견했다."
+   },
+   {
+    "who": "narr",
+    "text": "3년 동안 거의 매일 입었다. 사진첩 속 나는 전부 이 옷이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "눈 딱 감고 버린다",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "봉투에 넣었다. 3년짜리 나와 헤어진 기분이다."
+     }
+    ]
+   },
+   {
+    "text": "잠옷으로 강등한다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "밖에는 못 나가지만 집에서는 여전히 1등이다."
+     }
+    ]
+   },
+   {
+    "text": "준호에게 줄까 물어본다",
+    "effects": {
+     "stats": {
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "그거 원래 내 거잖아"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "3년 전에 빌려 간 거. 기억 안 나냐 ㅋㅋ"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_05",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "stats": {
+    "money": [
+     50,
+     9999
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "70% 세일",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "쇼핑몰 광고: \"오늘 단 하루, 최대 70%.\""
+   },
+   {
+    "who": "narr",
+    "text": "장바구니에 벌써 여섯 개가 담겼다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "진짜 필요한 것만 남긴다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "money": -3,
+      "charm": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "여섯 개가 두 개가 됐다. 어른이 된 기분이다."
+     }
+    ]
+   },
+   {
+    "text": "전부 산다",
+    "effects": {
+     "stats": {
+      "money": -5,
+      "charm": 2
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "album": "세일 옷 여섯 벌 전부 사이즈 미스"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "택배가 왔다. 전부 잘 맞는다. 오늘은 운이 좋다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "택배를 열었다. 여섯 벌 중 다섯 벌이 작았다. 반품비가 옷값이다."
+     }
+    ]
+   },
+   {
+    "text": "창을 닫는다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "닫았다. 30분 뒤에 다시 열었다. 다시 닫았다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_06",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "stats": {
+    "charm": [
+     60,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "그 옷 어디서 사셨어요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷을 사고 나오는 길. 모르는 사람이 말을 건다."
+   },
+   {
+    "who": "them",
+    "name": "지나가던 사람",
+    "text": "저기, 그 셔츠 어디서 사셨어요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "가게를 친절하게 알려 준다",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지나가던 사람",
+      "text": "감사해요! 진짜 잘 어울리세요"
+     },
+     {
+      "who": "narr",
+      "text": "하루 종일 그 말이 귀에서 맴돌았다."
+     }
+    ]
+   },
+   {
+    "text": "\"사실 세일 코너에서 샀어요\"",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지나가던 사람",
+      "text": "와 그게 더 멋있네요 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "\"비밀이에요\" 하고 웃는다",
+    "effects": {
+     "stats": {
+      "charm": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "상대가 웃고 갔다. 조금 멋있었던 것 같다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_07",
+  "layer": "daily",
+  "character": "jiwoo",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "피팅룸 앞에서",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷가게 피팅룸 앞. 커튼을 여는데 익숙한 얼굴이 서 있다."
+   },
+   {
+    "who": "them",
+    "name": "지우",
+    "text": "어? 여기서 보네요."
+   },
+   {
+    "who": "them",
+    "name": "지우",
+    "text": "그 셔츠, 판결 내려 드릴까요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"네, 판결 부탁드려요\"",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "talk": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "유죄. 너무 잘 어울린 죄."
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "…농담은 여기까지. 진짜 잘 어울려요."
+     }
+    ]
+   },
+   {
+    "text": "\"지우 씨 옷도 골라 드릴까요?\"",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "minigame": "outfit",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "변호사에게 등산복 추천"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "오. 감각 있는데요?"
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "이건 제가 살게요. 증거로요."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "…등산 가요, 저?"
+     },
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "다음 재판 때 입을게요. …농담이에요."
+     }
+    ]
+   },
+   {
+    "text": "당황해서 커튼을 다시 닫는다",
+    "effects": {
+     "stats": {
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "지우",
+      "text": "ㅋㅋ 도망은 불리해요. 증거 인멸이잖아요."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_07_m",
+  "layer": "daily",
+  "character": "seunghyun",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "피팅룸 앞에서",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "옷가게 피팅룸 앞. 커튼을 여는데 익숙한 얼굴이 서 있다."
+   },
+   {
+    "who": "them",
+    "name": "승현",
+    "text": "아. 안녕하세요. 우연이네요."
+   },
+   {
+    "who": "them",
+    "name": "승현",
+    "text": "그 셔츠 잘 어울려요. 좋으면 좋다고 말하는 편이라서요."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"그럼 이걸로 살게요\"",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "esteem": 1
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "네. 잘 샀어요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "다음에 만날 때 입고 와도 돼요. 부탁은 아니고요."
+     }
+    ]
+   },
+   {
+    "text": "\"승현 씨 옷도 골라 드릴까요?\"",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "minigame": "outfit",
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "수의사에게 강아지 무늬 셔츠 추천"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "이건 제가 고를 수 없는 색이에요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "…좋네요. 이걸로 할게요."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "강아지 무늬네요."
+     },
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "병원에 입고 가면 애들은 좋아하겠어요."
+     }
+    ]
+   },
+   {
+    "text": "\"좀 과한 것 같은데…\"",
+    "effects": {
+     "stats": {
+      "esteem": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "승현",
+      "text": "과하지 않아요. 제가 거짓말은 안 해서요."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_style_08",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ],
+   "stats": {
+    "esteem": [
+     0,
+     30
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "거울이 싫은 날",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "거울 앞에 섰는데 오늘따라 모든 게 마음에 안 든다."
+   },
+   {
+    "who": "narr",
+    "text": "머리도, 얼굴도, 이 옷도."
+   }
+  ],
+  "choices": [
+   {
+    "text": "좋은 점 하나만 찾아본다",
+    "effects": {
+     "stats": {
+      "esteem": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "…눈썹은 괜찮다. 오늘은 눈썹으로 버틴다."
+     }
+    ]
+   },
+   {
+    "text": "모자를 눌러쓰고 나간다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "모자는 위대하다. 모자를 만든 사람에게 감사한다."
+     }
+    ]
+   },
+   {
+    "text": "제일 아끼는 옷을 꺼낸다",
+    "effects": {
+     "stats": {
+      "charm": 2,
+      "esteem": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "아껴 둔 날이 오늘이었다. 입자마자 어깨가 조금 펴졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "이불 밖은 위험해",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "눈을 뜨니 오후 1시."
+   },
+   {
+    "who": "narr",
+    "text": "이불 안이 너무 따뜻하다. 세상은 이불 밖에 있다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "한 시간만 더 잔다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "눈을 뜨니 오후 4시. 한 시간의 기준이 이상하다."
+     }
+    ]
+   },
+   {
+    "text": "벌떡 일어나 방 청소를 한다",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "창문을 여니 바람이 들어왔다. 방이 넓어졌다. 기분도."
+     }
+    ]
+   },
+   {
+    "text": "누운 채로 배달을 시킨다",
+    "effects": {
+     "stats": {
+      "money": -4,
+      "stress": -4
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "배달비가 음식값의 절반이었다. 그래도 누워서 먹는 떡볶이는 이긴다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_rest_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "한 편만 보고 자자",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "드라마 1화를 틀었다. 딱 한 편만 보고 잘 생각이다."
+   },
+   {
+    "who": "narr",
+    "text": "1화가 끝나자 화면에 뜬다. \"다음 화 5초 후 재생.\""
+   }
+  ],
+  "choices": [
+   {
+    "text": "진짜 한 편만 보고 끈다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2
+     }
+    },
+    "chance": 35,
+    "fail": {
+     "stats": {
+      "stress": 2
+     },
+     "album": "한 편만 보다 해 뜸"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "껐다. 해냈다. 오늘의 나는 자제력의 신이다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "정신을 차리니 창밖이 밝았다. 주인공 둘은 결혼했다."
+     }
+    ]
+   },
+   {
+    "text": "시즌 끝까지 달린다",
+    "effects": {
+     "stats": {
+      "stress": -5,
+      "esteem": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "16화까지 봤다. 마지막 장면에서 조금 울었다. 아무한테도 말 안 할 거다."
+     }
+    ]
+   },
+   {
+    "text": "로맨스 장면을 공부하듯 본다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "주인공은 우산 하나로 연애를 시작했다."
+     },
+     {
+      "who": "narr",
+      "text": "우리 동네는 비가 안 온다. 참고만 하자."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ]
+  },
+  "weight": 3,
+  "title": "사장님의 답글",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "배달 음식 리뷰를 쓰려는데 지난번 리뷰에 사장님 답글이 달려 있다."
+   },
+   {
+    "who": "them",
+    "name": "가게 사장님",
+    "text": "또 와 주셨네요~ 이번엔 단무지 두 개 넣었어요 ^^"
+   }
+  ],
+  "choices": [
+   {
+    "text": "정성 리뷰를 쓴다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다섯 줄을 썼다. 5분 만에 답글이 왔다. \"다음엔 군만두 서비스!\""
+     }
+    ]
+   },
+   {
+    "text": "별점만 누른다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "별 다섯 개. 말없이 전하는 마음도 있다."
+     }
+    ]
+   },
+   {
+    "text": "음식 사진을 예쁘게 찍어 올린다",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "사진 찍느라 떡볶이가 식었다. 사진은 잘 나왔다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "day": [
+    1,
+    25
+   ]
+  },
+  "weight": 4,
+  "title": "엄마의 전화",
+  "lines": [
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "{name|아야}, 밥은 먹었니?"
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "요즘 누구 만나는 사람은 없고?"
+   },
+   {
+    "who": "narr",
+    "text": "쉬는 날이라고 했더니 질문이 두 배로 늘었다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"없어. 근데 노력 중이야\"",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "그래 그래. 노력하면 되지. 김치 보낼게"
+     }
+    ]
+   },
+   {
+    "text": "\"있어\" 하고 둘러댄다",
+    "effects": {
+     "stats": {
+      "sincerity": -2
+     }
+    },
+    "chance": 40,
+    "fail": {
+     "stats": {
+      "stress": 3
+     },
+     "album": "엄마한테 거짓 연애 들켜서 사진 요구받음"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "어머 정말? 다음에 얘기해 줘"
+     },
+     {
+      "who": "narr",
+      "text": "엄마는 더 묻지 않았다. 그게 더 미안했다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "어머 그래? 사진 보내 봐"
+     },
+     {
+      "who": "narr",
+      "text": "…보낼 사진이 없었다."
+     }
+    ]
+   },
+   {
+    "text": "\"엄마 나 지금 쉬는 중이야\"",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "알았어~ 푹 쉬어. 반찬은 문 앞에 두고 갈게"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_05",
+  "layer": "daily",
+  "character": "sohee",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "한 판만",
+  "lines": [
+   {
+    "who": "them",
+    "name": "소희",
+    "text": "ㄱㄱ 한 판만"
+   },
+   {
+    "who": "them",
+    "name": "소희",
+    "text": "너 오늘 쉬는 날인 거 다 앎 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"ㄱㄱ\" 바로 접속한다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "stress": 1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "접속했더니 업데이트 40분"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "ㅋㅋㅋㅋ 이거지"
+     },
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "오케 내가 받을게. 너 뒤만 봐"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "야 어디 감?"
+     },
+     {
+      "who": "narr",
+      "text": "게임이 업데이트 중이었다. 40분 남음."
+     }
+    ]
+   },
+   {
+    "text": "\"오늘은 그냥 쉴래\"",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "오케 푹 쉬어"
+     },
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "내일은 내가 캐리할게. 약속"
+     }
+    ]
+   },
+   {
+    "text": "\"목소리 좋다 오늘\"",
+    "effects": {
+     "stats": {
+      "charm": 1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "…또 목소리 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "소희",
+      "text": "판 얘기 해라 판 얘기"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_05_m",
+  "layer": "daily",
+  "character": "minjae",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "한 판만",
+  "lines": [
+   {
+    "who": "them",
+    "name": "민재",
+    "text": "…자냐"
+   },
+   {
+    "who": "them",
+    "name": "민재",
+    "text": "한 판?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"ㄱㄱ\" 바로 접속한다",
+    "effects": {
+     "stats": {
+      "stress": -3
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "minigame": "reply_timing",
+    "fail": {
+     "stats": {
+      "stress": 1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "접속했더니 업데이트 40분"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "ㅇㅇ"
+     },
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "오늘도 한 판만 하고 자자. 진짜로"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "…"
+     },
+     {
+      "who": "narr",
+      "text": "게임이 업데이트 중이었다. 40분 남음."
+     },
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "그냥 얘기나 하자 그럼"
+     }
+    ]
+   },
+   {
+    "text": "\"오늘은 그냥 쉴래\"",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "ㅇㅋ"
+     },
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "쉬는 것도 실력임. 짤 하나 보냄"
+     }
+    ]
+   },
+   {
+    "text": "\"얼굴 한 번 보여 줘\"",
+    "effects": {
+     "stats": {
+      "sense": -1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "…그건 좀"
+     },
+     {
+      "who": "them",
+      "name": "민재",
+      "text": "판이나 하자"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_06",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "stats": {
+    "stress": [
+     0,
+     30
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "너무 평화로운 오후",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "할 일이 없다. 걱정도 없다. 오랜만이다."
+   },
+   {
+    "who": "narr",
+    "text": "그런데 너무 평화로우니까 괜히 불안하다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "새 취미를 검색한다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "charm": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "도자기, 클라이밍, 베이킹. 세 개를 즐겨찾기하고 하나도 안 했다."
+     }
+    ]
+   },
+   {
+    "text": "밀린 방 정리를 한다",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "서랍 속에서 초등학교 때 받은 상장이 나왔다. \"착한 어린이상\". 아직 유효하다."
+     }
+    ]
+   },
+   {
+    "text": "단톡에 \"뭐 해?\"를 보낸다",
+    "effects": {
+     "stats": {
+      "reputation": 1,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "너 심심하구나 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "나도. 저녁에 나와"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_rest_07",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "day": [
+    30,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "혼자 요리",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "영상 레시피를 따라 계란찜에 도전한다."
+   },
+   {
+    "who": "narr",
+    "text": "\"약불에서 천천히.\" 약불이 어느 정도인지 모르겠다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "레시피대로 정확히 한다",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "sense": 1
+     }
+    },
+    "chance": 55,
+    "fail": {
+     "stats": {
+      "stress": 2
+     },
+     "album": "계란찜이 계란빵이 됨"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "뚝배기 위로 몽글몽글 부풀었다. 식당 것 같다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "계란찜이 단단하게 굳었다. 칼로 잘라 먹었다."
+     }
+    ]
+   },
+   {
+    "text": "라면으로 타협한다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "계란은 라면에 넣었다. 이것도 요리다."
+     }
+    ]
+   },
+   {
+    "text": "완성 사진을 올린다",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "필터 세 개를 씌웠다. 댓글: \"어디 식당이에요?\" 우리 집이다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_rest_08",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "stats": {
+    "stress": [
+     70,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "아무것도 안 하기",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "요즘 너무 지쳤다. 오늘은 진짜 아무것도 안 하기로 했다."
+   },
+   {
+    "who": "narr",
+    "text": "휴대폰을 뒤집어 놓았다. 천장을 본다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "진짜로 아무것도 안 한다",
+    "effects": {
+     "stats": {
+      "stress": -5,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "천장에 작은 얼룩이 있다. 3년 살면서 처음 봤다. 마음이 조용해졌다."
+     }
+    ]
+   },
+   {
+    "text": "일기를 쓴다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "stress": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "\"요즘 좀 힘들었다.\" 한 줄 적으니 조금 덜 힘들었다."
+     }
+    ]
+   },
+   {
+    "text": "결국 휴대폰을 뒤집는다",
+    "effects": {
+     "stats": {
+      "sense": 1,
+      "stress": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "알림 23개. 아무것도 안 하기는 11분 만에 끝났다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_01",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "단톡방 폭주",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "고등학교 단톡방. 준호가 누군가의 소개팅 얘기를 꺼냈다."
+   },
+   {
+    "who": "narr",
+    "text": "메시지가 1분에 50개씩 올라온다. 누가 내 이름을 불렀다."
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "야 {name|은는} 요즘 어떰? ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "타이밍 맞춰 드립을 친다",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "talk": 1
+     }
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "reputation": -2,
+      "stress": 2
+     },
+     "album": "단톡 드립에 7명 읽씹"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "ㅋㅋㅋㅋㅋㅋ 아 미쳤네"
+     },
+     {
+      "who": "narr",
+      "text": "내 드립에 답장이 줄줄이 달렸다. 오늘의 주인공이다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "드립을 보냈다. 읽음 7. 답장 0."
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…다음 주제"
+     }
+    ]
+   },
+   {
+    "text": "이모티콘으로만 대응한다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "박수 치는 곰 이모티콘. 무난했다. 아무도 상처받지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "조용히 눈팅만 한다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "300개를 다 읽었다. 결론: 소개팅은 망했다. 나는 아니라서 다행이다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_02",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ]
+  },
+  "weight": 2,
+  "once": false,
+  "title": "국밥 연애 상담",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호와 국밥집. 깍두기를 집던 준호가 갑자기 묻는다."
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "그래서. 요즘 누구 있냐"
+   }
+  ],
+  "choices": [
+   {
+    "text": "솔직하게 털어놓는다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "esteem": 1,
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "오 ㅋㅋ 진짜?"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "잘해라. 대신 이상한 데서 태현 말 듣지 말고"
+     }
+    ]
+   },
+   {
+    "text": "\"없어\" 하고 국물만 마신다",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "그 표정은 있는 표정인데"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "됐다. 말하고 싶을 때 말해. 국밥은 내가 산다"
+     }
+    ]
+   },
+   {
+    "text": "역으로 준호 연애를 캐묻는다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…야 그건 왜 물어"
+     },
+     {
+      "who": "narr",
+      "text": "준호가 국밥에 얼굴을 묻었다. 뭔가 있다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_03",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ]
+  },
+  "weight": 3,
+  "title": "치킨집 모임",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "친구들과 치킨집. 분위기가 좋다. 다들 웃고 있다."
+   },
+   {
+    "who": "narr",
+    "text": "지금 드립 하나만 더 치면 오늘의 주인공이 될 것 같다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "드립 한 번 더 간다",
+    "effects": {
+     "stats": {
+      "reputation": 3,
+      "talk": 1
+     }
+    },
+    "minigame": "drink_limit",
+    "fail": {
+     "stats": {
+      "reputation": -2,
+      "esteem": -2
+     },
+     "album": "드립 한 번 더 했다가 정적 5초"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "테이블이 뒤집어졌다. 옆 테이블까지 웃었다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "한 번이 너무 많았다. 5초 동안 치킨 씹는 소리만 났다."
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…어 그래. 콜라 더 시킬 사람"
+     }
+    ]
+   },
+   {
+    "text": "적당히 웃고 듣는 쪽이 된다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "sincerity": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다들 말하고 싶은 게 많았다. 잘 들어 주니 다들 나한테 치킨을 덜어 줬다."
+     }
+    ]
+   },
+   {
+    "text": "먼저 일어난다",
+    "effects": {
+     "stats": {
+      "stress": -2,
+      "money": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "벌써 감? 치킨 반 마리 싸 가라"
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_friends_04",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "day": [
+    1,
+    20
+   ]
+  },
+  "weight": 4,
+  "title": "태현의 연애 강의",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "앉아 봐. 오늘 연애의 본질을 알려 줌"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "연애는… 타이밍이다"
+   },
+   {
+    "who": "narr",
+    "text": "준호가 옆에서 \"저번에도 들었다\"라고 속삭였다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "진지하게 받아 적는다",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "그래 이 자세 좋아. 1강 수료"
+     },
+     {
+      "who": "narr",
+      "text": "노트에는 \"타이밍\" 한 단어만 남았다."
+     }
+    ]
+   },
+   {
+    "text": "\"형은 마지막 연애가 언제야?\"",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…그건 기밀이다"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "ㅋㅋㅋㅋ 5년 전임"
+     }
+    ]
+   },
+   {
+    "text": "\"그 타이밍은 어떻게 알아?\"",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…느끼는 거지"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "너도 느끼게 될 거다. 아마"
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "a_friends_05",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "stats": {
+    "reputation": [
+     55,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "title": "소개 좀 해 줘",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "요즘 친구들 사이에서 내 평이 좋다."
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "야 너 주변에 괜찮은 사람 없냐? 소개 좀"
+   },
+   {
+    "who": "narr",
+    "text": "모쏠에게 소개 부탁이 들어왔다. 세상이 변했다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "\"찾아볼게\" 흔쾌히 받는다",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "역시. 너 요즘 사람이 달라졌다"
+     }
+    ]
+   },
+   {
+    "text": "\"나부터 좀 소개해 줘\"",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "ㅋㅋㅋㅋ 그건 인정. 같이 찾자"
+     }
+    ]
+   },
+   {
+    "text": "\"그런 건 잘 몰라서\"",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "그래? 너 요즘 누구랑 자주 연락하는 것 같던데"
+     },
+     {
+      "who": "narr",
+      "text": "…들켰나."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_06",
+  "layer": "daily",
+  "character": "yeeun",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "준호의 동창 모임",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호가 부른 동창 모임. 문을 열자 예은이 손을 흔든다."
+   },
+   {
+    "who": "them",
+    "name": "예은",
+    "text": "왔다! 야 너 6학년 때 운동회 날 기억나?"
+   },
+   {
+    "who": "narr",
+    "text": "기억난다. 기억하고 싶지 않다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "같이 웃는다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "ㅋㅋㅋ 그치 그치"
+     },
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "근데 그날 너 진짜 끝까지 뛰었잖아. 나 그거 멋있었어"
+     }
+    ]
+   },
+   {
+    "text": "\"그 얘긴 하지 말자\"",
+    "effects": {
+     "stats": {
+      "stress": 1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "에이 왜~"
+     },
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "…알았어. 근데 난 그 얘기 좋아하는데"
+     }
+    ]
+   },
+   {
+    "text": "\"너도 그때 울었잖아\"로 맞받는다",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "흑역사 맞불 작전 실패"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "야!! 그건 네 우유 때문이었잖아 ㅋㅋㅋ"
+     },
+     {
+      "who": "narr",
+      "text": "둘 다 웃다가 준호만 어리둥절했다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "예은",
+      "text": "나 안 울었는데?"
+     },
+     {
+      "who": "narr",
+      "text": "준호가 조용히 \"너만 울었어\"라고 했다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_06_m",
+  "layer": "daily",
+  "character": "geonwoo",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "affection": {
+    "*": [
+     5,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "title": "준호의 동창 모임",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "준호가 부른 동창 모임. 문을 열자 건우가 손을 흔든다."
+   },
+   {
+    "who": "them",
+    "name": "건우",
+    "text": "오 왔다. 준호가 너 온다길래 나왔다"
+   },
+   {
+    "who": "them",
+    "name": "건우",
+    "text": "…농담이고. 그냥 왔어. 운동회 날 기억나?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "같이 웃는다",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "ㅋㅋ 그치"
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "근데 그날 너 끝까지 뛰었잖아. 난 그거 기억함. 진짜로"
+     }
+    ]
+   },
+   {
+    "text": "\"그 얘긴 하지 말자\"",
+    "effects": {
+     "stats": {
+      "stress": 1
+     },
+     "affection": {
+      "*": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "ㅋㅋ 알았어 알았어"
+     },
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "…근데 난 그 얘기 좋아하는데"
+     }
+    ]
+   },
+   {
+    "text": "\"너도 그때 울었잖아\"로 맞받는다",
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "*": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "esteem": -1
+     },
+     "affection": {
+      "*": -1
+     },
+     "album": "흑역사 맞불 작전 실패"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "야 그건 네 우유 때문이었지 ㅋㅋㅋ"
+     },
+     {
+      "who": "narr",
+      "text": "둘 다 웃다가 준호만 어리둥절했다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "건우",
+      "text": "난 안 울었는데? 전학 가는 날 빼고"
+     },
+     {
+      "who": "narr",
+      "text": "…분위기가 조금 조용해졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_friends_07",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "stats": {
+    "stress": [
+     65,
+     100
+    ]
+   }
+  },
+  "weight": 5,
+  "title": "하소연 대회",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "친구 넷이 모였다. 다들 표정이 지쳐 있다."
+   },
+   {
+    "who": "them",
+    "name": "준호",
+    "text": "자 오늘 제일 힘든 사람이 밥 얻어먹기. 시작"
+   }
+  ],
+  "choices": [
+   {
+    "text": "짤로 분위기를 바꾼다",
+    "effects": {
+     "stats": {
+      "reputation": 2,
+      "stress": -3
+     }
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "stats": {
+      "reputation": -1
+     },
+     "album": "위로한다는 게 박수 짤"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "보낸 짤 하나에 다들 빵 터졌다. 오늘 밥은 준호가 샀다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "친구가 퇴사 얘기를 하는데 내가 박수 짤을 보냈다."
+     },
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "…축하해 주는 거야?"
+     }
+    ]
+   },
+   {
+    "text": "다른 사람 얘기를 끝까지 들어 준다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "reputation": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "너한테 말하니까 좀 낫다"
+     },
+     {
+      "who": "narr",
+      "text": "내 얘기는 못 했지만 가벼워졌다."
+     }
+    ]
+   },
+   {
+    "text": "제일 크게 하소연한다",
+    "effects": {
+     "stats": {
+      "stress": -5,
+      "reputation": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "다 쏟아냈다. 우승했다. 밥은 얻어먹었는데 좀 민망하다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_friends_08",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "day": [
+    45,
+    100
+   ]
+  },
+  "weight": 3,
+  "title": "갑자기 날아온 청첩장",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "모임 중간, 친구 하나가 봉투를 꺼낸다. 청첩장이다."
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "나 결혼한다 ㅋㅋ 다들 와 줘"
+   },
+   {
+    "who": "narr",
+    "text": "100일 안에 연애를 하겠다던 내 목표가 갑자기 작아 보인다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "진심으로 축하한다",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "고마워. 너도 곧이야. 요즘 표정 좋던데"
+     }
+    ]
+   },
+   {
+    "text": "\"나만 남았네…\"",
+    "effects": {
+     "stats": {
+      "esteem": -1,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "야 나도 있잖아"
+     },
+     {
+      "who": "them",
+      "name": "준호",
+      "text": "…우리 둘이 나중에 같이 가자. 축의금은 따로"
+     }
+    ]
+   },
+   {
+    "text": "\"축사는 내가 한다\"",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "reputation": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "오 진짜? 너 말 잘하잖아 요즘"
+     },
+     {
+      "who": "narr",
+      "text": "덜컥 맡았다. 이제 화술이 진짜 필요해졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ }
+]

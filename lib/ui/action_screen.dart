@@ -8,7 +8,9 @@ import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'home_screen.dart' show OvernightNote;
+import 'relation_sheet.dart';
 import 'retention_widgets.dart';
+import 'stat_guide.dart';
 import 'roulette_sheet.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
@@ -146,27 +148,27 @@ class _ActionScreenState extends State<ActionScreen> {
             OvernightNote(id: e.key, text: c.say(e.value)),
           ],
 
-          // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
+          // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다. 무엇에 쓰이는지는 설명 시트로.
           const SizedBox(height: AppSpace.lg),
-          StatBars(state: s, compact: true),
+          SectionHeader(
+            title: '내 스탯',
+            trailing: TextButton.icon(
+              key: const Key('stat-guide'),
+              onPressed: () => StatGuideSheet.show(context),
+              icon: const Icon(Icons.help_outline, size: 18),
+              label: const Text('스탯 설명'),
+            ),
+          ),
+          InkWell(
+            onTap: () => StatGuideSheet.show(context),
+            child: StatBars(state: s, compact: true),
+          ),
 
-          // 4. 관계.
+          // 4. 관계. 사람 수와 상관없이 한 줄, 누르면 상세.
           if (cast.isNotEmpty) ...[
             const SizedBox(height: AppSpace.sectionGap),
-            const SectionHeader(title: '관계'),
-            Wrap(
-              spacing: AppSpace.sm,
-              runSpacing: AppSpace.sm,
-              children: [
-                for (final ch in cast)
-                  CharacterChip(
-                    name: ch.name,
-                    affection: s.affectionOf(ch.id),
-                    trust: s.trustOf(ch.id),
-                    accent: context.tokens.accentFor(ch.id),
-                  ),
-              ],
-            ),
+            const SectionHeader(title: '관계', trailingText: '눌러서 자세히'),
+            RelationStrip(c: c, cast: cast),
           ],
 
           // 5. 오늘의 결정. 화면의 주인공.

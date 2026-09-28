@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../analytics/analytics.dart';
+import '../engine/album_index.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
@@ -158,7 +159,7 @@ class _ShameTab extends StatelessWidget {
         const SizedBox(height: AppSpace.sectionGap),
         // 최근 것이 위로. 번호는 실제 수집 순서를 유지한다.
         for (var i = album.length - 1; i >= 0; i--) ...[
-          _ShameCard(number: i + 1, text: album[i]),
+          _ShameCard(c: c, number: i + 1, text: album[i]),
           if (i > 0) const SizedBox(height: AppSpace.listGap),
         ],
       ],
@@ -166,46 +167,286 @@ class _ShameTab extends StatelessWidget {
   }
 }
 
-/// 흑역사 한 장. 번호 메달이 붙은 수집 카드처럼 보이게 한다.
+/// 흑역사 한 장. 번호 메달이 붙은 수집 카드처럼 보이게 한다. 누르면 [ShameDetailSheet].
 class _ShameCard extends StatelessWidget {
+  final GameController c;
   final int number;
   final String text;
 
-  const _ShameCard({required this.number, required this.text});
+  const _ShameCard({required this.c, required this.number, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final t = context.tokens;
     return AppCard(
       padding: AppInsets.cardTight,
+      onTap: () =>
+          ShameDetailSheet.show(context, c, number: number, title: text),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 고정 높이 대신 최소 크기. 글자를 키워도 번호가 잘리지 않는다.
-          Container(
-            constraints: const BoxConstraints(
-              minWidth: AppSpace.xxxl,
-              minHeight: AppSpace.xxxl,
-            ),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.sm,
-              vertical: AppSpace.xs,
-            ),
-            decoration: BoxDecoration(
-              color: t.dangerContainer,
-              borderRadius: AppRadius.rPill,
-            ),
-            child: Text(
-              '$number',
-              style: t.numericSmall.copyWith(color: t.onDangerContainer),
-            ),
-          ),
+          _ShameMedal(number: number),
           const SizedBox(width: AppSpace.md),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Text(text, style: context.text.bodyMedium),
+              child: Text(c.say(text), style: context.text.bodyMedium),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: context.scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShameMedal extends StatelessWidget {
+  final int number;
+  const _ShameMedal({required this.number});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    // 고정 높이 대신 최소 크기. 글자를 키워도 번호가 잘리지 않는다.
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: AppSpace.xxxl,
+        minHeight: AppSpace.xxxl,
+      ),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.xs,
+      ),
+      decoration: BoxDecoration(
+        color: t.dangerContainer,
+        borderRadius: AppRadius.rPill,
+      ),
+      child: Text(
+        '$number',
+        style: t.numericSmall.copyWith(color: t.onDangerContainer),
+      ),
+    );
+  }
+}
+
+/// 흑역사 상세. 그날의 장면 → 내가 한 선택 → 돌아온 반응을 짧은 대화로 다시 보여 준다.
+/// 출처는 제목으로 스토리 데이터를 거꾸로 찾는다([AlbumIndex]).
+class ShameDetailSheet extends StatelessWidget {
+  final GameController c;
+  final int number;
+  final String title;
+
+  const ShameDetailSheet({
+    super.key,
+    required this.c,
+    required this.number,
+    required this.title,
+  });
+
+  static Future<void> show(
+    BuildContext context,
+    GameController c, {
+    required int number,
+    required String title,
+  }) => showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => ShameDetailSheet(c: c, number: number, title: title),
+  );
+
+  /// 출처를 못 찾았을 때와 카드 맨 아래의 한마디. 번호로 돌려 가며 고른다.
+  static const quips = [
+    '이불 킥 한 번이면 괜찮아진다. 두 번이면… 조금 오래 간다.',
+    '그날의 나에게: 그래도 용기는 있었다.',
+    '흑역사도 모이면 추억이 된다. 아마도.',
+    '친구들 단톡방에는 영원히 박제됐다.',
+    '다음엔 3초만 더 생각하기로 했다.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final text = context.text;
+    final t = context.tokens;
+    final soft = context.scheme.onSurfaceVariant;
+    final src = AlbumIndex.find(
+      c.bundle.events,
+      title,
+      roster: {for (final ch in c.roster) ch.id},
+    );
+    final ch = src?.event.character == null
+        ? null
+        : c.bundle.characterById[src!.event.character];
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.screenX,
+            0,
+            AppSpace.screenX,
+            AppSpace.xxl,
+          ),
+          children: [
+            Row(
+              children: [
+                _ShameMedal(number: number),
+                const SizedBox(width: AppSpace.md),
+                Expanded(
+                  child: Text(
+                    keepAll('흑역사 #$number'),
+                    style: text.labelLarge?.copyWith(color: t.danger),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.sm),
+            Text(keepAll(c.say(title)), style: text.headlineSmall),
+            if (src != null) ...[
+              const SizedBox(height: AppSpace.lg),
+              Row(
+                children: [
+                  if (ch != null) ...[
+                    CharacterAvatar(
+                      name: ch.name,
+                      characterId: ch.id,
+                      accent: t.accentFor(ch.id),
+                      size: 32,
+                    ),
+                    const SizedBox(width: AppSpace.sm),
+                  ] else ...[
+                    Icon(Icons.history, size: 20, color: soft),
+                    const SizedBox(width: AppSpace.sm),
+                  ],
+                  Expanded(
+                    child: Text(
+                      keepAll(
+                        '그날: ${c.say(src.event.title)}'
+                        '${ch == null ? '' : ' · ${ch.name}'}',
+                      ),
+                      style: text.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpace.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final l in src.setup())
+                      _RecapLine(c: c, line: l, ch: ch),
+                    _RecapLine(
+                      c: c,
+                      line: Line(who: 'me', text: src.choice.text),
+                      ch: ch,
+                      label: '내 선택',
+                    ),
+                    for (final l in src.aftermath)
+                      _RecapLine(c: c, line: l, ch: ch),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpace.lg),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.format_quote, size: 18, color: soft),
+                const SizedBox(width: AppSpace.xs),
+                Expanded(
+                  child: Text(
+                    keepAll(quips[(number - 1) % quips.length]),
+                    style: text.bodyMedium?.copyWith(color: soft),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 상세 속 대화 한 줄. 나는 오른쪽, 상대는 왼쪽, 지문은 가운데 기울임.
+class _RecapLine extends StatelessWidget {
+  final GameController c;
+  final Line line;
+  final CharacterDef? ch;
+  final String? label;
+
+  const _RecapLine({
+    required this.c,
+    required this.line,
+    required this.ch,
+    this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final text = context.text;
+    final scheme = context.scheme;
+    final t = context.tokens;
+    final body = c.say(line.text);
+    if (line.who == 'narr' || line.who == 'sys') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
+        child: Text(
+          keepAll(body),
+          textAlign: TextAlign.center,
+          style: text.bodySmall?.copyWith(
+            fontStyle: FontStyle.italic,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+    final me = line.who == 'me';
+    final who = me ? (label ?? '나') : (line.name ?? ch?.name ?? '상대');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
+      child: Column(
+        crossAxisAlignment: me
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Text(
+            who,
+            style: text.labelSmall?.copyWith(
+              color: me ? t.danger : scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpace.xxs),
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.62,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.md,
+              vertical: AppSpace.sm,
+            ),
+            decoration: BoxDecoration(
+              color: me ? scheme.primaryContainer : scheme.surfaceContainerHigh,
+              borderRadius: AppRadius.rLg,
+            ),
+            child: Text(
+              keepAll(body),
+              style: text.bodyMedium?.copyWith(
+                color: me ? scheme.onPrimaryContainer : scheme.onSurface,
+              ),
             ),
           ),
         ],
