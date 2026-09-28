@@ -3,6 +3,9 @@
 docs/IMAGE_PLAN.md 의 "이미지를 더 넣을 자리"마다 ChatGPT 에 그대로 붙여 넣는 프롬프트 모음이다.
 캐릭터 초상화 12장(assets/portraits)은 docs/PORTRAIT_PROMPTS.md 에 따로 있다.
 
+**작업은 이 문서 대신 그림 작업판에서 하는 게 빠르다**: https://claude.ai/artifact/QNfYdmSFKnfLkdi8P5mTi9
+(캐릭터별 대화 묶음, 프롬프트 복사·저장 이름 복사·완료 체크. 프롬프트를 고치면 `python3 tool/image_studio/build.py` 로 다시 만든다.)
+
 ## 파일별 문서
 
 | 순위 | 종류 | 문서 | 장 수 | 크기(ChatGPT 비율) | 저장 위치 |
