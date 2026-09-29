@@ -225,17 +225,58 @@ class EventEngine {
   /// 그러면 후보가 하나도 안 남는 날에는 **원래 후보를 그대로 쓴다** — 냉각 때문에
   /// 하루가 비는 일은 없다(docs/review/07_story_flow.md (c)#8 의 수선).
   /// [exclude] 는 오늘 이미 계획에 들어간 id.
-  List<StoryEvent> dailyPool(GameState s, {Set<String> exclude = const {}}) {
-    final all = [
-      for (final e in candidates(s, EventLayer.daily))
-        if (!exclude.contains(e.id)) e,
-    ];
+  ///
+  /// 행동 장면([isActionScene])은 여기서 뺀다 — 하루 첫 장면 자리([actionScenePool])에서만
+  /// 뽑는다. 섞이면 한 날 행동 장면이 둘 나오거나 일상 칸을 행동 장면이 차지한다.
+  List<StoryEvent> dailyPool(GameState s, {Set<String> exclude = const {}}) =>
+      _cooled(s, [
+        for (final e in candidates(s, EventLayer.daily))
+          if (!exclude.contains(e.id) && !isActionScene(e)) e,
+      ]);
+
+  /// [all] 에서 냉각 중인 것을 뺀다. 그러면 하나도 안 남으면 [all] 그대로.
+  List<StoryEvent> _cooled(GameState s, List<StoryEvent> all) {
     final fresh = [
       for (final e in all)
         if (!inDailyCooldown(s, e)) e,
     ];
     return fresh.isEmpty ? all : fresh;
   }
+
+  // ---- 아침 행동과 그날 이야기 ----
+
+  /// 오늘 아침에 고른 행동. 행동을 고르기 전(또는 config 에 없는 id)이면 null.
+  DayAction? todayAction(GameState s) {
+    final id = s.todayAction;
+    if (id == null) return null;
+    for (final a in bundle.config.actions) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  /// 행동 장면(`trigger.action` 이 있는 일상, assets/story/events_action.json).
+  /// 오늘 행동과 맞는 것만 후보가 된다(conditions.dart 의 `action` 판정).
+  bool isActionScene(StoryEvent e) => e.trigger.action.isNotEmpty;
+
+  /// 오늘 행동으로 열리는 행동 장면 후보. 최근 [GameConfig.dailyCooldownDays]일 안에 본
+  /// 장면은 뺀다([inDailyCooldown]).
+  ///
+  /// [dailyPool] 과 달리 **냉각 때문에 비면 되돌리지 않는다** — 그날은 행동 장면 없이
+  /// 평소 하루가 된다. 행동 장면은 하루를 채우는 칸이 아니라 얹는 칸이라, 행동 하나에
+  /// 장면이 열 개 안팎뿐인데 같은 행동을 매일 고르면 되돌림이 곧 재방송이 된다
+  /// (test/rerun_share_test.dart 의 10% 선). 같은 이유로 반복 장면도 한 회차에
+  /// [actionSceneMaxViews]번까지만.
+  List<StoryEvent> actionScenePool(GameState s) => [
+    for (final e in candidates(s, EventLayer.daily))
+      if (isActionScene(e) &&
+          !inDailyCooldown(s, e) &&
+          viewsOf(s, e) < actionSceneMaxViews)
+        e,
+  ];
+
+  /// 반복 행동 장면(`once: false`)을 한 회차에 최대 몇 번 보여 줄지.
+  static const actionSceneMaxViews = 2;
 
   /// 형식을 깨는 이벤트(전화·알림·사진)인지. docs/MOMENTS_SPEC.md §2.
   bool isMoment(StoryEvent e) => e.isMoment;
@@ -270,8 +311,19 @@ class EventEngine {
   /// 그날 후보 추첨 가중치. 모먼트 보정이 켜져 있으면 모먼트는 [momentBoost]배,
   /// 이미 본 장면은 본 횟수만큼 [GameConfig.repeatWeightPercent] 를 곱한다.
   /// [scale] 은 [_weightedPick] 이 넘기는 정수 척도다.
-  int _weightOf(StoryEvent e, bool boost, {int views = 0, int scale = 1}) {
-    var w = max(1, e.weight) * (boost && isMoment(e) ? momentBoost : 1) * scale;
+  /// 오늘 아침 행동([act])과 어울리는 일상([DayAction.affinity])은 [DayAction.affinityBoost]배.
+  int _weightOf(
+    StoryEvent e,
+    bool boost, {
+    int views = 0,
+    int scale = 1,
+    DayAction? act,
+  }) {
+    var w =
+        max(1, e.weight) *
+        (boost && isMoment(e) ? momentBoost : 1) *
+        (act != null && act.fits(e.id) ? DayAction.affinityBoost : 1) *
+        scale;
     if (views <= 0) return w;
     final p = bundle.config.repeatWeightPercent;
     if (p >= 100) return w;
@@ -285,8 +337,13 @@ class EventEngine {
   /// 오늘 [e] 가 추첨에서 갖는 가중치. [_weightedPick] 이 쓰는 값과 같은 척도다
   /// (감쇠가 없는 날에는 [_weightedPick] 이 척도를 곱하지 않지만, 그건 후보 전체에
   /// 같은 배수라 순위·비율에는 영향이 없다). 진단·테스트가 감쇠를 눈으로 확인하는 창구다.
-  int pickWeight(GameState s, StoryEvent e, {bool boost = false}) =>
-      _weightOf(e, boost, views: viewsOf(s, e), scale: repeatWeightScale);
+  int pickWeight(GameState s, StoryEvent e, {bool boost = false}) => _weightOf(
+    e,
+    boost,
+    views: viewsOf(s, e),
+    scale: repeatWeightScale,
+    act: todayAction(s),
+  );
 
   /// 난수는 항상 한 번만 뽑는다. 가중치만 바뀌므로 salt 순서·호출 횟수는 그대로다.
   ///
@@ -299,11 +356,13 @@ class EventEngine {
     List<StoryEvent> list,
     Random r, {
     bool boost = false,
+    DayAction? act,
   }) {
     if (list.isEmpty) return null;
     final views = [for (final e in list) viewsOf(s, e)];
     final scale = views.any((v) => v > 0) ? repeatWeightScale : 1;
-    int w(int i) => _weightOf(list[i], boost, views: views[i], scale: scale);
+    int w(int i) =>
+        _weightOf(list[i], boost, views: views[i], scale: scale, act: act);
     var total = 0;
     for (var i = 0; i < list.length; i++) {
       total += w(i);
@@ -332,16 +391,29 @@ class EventEngine {
         if (_available(s, e)) e,
   ];
 
-  /// 오늘 재생할 이벤트 목록. 순서: (1회차 D+1 오프닝 대본 →) 메인 → 위기 또는 일상
-  /// → 캐릭터 루트 → 히든.
+  /// 오늘 재생할 이벤트 목록. 순서: 행동 장면 → 메인 → 위기 또는 일상 → 캐릭터 루트
+  /// → 히든 (→ 보충 일상).
+  ///
+  /// 행동 장면은 아침에 고른 행동([GameState.todayAction])이 여는 장면 **하나**다
+  /// ("헬스장" 을 골랐으면 헬스장에서 하루가 시작된다). 오프닝([isOpening])에는
+  /// 전제를 세우는 (오프닝 대본 →) 메인이 먼저고 행동 장면이 그 뒤다.
   List<StoryEvent> planDay(GameState s) {
     final plan = <StoryEvent>[];
     final planned = <String>{};
     final boost = momentBoostActive(s);
+    final act = todayAction(s);
 
     void add(StoryEvent? e) {
       if (e != null && planned.add(e.id)) plan.add(e);
     }
+
+    // 행동을 안 골랐으면(null) 후보가 없어 난수도 뽑지 않는다 — 다른 칸의 난수는
+    // salt 가 달라 이 줄과 무관하다.
+    final scene = act == null
+        ? null
+        : _weightedPick(s, actionScenePool(s), rng(s, 'action'));
+    final opening = isOpening(s);
+    if (!opening) add(scene);
 
     // 전제를 세우는 장면은 추첨에 맡기지 않는다(docs/review/07_story_flow.md (c)#4).
     // 대본이 비어 있으면(기본) 이 줄은 아무 일도 하지 않는다.
@@ -354,6 +426,7 @@ class EventEngine {
     for (final e in candidates(s, EventLayer.main)) {
       add(e);
     }
+    add(scene); // 오프닝 날. 평소에는 이미 맨 앞에 있어 아무 일도 하지 않는다.
 
     final crisis = candidates(s, EventLayer.crisis)
       ..sort((a, b) => b.weight - a.weight);
@@ -366,6 +439,7 @@ class EventEngine {
           dailyPool(s, exclude: planned),
           rng(s, 'daily'),
           boost: boost,
+          act: act,
         ),
       );
     }
@@ -381,7 +455,6 @@ class EventEngine {
     // 하루가 너무 짧으면 하트 하나를 쓴 보람이 없다.
     // 이미 꽉 찬 날은 그대로 두고, 한산한 날에만 일상을 하나 더 얹어
     // 하루 분량을 고르게 맞춘다. 오프닝에는 목표치까지 채운다.
-    final opening = isOpening(s);
     final target = opening ? openingMinEventsPerDay : minEventsPerDay;
     final maxFill = opening ? target : 1;
     for (var i = 0; i < maxFill && plan.length < target; i++) {
@@ -399,6 +472,7 @@ class EventEngine {
         more,
         rng(s, 'daily-${i + 2}'),
         boost: boost,
+        act: act,
       );
       if (pick == null) break;
       add(pick);
@@ -670,12 +744,17 @@ class EventEngine {
     return applyEffects(s, Effects(stats: e.$2));
   }
 
-  AppliedDelta applyAction(GameState s, DayAction a) => applyEffects(
-    s,
-    a.effects,
-    absent: absentFor(s),
-    compatMultiplier: (id) => compatMultiplier(s, id),
-  );
+  /// 아침 행동. 효과를 적용하고 오늘 행동으로 적어 둔다([GameState.todayAction]) —
+  /// 그다음 [planDay] 가 그 행동의 장면을 하루 첫 장면으로 깐다. 마감([endDay])에서 비운다.
+  AppliedDelta applyAction(GameState s, DayAction a) {
+    s.todayAction = a.id;
+    return applyEffects(
+      s,
+      a.effects,
+      absent: absentFor(s),
+      compatMultiplier: (id) => compatMultiplier(s, id),
+    );
+  }
 
   /// 하루 마감. 접촉 없던 캐릭터 호감도 -1, 스트레스 자연 감소, 날짜 +1.
   void endDay(GameState s, {String? cliffhanger}) {
@@ -691,6 +770,9 @@ class EventEngine {
       if (n >= 3) s.flags.add('burnout_x3');
     }
     s.lastCliffhanger = cliffhanger;
+    // 아침 행동은 그날 하루 것이다. 내일 미리보기(사본 마감)가 오늘 행동 장면을 내일로
+    // 끌고 가지 않게 엔진 마감에서도 비운다.
+    s.todayAction = null;
     s.day += 1;
   }
 

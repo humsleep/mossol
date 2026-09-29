@@ -484,9 +484,17 @@ void main() {
       );
     });
 
-    test('실제 스토리 JSON 에는 아직 그림 필드가 없다(지금과 동일 보장)', () {
+    test('실제 스토리 JSON 의 그림 필드는 행동 장면의 장소 배경뿐이다', () {
       final b = testBundle();
-      expect(b.events.every((e) => e.image == null), isTrue);
+      // 행동 장면(events_action.json)만 `assets/scenes/<행동 id>` 를 적는다 —
+      // 그 아침 장면이 장소 그림으로 열린다. 나머지는 규약 경로(`<이벤트 id>`)를 쓴다.
+      for (final e in b.events) {
+        if (e.trigger.action.isEmpty) {
+          expect(e.image, isNull, reason: e.id);
+        } else {
+          expect(e.image, 'assets/scenes/${e.trigger.action.first}');
+        }
+      }
       expect(b.endings.every((e) => e.image == null), isTrue);
     });
 

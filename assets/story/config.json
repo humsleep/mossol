@@ -48,7 +48,10 @@
      "charm": 1,
      "stress": 4
     }
-   }
+   },
+   "affinity": [
+    "d_misc_05"
+   ]
   },
   {
    "id": "read",
@@ -59,7 +62,14 @@
      "talk": 2,
      "sense": 1
     }
-   }
+   },
+   "affinity": [
+    "d_temp_01",
+    "d_meet_07",
+    "d_misc_01",
+    "d_work_02",
+    "d_work_03"
+   ]
   },
   {
    "id": "work",
@@ -70,7 +80,13 @@
      "money": 15,
      "stress": 6
     }
-   }
+   },
+   "affinity": [
+    "d_work_",
+    "d_meet_04",
+    "d_luck_04",
+    "d_twist_03"
+   ]
   },
   {
    "id": "style",
@@ -81,7 +97,15 @@
      "charm": 2,
      "money": -10
     }
-   }
+   },
+   "affinity": [
+    "d_misc_02",
+    "d_misc_03",
+    "d_open_outfit",
+    "d_sns_07",
+    "d_date_05",
+    "d_meet_01"
+   ]
   },
   {
    "id": "rest",
@@ -92,7 +116,14 @@
      "stress": -12,
      "esteem": 1
     }
-   }
+   },
+   "affinity": [
+    "d_kakao_",
+    "d_sns_",
+    "d_family_",
+    "d_misc_04",
+    "d_luck_05"
+   ]
   },
   {
    "id": "friends",
@@ -104,7 +135,14 @@
      "esteem": 2,
      "money": -5
     }
-   }
+   },
+   "affinity": [
+    "d_friend_",
+    "d_drink_",
+    "d_meet_02",
+    "d_meet_06",
+    "d_two_02"
+   ]
   }
  ],
  "mbti": {

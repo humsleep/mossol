@@ -10,6 +10,7 @@ import 'package:mossol/engine/text_template.dart';
 const files = [
   'events_main.json',
   'events_daily.json',
+  'events_action.json',
   'events_route_a.json',
   'events_route_b.json',
   'events_special.json',
