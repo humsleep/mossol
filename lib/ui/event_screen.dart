@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
 import '../analytics/analytics.dart';
 import '../audio/sfx_service.dart';
+import '../engine/effects.dart' show AppliedDelta;
 import '../engine/event_engine.dart';
 import '../engine/mbti.dart';
 import '../engine/models.dart';
@@ -683,7 +684,8 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
         scroll: _scroll,
         subtitles: [
           for (final l in visible) sub(l),
-          if (o != null && _myText != null) sub(Line(who: 'me', text: _myText!)),
+          if (o != null && _myText != null)
+            sub(Line(who: 'me', text: _myText!)),
           if (o != null)
             for (final l in c.lastReply.take(_replyShown)) sub(l),
           if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
@@ -1201,9 +1203,8 @@ class _ChoicePanelState extends State<_ChoicePanel> {
   void _onChanged(String v) {
     // 붙여넣기로 상한에 걸리면 한 번 말해 준다(07 §4 #4). maxLength 가 이미 잘랐다.
     if (v.length >= FreeInputThresholds.maxChars && v.length - _lastLen > 20) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('짧게 말해 주세요')),
-      );
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(const SnackBar(content: Text('짧게 말해 주세요')));
     }
     _lastLen = v.length;
     setState(() {});
@@ -1424,7 +1425,9 @@ class _ChoicePanelState extends State<_ChoicePanel> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpace.sm),
             child: ActionChip(
-              avatar: v.locked ? const Icon(Icons.lock_outline, size: 16) : null,
+              avatar: v.locked
+                  ? const Icon(Icons.lock_outline, size: 16)
+                  : null,
               label: Text(_short(c.say(v.choice.text))),
               onPressed: v.locked ? null : () => _pick(v.index),
             ),
@@ -1513,7 +1516,9 @@ class _ChoicePanelState extends State<_ChoicePanel> {
               child: Text(
                 keepAll(note.text),
                 style: context.text.bodySmall?.copyWith(
-                  color: note.narr ? t.narration : context.scheme.onSurfaceVariant,
+                  color: note.narr
+                      ? t.narration
+                      : context.scheme.onSurfaceVariant,
                   fontStyle: note.narr ? FontStyle.italic : null,
                 ),
               ),
@@ -1610,7 +1615,11 @@ class _PickSheet extends StatelessWidget {
 
   /// 무료 되돌리기 뒤 강제 피커 — 강조 없음(같은 실수를 반복하지 않게).
   final bool forced;
-  const _PickSheet({required this.c, required this.result, required this.forced});
+  const _PickSheet({
+    required this.c,
+    required this.result,
+    required this.forced,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1645,8 +1654,11 @@ class _PickSheet extends StatelessWidget {
                   recommended:
                       !weak &&
                       (i == 0 ||
-                          (i == 1 && r.margin < FreeInputThresholds.autoMargin)),
-                  lockedReason: r.ranked[i].view.locked ? r.ranked[i].view.reason : null,
+                          (i == 1 &&
+                              r.margin < FreeInputThresholds.autoMargin)),
+                  lockedReason: r.ranked[i].view.locked
+                      ? r.ranked[i].view.reason
+                      : null,
                   onTap: r.ranked[i].view.locked
                       ? null
                       : () => Navigator.pop(context, r.ranked[i].index),
@@ -1692,7 +1704,9 @@ class _PickRow extends StatelessWidget {
             borderRadius: AppRadius.rMd,
             border: Border.all(
               color: recommended ? scheme.primary : scheme.outlineVariant,
-              width: recommended ? AppBorderWidth.emphasis : AppBorderWidth.hairline,
+              width: recommended
+                  ? AppBorderWidth.emphasis
+                  : AppBorderWidth.hairline,
             ),
           ),
           child: Row(
@@ -1755,7 +1769,9 @@ class _ResultPanel extends StatelessWidget {
     // 전화를 거절한 건 '성공'이 아니다. 판정 없는 선택이므로 담담하게 적는다.
     final declined = c.lastChoice?.decline == true;
     // 자유 입력이면 어느 선택지로 알아들었는지 캡션으로 — 오매핑을 스스로 알아채는 유일한 창(07 §3.2).
-    final heard = c.lastChoiceSource == ChoiceSource.freeText ? c.lastChoice : null;
+    final heard = c.lastChoiceSource == ChoiceSource.freeText
+        ? c.lastChoice
+        : null;
     final headline = declined
         ? '전화를 넘겼다'
         : o.critical
@@ -1799,56 +1815,90 @@ class _ResultPanel extends StatelessWidget {
         ),
     ];
 
+    // 상대의 표정(설렘·당황·시무룩). 그림이 없거나 상대가 없으면 자리도 없다.
+    final face = declined ? null : ReactionFace.whoFor(c.current, o.delta);
+    final mood = ReactionFace.moodFor(o);
+
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: fg),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                keepAll(headline),
+                style: context.text.titleMedium?.copyWith(color: fg),
+              ),
+            ),
+            if (o.combo > 0) ...[
+              const SizedBox(width: AppSpace.sm),
+              ComboBadge(combo: o.combo, onFire: o.combo >= 3, dense: true),
+            ],
+          ],
+        ),
+        if (heard != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Text(
+              keepAll('→ "${c.say(heard.text)}" 으로 알아들었어요'),
+              style: context.text.bodySmall?.copyWith(color: fg),
+            ),
+          ),
+        if (o.comboBroken)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Row(
+              children: [
+                Icon(Icons.trending_down, size: 14, color: fg),
+                const SizedBox(width: AppSpace.xs),
+                Text(
+                  '콤보 끊김',
+                  style: context.text.labelMedium?.copyWith(color: fg),
+                ),
+              ],
+            ),
+          ),
+        if (c.minigameNote != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.sm),
+            child: Text(
+              keepAll(c.minigameNote!),
+              style: context.text.bodyMedium?.copyWith(color: fg),
+            ),
+          ),
+      ],
+    );
+
     return BottomPanel(
       tone: tone,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 20, color: fg),
-              const SizedBox(width: AppSpace.sm),
-              Expanded(
-                child: Text(
-                  keepAll(headline),
-                  style: context.text.titleMedium?.copyWith(color: fg),
-                ),
-              ),
-              if (o.combo > 0) ...[
-                const SizedBox(width: AppSpace.sm),
-                ComboBadge(combo: o.combo, onFire: o.combo >= 3, dense: true),
-              ],
-            ],
-          ),
-          if (heard != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Text(
-                keepAll('→ "${c.say(heard.text)}" 으로 알아들었어요'),
-                style: context.text.bodySmall?.copyWith(color: fg),
-              ),
-            ),
-          if (o.comboBroken)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Row(
-                children: [
-                  Icon(Icons.trending_down, size: 14, color: fg),
-                  const SizedBox(width: AppSpace.xs),
-                  Text(
-                    '콤보 끊김',
-                    style: context.text.labelMedium?.copyWith(color: fg),
-                  ),
-                ],
-              ),
-            ),
-          if (c.minigameNote != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpace.sm),
-              child: Text(
-                keepAll(c.minigameNote!),
-                style: context.text.bodyMedium?.copyWith(color: fg),
-              ),
+          if (face == null)
+            header
+          else
+            SceneScope(
+              builder: (context, r) {
+                final path = SceneImages.forExpression(face, mood, registry: r);
+                if (path == null) return header;
+                return Row(
+                  children: [
+                    ReactionFace(
+                      key: ValueKey('reaction-$face-$mood'),
+                      path: path,
+                      name: c.characterName(face),
+                      mood: mood,
+                      accent: t.accentFor(face),
+                      bundle: r.bundle,
+                    ),
+                    const SizedBox(width: AppSpace.md),
+                    Expanded(child: header),
+                  ],
+                );
+              },
             ),
           const SizedBox(height: AppSpace.md),
           // 변화량은 색 + 부호 + 화살표 3중. 한 줄 문장 나열보다 눈에 먼저 든다.
@@ -1908,6 +1958,127 @@ class _ResultPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 결과 패널 왼쪽의 상대 표정 한 장(원형). 선택 결과를 숫자보다 먼저 얼굴로 전한다.
+///
+/// - 성공·크리티컬 → 설렘(`flutter`), 실패 → 시무룩(`sulky`), 다만 흑역사가 남은 실패는
+///   웃픈 사고라 당황(`flustered`).
+/// - 상대는 이벤트 캐릭터, 없으면 이번에 호감이 움직인 사람이 딱 한 명일 때 그 사람.
+/// - 그림이 없으면 자리도 없다(부르는 쪽이 [SceneImages.forExpression] 으로 거른다).
+///   깨진 파일이면 접는다. 등장은 살짝 커지며(동작 줄이기면 그대로) 글을 가리지 않는다.
+class ReactionFace extends StatefulWidget {
+  final String path;
+  final String name;
+  final String mood;
+  final CharacterAccent accent;
+  final AssetBundle? bundle;
+
+  const ReactionFace({
+    super.key,
+    required this.path,
+    required this.name,
+    required this.mood,
+    required this.accent,
+    this.bundle,
+  });
+
+  /// 한 변. 채팅 아바타(40)보다 크고 캐스트 카드(56)와 같다.
+  static const double size = AppSize.avatarLg;
+
+  /// 등장 때 시작 배율.
+  static const double _popFrom = 0.85;
+
+  /// 얼굴 확대 배율과 고정점. 표정 그림(1:1 상반신)에서 얼굴은 위 1/3, 가로 가운데쯤이다.
+  static const double _faceZoom = 2;
+  static const Alignment _faceAnchor = Alignment(0.1, -0.5);
+
+  static String moodFor(ChoiceOutcome o) => o.success || o.critical
+      ? Expression.flutter
+      : o.delta.album != null
+      ? Expression.flustered
+      : Expression.sulky;
+
+  /// 표정의 주인. 모르면 null.
+  static String? whoFor(StoryEvent? ev, AppliedDelta delta) {
+    final ch = ev?.character;
+    if (ch != null) return ch;
+    final moved = delta.affection.keys.toList();
+    return moved.length == 1 ? moved.single : null;
+  }
+
+  static String moodLabel(String mood) => switch (mood) {
+    Expression.flutter => '설렘',
+    Expression.flustered => '당황',
+    _ => '시무룩',
+  };
+
+  @override
+  State<ReactionFace> createState() => _ReactionFaceState();
+}
+
+class _ReactionFaceState extends State<ReactionFace> {
+  bool _failed = false;
+
+  @override
+  void didUpdateWidget(ReactionFace old) {
+    super.didUpdateWidget(old);
+    if (old.path != widget.path) _failed = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) return const SizedBox.shrink();
+    const size = ReactionFace.size;
+    final a = widget.accent;
+    final px = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+    Widget face = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: a.container, shape: BoxShape.circle),
+      foregroundDecoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: a.base, width: AppBorderWidth.hairline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      // 표정 그림은 상반신 구도라 원 안에서는 얼굴이 작다. 얼굴이 있는 위쪽 가운데로 당겨 키운다.
+      child: Transform.scale(
+        scale: ReactionFace._faceZoom,
+        alignment: ReactionFace._faceAnchor,
+        child: Image(
+          image: SceneImage.providerFor(
+            widget.path,
+            bundle: widget.bundle,
+            cacheWidth: (px * ReactionFace._faceZoom).ceil(),
+          ),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stack) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _failed = true);
+            });
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    final d = AppMotion.fast(context);
+    if (d > Duration.zero) {
+      face = TweenAnimationBuilder<double>(
+        tween: Tween(begin: ReactionFace._popFrom, end: 1),
+        duration: d,
+        curve: AppMotion.emphasized,
+        builder: (context, v, child) => Transform.scale(scale: v, child: child),
+        child: face,
+      );
+    }
+    return Semantics(
+      image: true,
+      label: '${widget.name}의 표정: ${ReactionFace.moodLabel(widget.mood)}',
+      child: ExcludeSemantics(child: face),
     );
   }
 }
