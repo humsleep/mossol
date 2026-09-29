@@ -69,11 +69,6 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
 	<!-- AdMob 실제 iOS 앱 ID (앱 "Mossol"). 광고 단위 ID 는 lib/ads/ad_manager.dart 에서
 	     릴리스 빌드만 실제 ID, 디버그는 테스트 ID 를 쓴다. -->
 	<!-- Firebase Analytics: 광고 식별자(IDFA)를 모으지 않고 광고 개인화 신호도 보내지 않는다.

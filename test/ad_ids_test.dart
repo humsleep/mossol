@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mossol/ads/ad_manager.dart';
 
 void main() {
@@ -14,5 +15,16 @@ void main() {
   test('Android 는 AdMob 앱이 생기기 전까지 릴리스도 테스트 단위', () {
     final ids = AdManager.idsFor(ios: false, release: true);
     expect(ids.values, everyElement(startsWith('ca-app-pub-3940256099942544/')));
+  });
+
+  test('광고 등급 상한은 릴리스·디버그 모두 T, 테스트 기기는 디버그에서만', () {
+    final release =
+        AdManager.requestConfigurationFor(debug: false, testDeviceIds: ['abc']);
+    expect(release.maxAdContentRating, MaxAdContentRating.t);
+    expect(release.testDeviceIds, isNull);
+    final debug =
+        AdManager.requestConfigurationFor(debug: true, testDeviceIds: ['abc']);
+    expect(debug.maxAdContentRating, MaxAdContentRating.t);
+    expect(debug.testDeviceIds, ['abc']);
   });
 }

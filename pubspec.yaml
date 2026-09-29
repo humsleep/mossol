@@ -1,7 +1,7 @@
 name: mossol
 description: "모쏠 탈출기 : 100일 연애 시뮬레이션"
 publish_to: 'none'
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.13.0
@@ -47,7 +47,7 @@ flutter:
     - assets/keyart/
     - assets/stamps/
     # 효과음(docs/overhaul/05_audio_haptics.md). 큐 id 와 파일명 1:1. LICENSES.md 도 같이 번들해
-    # 설정 › 오픈소스 라이선스에서 읽어 준다. 지금은 tool/make_placeholder_sfx.py 가 합성한 자리표시자.
+    # 설정 › 오픈소스 라이선스에서 읽어 준다. 전부 tool/make_sfx.py 로 직접 합성한 자체 창작물.
     - assets/sfx/
     # OFL 라이선스 전문. 앱 안 라이선스 화면에서 읽어 줄 수 있게 함께 번들한다.
     - assets/fonts/Pretendard-LICENSE.txt

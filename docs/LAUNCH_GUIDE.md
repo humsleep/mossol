@@ -19,7 +19,7 @@
    | 전면(Interstitial) | mossol_ios_interstitial | 3일차 이후 가끔 |
    | 보상형(Rewarded) | mossol_ios_rewarded | 하트 충전·힌트·되돌리기 |
    | 배너(Banner) | mossol_ios_banner | 화면 하단 |
-4. 🙋 앱 설정 → **앱 콘텐츠 등급 최대값 T(청소년)**. 아동 대상 아님.
+4. 🙋 **차단 관리(Blocking controls) → 콘텐츠 등급 → 최대 광고 콘텐츠 등급 T(청소년)** 저장(코드도 T 로 요청한다). 아동 대상 아님.
 5. 🙋 **개인정보 보호 및 메시지** → GDPR 메시지 만들기 → 언어 **한국어** 추가 → 개인정보처리방침 URL(4단계) 입력 → **게시**.
    (IDFA 메시지 옵션도 켜면 ATT 설명 화면이 함께 뜬다.)
 6. 🤖 아래 4개 값을 Claude에게 보낸다:
@@ -57,16 +57,18 @@
      번들 ID `com.hyukahn.mossol`(목록에 없으면 developer.apple.com → Identifiers 에서 먼저 등록), SKU `mossol001`.
 2. 🙋 **앱 정보**: 부제·카테고리(게임 > 시뮬레이션, 보조 엔터테인먼트) — `STORE_LISTING.md` 복사.
 3. 🙋 **가격 및 사용 가능 여부**: 무료, 국가는 우선 **대한민국만**(ROADMAP 소규모 출시).
-4. 🙋 **앱 개인정보 보호**: 개인정보처리방침 URL(3단계) + 데이터 수집 설문 → `RELEASE_CHECKLIST.md` §3 표 그대로.
-5. 🙋 **연령 등급**: `STORE_LISTING.md`의 설문 답변 그대로(예상 12+).
+4. 🙋 **앱 개인정보 보호**: 개인정보처리방침 URL(3단계) + 데이터 수집 설문 → `APP_STORE_CONNECT_GUIDE.md` §5 그대로(유일한 기준).
+5. 🙋 **연령 등급**: `APP_STORE_CONNECT_GUIDE.md` §3 그대로(새 설문 기준, 결과 **13+**. 근거는 `STORE_LISTING.md` §7).
 6. 🙋 **1.0 버전 페이지**: 프로모션 텍스트·설명·키워드·지원 URL(개인정보처리방침 주소나 노션 페이지 가능).
-7. ✅ **스크린샷**: `docs/store_screenshots/promo/01~08.png`(1320×2868, 문구 얹은 홍보용)을 순서대로 올린다. 원본 캡처는 `raw/`, 다시 만들기는 `python3 tool/store_images/make.py`.
-8. 🙋 **심사 노트**: `RELEASE_CHECKLIST.md` §6 문구 복사(로그인 없음, 광고 테스트 방법 등).
+7. ✅ **스크린샷**: `docs/store_screenshots/promo/`(1320×2868)에서 **`00a_lineup` → `02` → `01` → `04` → `05` → `03` → `06` → `07` → `08`** (9장) 순서로 올린다.
+   `00b_women`·`00c_men` 은 올리지 않는다(SNS용). 6.9형 칸이 없으면 `promo65/`(1284×2778) 같은 순서. iPad 는 필요 없다(iPhone 전용).
+   다시 만들기: 라인업 `python3 tool/store_images/lineup.py`, 01~08 `python3 tool/store_images/make.py`. (`APP_STORE_CONNECT_GUIDE.md` §6-2 와 같은 순서)
+8. 🙋 **심사 노트**: `APP_STORE_CONNECT_GUIDE.md` §6-10 영어 블록 복사(로그인·인앱 결제 없음, 자유 입력은 기기 안에서만, ATT 가 인트로 직후 뜨는 방법, 광고 최대 등급 T).
 
 ## 5단계. 빌드 올리기 (약 20분)
 
 1. 🤖 Claude가 1·2·3단계 값을 넣고 테스트·빌드 검증 후 커밋한다.
-2. 🙋 Xcode에서 `ios/Runner.xcworkspace` 열기 → 상단 기기를 **Any iOS Device (arm64)** → 메뉴 **Product → Archive**.
+2. 🙋 **Xcode 26 이상**(2026-04-28부터 iOS 26 SDK 필수, 이 맥은 26.6)에서 `ios/Runner.xcworkspace` 열기 → 상단 기기를 **Any iOS Device (arm64)** → 메뉴 **Product → Archive**.
    (터미널이 편하면: `flutter build ipa` 후 Transporter 앱으로 업로드.)
 3. 🙋 Organizer 창 → **Distribute App → App Store Connect → Upload**. 몇 분~30분 뒤 App Store Connect에 빌드가 뜬다.
 4. 🙋 수출 규정(암호화) 질문 → "표준 암호화만 사용 / 면제" (HTTPS만 씀).
@@ -74,7 +76,8 @@
 ## 6단계. TestFlight로 한 번 해 보기 (하루)
 
 1. 🙋 TestFlight → 내부 테스터에 본인 추가 → iPhone에 TestFlight 앱으로 설치.
-2. 🙋 확인할 것: 첫 실행 → ATT 팝업 → 온보딩 → 하루 진행 → 광고가 **실제 광고**로 뜨는지(처음 며칠은 광고가 적게 뜰 수 있음, 정상)
+2. 🙋 확인할 것: 첫 실행 → 인트로(시작하기 → 알림 카드 → 답·이름·성별 → 캐스트 소개 "시작하기") → **그 직후** ATT 팝업
+   (설정 → 개인정보 보호 및 보안 → 추적 → "앱의 추적 요청 허용"이 켜져 있어야 뜬다) → 하루 진행 → 광고가 **실제 광고**로 뜨는지(처음 며칠은 광고가 적게 뜰 수 있음, 정상)
    → 설정의 개인정보처리방침 링크가 열리는지.
 3. 🙋 **본인 폰에서 실제 광고를 반복해서 누르지 말 것**(AdMob 계정 정지 사유). 확인용으로는 AdMob → 설정 → **테스트 기기**에 본인 폰을 등록한다.
 
