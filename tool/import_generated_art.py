@@ -9,6 +9,7 @@
    이름을 바꾼다. 이미 그 자리에 그림이 있으면(예전 배치) 기존 그림을 두고 새 그림은 art_src/ 로만 보관한다.
 3. 위기·히든 컷 — `assets/events/<이벤트 id>.png` 는 앱의 장면 삽화 자리 `assets/scenes/` 로 옮긴다.
 4. WebP q90 — **해상도는 그대로** 두고 형식만 바꾼다(PNG 2~3MB → WebP 150~300KB, 눈으로 차이 없음).
+   도장만 512px 로 줄인다(화면에서 80pt 안팎).
 5. 흑역사 도장 — 배경이 칠해져 나온 도장(흰 종이·가짜 체크무늬)은 빨간 잉크만 남기고 투명하게 만든다.
 6. 원본 PNG 는 지우지 않고 art_src/<폴더>/ 로 옮긴다(git 제외).
 
@@ -155,6 +156,8 @@ def main() -> int:
             if alpha:
                 # 제대로 투명하게 나온 도장은 그대로, 배경이 칠해져 나온 도장만 잉크를 뽑는다.
                 im = im if im.mode == "RGBA" and im.getpixel((2, 2))[3] == 0 else stamp_alpha(im)
+                # 도장은 화면에서 80pt 안팎이라 512px 이면 3배 화면에서도 남는다.
+                im = im.convert("RGBA").resize((512, 512), Image.LANCZOS)
                 im.save(dst, "WEBP", quality=QUALITY, method=6, exact=False)
             else:
                 im.convert("RGB").save(dst, "WEBP", quality=QUALITY, method=6)
