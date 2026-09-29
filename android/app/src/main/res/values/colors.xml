@@ -3,6 +3,4 @@
     <!-- 브랜드 색 #C2295A. 적응형 아이콘 배경과 스플래시에 쓴다. -->
     <color name="ic_launcher_background">#C2295A</color>
     <color name="brand">#C2295A</color>
-    <!-- 스플래시 배경. 첫 화면(lib/ui/intro_screen.dart, IntroPalette.base)과 같은 밤색이라 이어져 보인다. -->
-    <color name="intro_bg">#1B1030</color>
 </resources>

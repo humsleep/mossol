@@ -179,20 +179,7 @@ class StartupFailureApp extends StatelessWidget {
 
 class MossolApp extends StatefulWidget {
   final GameController controller;
-
-  /// 켤 때 타이틀 화면([IntroScreen])부터 보여 줄지. 실제 실행(main)은 true,
-  /// 위젯 테스트는 기본값 false 로 바로 홈에서 시작한다.
-  final bool intro;
-
-  const MossolApp({super.key, required this.controller, this.intro = false});
-
-  @override
-  State<MossolApp> createState() => _MossolAppState();
-}
-
-class _MossolAppState extends State<MossolApp> {
-  /// 앱 프로세스가 살아 있는 동안 한 번. 앱을 완전히 껐다 켜면 다시 나온다.
-  late bool _showIntro = widget.intro;
+  const MossolApp({super.key, required this.controller});
 
   @override
   State<MossolApp> createState() => _MossolAppState();
@@ -233,7 +220,6 @@ class _MossolAppState extends State<MossolApp> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = widget.controller;
     return MaterialApp(
       title: '모쏠 탈출기',
       debugShowCheckedModeBanner: false,

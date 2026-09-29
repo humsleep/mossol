@@ -219,7 +219,6 @@ class ShameEntry {
 
 /// 흑역사 한 장. 번호 메달 + 제목 + 종류 라벨, 오른쪽에 비스듬한 도장. 누르면 상세.
 class _ShameCard extends StatelessWidget {
-  final GameController c;
   final int number;
   final ShameEntry entry;
 

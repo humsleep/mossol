@@ -93,7 +93,7 @@ _Tone _toneOf(BuildContext context, AppTone tone) {
 }
 
 /// 스탯별 아이콘. 색만으로 스탯을 구분하지 않기 위해 라벨과 함께 쓴다.
-IconData statIcon(String key) {
+IconData _statIcon(String key) {
   switch (key) {
     case Stat.charm:
       return Icons.auto_awesome;
@@ -463,7 +463,7 @@ class StatBars extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      statIcon(k),
+                      _statIcon(k),
                       size: compact ? 14 : 16,
                       color: t.statColor(k),
                     ),
@@ -577,7 +577,7 @@ extension _MoneyRow on StatBars {
                 child: Row(
                   children: [
                     Icon(
-                      statIcon(Stat.money),
+                      _statIcon(Stat.money),
                       size: compact ? 14 : 16,
                       color: t.statColor(Stat.money),
                     ),
