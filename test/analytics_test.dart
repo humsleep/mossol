@@ -19,6 +19,8 @@ Future<(GameController, RecordingAnalyticsBackend)> recorded() async {
     analytics: Analytics(backend: rec),
   );
   await c.init();
+  // 기본은 두 번째 세션 이후(홈에서 시작). 첫 실행 인트로는 따로 테스트한다.
+  await c.markIntroSeen();
   return (c, rec);
 }
 
@@ -85,10 +87,14 @@ void main() {
     final (c, rec) = await recorded();
     await c.newGame(seed: 5);
     c.state!
+      // 1회차 오프닝(D+1~3)은 하트를 쓰지 않는다. 하트 경제는 그다음부터다.
+      ..day = c.config.firstRunFreeHeartDays + 1
       ..hearts = 0
       ..lastHeartMs = c.nowMs();
     expect(await c.startDay(c.config.actions.first), isFalse);
-    expect(rec.paramsOf(Analytics.heartEmpty).single, {'day': 1});
+    expect(rec.paramsOf(Analytics.heartEmpty).single, {
+      'day': c.config.firstRunFreeHeartDays + 1,
+    });
   });
 
   test('onboarding_done: 첫 판만, 이름은 있다/없다만', () async {

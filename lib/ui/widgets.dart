@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../ads/ad_manager.dart';
@@ -17,6 +18,8 @@ import 'design_system.dart';
 
 import 'photo_card.dart';
 import 'portraits.dart';
+import 'profile_view.dart';
+import 'scene_registry.dart';
 import 'keep_all.dart';
 
 export 'photo_card.dart';
@@ -109,6 +112,9 @@ IconData statIcon(String key) {
   }
 }
 
+/// [_statIcon] 의 공개판. 스탯 설명 시트(stat_guide.dart)가 막대와 같은 아이콘을 쓴다.
+IconData statIcon(String key) => _statIcon(key);
+
 /// 부호 붙인 정수. '+3' / '-2' / '0'.
 String signed(int v) => v > 0 ? '+$v' : '$v';
 
@@ -123,7 +129,17 @@ String signed(int v) => v > 0 ? '+$v' : '$v';
 ///
 /// 채움 방향은 `Directionality` 를 따른다. 값이 오르면 나쁜 스탯
 /// (스트레스)은 rtl 로 감싸 오른쪽에서 자라게 해 형태로 구분한다.
-class AppProgressBar extends StatelessWidget {
+///
+/// **채움은 흐른다, 튀지 않는다.** 예전에는 맨 `FractionallySizedBox` 라서 값을
+/// 미는 쪽의 박자가 그대로 보였다 — 미니게임의 `Timer.periodic(100ms)` 는
+/// **초당 열 번 계단처럼** 튀었다(docs/review/11_polish_verdict.md 15위).
+/// 그래서 막대가 스스로 새 값까지 흐른다. 흐르는 시간은 **값이 바뀐 간격**이다:
+/// 100ms 마다 밀면 100ms 동안, 1초마다 밀면 1초 동안 흐르므로 어느 박자에서도
+/// 이음매가 없고 뒤처지지도 않는다. 부모가 이미 프레임마다 값을 밀고 있으면
+/// (간격 ≤ [liveInterval]) 겹쳐 돌리지 않고 그대로 따라간다 — 겹치면 막대가
+/// 부모보다 늦게 도착한다(`timing_games.dart` 의 "길게 누르기" 막대).
+/// 상한은 [AppMotion.dGaugeMax], 동작 줄이기면 흐르지 않고 곧바로 새 값이다(§1.10).
+class AppProgressBar extends StatefulWidget {
   final double value;
   final String semanticLabel;
   final double height;
@@ -139,27 +155,87 @@ class AppProgressBar extends StatelessWidget {
     this.track,
   });
 
+  /// 이보다 촘촘히 값이 바뀌면 "부모가 프레임마다 민다" 로 본다(60fps ≈ 16.7ms).
+  static const Duration liveInterval = Duration(milliseconds: 34);
+
+  @override
+  State<AppProgressBar> createState() => _AppProgressBarState();
+}
+
+class _AppProgressBarState extends State<AppProgressBar>
+    with SingleTickerProviderStateMixin {
+  static double _clamped(double v) =>
+      v.isNaN ? 0.0 : v.clamp(0.0, 1.0).toDouble();
+
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    value: _clamped(widget.value),
+  );
+
+  /// 값이 마지막으로 바뀐 프레임의 시각. 다음 변화까지의 간격이 흐르는 시간이다.
+  Duration? _lastChange;
+
+  /// 지금 프레임의 시각. 프레임 밖에서 다시 그리는 경우도 있어서(테스트가
+  /// `pumpWidget` 을 두 번 부를 때) 그때는 null — "간격을 모른다" 로 다룬다.
+  static Duration? _frameNow() {
+    final b = SchedulerBinding.instance;
+    return b.schedulerPhase == SchedulerPhase.idle
+        ? null
+        : b.currentFrameTimeStamp;
+  }
+
+  @override
+  void didUpdateWidget(AppProgressBar old) {
+    super.didUpdateWidget(old);
+    if (old.value == widget.value) return;
+    final target = _clamped(widget.value);
+    final now = _frameNow();
+    final gap = (now == null || _lastChange == null)
+        ? AppMotion.dBase
+        : now - _lastChange!;
+    if (now != null) _lastChange = now;
+    if (AppMotion.reduced(context) || gap <= AppProgressBar.liveInterval) {
+      _c.value = target;
+      return;
+    }
+    _c.animateTo(
+      target,
+      duration: gap > AppMotion.dGaugeMax ? AppMotion.dGaugeMax : gap,
+      curve: AppMotion.curve(context, AppMotion.gauge),
+    );
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final v = value.isNaN ? 0.0 : value.clamp(0.0, 1.0);
+    // 스크린리더에게는 지금 값(목표)을 그대로 읽어 준다 — 흐르는 중간값이 아니다.
+    final v = _clamped(widget.value);
     return Semantics(
-      label: semanticLabel,
+      label: widget.semanticLabel,
       value: '${(v * 100).round()}%',
       child: ExcludeSemantics(
         child: SizedBox(
-          height: height,
+          height: widget.height,
           child: ClipRRect(
             borderRadius: AppRadius.rXs,
             child: ColoredBox(
-              color: track ?? context.tokens.gaugeTrack,
+              color: widget.track ?? context.tokens.gaugeTrack,
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: FractionallySizedBox(
-                  widthFactor: v,
-                  heightFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: fill ?? context.scheme.primary,
+                child: AnimatedBuilder(
+                  animation: _c,
+                  builder: (context, _) => FractionallySizedBox(
+                    widthFactor: _c.value,
+                    heightFactor: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: widget.fill ?? context.scheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -168,6 +244,98 @@ class AppProgressBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 100일 마감 카운트다운. 하루 정산(§2.4) 맨 위에 한 덩어리로 선다.
+///
+/// **왜 있는가.** 이 게임의 전제는 100일이고 제목도 `100일 연애 시뮬레이션` 인데,
+/// `D-xx` 를 말해 주는 건 대사뿐이었다. 100일 실측에서 카운트다운이 화면에 뜬 날은
+/// **4~5일**이다(D+1, D+7, 그다음은 빨라야 D+24 — docs/review/11_story_verdict.md §2·4-3).
+/// 정산은 100일 중 100일 지나가는 화면이라, 여기 한 덩어리를 두면 그대로 100일이 된다.
+///
+/// **왜 이 모양인가.** 대본이 쓰는 축척을 그대로 쓴다 — `D-(총일수 − 오늘)`. 대본의
+/// 두 기준점이 이 식이다(`m_week1` 은 D+7 에 "오늘로 D-93", `d_bet_settle` 은
+/// 90일째에 "오늘부로 D-10"). 화면이 대사와 다른 숫자를 말하면 둘 다 못 믿는다.
+/// 숫자만으로는 처음 보는 사람에게 `D-93` 이 아무 뜻이 없으므로 아래에 우리말 한 줄을
+/// 붙이고, 마지막 10일은 **아이콘 모양 + 색 + 낱말** 셋이 같이 바뀐다(§4.2).
+/// 정산의 주인공은 여전히 오늘 바뀐 수치다 — 그래서 카드가 아니라 앨범 수집 진행도
+/// (§2.6)와 같은 맨 블록이고, 숫자는 `headlineSmall` 에서 멈춘다.
+class DeadlineBand extends StatelessWidget {
+  /// 오늘. 정산 화면이 `D+N 정산` 이라고 부르는 그 N.
+  final int day;
+
+  /// 회차 전체 길이(`config.totalDays`, 100).
+  final int totalDays;
+
+  const DeadlineBand({
+    super.key,
+    required this.day,
+    required this.totalDays,
+  });
+
+  /// 내기의 이름. 대본이 부르는 이름과 같다(`m01`, `d_open_bet`).
+  static const title = '100일 프로젝트';
+
+  /// 여기서부터 막대와 낱말이 위험 쪽으로 넘어간다. 대본의 `내기 정산 D-10` 과 같은 선.
+  static const dangerDays = 10;
+
+  /// 남은 날. 오늘은 세지 않는다 — 오늘이 마지막이면 0 이다.
+  static int remaining(int day, int totalDays) =>
+      (totalDays - day).clamp(0, totalDays);
+
+  static String label(int left) => 'D-$left';
+
+  static String note(int left) => left == 0 ? '오늘이 마지막 날' : '$left일 남았다';
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final left = remaining(day, totalDays);
+    final urgent = left <= dangerDays;
+    final accent = urgent ? t.danger : context.scheme.primary;
+    final noteText = note(left);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              // 모래가 아래로 다 내려간 모양. 색을 못 보는 사람에게도 남은 양이 보인다.
+              urgent ? Icons.hourglass_bottom : Icons.hourglass_empty,
+              size: 20,
+              color: accent,
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                keepAll(title),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.titleMedium,
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Text(
+              label(left),
+              maxLines: 1,
+              style: AppTypography.tabular(
+                context.text.headlineSmall ?? const TextStyle(),
+              ).copyWith(color: accent),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.sm),
+        AppProgressBar(
+          value: totalDays <= 0 ? 0 : (day / totalDays).clamp(0.0, 1.0),
+          fill: accent,
+          height: AppSpace.xs + 2,
+          semanticLabel: '$title $day일째, $noteText',
+        ),
+        const SizedBox(height: AppSpace.xs),
+        Text(keepAll(noteText), style: context.text.bodySmall),
+      ],
     );
   }
 }
@@ -395,7 +563,7 @@ extension _MoneyRow on StatBars {
 
     return Semantics(
       container: true,
-      label: '$label $value',
+      label: '$label ${Stat.won(value)}',
       value: hasDelta ? signed(d) : null,
       child: ExcludeSemantics(
         child: Padding(
@@ -426,11 +594,9 @@ extension _MoneyRow on StatBars {
                 ),
               ),
               const SizedBox(width: AppSpace.sm),
-              // 막대 자리는 비운다. 트랙도 그리지 않는다.
-              const Expanded(child: SizedBox()),
-              const SizedBox(width: AppSpace.sm),
-              SizedBox(
-                width: valueW,
+              // 막대 자리는 비운다. 트랙도 그리지 않는다 — 대신 그 폭을 숫자가 쓴다.
+              // "72,000원" 은 다른 스탯의 valueW(40~88)에 들어가지 않는다.
+              Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -443,7 +609,7 @@ extension _MoneyRow on StatBars {
                       const SizedBox(width: AppSpace.xxs),
                       Flexible(
                         child: Text(
-                          signed(d),
+                          Stat.wonDelta(d),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: t.numericMedium.copyWith(
@@ -455,7 +621,7 @@ extension _MoneyRow on StatBars {
                     ],
                     // 막대가 없는 만큼 숫자가 정보의 전부라 한 단 크게(numericMedium).
                     Text(
-                      '$value',
+                      Stat.won(value),
                       maxLines: 1,
                       textAlign: TextAlign.right,
                       style: t.numericMedium.copyWith(
@@ -696,15 +862,26 @@ class ComboBadge extends StatelessWidget {
 // 4. 배너 광고 자리
 // ---------------------------------------------------------------------------
 
+/// 배너가 붙는 가장자리. `top` 이 기본 자리(DESIGN_SYSTEM §2 공통), `bottom` 은 예전 API 호환.
+enum BannerEdge { top, bottom }
+
 /// 배너 슬롯. 광고를 지원하지 않는 환경에서는 빈 공간도 차지하지 않는다.
 ///
 /// 로드 로직과 재시도 백오프는 손대지 않는다. 시각만: 광고가 콘텐츠로 보이지
-/// 않도록 위쪽에 경계선을 두고, 위 콘텐츠(버튼)와 8 이상 떨어뜨린다.
+/// 않도록 본문 쪽에 경계선을 두고, 본문과 8 이상 떨어뜨린다. 로드되는 순간 본문이
+/// 66pt 밀리므로 `AnimatedSize` 로 덜컥임을 줄인다(축소 모션에선 즉시).
 class BannerSlot extends StatefulWidget {
-  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때).
+  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때, AppBar 아래).
   final bool safeArea;
 
-  const BannerSlot({super.key, this.safeArea = true});
+  /// 어느 가장자리에 붙는지. 기본은 `bottom`(기존 호출 호환). 화면은 `top` 을 쓴다.
+  final BannerEdge edge;
+
+  const BannerSlot({
+    super.key,
+    this.safeArea = true,
+    this.edge = BannerEdge.bottom,
+  });
 
   @override
   State<BannerSlot> createState() => _BannerSlotState();
@@ -767,14 +944,21 @@ class _BannerSlotState extends State<BannerSlot> {
   @override
   Widget build(BuildContext context) {
     final ad = _ad;
+    final top = widget.edge == BannerEdge.top;
     // 광고가 없으면 높이 0. 여백도 경계선도 만들지 않는다.
-    if (ad == null || !_loaded) return const SizedBox.shrink();
-
-    return BannerFrame(
-      width: ad.size.width.toDouble(),
-      height: ad.size.height.toDouble(),
-      safeArea: widget.safeArea,
-      child: AdWidget(ad: ad),
+    return AnimatedSize(
+      duration: AppMotion.base(context),
+      curve: AppMotion.curve(context),
+      alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+      child: ad == null || !_loaded
+          ? const SizedBox.shrink()
+          : BannerFrame(
+              width: ad.size.width.toDouble(),
+              height: ad.size.height.toDouble(),
+              safeArea: widget.safeArea,
+              edge: widget.edge,
+              child: AdWidget(ad: ad),
+            ),
     );
   }
 }
@@ -782,11 +966,15 @@ class _BannerSlotState extends State<BannerSlot> {
 /// 배너 한 장의 틀. 광고 SDK 와 분리해 두어 위젯 테스트로 배치를 검증한다.
 ///
 /// `Scaffold.bottomNavigationBar` 는 세로로 느슨한 제약(0 ~ 화면 높이)을 준다.
-/// 여기서 세로로 늘어나는 위젯을 쓰면 본문이 0 높이로 밀려난다.
+/// 여기서 세로로 늘어나는 위젯을 쓰면 본문이 0 높이로 밀려난다. `Column` 안(`top`)에서는
+/// `Expanded` 가 본문을 잡으므로 이 틀은 자기 높이(광고 + `sm`×2 + 경계선)만 차지한다.
 class BannerFrame extends StatelessWidget {
   final double width;
   final double height;
   final bool safeArea;
+
+  /// `top` 이면 경계선과 바깥 여백이 **아래**(본문 쪽)에 붙는다. 배경·안쪽 여백은 같다.
+  final BannerEdge edge;
   final Widget child;
 
   const BannerFrame({
@@ -795,11 +983,13 @@ class BannerFrame extends StatelessWidget {
     required this.height,
     required this.child,
     this.safeArea = true,
+    this.edge = BannerEdge.bottom,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final top = edge == BannerEdge.top;
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Center(
@@ -807,19 +997,23 @@ class BannerFrame extends StatelessWidget {
         child: SizedBox(width: width, height: height, child: child),
       ),
     );
-    if (safeArea) content = SafeArea(top: false, child: content);
+    if (safeArea) {
+      // 붙은 가장자리 쪽 인셋만 먹는다.
+      content = SafeArea(top: top, bottom: !top, child: content);
+    }
 
+    final line = BorderSide(
+      color: scheme.outlineVariant,
+      width: AppBorderWidth.hairline,
+    );
     return Container(
-      // 위 콘텐츠(버튼)와의 간격. 경계선 위로 8, 아래로 8.
-      margin: const EdgeInsets.only(top: AppSpace.sm),
+      // 본문과의 간격. 경계선 바깥으로 8, 안쪽으로 8.
+      margin: top
+          ? const EdgeInsets.only(bottom: AppSpace.sm)
+          : const EdgeInsets.only(top: AppSpace.sm),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
-        border: Border(
-          top: BorderSide(
-            color: scheme.outlineVariant,
-            width: AppBorderWidth.hairline,
-          ),
-        ),
+        border: top ? Border(bottom: line) : Border(top: line),
       ),
       child: content,
     );
@@ -830,27 +1024,50 @@ class BannerFrame extends StatelessWidget {
 // 5. 채팅 말풍선
 // ---------------------------------------------------------------------------
 
-/// 채팅 한 줄. `who` 에 따라 네 가지 위계로 갈린다.
+/// 말풍선 옆 메타 열. [time] 은 `'오후 9:14'`(묶음 마지막 줄만), [read] 는 내 말에 상대가
+/// 읽었다는 낱말 `읽음`(숫자 배지 금지 — §4.3). 둘 다 없으면 열을 그리지 않는다.
+@immutable
+class ChatMeta {
+  final String? time;
+  final bool read;
+  const ChatMeta({this.time, this.read = false});
+
+  bool get isEmpty => time == null && !read;
+}
+
+/// 채팅 한 줄. `who` 에 따라 네 가지 위계로 갈린다(DESIGN_SYSTEM §2.3).
 ///
-/// - `them` — 흰 종이 카드. 1px 테두리, 왼쪽 정렬, 묶음 첫 줄에만 이름표.
-/// - `me` — 로즈 단색. 테두리 없음, 오른쪽 정렬.
+/// - `them` — 3열: 아바타(묶음 첫 줄만, 그 뒤는 같은 폭 빈 칸) → `sm` → 이름 + 흰 종이
+///   카드(1px 테두리) → `xs` → 메타(시각·읽음, 말풍선 아래 끝에 정렬).
+/// - `me` — 좌우 반전, 아바타 없음. 로즈 단색, 테두리 없음.
 /// - `narr` — 말풍선이 아니다. 좌측 세로 선 + 이탤릭 조판으로 물러난다.
 /// - `sys` — 가운데 중립 pill.
 ///
 /// 꼬리는 삼각형을 그리지 않고 묶음 **마지막 줄의 모서리 하나만** 깎는다
-/// (트레이드드레스 회피). 등장은 6포인트 상승 + 페이드 한 번, 220ms.
+/// (트레이드드레스 회피). 등장은 상승 + 페이드 한 번, 220ms — 내 말은 12pt, 상대는 6pt
+/// (보낸 쪽이 더 "던진다", docs/overhaul/04_micro_interactions.md §2.5).
 class ChatBubble extends StatelessWidget {
   final Line line;
   final String partnerName;
 
-  /// 상대 이름·점에 쓸 캐릭터 강조색. null 이면 tokens.neutralAccent.
+  /// 상대 이름·아바타 테두리에 쓸 캐릭터 강조색. null 이면 tokens.neutralAccent.
+  /// 말풍선 배경에는 쓰지 않는다.
   final CharacterAccent? accent;
 
-  /// 같은 사람이 연속으로 말하는 묶음의 첫 줄인지. 이름 표시 여부.
+  /// 같은 사람이 연속으로 말하는 묶음의 첫 줄인지. 이름·아바타 표시 여부.
   final bool isFirstOfGroup;
 
   /// 묶음의 마지막 줄인지. 꼬리(각진 모서리) 여부.
   final bool isLastOfGroup;
+
+  /// 아바타 초상화를 찾을 캐릭터 id. null 이면 이니셜(NPC).
+  final String? characterId;
+
+  /// 묶음 첫 줄에 아바타를 그릴지. false 면 같은 폭의 빈 칸(연속 줄).
+  final bool showAvatar;
+
+  /// 메타 열. null 이면 빈 칸. (time: '오후 9:14', read: true → '읽음')
+  final ChatMeta? meta;
 
   const ChatBubble({
     super.key,
@@ -859,7 +1076,15 @@ class ChatBubble extends StatelessWidget {
     this.accent,
     this.isFirstOfGroup = true,
     this.isLastOfGroup = true,
+    this.characterId,
+    this.showAvatar = true,
+    this.meta,
   });
+
+  /// `'모르는 번호'`·`'알 수 없는 사람'` 처럼 정체 없는 화자. 첫 글자 `모` 가 어색하므로
+  /// 아바타는 사람 실루엣([CharacterAvatar.mystery])으로 그린다(03 §1.2).
+  static bool isMysteryName(String name) =>
+      name.startsWith('모르는') || name.startsWith('알 수 없는');
 
   @override
   Widget build(BuildContext context) {
@@ -942,8 +1167,91 @@ class ChatBubble extends StatelessWidget {
     final name = line.name ?? partnerName;
     final a = accent ?? t.neutralAccent;
     final showName = !me && isFirstOfGroup && name.isNotEmpty;
+    final m = meta;
+    final hasMeta = m != null && !m.isEmpty;
+
+    // 본문: 사진 → xs → 글 말풍선. 메타 열은 이 묶음의 아래 끝에 붙는다.
+    final content = Column(
+      crossAxisAlignment: me
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (line.photo case final photo?) ...[
+          PhotoBubble(photo: photo, accent: a),
+          if (line.text.isNotEmpty) const SizedBox(height: AppSpace.xs),
+        ],
+        if (line.photo == null || line.text.isNotEmpty)
+          ConstrainedBox(
+            // 최대 폭은 화면 기준 72%. 메타 열이 있으면 Flexible 이 그만큼 더 줄인다.
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+            ),
+            child: Container(
+              padding: AppInsets.bubble,
+              decoration: BoxDecoration(
+                color: me ? t.bubbleMine : t.bubbleTheirs,
+                borderRadius: AppRadius.bubble(mine: me, tail: isLastOfGroup),
+                // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
+                border: me
+                    ? null
+                    : Border.all(
+                        color: t.bubbleBorder,
+                        width: AppBorderWidth.hairline,
+                      ),
+              ),
+              child: Text(
+                keepAll(line.text),
+                style: t.bubbleText.copyWith(
+                  color: me ? t.onBubbleMine : t.onBubbleTheirs,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    // 본문 + 메타 열. 메타는 말풍선 아래 끝에 맞춘다.
+    final withMeta = Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: me ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (me && hasMeta) ...[
+          _MetaColumn(meta: m, mine: true),
+          const SizedBox(width: AppSpace.xs),
+        ],
+        Flexible(child: content),
+        if (!me && hasMeta) ...[
+          const SizedBox(width: AppSpace.xs),
+          _MetaColumn(meta: m, mine: false),
+        ],
+      ],
+    );
+
+    final body = Column(
+      crossAxisAlignment: me
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showName)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AppSpace.xs,
+              bottom: AppSpace.xs,
+            ),
+            child: Text(
+              name,
+              style: context.text.labelSmall?.copyWith(color: a.base),
+            ),
+          ),
+        withMeta,
+      ],
+    );
 
     return _Entrance(
+      rise: me ? AppSpace.md : AppSpace.xs + 2,
       child: Padding(
         padding: EdgeInsets.only(
           left: AppSpace.md,
@@ -951,71 +1259,333 @@ class ChatBubble extends StatelessWidget {
           // 사람이 바뀌면 md, 같은 사람이 이어 말하면 xs.
           top: isFirstOfGroup ? AppSpace.md : AppSpace.xs,
         ),
-        child: Column(
-          crossAxisAlignment: me
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            if (showName)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpace.xs,
-                  bottom: AppSpace.xs,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: AppSpace.xs + 2,
-                      height: AppSpace.xs + 2,
-                      decoration: BoxDecoration(
-                        color: a.base,
-                        borderRadius: AppRadius.rPill,
-                      ),
-                      margin: const EdgeInsets.only(right: AppSpace.xs),
-                    ),
-                    Text(
-                      name,
-                      style: context.text.labelSmall?.copyWith(color: a.base),
-                    ),
-                  ],
-                ),
+        child: me
+            ? body
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ChatAvatarSlot(
+                    name: name,
+                    characterId: characterId,
+                    accent: a,
+                    show: showAvatar && isFirstOfGroup,
+                  ),
+                  const SizedBox(width: ChatAvatarSlot.gap),
+                  Expanded(child: body),
+                ],
               ),
-            if (line.photo case final photo?) ...[
-              PhotoBubble(photo: photo, accent: a),
-              if (line.text.isNotEmpty) const SizedBox(height: AppSpace.xs),
-            ],
-            if (line.photo == null || line.text.isNotEmpty)
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-                ),
-                child: Container(
-                  padding: AppInsets.bubble,
-                  decoration: BoxDecoration(
-                    color: me ? t.bubbleMine : t.bubbleTheirs,
-                    borderRadius: AppRadius.bubble(
-                      mine: me,
-                      tail: isLastOfGroup,
-                    ),
-                    // 상대 말풍선은 종이 카드처럼 실선 테두리를 둔다.
-                    border: me
-                        ? null
-                        : Border.all(
-                            color: t.bubbleBorder,
-                            width: AppBorderWidth.hairline,
-                          ),
+      ),
+    );
+  }
+}
+
+/// 상대 줄의 아바타 열. [show] 면 `CharacterAvatar(avatarMd)`, 아니면 같은 폭의 빈 칸 —
+/// 묶음 둘째 줄부터 말풍선 왼쪽 선이 흔들리지 않게 폭만 차지한다. 이름 Text 가 이미
+/// 화자를 읽어 주므로 아바타는 스크린리더에서 뺀다.
+///
+/// 프로필을 열 수 있는 상대([ProfileScope])면 누르는 순간 초상화가 전체 화면으로
+/// 날아오른다(§2.15). 그때만 스크린리더에 버튼 하나가 다시 생긴다 —
+/// [PortraitTapTarget] 이 라벨을 붙인다. 열 수 없는 상대면 지금 화면 그대로다.
+///
+/// 아바타는 40 인데 탭 대상은 44 여야 한다(§4.2). 그래서 **열의 상자만** [width] 44 로
+/// 잡고 아바타를 왼쪽 위에 붙인 뒤, 뒤따르는 간격을 [gap] 4 로 줄였다. 둘을 더한
+/// [indent] 48 은 예전(40 + `sm` 8)과 같아서 말풍선 왼쪽 선은 1px 도 움직이지 않는다.
+class ChatAvatarSlot extends StatelessWidget {
+  final String name;
+  final String? characterId;
+  final CharacterAccent? accent;
+  final bool show;
+  const ChatAvatarSlot({
+    super.key,
+    required this.name,
+    required this.characterId,
+    required this.accent,
+    required this.show,
+  });
+
+  /// 아바타 열의 폭(= 탭 대상 한 변). 그림은 여전히 [AppSize.avatarMd] 다.
+  static const double width = AppSpace.minTouch;
+
+  /// 아바타 열과 말풍선 사이. 보이는 간격은 아바타 오른쪽 끝부터 재면 `sm` 그대로다.
+  static const double gap = AppSpace.xs;
+
+  /// 말풍선 왼쪽 선까지의 들여쓰기(스티커도 이 값에 맞춘다).
+  static const double indent = width + gap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return const SizedBox(width: width);
+    final mystery = ChatBubble.isMysteryName(name);
+    return PortraitTapTarget(
+      characterId: characterId,
+      name: name,
+      child: SizedBox(
+        width: width,
+        height: width,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: ExcludeSemantics(
+            child: CharacterAvatar(
+              name: name,
+              characterId: characterId,
+              accent: mystery ? null : accent,
+              mystery: mystery,
+              size: AppSize.avatarMd,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 메타 열. 시각은 스크린리더에 소음이라 뺀다. 읽음은 낱말 하나만 남긴다.
+class _MetaColumn extends StatelessWidget {
+  final ChatMeta meta;
+  final bool mine;
+  const _MetaColumn({required this.meta, required this.mine});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = context.text.labelSmall ?? const TextStyle();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        // 대비 4.5:1 을 지키려고 systemLine 이 아니라 onSurfaceVariant(§4.2).
+        if (meta.read)
+          Text(
+            '읽음',
+            style: base.copyWith(color: context.scheme.onSurfaceVariant),
+          ),
+        if (meta.time case final time?)
+          ExcludeSemantics(
+            child: Text(
+              time,
+              style: AppTypography.tabular(
+                base.copyWith(color: context.scheme.onSurfaceVariant),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// 대화 첫 항목의 구분줄 `'D+N · 제목'`. `sys` pill 과 같은 모양, 위 `sm` 아래 `md`.
+/// 이벤트 제목은 여기 한 번만 나온다(AppBar 에서 내려왔다).
+class ChatDivider extends StatelessWidget {
+  final String text;
+  const ChatDivider({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.sm, bottom: AppSpace.md),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.md,
+            vertical: AppSpace.xs + 2,
+          ),
+          decoration: BoxDecoration(
+            color: context.scheme.surfaceContainerHigh,
+            borderRadius: AppRadius.rPill,
+          ),
+          child: Text(
+            keepAll(text),
+            textAlign: TextAlign.center,
+            // 사건(날짜·제목)이라 읽혀야 한다 — _MissedCall 과 같은 이유로 2차 글자색.
+            style: context.text.labelSmall?.copyWith(
+              color: context.scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 스티커 한 장(03 §1.6, 06 §1). `assets/stickers/<characterId>_<emotion>.webp`,
+/// 배경·테두리 없음, `AppSize.sticker` 정사각.
+///
+/// 에셋이 없으면 **아무것도 그리지 않는다**(깨진 상자 금지) — 어떤 파일이 있는지는
+/// [resolve] 가 답하고, 기본값은 [SceneRegistry] 다. 그림이 하나도 없는 지금은
+/// 늘 null 이라 이 자리는 빈 줄조차 남기지 않는다.
+///
+/// 상대 줄이면 아바타 열만큼 들여써 말풍선과 왼쪽 선을 맞춘다. 등장은 팝인
+/// ([AppMotion.base] + [AppMotion.emphasized]), 동작 줄이기면 곧바로 제자리.
+class StickerBubble extends StatelessWidget {
+  final String characterId;
+  final String emotion;
+  final bool mine;
+
+  /// 스크린리더용 화자 이름. 있으면 "<이름> 스티커: 기쁨" 으로 읽는다.
+  final String? name;
+
+  const StickerBubble({
+    super.key,
+    required this.characterId,
+    required this.emotion,
+    this.mine = false,
+    this.name,
+  });
+
+  /// 스티커 에셋 경로. 없으면 null. 기본값은 시작할 때 읽은 매니페스트 목록이다.
+  static String? Function(String characterId, String emotion) resolve =
+      (id, emotion) => SceneImages.forSticker('${id}_$emotion');
+
+  /// 말풍선 왼쪽 선. 아바타 열 + 간격([ChatAvatarSlot.indent] 48), 바깥 여백 md 는
+  /// [ChatBubble] 과 같다.
+  static const double indent = ChatAvatarSlot.indent;
+
+  @override
+  Widget build(BuildContext context) {
+    return SceneScope(
+      builder: (context, _) {
+        final path = resolve(characterId, emotion);
+        if (path == null) return const SizedBox.shrink();
+        final label = switch ((name, Sticker.labels[emotion])) {
+          (final n?, final e?) => '$n 스티커: $e',
+          (final n?, _) => '$n 스티커',
+          (_, final e?) => '스티커: $e',
+          _ => '스티커',
+        };
+        return Padding(
+          padding: EdgeInsets.only(
+            left: mine ? AppSpace.md : AppSpace.md + indent,
+            right: AppSpace.md,
+            top: AppSpace.xs,
+          ),
+          child: Align(
+            alignment: mine
+                ? AlignmentDirectional.centerEnd
+                : AlignmentDirectional.centerStart,
+            child: _StickerPop(
+              child: Image.asset(
+                path,
+                bundle: SceneRegistry.current.bundle,
+                scale: 1,
+                cacheWidth:
+                    (AppSize.sticker * MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
+                width: AppSize.sticker,
+                height: AppSize.sticker,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+                semanticLabel: label,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, sync) =>
+                    frame == null && !sync ? const SizedBox.shrink() : child,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 스티커 팝인. 동작 줄이기면 애니메이션 없이 제자리에서 뜬다.
+class _StickerPop extends StatelessWidget {
+  final Widget child;
+  const _StickerPop({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = AppMotion.base(context);
+    if (d == Duration.zero) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.8, end: 1),
+      duration: d,
+      curve: AppMotion.curve(context, AppMotion.emphasized),
+      builder: (context, v, child) => Transform.scale(scale: v, child: child),
+      child: child,
+    );
+  }
+}
+
+/// 타이핑 중 표시. 다음 줄 화자의 아바타(묶음 첫 줄 규칙: 직전 줄이 같은 화자면 빈 칸) +
+/// 상대 말풍선 껍데기 안 `'…'` 한 개.
+///
+/// 문구 `'…'` 는 정확히 **한 개의 Text** 로 고정이다(§4.1). 깜빡이는 반복 애니메이션은
+/// 넣지 않는다 — 읽는 흐름을 방해하고 동작 줄이기 설정과도 충돌한다. "쓰다 지움"
+/// (사라졌다 다시 뜸)은 화면이 이 위젯의 불투명도로 연출한다(04 §2.3).
+class TypingIndicator extends StatelessWidget {
+  final String name;
+  final String? characterId;
+  final CharacterAccent? accent;
+
+  /// 묶음 첫 줄인지. true 면 아바타 + 이름, false 면 빈 칸만.
+  final bool showAvatar;
+
+  const TypingIndicator({
+    super.key,
+    this.name = '',
+    this.characterId,
+    this.accent,
+    this.showAvatar = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final a = accent ?? t.neutralAccent;
+    final showName = showAvatar && name.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpace.md,
+        right: AppSpace.md,
+        top: AppSpace.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChatAvatarSlot(
+            name: name,
+            characterId: characterId,
+            accent: a,
+            show: showAvatar,
+          ),
+          const SizedBox(width: ChatAvatarSlot.gap),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showName)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppSpace.xs,
+                    bottom: AppSpace.xs,
                   ),
                   child: Text(
-                    keepAll(line.text),
-                    style: t.bubbleText.copyWith(
-                      color: me ? t.onBubbleMine : t.onBubbleTheirs,
-                    ),
+                    name,
+                    style: context.text.labelSmall?.copyWith(color: a.base),
+                  ),
+                ),
+              Container(
+                padding: AppInsets.bubble,
+                decoration: BoxDecoration(
+                  color: t.bubbleTheirs,
+                  borderRadius: AppRadius.bubble(mine: false),
+                  border: Border.all(
+                    color: t.bubbleBorder,
+                    width: AppBorderWidth.hairline,
+                  ),
+                ),
+                child: Text(
+                  '…',
+                  style: context.text.titleMedium?.copyWith(
+                    color: t.systemLine,
                   ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1023,11 +1593,14 @@ class ChatBubble extends StatelessWidget {
 
 // 사진 메시지 카드(PhotoBubble · photoIcons · photoIconFor)는 photo_card.dart.
 
-/// 한 번만 재생되는 등장 연출. 읽는 흐름을 끊지 않도록 6포인트 상승 + 페이드만.
+/// 한 번만 재생되는 등장 연출. 읽는 흐름을 끊지 않도록 [rise]pt 상승 + 페이드만.
 /// 동작 줄이기가 켜져 있으면 즉시 최종 상태로 둔다.
 class _Entrance extends StatefulWidget {
   final Widget child;
-  const _Entrance({required this.child});
+
+  /// 올라오는 거리. 상대 6pt, 내 말 12pt.
+  final double rise;
+  const _Entrance({required this.child, this.rise = AppSpace.xs + 2});
 
   @override
   State<_Entrance> createState() => _EntranceState();
@@ -1069,7 +1642,7 @@ class _EntranceState extends State<_Entrance>
     builder: (context, child) => Opacity(
       opacity: _a.value.clamp(0.0, 1.0),
       child: Transform.translate(
-        offset: Offset(0, (1 - _a.value) * (AppSpace.xs + 2)),
+        offset: Offset(0, (1 - _a.value) * widget.rise),
         child: child,
       ),
     ),
@@ -1766,6 +2339,8 @@ Future<T?> showAppDialog<T>(
 /// (`accentFor` 가 돌려준 강조색이면 찾힌다. 예전 호출부 호환).
 ///
 /// [mystery] 는 히든 미해금. 그림이 있어도 글자 대신 사람 실루엣, 배경은 중립 표면(스포일러 방지).
+///
+/// 크기는 §1.11 의 `avatarSm/Md/Lg/Xl` 네 값과, 프로필 크게 보기의 `avatarHero` 하나뿐이다.
 class CharacterAvatar extends StatelessWidget {
   final String name;
   final CharacterAccent? accent;
@@ -1773,7 +2348,8 @@ class CharacterAvatar extends StatelessWidget {
   /// 초상화를 찾을 캐릭터 id. null 이면 [accent] 로 찾는다.
   final String? characterId;
 
-  /// 32 · 40 · 56 · 72 를 쓴다(72 는 캐스트 소개 카드).
+  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)와 `avatarHero`(200)만 쓴다.
+  /// 72 는 캐스트 소개 카드, 200 은 프로필 크게 보기(§2.15).
   final double size;
   final bool mystery;
 
@@ -1782,7 +2358,7 @@ class CharacterAvatar extends StatelessWidget {
     required this.name,
     this.accent,
     this.characterId,
-    this.size = 40,
+    this.size = AppSize.avatarMd,
     this.mystery = false,
   });
 
@@ -1802,9 +2378,11 @@ class CharacterAvatar extends StatelessWidget {
     final a = accent ?? t.neutralAccent;
     final initial = name.isEmpty ? '' : name.characters.first;
     final style =
-        (size <= 32
+        (size <= AppSize.avatarSm
                 ? context.text.labelMedium
-                : size >= 56
+                : size >= AppSize.avatarHero
+                ? context.text.displayMedium
+                : size >= AppSize.avatarLg
                 ? context.text.titleLarge
                 : context.text.labelLarge)
             ?.copyWith(fontWeight: FontWeight.w700, color: a.onContainer);
@@ -2141,7 +2719,7 @@ class ContinueCard extends StatelessWidget {
                     name: topName!,
                     characterId: topCharacterId,
                     accent: topAccent,
-                    size: 32,
+                    size: AppSize.avatarSm,
                   ),
                   const SizedBox(width: AppSpace.sm),
                   Expanded(
@@ -2198,7 +2776,9 @@ class PreferenceCard extends StatelessWidget {
   /// 아바타 [n]개가 폭 [width] 한 줄에 들어가는 가장 큰 크기(40, 안 되면 32).
   static double avatarSizeFor(int n, double width) {
     double row(double s) => n * s + (n - 1) * AppSpace.sm;
-    return n <= 0 || row(40) <= width ? 40 : 32;
+    return n <= 0 || row(AppSize.avatarMd) <= width
+        ? AppSize.avatarMd
+        : AppSize.avatarSm;
   }
 
   @override
@@ -2508,7 +3088,8 @@ class CastIntroCard extends StatelessWidget {
 
   /// 카드 안쪽 폭 [width] 에 맞는 아바타 크기. 초상화 얼굴이 보이게 넉넉하면 72,
   /// 좁은 화면(320pt 폰, 안쪽 폭 약 248)은 본문 폭을 지키려 56. 그림 유무와 무관하다.
-  static double avatarSizeFor(double width) => width >= 280 ? 72 : 56;
+  static double avatarSizeFor(double width) =>
+      width >= 280 ? AppSize.avatarXl : AppSize.avatarLg;
 
   @override
   Widget build(BuildContext context) {
@@ -2663,7 +3244,7 @@ class _SignalLine extends StatelessWidget {
           name: name,
           characterId: characterId,
           accent: accent,
-          size: 32,
+          size: AppSize.avatarSm,
         ),
         const SizedBox(width: AppSpace.sm),
         Expanded(
@@ -2781,7 +3362,7 @@ class RelationShiftCard extends StatelessWidget {
               name: name,
               characterId: characterId,
               accent: a,
-              size: 40,
+              size: AppSize.avatarMd,
             ),
             const SizedBox(width: AppSpace.md),
             Expanded(
@@ -3025,4 +3606,199 @@ class EndingTierDots extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 광고를 못 받았을 때 쓰는 한 문장. 자리마다 다르게 말할 이유가 없다.
+const adFailedMessage = '광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+
+/// 광고 실패를 알리는 스낵바. 모달 시트 안에서는 시트에 가리므로 쓰지 않는다
+/// (룰렛 시트는 시트 안에 직접 한 줄을 남긴다).
+void adFailedSnack(BuildContext context) =>
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(keepAll(adFailedMessage))));
+
+/// 광고를 기다리는 동안 버튼에 다는 문구.
+const adLoadingLabel = '광고 불러오는 중…';
+
+/// 테스트가 광고 대기(최대 8초)를 흉내 내는 자리. null 이면 [AdManager] 를 부른다.
+/// 실기기 경로는 건드리지 않는다 — 대기 중 화면 잠금을 검증하려면 느린 광고가 필요하다.
+@visibleForTesting
+Future<bool> Function(String placement)? debugRewarded;
+
+/// 보상형 광고 버튼의 모양. 자리의 무게만 다르고 동작은 같다.
+enum RewardedButtonKind {
+  /// 2차 제안(힌트·되돌리기·기다리지 않기·홈 하트).
+  text,
+
+  /// 시트 안에서 1차 버튼과 구별되는 2차 버튼(룰렛 재도전).
+  outlined,
+}
+
+/// 보상형 광고를 부르는 유일한 버튼. 광고는 준비돼 있지 않으면 최대 8초를 기다리므로
+/// ([AdManager] `_showWaitTimeout`), 그 사이 버튼이 죽은 것처럼 보이면 사용자는 다시
+/// 탭하고 그 탭이 선택지에 떨어진다 — 실제로 플레이테스트에서 원치 않은 선택이 확정됐다
+/// (docs/review/01 P1-1). 룰렛에만 로딩 상태가 있고 힌트·되돌리기에는 없었던 것이
+/// 정확히 자리마다 따로 짠 탓이라, 광고를 부르는 자리는 전부 이 위젯 하나를 쓴다.
+///
+/// 대기 중: 스피너 + [adLoadingLabel] + 버튼 비활성. 바깥의 [RewardedBusyScope] 가
+/// 그 화면의 다른 조작(선택지 패널 등)을 함께 막는다.
+/// 실패: [adFailedSnack]. 모달(시트·다이얼로그) 안에서는 스낵바가 가리므로
+/// [inline] 을 켜 버튼 아래 한 줄로 말한다.
+class RewardedButton extends StatefulWidget {
+  /// 측정용 자리 이름(`hint` · `undo` · `heart_home` …).
+  final String placement;
+
+  /// 평소 문구. 대기 중에는 [adLoadingLabel] 로 바뀐다.
+  final String label;
+  final IconData icon;
+  final RewardedButtonKind kind;
+
+  /// 끝까지 봐서 보상을 받았을 때. 실패하면 부르지 않는다.
+  final FutureOr<void> Function() onEarned;
+
+  /// 광고를 부르기 직전. 대기 전에 멈춰야 할 것(읽씹 카운트다운 등)을 여기서 멈춘다.
+  final VoidCallback? beforeWatch;
+
+  /// 광고를 못 받았을 때 되돌릴 것(멈춰 둔 카운트다운 재개 등).
+  /// 사용자에게 알리는 일은 이 위젯이 하므로 여기서 또 말하지 않는다.
+  final VoidCallback? onFailed;
+
+  /// 실패를 스낵바 대신 버튼 아래 한 줄로(모달 안).
+  final bool inline;
+
+  /// 버튼 자리는 두되 누를 수 없게 한다(룰렛 회전 중 등).
+  final bool enabled;
+
+  /// 톤 배경 위에서 대비를 맞춰야 할 때만 준다.
+  final Color? foregroundColor;
+
+  /// 짧은 문구를 쓰는 자리에서 스크린리더에 읽힐 전체 문장.
+  final String? semanticsLabel;
+
+  const RewardedButton({
+    super.key,
+    required this.placement,
+    required this.label,
+    required this.onEarned,
+    this.beforeWatch,
+    this.onFailed,
+    this.icon = Icons.play_circle_outline,
+    this.kind = RewardedButtonKind.text,
+    this.inline = false,
+    this.enabled = true,
+    this.foregroundColor,
+    this.semanticsLabel,
+  });
+
+  @override
+  State<RewardedButton> createState() => _RewardedButtonState();
+}
+
+class _RewardedButtonState extends State<RewardedButton> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _watch() async {
+    if (_busy) return;
+    final scope = RewardedBusyScope._of(context);
+    widget.beforeWatch?.call();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    scope?._add(1);
+    final show = debugRewarded;
+    final ok = show != null
+        ? await show(widget.placement)
+        : await AdManager.instance.showRewarded(placement: widget.placement);
+    scope?._add(-1);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      await widget.onEarned();
+      return;
+    }
+    widget.onFailed?.call();
+    // 아무 말 없이 끝내지 않는다.
+    if (widget.inline) {
+      setState(() => _error = adFailedMessage);
+    } else if (context.mounted) {
+      adFailedSnack(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _busy ? adLoadingLabel : widget.label;
+    final icon = _busy
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(widget.icon, size: 18);
+    final onPressed = _busy || !widget.enabled ? null : _watch;
+    final style = widget.foregroundColor == null
+        ? null
+        : TextButton.styleFrom(foregroundColor: widget.foregroundColor);
+    final text = Text(keepAll(label), semanticsLabel: widget.semanticsLabel);
+    final button = switch (widget.kind) {
+      RewardedButtonKind.text => TextButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        style: style,
+        label: text,
+      ),
+      RewardedButtonKind.outlined => OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        style: style,
+        label: text,
+      ),
+    };
+    final error = _error;
+    if (error == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button,
+        const SizedBox(height: AppSpace.sm),
+        Text(
+          keepAll(error),
+          textAlign: TextAlign.center,
+          style: context.text.bodySmall?.copyWith(color: context.tokens.danger),
+        ),
+      ],
+    );
+  }
+}
+
+/// 광고를 기다리는 동안 이 안의 조작을 전부 막는다.
+///
+/// 안에 있는 [RewardedButton] 이 스스로 찾아 대기 상태를 알리므로, 화면은 감쌀 곳만
+/// 정하면 된다. 막는 대상에 그 버튼도 포함되지만 어차피 비활성이다. 최대 8초이고,
+/// 그 사이의 탭은 전부 "원하지 않은 선택" 이 될 수 있는 탭이다.
+class RewardedBusyScope extends StatefulWidget {
+  final Widget child;
+  const RewardedBusyScope({super.key, required this.child});
+
+  static _RewardedBusyScopeState? _of(BuildContext context) =>
+      context.findAncestorStateOfType<_RewardedBusyScopeState>();
+
+  @override
+  State<RewardedBusyScope> createState() => _RewardedBusyScopeState();
+}
+
+class _RewardedBusyScopeState extends State<RewardedBusyScope> {
+  /// 대기 중인 버튼 수. 한 화면에 광고 버튼이 둘 이상 있을 수 있다.
+  int _busy = 0;
+
+  void _add(int delta) {
+    if (!mounted) return;
+    setState(() => _busy += delta);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      AbsorbPointer(absorbing: _busy > 0, child: widget.child);
 }

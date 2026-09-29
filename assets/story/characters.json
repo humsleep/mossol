@@ -65,7 +65,7 @@
   "gender": "f",
   "role": "blinddate",
   "mbti": "ENTJ",
-  "title": "소개팅 상대",
+  "title": "엄마 친구 딸",
   "tagline": "바빠도 답장은 칼같은 변호사",
   "likes": [
    "charm",
@@ -80,6 +80,7 @@
    0.52
   ],
   "humor": "witty",
+  "politeness": "polite",
   "tags": [
    "전시",
    "조용한",
@@ -169,6 +170,7 @@
    0.45
   ],
   "humor": "warm",
+  "politeness": "polite",
   "tags": [
    "운동",
    "산책",
@@ -244,7 +246,7 @@
   "gender": "m",
   "role": "blinddate",
   "mbti": "ISTJ",
-  "title": "소개팅 상대",
+  "title": "엄마 친구 아들",
   "tagline": "좋으면 좋다고 말하는 수의사",
   "likes": [
    "sincerity",
@@ -260,6 +262,7 @@
    0.35
   ],
   "humor": "dry",
+  "politeness": "polite",
   "tags": [
    "산책",
    "브런치",

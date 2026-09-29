@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../ads/ad_manager.dart';
 import '../engine/event_engine.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
+import 'widgets.dart';
 
 /// 하루 시작 전 럭키 룰렛. 결과가 나쁘면 광고로 한 번 더 돌릴 수 있다.
 ///
@@ -69,7 +69,8 @@ class _RouletteSheetState extends State<RouletteSheet>
   Widget build(BuildContext context) {
     final slots = EventEngine.rouletteSlots;
     final slot = _slot;
-    return SafeArea(
+    return RewardedBusyScope(
+      child: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpace.xxl,
@@ -158,22 +159,22 @@ class _RouletteSheetState extends State<RouletteSheet>
                 ),
               ] else if (widget.c.canRerollRoulette) ...[
                 const SizedBox(height: AppSpace.md),
-                OutlinedButton.icon(
-                  onPressed: _spinning
-                      ? null
-                      : () async {
-                          final ok = await AdManager.instance.showRewarded(
-                            placement: 'roulette',
-                          );
-                          if (ok && mounted) await _run(widget.c.rerollRoulette);
-                        },
-                  icon: const Icon(Icons.replay, size: 18),
-                  label: const Text('한 번 더 (광고)'),
+                // 광고 대기·실패 안내는 RewardedButton 이 다른 자리와 똑같이 한다.
+                // 시트 안에서는 스낵바가 가리므로 버튼 아래 한 줄(inline).
+                RewardedButton(
+                  placement: 'roulette',
+                  label: '한 번 더 (광고)',
+                  icon: Icons.replay,
+                  kind: RewardedButtonKind.outlined,
+                  inline: true,
+                  enabled: !_spinning,
+                  onEarned: () => _run(widget.c.rerollRoulette),
                 ),
               ],
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -288,7 +289,9 @@ class _SlotCard extends StatelessWidget {
               for (final e in effects.entries)
                 _EffectChip(
                   label:
-                      '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
+                      e.key == Stat.money
+                          ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+                          : '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
                   good: _isGood(e.key, e.value),
                   up: e.value > 0,
                   muted: !result,

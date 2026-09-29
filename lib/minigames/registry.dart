@@ -3,9 +3,15 @@ import 'minigame.dart';
 import 'push_games.dart';
 import 'tap_games.dart';
 import 'timing_games.dart';
+import 'variation.dart';
 
 /// 앱 시작 시 한 번 부른다. 이벤트 JSON 의 `"minigame"` 값이 여기 키와 맞아야 한다.
 void registerMinigames() {
+  // 저장된 등장 순번을 여기서 미리 읽어 둔다(기다리지 않는다).
+  // [playMinigame] 은 순번을 **동기로** 세야 하므로 — 버튼을 누른 그 프레임에
+  // 라우트가 덮어야 한다 — 읽기를 판정 경로 밖으로 뺀다. 홈·룰렛·행동·이벤트를
+  // 지나 첫 미니게임에 닿기까지 몇 초가 걸리니 그 사이에 끝난다.
+  MinigameRotation.ready();
   if (minigameRegistry.isNotEmpty) return;
   minigameRegistry.addAll({
     'reply_timing': (ctx, done) => ReplyTimingGame(ctx: ctx, done: done),

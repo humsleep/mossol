@@ -46,7 +46,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…이미 두 명 봤대 ㅋㅋㅋ"
+      "text": "이미 두 명 봤대 ㅋㅋㅋ"
      }
     ],
     "critReply": [
@@ -59,7 +59,9 @@
       "who": "narr",
       "text": "3분 만에 좋아요가 두 개 붙었다. 하나는 모르는 이름이다."
      }
-    ]
+    ],
+    "next": "d_open_bet",
+    "failNext": "d_open_bet"
    },
    {
     "text": "뒷모습 여행 사진",
@@ -82,7 +84,8 @@
       "name": "태현",
       "text": "나쁘지 않다. 궁금하게 만드는 거"
      }
-    ]
+    ],
+    "next": "d_open_bet"
    },
    {
     "text": "고양이 사진",
@@ -102,7 +105,8 @@
       "name": "알바 동료",
       "text": "프사 고양이 뭐예요 ㅋㅋ 이름은요?"
      }
-    ]
+    ],
+    "next": "d_open_bet"
    }
   ],
   "cliffhanger": "프사를 바꾼 지 10분 만에 누군가 프로필을 확인했다."
@@ -229,6 +233,356 @@
    }
   ],
   "hint": 0
+ },
+ {
+  "id": "m_brief",
+  "layer": "main",
+  "trigger": {
+   "pref": "f"
+  },
+  "day": 3,
+  "weight": 1,
+  "title": "태현의 정리",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 나 어제 새벽에 네 인간관계 정리했다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "엑셀로",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "그걸 왜 해"
+   },
+   {
+    "who": "them",
+    "text": "코치가 선수 파악은 해야지 ㅋㅋ",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "들어봐. 앞으로 네가 마주칠 사람 다섯이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "1. 서연 선배. 동아리. 단톡에서 너만 콕 집은 그 사람",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "2. 다은. 네 알바 선임. 영수증 뒷면에 그림 그리는 애",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "3. 예은. 초등학교 동창. 네 흑역사 지분 80프로",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "4. 소희. 그 게임 듀오. 샷콜하던 목소리 주인",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "5. 지우. 너희 엄마가 밀고 있는 소개팅 상대. 변호사래",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "다섯 번째는 처음 듣는데"
+   },
+   {
+    "who": "them",
+    "text": "우리 엄마랑 너희 엄마가 같은 미용실 다녀. 나도 듣기 싫었다",
+    "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "어제까지는 그냥 알림이 뜨는 이름들이었다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "누가 제일 가능성 있는데",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그걸 알면 내가 왜 아직 혼자겠냐",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 이 중에 한 명은 이미 너한테 먼저 말 걸었다",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "그거부터 답장해",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "네가 뭔데 남의 인간관계를 정리해",
+    "require": {
+     "stats": {
+      "esteem": 20
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "코치지 뭐긴 뭐야",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "코치비는 치킨으로 받는다. 이미 걸어놨고 ㅋㅋ",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "다섯 명이나 있었어?",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "있는 게 아니라 스쳐 지나가는 거야 지금은",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "만드는 건 네가 하는 거고",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "다섯 개의 이름을 메모장에 옮겨 적었다."
+     }
+    ]
+   },
+   {
+    "text": "이름 좀 그만 부르고 사진 보내봐",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "sincerity": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "야",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "그렇게 시작하면 100일 뒤에도 똑같아",
+      "name": "태현"
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현이 엑셀 파일을 보냈다. 시트 이름이 'D-97'이다."
+ },
+ {
+  "id": "m_brief_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m"
+  },
+  "day": 3,
+  "weight": 1,
+  "title": "태현의 정리",
+  "lines": [
+   {
+    "who": "them",
+    "text": "야 나 어제 새벽에 네 인간관계 정리했다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "엑셀로",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "그걸 왜 해"
+   },
+   {
+    "who": "them",
+    "text": "코치가 선수 파악은 해야지 ㅋㅋ",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "들어봐. 앞으로 네가 마주칠 사람 다섯이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "1. 정우 선배. 동아리 회장. 공지는 딱딱한데 개인톡은 서툰 사람",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "2. 하늘. 네 알바 동료. 국밥값 반반 하자는 애",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "3. 건우. 초등학교 동창. 말없이 전학 갔다가 돌아온 짝꿍",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "4. 민재. 그 게임 듀오. 새벽 두 판 하고 얼굴은 안 까는 애",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "5. 승현. 너희 엄마가 밀고 있는 소개팅 상대. 수의사래",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "다섯 번째는 처음 듣는데"
+   },
+   {
+    "who": "them",
+    "text": "우리 엄마랑 너희 엄마가 같은 미용실 다녀. 나도 듣기 싫었다",
+    "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "어제까지는 그냥 알림이 뜨는 이름들이었다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "누가 제일 가능성 있는데",
+    "effects": {
+     "stats": {
+      "sense": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그걸 알면 내가 왜 아직 혼자겠냐",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 이 중에 한 명은 이미 너한테 먼저 말 걸었다",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "그거부터 답장해",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "네가 뭔데 남의 인간관계를 정리해",
+    "require": {
+     "stats": {
+      "esteem": 20
+     }
+    },
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "코치지 뭐긴 뭐야",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "코치비는 치킨으로 받는다. 이미 걸어놨고 ㅋㅋ",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "다섯 명이나 있었어?",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "있는 게 아니라 스쳐 지나가는 거야 지금은",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "만드는 건 네가 하는 거고",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "다섯 개의 이름을 메모장에 옮겨 적었다."
+     }
+    ]
+   },
+   {
+    "text": "이름 좀 그만 부르고 사진 보내봐",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "sincerity": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "야",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "그렇게 시작하면 100일 뒤에도 똑같아",
+      "name": "태현"
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현이 엑셀 파일을 보냈다. 시트 이름이 'D-97'이다."
  },
  {
   "id": "m_mbti_chat_f",
@@ -776,7 +1130,8 @@
       "stress": 5
      },
      "setFlags": [
-      "jiwoo_intro"
+      "jiwoo_intro",
+      "jiwoo_met"
      ]
     },
     "reply": [
@@ -887,7 +1242,8 @@
       "stress": 5
      },
      "setFlags": [
-      "seunghyun_intro"
+      "seunghyun_intro",
+      "seunghyun_met"
      ]
     },
     "reply": [
@@ -957,6 +1313,322 @@
   "cliffhanger": "엄마가 벌써 아주머니에게 답장을 보냈다."
  },
  {
+  "id": "m_week1",
+  "layer": "main",
+  "trigger": {
+   "pref": "f"
+  },
+  "day": 7,
+  "weight": 1,
+  "title": "1주차 정산",
+  "lines": [
+   {
+    "who": "them",
+    "text": "1주차 정산이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "오늘로 D-93",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "그걸 왜 네가 세고 있어"
+   },
+   {
+    "who": "them",
+    "text": "치킨 열 마리가 걸렸으니까 ㅋㅋ",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "일주일 결산. 프사 바꿨고, 단톡에서 말 텄고",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "네 대화방 맨 위에 지금 누가 있냐",
+    "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "대화방 목록을 위에서부터 봤다. {top||아직 위에 아무도 없다}."
+   },
+   {
+    "who": "them",
+    "text": "일주일이면 한 명은 위로 올라오는 게 정상이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "93일 남았다. 이제 다섯 명이 아니라 한두 명이야",
+    "name": "태현"
+   }
+  ],
+  "choices": [
+   {
+    "text": "{top} 쪽으로 좀 더 해 볼게",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "@top": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "오 결정 빠르네",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "대신 나머지한테 어정쩡하게 굴지 마라. 그게 제일 최악이야",
+      "name": "태현"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "오 결정 빠르네",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "그날 밤, {top}한테서 먼저 톡이 왔다. 뭐 하냐고."
+     }
+    ]
+   },
+   {
+    "text": "아직 모르겠어. 더 볼래",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그것도 방법이지",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 93일이다. 무한하지 않아",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "일주일 만에 뭘 알아",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "맞는 말이다",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 아무것도 안 하면 93일 뒤에도 똑같은 말 할걸",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "너는 일주일 동안 뭐 했는데",
+    "effects": {
+     "stats": {
+      "talk": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "나? 나야 뭐…",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "…야 지금 네 얘기 하는 중이잖아 ㅋㅋ",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "태현은 또 자기 얘기를 피했다. 두 번째다."
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현의 상태 메시지가 바뀌었다. \"D-93. 치킨 아직 대기 중\""
+ },
+ {
+  "id": "m_week1_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m"
+  },
+  "day": 7,
+  "weight": 1,
+  "title": "1주차 정산",
+  "lines": [
+   {
+    "who": "them",
+    "text": "1주차 정산이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "오늘로 D-93",
+    "name": "태현"
+   },
+   {
+    "who": "me",
+    "text": "그걸 왜 네가 세고 있어"
+   },
+   {
+    "who": "them",
+    "text": "치킨 열 마리가 걸렸으니까 ㅋㅋ",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "일주일 결산. 프사 바꿨고, 단톡에서 말 텄고",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "네 대화방 맨 위에 지금 누가 있냐",
+    "name": "태현"
+   },
+   {
+    "who": "narr",
+    "text": "대화방 목록을 위에서부터 봤다. {top||아직 위에 아무도 없다}."
+   },
+   {
+    "who": "them",
+    "text": "일주일이면 한 명은 위로 올라오는 게 정상이다",
+    "name": "태현"
+   },
+   {
+    "who": "them",
+    "text": "93일 남았다. 이제 다섯 명이 아니라 한두 명이야",
+    "name": "태현"
+   }
+  ],
+  "choices": [
+   {
+    "text": "{top} 쪽으로 좀 더 해 볼게",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "@top": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "오 결정 빠르네",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "대신 나머지한테 어정쩡하게 굴지 마라. 그게 제일 최악이야",
+      "name": "태현"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "오 결정 빠르네",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "그날 밤, {top}한테서 먼저 톡이 왔다. 뭐 하냐고."
+     }
+    ]
+   },
+   {
+    "text": "아직 모르겠어. 더 볼래",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그것도 방법이지",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 93일이다. 무한하지 않아",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "일주일 만에 뭘 알아",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "맞는 말이다",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "근데 아무것도 안 하면 93일 뒤에도 똑같은 말 할걸",
+      "name": "태현"
+     }
+    ]
+   },
+   {
+    "text": "너는 일주일 동안 뭐 했는데",
+    "effects": {
+     "stats": {
+      "talk": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "나? 나야 뭐…",
+      "name": "태현"
+     },
+     {
+      "who": "them",
+      "text": "…야 지금 네 얘기 하는 중이잖아 ㅋㅋ",
+      "name": "태현"
+     },
+     {
+      "who": "narr",
+      "text": "태현은 또 자기 얘기를 피했다. 두 번째다."
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현의 상태 메시지가 바뀌었다. \"D-93. 치킨 아직 대기 중\""
+ },
+ {
   "id": "m04",
   "layer": "main",
   "day": 8,
@@ -1012,7 +1684,7 @@
       "esteem": -1
      }
     },
-    "minigame": "outfit",
+    "minigame": "nerve_gauge",
     "reply": [
      {
       "who": "narr",
@@ -1526,14 +2198,20 @@
      "stats": {
       "talk": 3,
       "reputation": 2
-     }
+     },
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "fail": {
      "stats": {
       "esteem": -3,
       "stress": 10
      },
-     "album": "자기소개하다 목소리 갈라짐"
+     "album": "자기소개하다 목소리 갈라짐",
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "minigame": "nerve_gauge",
     "reply": [
@@ -1566,7 +2244,10 @@
      "stats": {
       "sense": 2,
       "reputation": 1
-     }
+     },
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "reply": [
      {
@@ -1586,7 +2267,10 @@
      "stats": {
       "stress": -5,
       "reputation": -2
-     }
+     },
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "chance": 60,
     "fail": {
@@ -1594,7 +2278,10 @@
       "stress": 12,
       "esteem": -2
      },
-     "album": "입에 감자튀김 물고 자기소개"
+     "album": "입에 감자튀김 물고 자기소개",
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "reply": [
      {
@@ -1626,7 +2313,10 @@
      "stats": {
       "talk": 2,
       "reputation": 2
-     }
+     },
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "reply": [
      {
@@ -1648,7 +2338,10 @@
       "sense": 2,
       "reputation": 1,
       "stress": -2
-     }
+     },
+     "setFlags": [
+      "club_afterparty"
+     ]
     },
     "reply": [
      {
@@ -1714,7 +2407,10 @@
     "fail": {
      "stats": {
       "reputation": -2
-     }
+     },
+     "setFlags": [
+      "junho_yeeun"
+     ]
     },
     "minigame": "group_chat",
     "reply": [
@@ -1842,7 +2538,10 @@
     "fail": {
      "stats": {
       "reputation": -2
-     }
+     },
+     "setFlags": [
+      "junho_geonwoo"
+     ]
     },
     "minigame": "group_chat",
     "reply": [
@@ -2045,7 +2744,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…이건 웃긴 게 아니라 좀 짠한데"
+      "text": "이건 웃긴 게 아니라 좀 짠한데"
      },
      {
       "who": "narr",
@@ -2181,7 +2880,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…이건 웃긴 게 아니라 좀 짠한데"
+      "text": "야 이건 웃긴 게 아니라 좀 짠한데"
      },
      {
       "who": "narr",
@@ -2192,6 +2891,434 @@
   ],
   "hint": 2,
   "cliffhanger": "30분 만에 매칭 알림이 세 개 왔다."
+ },
+ {
+  "id": "m10_refused",
+  "layer": "main",
+  "trigger": {
+   "pref": "f",
+   "flags": [
+    "refused_mom"
+   ]
+  },
+  "character": "jiwoo",
+  "day": 25,
+  "weight": 1,
+  "title": "정정하고 싶어서요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "저장 안 된 번호. 프로필에 사진이 없다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요. 이 번호 맞나요. 확인부터 할게요"
+   },
+   {
+    "who": "me",
+    "text": "…네 맞는데요"
+   },
+   {
+    "who": "them",
+    "text": "지우예요. 어머니들끼리 잡으셨던 그 자리요"
+   },
+   {
+    "who": "them",
+    "text": "취소된 건 아시죠"
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
+    "who": "them",
+    "text": "그게 제가 취소한 걸로 정리돼 있더라고요"
+   },
+   {
+    "who": "them",
+    "text": "저희 어머니한테도, 그쪽 어머니한테도요"
+   },
+   {
+    "who": "them",
+    "text": "정정하고 싶어서 연락드렸어요. 그게 다예요"
+   }
+  ],
+  "choices": [
+   {
+    "text": "제가 안 나간 거 맞아요. 죄송합니다",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "jiwoo": 3
+     },
+     "trust": {
+      "jiwoo": 3
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…네. 그거면 됐어요"
+     },
+     {
+      "who": "them",
+      "text": "사과받으려고 연락한 건 아닌데, 받으니까 좀 낫네요"
+     }
+    ]
+   },
+   {
+    "text": "그쪽도 나갈 생각 없었던 거 아니에요?",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "sense": 2
+     },
+     "affection": {
+      "jiwoo": 1
+     },
+     "trust": {
+      "jiwoo": -1
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "없었죠. 근데 저는 나갔을 거예요"
+     },
+     {
+      "who": "them",
+      "text": "약속이었으니까요. 그게 저랑 그쪽 차이예요"
+     }
+    ]
+   },
+   {
+    "text": "엄마들이 정한 자리잖아요. 왜 우리가 사과해요",
+    "require": {
+     "stats": {
+      "talk": 30
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "jiwoo": 4
+     },
+     "trust": {
+      "jiwoo": 2
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…그렇게 말해 주는 사람은 처음이에요"
+     },
+     {
+      "who": "them",
+      "text": "그럼 정정 문구는 '양쪽 다 안 나갔다'로 할까요"
+     },
+     {
+      "who": "narr",
+      "text": "지우가 처음으로 ㅋ 를 하나 붙였다."
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "그 말 들으려고 연락한 건 아닌데요"
+     },
+     {
+      "who": "them",
+      "text": "…들으니까 화가 좀 풀리네요. 이건 기록 안 할게요"
+     }
+    ]
+   },
+   {
+    "text": "정정하려면 근거가 있어야죠. 제가 직접 말할게요",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "jiwoo": 3
+     },
+     "trust": {
+      "jiwoo": 2
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "직접이요? 어머님께요?"
+     },
+     {
+      "who": "them",
+      "text": "…일 얘기할 때 듣는 말투인데. 나쁘지 않네요"
+     }
+    ]
+   },
+   {
+    "text": "그 얘기 듣는 내내 기분 안 좋으셨겠어요",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "jiwoo": 3
+     },
+     "trust": {
+      "jiwoo": 3
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 솔직히 좀 그랬어요"
+     },
+     {
+      "who": "them",
+      "text": "그 얘기를 먼저 해 주시네요. 저는 사실관계부터 말했는데"
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "지우: \"정정은 제가 할게요. 대신 한 번은 직접 뵙고 싶은데요.\""
+ },
+ {
+  "id": "m10_refused_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m",
+   "flags": [
+    "refused_mom"
+   ]
+  },
+  "character": "seunghyun",
+  "day": 25,
+  "weight": 1,
+  "title": "한 번은 말해야 할 것 같아서요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "저장 안 된 번호. 프로필 사진은 강아지 뒤통수다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요. 승현입니다. 어머님께 번호 받았습니다"
+   },
+   {
+    "who": "them",
+    "text": "자리가 없어졌다고 들었어요. 그건 괜찮습니다"
+   },
+   {
+    "who": "sys",
+    "wait": 12
+   },
+   {
+    "who": "them",
+    "text": "그래도 한 번은 말해야 할 것 같아서요"
+   },
+   {
+    "who": "them",
+    "text": "저는 나가려고 했었어요"
+   },
+   {
+    "who": "them",
+    "text": "이 말 안 하면 계속 생각날 것 같아서요. 그게 다예요"
+   }
+  ],
+  "choices": [
+   {
+    "text": "제가 안 나간 거예요. 미안해요",
+    "effects": {
+     "stats": {
+      "sincerity": 3
+     },
+     "affection": {
+      "seunghyun": 3
+     },
+     "trust": {
+      "seunghyun": 3
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 말해 줘서 고마워요"
+     },
+     {
+      "who": "them",
+      "text": "사과까지는 안 바랐는데, 받으니까 확실히 낫네요"
+     }
+    ]
+   },
+   {
+    "text": "왜 지금 말해요?",
+    "effects": {
+     "stats": {
+      "sense": 2
+     },
+     "affection": {
+      "seunghyun": 1
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "미루면 안 할 것 같아서요"
+     },
+     {
+      "who": "them",
+      "text": "저는 미루면 그냥 안 하는 사람이에요. 그게 싫어서요"
+     }
+    ]
+   },
+   {
+    "text": "그럼 지금이라도 나갈게요. 날짜 주세요",
+    "require": {
+     "stats": {
+      "talk": 30
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "seunghyun": 5
+     },
+     "trust": {
+      "seunghyun": 3
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…지금이요?"
+     },
+     {
+      "who": "them",
+      "text": "좋아요. 확실히"
+     },
+     {
+      "who": "them",
+      "text": "후보 세 개 추려서 보낼게요. 고르는 건 그쪽이 해요"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "…지금이요?"
+     },
+     {
+      "who": "them",
+      "text": "좋아요. 확실히. 저 지금 병원에서 혼자 웃었어요"
+     },
+     {
+      "who": "them",
+      "text": "후보 세 개 보낼게요. 고르는 건 그쪽이 해요"
+     }
+    ]
+   },
+   {
+    "text": "엄마들 빼고 우리끼리 정하는 거면 나갈게요",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "seunghyun": 3
+     },
+     "trust": {
+      "seunghyun": 2
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그게 맞는 것 같아요. 저도 그 조건이면 편해요"
+     },
+     {
+      "who": "them",
+      "text": "어머니 쪽에는 제가 말씀드릴게요. 확실히 끊어 둘게요"
+     }
+    ]
+   },
+   {
+    "text": "말 안 했으면 계속 생각났을 거라는 말, 좋네요",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "seunghyun": 4
+     },
+     "trust": {
+      "seunghyun": 3
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "좋다고 해 주니까 저도 좋네요"
+     },
+     {
+      "who": "them",
+      "text": "이런 말은 보내고 나면 늘 후회했는데, 오늘은 안 그래요"
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "승현이 날짜 후보 세 개를 보냈다. 이번엔 어머니 얘기가 없다."
  },
  {
   "id": "m10",
@@ -2241,7 +3368,7 @@
    },
    {
     "who": "them",
-    "text": "…그것도 맞는 말인데 일단 장소는 정해 ㅋㅋ",
+    "text": "그것도 맞는 말인데 일단 장소는 정해 ㅋㅋ",
     "name": "태현",
     "mbti": "N"
    }
@@ -2285,7 +3412,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…너 이거 진짜 가게?"
+      "text": "너 이거 진짜 가게?"
      }
     ],
     "critReply": [
@@ -2326,7 +3453,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…오. 이건 인정. 가격은 안 물어볼게"
+      "text": "오. 이건 인정. 가격은 안 물어볼게"
      }
     ],
     "failReply": [
@@ -2338,7 +3465,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…그거 마네킹이 입어서 예뻤던 거야"
+      "text": "그거 마네킹이 입어서 예뻤던 거야"
      }
     ]
    },
@@ -2409,13 +3536,453 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…근데 이거면 대화 끊길 일은 없겠다"
+      "text": "근데 이거면 대화 끊길 일은 없겠다"
      }
     ]
    }
   ],
   "hint": 0,
-  "cliffhanger": "내일 오후 2시. 성수동."
+  "cliffhanger": "내일 오후 2시. 성수동.",
+  "trigger": {
+   "notFlags": [
+    "refused_mom",
+    "lied_to_mom"
+   ]
+  }
+ },
+ {
+  "id": "m10_lied",
+  "layer": "main",
+  "trigger": {
+   "pref": "f",
+   "flags": [
+    "lied_to_mom"
+   ]
+  },
+  "character": "jiwoo",
+  "day": 27,
+  "weight": 1,
+  "title": "사실관계가 안 맞아서요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "토요일이 그냥 지나갔다. 아무 일도 없었다."
+   },
+   {
+    "who": "narr",
+    "text": "일요일 오후, 저장 안 된 번호에서 톡이 왔다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요. 지우예요. 번호는 어머니들 통해서 받았어요"
+   },
+   {
+    "who": "them",
+    "text": "만나는 분이 계시다고 들었어요. 축하드려요"
+   },
+   {
+    "who": "sys",
+    "wait": 12
+   },
+   {
+    "who": "them",
+    "text": "그런데 사진 한 장만 보여 달라셨을 때 못 보여주셨다면서요"
+   },
+   {
+    "who": "them",
+    "text": "거짓말이라는 게 아니라, 사실관계가 안 맞아서요. 직업병이에요"
+   },
+   {
+    "who": "them",
+    "text": "솔직히 말하면 저도 안 나가고 싶었거든요. 핑계가 부러웠어요"
+   }
+  ],
+  "choices": [
+   {
+    "text": "…없어요. 그런 사람",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "jiwoo": 5
+     },
+     "trust": {
+      "jiwoo": 5
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "알아요"
+     },
+     {
+      "who": "them",
+      "text": "그래도 본인 입으로 들어야 다음 얘기를 하죠"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "알아요. 어머님 표정이 다 말해 주던데요"
+     },
+     {
+      "who": "them",
+      "text": "그 말 하기까지 오래 걸리셨죠. 이제 다음 얘기 해요"
+     }
+    ]
+   },
+   {
+    "text": "있어요. 사진은 안 보여줄 거고요",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "jiwoo": -2
+     },
+     "album": "없는 애인 끝까지 우기기",
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 그럼 그 얘기는 여기까지 할게요"
+     },
+     {
+      "who": "them",
+      "text": "근데 취소된 자리 때문에 한 번은 뵈어야 해요"
+     },
+     {
+      "who": "them",
+      "text": "어머니들이 안 끝내 주셔서요"
+     }
+    ]
+   },
+   {
+    "text": "핑계 필요하시면 저 쓰셔도 돼요",
+    "require": {
+     "stats": {
+      "talk": 30
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "jiwoo": 4
+     },
+     "trust": {
+      "jiwoo": 2
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "지금 저한테 공범 하자고 하신 거예요"
+     },
+     {
+      "who": "them",
+      "text": "변호사한테요?"
+     },
+     {
+      "who": "them",
+      "text": "…좋아요. 한 번은 뵙죠. 조건은 만나서 얘기해요"
+     }
+    ]
+   },
+   {
+    "text": "사실관계를 따지시면 제가 불리한데요",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "jiwoo": 3
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "불리한 걸 아시네요. 그럼 얘기가 빠르죠"
+     },
+     {
+      "who": "them",
+      "text": "저는 이기려고 연락한 게 아니라서요"
+     }
+    ]
+   },
+   {
+    "text": "핑계가 부러웠다는 말이 더 신경 쓰이는데요",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "jiwoo": 4
+     },
+     "trust": {
+      "jiwoo": 3
+     },
+     "setFlags": [
+      "jiwoo_met",
+      "jiwoo_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "…그 말을 잡으실 줄은 몰랐어요"
+     },
+     {
+      "who": "them",
+      "text": "네. 부러웠어요. 저는 그런 말 못 지어내거든요"
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "지우가 약속 시간을 먼저 보냈다. 장소는 법원 앞 카페다."
+ },
+ {
+  "id": "m10_lied_m",
+  "layer": "main",
+  "trigger": {
+   "pref": "m",
+   "flags": [
+    "lied_to_mom"
+   ]
+  },
+  "character": "seunghyun",
+  "day": 27,
+  "weight": 1,
+  "title": "저는 그 핑계를 못 대요",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "토요일이 그냥 지나갔다. 아무 일도 없었다."
+   },
+   {
+    "who": "narr",
+    "text": "일요일 오후, 저장 안 된 번호에서 톡이 왔다."
+   },
+   {
+    "who": "them",
+    "text": "안녕하세요. 승현입니다"
+   },
+   {
+    "who": "them",
+    "text": "만나는 분이 있다고 들었어요. 그럼 저는 여기서 끝내는 게 맞습니다"
+   },
+   {
+    "who": "sys",
+    "wait": 12
+   },
+   {
+    "who": "them",
+    "text": "그런데 저희 어머니가 그 얘기를 하시면서 웃으시더라고요"
+   },
+   {
+    "who": "them",
+    "text": "저희 엄마는 거짓말할 때 웃어요. 10년 봤어요"
+   },
+   {
+    "who": "them",
+    "text": "아니면 아니라고만 해 주세요. 그럼 저는 다시 시작할 수 있어요"
+   }
+  ],
+  "choices": [
+   {
+    "text": "…없어요. 죄송해요",
+    "effects": {
+     "stats": {
+      "sincerity": 4
+     },
+     "affection": {
+      "seunghyun": 5
+     },
+     "trust": {
+      "seunghyun": 5
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 확실히 들었어요"
+     },
+     {
+      "who": "them",
+      "text": "그럼 없던 일로 하고 제가 다시 인사드릴게요. 처음부터요"
+     }
+    ],
+    "critReply": [
+     {
+      "who": "them",
+      "text": "네. 확실히 들었어요"
+     },
+     {
+      "who": "them",
+      "text": "거짓말한 사람이 먼저 말하는 건 어려운 건데요"
+     },
+     {
+      "who": "them",
+      "text": "그럼 처음부터 다시 할게요. 안녕하세요, 승현입니다"
+     }
+    ]
+   },
+   {
+    "text": "있어요",
+    "effects": {
+     "stats": {
+      "sincerity": -3
+     },
+     "affection": {
+      "seunghyun": -2
+     },
+     "album": "없는 애인 끝까지 우기기",
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "알겠습니다. 축하드려요"
+     },
+     {
+      "who": "narr",
+      "text": "답장이 딱 거기서 멈췄다."
+     },
+     {
+      "who": "them",
+      "text": "…그래도 어머니들 정리는 해야 해서, 한 번은 뵙겠습니다"
+     }
+    ]
+   },
+   {
+    "text": "저도 거짓말을 잘 못해요. 그래서 들켰고요",
+    "require": {
+     "stats": {
+      "talk": 30
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 2
+     },
+     "affection": {
+      "seunghyun": 4
+     },
+     "trust": {
+      "seunghyun": 3
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그럼 우리 둘 다 못하는 거네요"
+     },
+     {
+      "who": "them",
+      "text": "잘됐어요. 저는 잘하는 사람이 제일 어렵거든요"
+     }
+    ]
+   },
+   {
+    "text": "어머니가 웃었다는 게 근거예요?",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 3
+     },
+     "affection": {
+      "seunghyun": 2
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 10년치 표본이에요"
+     },
+     {
+      "who": "them",
+      "text": "진료도 그렇게 봐요. 주인 얼굴부터 봅니다"
+     }
+    ]
+   },
+   {
+    "text": "그 말 하기까지 많이 망설이셨겠어요",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     },
+     "affection": {
+      "seunghyun": 4
+     },
+     "trust": {
+      "seunghyun": 3
+     },
+     "setFlags": [
+      "seunghyun_met",
+      "seunghyun_no_setup",
+      "lied_caught"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "사흘 썼어요. 지웠다 썼다"
+     },
+     {
+      "who": "them",
+      "text": "물어봐 줘서 고마워요. 그건 생각 못 했어요"
+     }
+    ]
+   }
+  ],
+  "hint": 1,
+  "cliffhanger": "승현: \"다시 인사드릴게요. 승현입니다.\""
  },
  {
   "id": "m11",
@@ -2426,15 +3993,15 @@
   "character": "jiwoo",
   "day": 29,
   "weight": 1,
-  "title": "애프터 신청",
+  "title": "다음 약속",
   "lines": [
    {
     "who": "narr",
-    "text": "소개팅은 두 시간 만에 끝났다. 나쁘지 않았다. 좋지도 않았다."
+    "text": "지우를 만나고 오는 길이다. 두 시간. 나쁘지 않았다. 좋지도 않았다."
    },
    {
     "who": "narr",
-    "text": "집에 오는 지하철. 애프터를 신청할지 말지."
+    "text": "집에 오는 지하철. 다시 보자고 먼저 말할지 말지."
    },
    {
     "who": "sys",
@@ -2447,7 +4014,10 @@
     "effects": {
      "affection": {
       "jiwoo": 2
-     }
+     },
+     "setFlags": [
+      "jiwoo_dated"
+     ]
     },
     "chance": 50,
     "fail": {
@@ -2460,7 +4030,8 @@
      {
       "who": "them",
       "name": "지우",
-      "text": "벌써요? ㅋㅋ 저 아직 지하철인데"
+      "text": "벌써요? ㅋㅋ 저 아직 지하철인데",
+      "sticker": "jiwoo_surprise"
      },
      {
       "who": "them",
@@ -2506,7 +4077,10 @@
      },
      "affection": {
       "jiwoo": 4
-     }
+     },
+     "setFlags": [
+      "jiwoo_dated"
+     ]
     },
     "reply": [
      {
@@ -2526,7 +4100,10 @@
     "effects": {
      "stats": {
       "esteem": -1
-     }
+     },
+     "setFlags": [
+      "jiwoo_dated"
+     ]
     },
     "reply": [
      {
@@ -2547,15 +4124,15 @@
   "character": "seunghyun",
   "day": 29,
   "weight": 1,
-  "title": "애프터 신청",
+  "title": "다음 약속",
   "lines": [
    {
     "who": "narr",
-    "text": "소개팅은 두 시간 만에 끝났다. 생각보다 괜찮았다."
+    "text": "승현을 만나고 오는 길이다. 두 시간. 생각보다 괜찮았다."
    },
    {
     "who": "narr",
-    "text": "집에 오는 지하철. 신청할지 말지 고민하기도 전에 폰이 울렸다."
+    "text": "집에 오는 지하철. 먼저 말할지 고민하기도 전에 폰이 울렸다."
    },
    {
     "who": "them",
@@ -2576,7 +4153,10 @@
     "effects": {
      "affection": {
       "seunghyun": 2
-     }
+     },
+     "setFlags": [
+      "seunghyun_dated"
+     ]
     },
     "reply": [
      "좋아요. 확실히.",
@@ -2596,10 +4176,17 @@
      },
      "affection": {
       "seunghyun": 4
-     }
+     },
+     "setFlags": [
+      "seunghyun_dated"
+     ]
     },
     "reply": [
-     "…다행이다. 말로 들으니까 더 좋네요.",
+     {
+      "who": "them",
+      "text": "다행이다. 말로 들으니까 더 좋네요.",
+      "sticker": "seunghyun_joy"
+     },
      "그럼 이번 주 토요일 어때요? 산책 코스는 제가 찾아볼게요."
     ]
    },
@@ -2611,7 +4198,10 @@
      },
      "affection": {
       "seunghyun": -2
-     }
+     },
+     "setFlags": [
+      "seunghyun_dated"
+     ]
     },
     "reply": [
      {
@@ -2753,7 +4343,7 @@
      {
       "who": "them",
       "name": "지우",
-      "text": "…타이밍 좋으시네요"
+      "text": "타이밍 좋으시네요"
      }
     ]
    },
@@ -2817,7 +4407,7 @@
      {
       "who": "them",
       "name": "지우",
-      "text": "…이렇게 바로 물어보는 사람, 처음이에요."
+      "text": "이렇게 바로 물어보시는 분은 잘 없어요."
      }
     ]
    },
@@ -2836,7 +4426,7 @@
      {
       "who": "them",
       "name": "지우",
-      "text": "…아, 이런 톡 좋다."
+      "text": "아, 이런 톡 좋다."
      },
      {
       "who": "them",
@@ -2990,7 +4580,7 @@
      {
       "who": "them",
       "name": "승현",
-      "text": "…타이밍 좋네요. 확실히."
+      "text": "타이밍 좋네요. 확실히."
      }
     ]
    },
@@ -3054,7 +4644,7 @@
      {
       "who": "them",
       "name": "승현",
-      "text": "…궁금한 걸 바로 물어보는 거, 좋아요."
+      "text": "궁금한 걸 바로 물어보는 거, 좋아요."
      }
     ]
    },
@@ -3085,7 +4675,7 @@
      {
       "who": "them",
       "name": "승현",
-      "text": "…이 톡, 저장해 둘게요."
+      "text": "이 톡, 저장해 둘게요."
      },
      {
       "who": "them",
@@ -3174,7 +4764,7 @@
      {
       "who": "them",
       "name": "사회자",
-      "text": "…아, 네! 다음 분!"
+      "text": "아, 네! 다음 분!"
      }
     ],
     "critReply": [
@@ -3227,10 +4817,12 @@
   "lines": [
    {
     "who": "them",
+    "name": "그 사람",
     "text": "미안해요, 좋은 분인 건 아는데"
    },
    {
     "who": "them",
+    "name": "그 사람",
     "text": "제가 지금은 연애 생각이 없어서요"
    },
    {
@@ -3270,7 +4862,7 @@
      "album": "거절 이유 캐묻기"
     },
     "reply": [
-     "…그냥 제 마음이 그래요",
+     "그냥 제 마음이 그래요",
      {
       "who": "narr",
       "text": "그 뒤로 답장은 오지 않았다."
@@ -3378,7 +4970,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "…차인 얘기는 네가 먼저 해"
+      "text": "차인 얘기는 네가 먼저 해"
      }
     ]
    },
@@ -3426,7 +5018,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "…살아는 있구나"
+      "text": "아 살아는 있구나"
      }
     ]
    },
@@ -3545,7 +5137,7 @@
      }
     },
     "reply": [
-     "…너 원래 이런 말 하는 애였어?",
+     "야 너 원래 이런 말 하는 애였어?",
      "좋아. 그럼 매주 봐"
     ]
    },
@@ -3639,7 +5231,7 @@
      }
     },
     "reply": [
-     "…그 말은 좀 오래 기억할게",
+     "그 말은 좀 오래 기억할게",
      "좋아. 모임 끝나고 밥 먹자. 매주. 내가 살게"
     ]
    },
@@ -3702,7 +5294,18 @@
       "who": "narr",
       "text": "3분 뒤, 물음표. 답이 왔다."
      },
-     "근데 너 요즘 말투가 좀 달라졌다?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 말투가 좀 달라진 것 같은데",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 말투가 좀 달라진 것 같은데요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -3720,19 +5323,60 @@
      }
     },
     "reply": [
-     "오늘은 답장 빠르네 ㅋㅋ",
-     "이게 더 너 같아"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘은 답장 빠른데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이게 더 원래 모습 같고",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이게 더 원래 모습 같고요",
+      "register": "polite"
+     }
     ],
     "failReply": [
      {
       "who": "narr",
       "text": "규칙 없이 보내니 답이 너무 빨랐다."
      },
-     "…뭐야 폰만 보고 있었어?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "폰만 보고 있었어?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "폰만 보고 있었어요?",
+      "register": "polite"
+     }
     ],
     "critReply": [
-     "이상하다",
-     "요즘 너랑 얘기하는 게 제일 편해"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이상한데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 얘기하는 게 제일 편해서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 얘기하는 게 제일 편해서요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -3749,8 +5393,23 @@
      }
     },
     "reply": [
-     "요즘 톡 재밌다 너 ㅋㅋ",
-     "근데 그거 누구한테 배웠어?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 톡 재밌는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "근데 그건 누구한테 배운 건지",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "근데 그건 누구한테 배운 거예요",
+      "register": "polite"
+     }
     ]
    }
   ],
@@ -3937,7 +5596,7 @@
      },
      {
       "who": "them",
-      "text": "…농담 아닌데."
+      "text": "…진심인데."
      }
     ],
     "failReply": [
@@ -4295,7 +5954,7 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…영화? 좋아. 팝콘은 내가."
+      "text": "영화? 좋아. 팝콘은 내가."
      }
     ],
     "failReply": [
@@ -4318,7 +5977,7 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…다음엔 내가 표 구할게."
+      "text": "다음엔 내가 표 구할게."
      }
     ]
    },
@@ -4341,7 +6000,7 @@
      {
       "who": "them",
       "name": "지우",
-      "text": "…저한테요? 의외네요"
+      "text": "저한테요? 의외네요"
      },
      {
       "who": "them",
@@ -4386,7 +6045,7 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…시간표까지. 좋아. 헤매지 않겠다."
+      "text": "시간표까지. 좋아. 헤매지 않겠다."
      },
      {
       "who": "them",
@@ -4410,7 +6069,7 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…지금? 앞치마 벗고 갈게."
+      "text": "지금? 앞치마 벗고 갈게."
      },
      {
       "who": "them",
@@ -4621,11 +6280,61 @@
   "lines": [
    {
     "who": "narr",
-    "text": "퇴근길 폭우. 우산은 하나. 상대는 우산이 없다."
+    "text": "퇴근길 폭우. 우산은 하나. {top|은는} 우산이 없다."
    },
    {
     "who": "them",
-    "text": "괜찮아, 뛰어갈게"
+    "name": "{top}",
+    "text": "괜찮아. 뛰면 돼",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아요. 뛰면 됩니다.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 괜찮아 ㅋㅋ 뛰면 되지",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아 나 비 맞으면 키 큰다",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아요. 뛰면 3분이에요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮음. 뛰면 됨",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아. 뛰어가면 되니까",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "괜찮아요. 뛰어가면 되니까요.",
+    "humor": "warm",
+    "register": "polite"
    }
   ],
   "choices": [
@@ -4644,7 +6353,18 @@
       "who": "narr",
       "text": "뒤에서 부르는 소리가 빗소리에 묻혔다."
      },
-     "야 너 다 젖었잖아. 바보야"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "왜 다 젖고 갔어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "왜 다 젖고 가셨어요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -4665,21 +6385,54 @@
      "album": "같이 쓰자 했다가 거절당함"
     },
     "reply": [
-     "…그럼 네가 들어",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그럼 우산은 내가 들게",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그럼 우산은 제가 들게요",
+      "register": "polite"
+     },
      {
       "who": "narr",
       "text": "우산 아래에서 어깨가 자꾸 닿았다."
      }
     ],
     "failReply": [
-     "아냐 괜찮아. 진짜로",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "괜찮아 진짜로",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "괜찮아요 진짜로",
+      "register": "polite"
+     },
      {
       "who": "narr",
-      "text": "상대는 빗속으로 뛰어갔다. 우산 하나가 너무 넓었다."
+      "text": "{top|은는} 빗속으로 뛰어갔다. 우산 하나가 너무 넓었다."
      }
     ],
     "critReply": [
-     "좁다. …근데 좋다",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "좁은데. 좁은 건 좋고",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "좁은데요. 좁은 건 좋고요",
+      "register": "polite"
+     },
      {
       "who": "narr",
       "text": "집 앞에 도착했을 때, 둘 다 한쪽 어깨만 젖어 있었다."
@@ -4698,8 +6451,22 @@
      }
     },
     "reply": [
-     "편의점에서? ㅋㅋ 이런 센스는 어디서 났대",
-     "고마워. 내일 돌려줄게"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이런 센스는 어디서 났어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이런 센스는 어디서 났어요",
+      "register": "polite"
+     },
+     {
+      "who": "narr",
+      "text": "고맙다고 했다. 내일 돌려주겠다고."
+     }
     ]
    }
   ],
@@ -4814,7 +6581,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "캡처함. 나중에 결혼식 영상에 넣는다"
+      "text": "이건 나중에 결혼식 영상에 넣는다"
      }
     ]
    }
@@ -4834,8 +6601,120 @@
     "text": "태현이 말했다. 고백은 확률이 70%를 넘을 때 하는 거라고."
    },
    {
+    "who": "them",
+    "name": "{top}",
+    "text": "야",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 말 아끼는 거 티 나",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 말이 줄었어요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "하려던 말 있으면 들을게요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 뭐야 왜 조용해 ㅋㅋ",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "할 말 있는 사람 티 다 난다고",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 점 세 개만 보내는 사람 누구지 ㅋㅋ",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "말해 봐 안 웃어",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "아까부터 답이 한 박자 느려요.",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "변론 준비 중인 것 같은데, 상대가 저인가요?",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 할 말 있는데 못 하는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "이거 너다",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘 좀 조용하네",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "하고 싶은 말 있으면 기다릴게",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘은 톡이 조용하시네요.",
+    "humor": "warm",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "호흡 고르고 말해도 됩니다.",
+    "humor": "warm",
+    "register": "polite"
+   },
+   {
+    "who": "sys",
+    "wait": 15
+   },
+   {
     "who": "narr",
-    "text": "지금 내 확률은 몇 퍼센트일까."
+    "text": "{top}한테 지금 내 확률은 몇 퍼센트일까."
    },
    {
     "who": "narr",
@@ -4844,7 +6723,7 @@
   ],
   "choices": [
    {
-    "text": "지금 한다",
+    "text": "지금 {top}한테 말한다",
     "effects": {
      "stats": {
       "esteem": 5
@@ -4862,16 +6741,61 @@
     },
     "minigame": "nerve_gauge",
     "reply": [
-     "…진짜?",
-     "잠깐만. 심장 좀 진정시키고 답할게"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "…"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "지금 손이 떨려서 답을 쓰다 지웠어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "지금 손이 떨려서 답을 쓰다 지웠어요",
+      "register": "polite"
+     }
     ],
     "failReply": [
-     "어… 잠깐만",
-     "나 아직 그 정도는 아니야. 미안"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "…"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "아직 거기까지는 아닌 것 같아. 이런 말밖에 못 해서 미안해",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "아직 거기까지는 아닌 것 같아요. 이런 말밖에 못 해서 미안해요",
+      "register": "polite"
+     }
     ],
     "critReply": [
-     "나도 언제 말하나 기다렸어",
-     "…늦었어 바보야"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "언제 말하나 기다리고 있었는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "지금 나올 수 있어?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "지금 나오실 수 있어요?",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -4883,12 +6807,26 @@
      }
     },
     "reply": [
-     "오늘 무슨 할 말 있는 것처럼 보였는데",
-     "…아니면 말고"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "아까 하려던 말 안 할 거면 말고",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "하려던 말, 다음에 들을게요",
+      "register": "polite"
+     },
+     {
+      "who": "narr",
+      "text": "대화가 거기서 끝났다."
+     }
     ]
    },
    {
-    "text": "상대가 먼저 말하게 유도",
+    "text": "{top|이가} 먼저 말하게 유도",
     "require": {
      "stats": {
       "talk": 50
@@ -4901,8 +6839,23 @@
      }
     },
     "reply": [
-     "요즘 우리 좀 이상하지 않아?",
-     "…아니다. 다음에 얼굴 보고 말할래"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 우리 좀 이상한 것 같지 않아?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "요즘 우리 좀 이상한 것 같지 않아요?",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "아니, 이건 얼굴 보고 다음에"
+     }
     ]
    }
   ],
@@ -4917,7 +6870,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "상대의 SNS에 모르는 남자가 나온다. 같이 찍은 사진이다."
+    "text": "{top} SNS에 모르는 사람이 나온다. 같이 찍은 사진이다."
    },
    {
     "who": "narr",
@@ -4937,8 +6890,16 @@
      }
     },
     "reply": [
-     "아 그거 사촌이야 ㅋㅋ",
-     "…근데 신경 쓰였어?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "사촌인데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "신경 쓰였는지"
+     }
     ]
    },
    {
@@ -5017,7 +6978,16 @@
       "who": "narr",
       "text": "이름 하나에 동그라미를 쳤다."
      },
-     "자? 갑자기 너 생각나서"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "자는지"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "갑자기 생각나서"
+     }
     ]
    },
    {
@@ -5050,7 +7020,11 @@
       "who": "narr",
       "text": "대화방을 오가다 답장을 엉뚱한 방에 보냈다."
      },
-     "…이거 나한테 보낸 거 맞아?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이거 맞게 온 건지"
+     }
     ]
    },
    {
@@ -5122,7 +7096,11 @@
      ]
     },
     "reply": [
-     "ㄹㅇ? 진짜 나와?",
+     {
+      "who": "them",
+      "text": "ㄹㅇ? 진짜 나와?",
+      "sticker": "minjae_surprise"
+     },
      "아 긴장된다 ㅋㅋ 내일 8시 편의점 앞. 튀지 마라"
     ]
    },
@@ -5212,7 +7190,11 @@
      ]
     },
     "reply": [
-     "ㅋㅋㅋㅋ 이거지",
+     {
+      "who": "them",
+      "text": "ㅋㅋㅋㅋ 이거지",
+      "sticker": "sohee_joy"
+     },
      "오케. 이번엔 루미 말고 나로 나간다. 토요일 7시. 튀지 마라"
     ]
    },
@@ -5365,16 +7347,94 @@
   "title": "첫 싸움",
   "lines": [
    {
+    "who": "narr",
+    "text": "자려고 누웠을 때 톡이 왔다."
+   },
+   {
     "who": "them",
-    "text": "너 요즘 나한테 관심 없지"
+    "name": "{top}",
+    "text": "자냐. 요즘 나 뒷순위 같은데",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 제가 뒷순위인 것 같아요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 요즘 나한테 관심 없지 ㅋㅋ 아니 진짜로",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 나 읽음 담당 맡은 것 같아",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 제가 후순위인 것 같아요. 아니면 정정해 주세요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 혼자 떠드는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 내가 먼저만 보내는 것 같아서 좀 서운해",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 제가 먼저만 보내는 것 같아요. 참으면 더 굳어서요",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "me",
-    "text": "무슨 소리야"
+    "text": "무슨 소리",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "무슨 소리예요",
+    "register": "polite"
    },
    {
     "who": "them",
-    "text": "어제 내가 세 번 물어봤는데 다 단답이었어"
+    "name": "{top}",
+    "text": "어제 세 번 물어봤는데",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "어제 세 번 물어봤는데요",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "답이 '나중에', '바빠서', '이따'"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "이게 어제 받은 전부"
    },
    {
     "who": "narr",
@@ -5402,7 +7462,15 @@
    },
    {
     "who": "them",
-    "text": "됐어. 자자"
+    "name": "{top}",
+    "text": "오늘은 여기까지 하자",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘은 여기까지 할게요",
+    "register": "polite"
    }
   ],
   "choices": [
@@ -5417,8 +7485,22 @@
      }
     },
     "reply": [
-     "…",
-     "알았어. 나도 좀 예민했어"
+     {
+      "who": "narr",
+      "text": "한참 동안 아무 말도 오지 않았다."
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알았어. 예민했던 건 나도 마찬가지야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알았어요. 예민했던 건 저도 마찬가지예요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -5442,19 +7524,60 @@
      "album": "변명하다 더 싸움"
     },
     "reply": [
-     "그랬구나. 말해줘서 다행이야",
-     "근데 다음엔 단답 말고 그냥 바쁘다고 해"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "아 그래서"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "말해 줘서 다행이야. 다음엔 단답 말고 바쁘다고 해 줘",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "말해 줘서 다행이에요. 다음엔 단답 말고 바쁘다고 해 주세요",
+      "register": "polite"
+     }
     ],
     "failReply": [
-     "그래서 결국 내 탓이야?",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "결국 내 탓이라는 말로 들려",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "결국 제 탓이라는 말로 들려요",
+      "register": "polite"
+     },
      {
       "who": "narr",
-      "text": "'자자'가 그날의 마지막 말이 됐다."
+      "text": "그날의 마지막 말은 자자는 한마디였다."
      }
     ],
     "critReply": [
-     "…내가 너무 몰아붙였네",
-     "미안. 내일 얼굴 보고 얘기하자"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "몰아붙인 건 나야. 미안한 것도 나고",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "몰아붙인 건 저예요. 미안한 것도 저고요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "내일 얼굴 보고"
+     }
     ]
    },
    {
@@ -5470,17 +7593,26 @@
     },
     "reply": [
      {
-      "who": "narr",
-      "text": "휴대폰을 뒤집었다. 알림이 쌓여도 열지 않았다."
+      "who": "them",
+      "name": "{top}",
+      "text": "자?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "자요?",
+      "register": "polite"
      },
      {
       "who": "narr",
-      "text": "사흘째, 알림이 멈췄다."
+      "text": "휴대폰을 뒤집었다. 알림이 쌓이다가 사흘째 멈췄다."
      }
     ]
    },
    {
     "text": "\"바쁠 땐 '밤에 톡할게' 하고 먼저 말할게\"",
+    "register": "casual",
     "mbti": "T",
     "effects": {
      "stats": {
@@ -5491,12 +7623,60 @@
      }
     },
     "reply": [
-     "…그걸 벌써 생각했어?",
-     "좋아. 약속한 거다"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거예요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "좋은데. 이건 약속으로"
+     }
+    ]
+   },
+   {
+    "text": "\"바쁠 땐 '밤에 톡할게요' 하고 먼저 말할게요\"",
+    "register": "polite",
+    "mbti": "T",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 언제 생각한 거예요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "좋은데. 이건 약속으로"
+     }
     ]
    },
    {
     "text": "\"세 번이나 물어봤는데 서운했겠다. 미안해\"",
+    "register": "casual",
     "mbti": "F",
     "effects": {
      "stats": {
@@ -5507,8 +7687,55 @@
      }
     },
     "reply": [
-     "…응. 좀 서운했어",
-     "알아줘서 됐어. 내일 통화하자"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "서운했던 건 맞는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어. 내일 통화 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어요. 내일 통화 될까요?",
+      "register": "polite"
+     }
+    ]
+   },
+   {
+    "text": "\"세 번이나 물어봤는데 서운했겠어요. 미안해요\"",
+    "register": "polite",
+    "mbti": "F",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "trust": {
+      "@top": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "서운했던 건 맞는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어. 내일 통화 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "알아줘서 됐어요. 내일 통화 될까요?",
+      "register": "polite"
+     }
     ]
    }
   ],
@@ -5523,20 +7750,89 @@
   "lines": [
    {
     "who": "narr",
-    "text": "그 뒤로 사흘, 대화가 줄었다. 뭐라고 보낼지 세 시간을 고민했다."
+    "text": "{top|과와} 사흘, 대화가 줄었다. 뭐라고 보낼지 세 시간을 고민했다."
+   },
+   {
+    "who": "me",
+    "text": "밥은",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "밥은요",
+    "register": "polite"
+   },
+   {
+    "who": "sys",
+    "wait": 10
    },
    {
     "who": "them",
-    "text": "밥은 먹었어?"
+    "name": "{top}",
+    "text": "아직"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 온 말이 밥은?",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 온 말이 그건가요.",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 밥은? ㅋㅋㅋ 그게 다야?",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 고민한 게 두 글자면 좀 억울한데",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 두 글자. 진술이 너무 짧아요",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 세 시간 고민한 결과.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 온 말이 밥 얘기라니",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "사흘 만에 오신 말이 밥 얘기라니요.",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "narr",
-    "text": "먼저 왔다."
+    "text": "세 시간이 한 어절이 됐다."
    }
   ],
   "choices": [
    {
-    "text": "미안했어. 내가 부족했어",
+    "text": "부족했다고 먼저 사과한다",
     "effects": {
      "stats": {
       "esteem": 2,
@@ -5553,23 +7849,64 @@
     },
     "minigame": "reply_timing",
     "reply": [
-     "…나도 말이 심했어",
-     "밥은 먹었냐고. 대답부터 해"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "말이 심했던 건 나도 마찬가지야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "말이 심했던 건 저도 마찬가지예요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그건 그거고. 밥 먹었는지부터"
+     }
     ],
     "failReply": [
      {
       "who": "narr",
       "text": "사과문이 너무 길었다. 스크롤이 세 번 내려갔다."
      },
-     "…읽는 데 오래 걸렸어"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "읽는 데 오래 걸렸어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "읽는 데 오래 걸렸어요",
+      "register": "polite"
+     }
     ],
     "critReply": [
-     "그 말 기다렸어",
-     "보고 싶었어. 사흘 동안"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그 말 기다렸어. 사흘 내내",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그 말 기다렸어요. 사흘 내내",
+      "register": "polite"
+     },
+     {
+      "who": "narr",
+      "text": "보고 싶었다는 말이 그다음 줄에 있었다."
+     }
     ]
    },
    {
     "text": "나도 연락하려고 했어",
+    "register": "casual",
     "effects": {
      "stats": {
       "sincerity": -1
@@ -5579,15 +7916,57 @@
      }
     },
     "reply": [
-     "…그랬구나",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서요",
+      "register": "polite"
+     },
      {
       "who": "narr",
-      "text": "'그랬구나' 뒤로 한참 말이 없었다."
+      "text": "그 뒤로 한참 말이 없었다."
+     }
+    ]
+   },
+   {
+    "text": "저도 연락하려고 했어요",
+    "register": "polite",
+    "effects": {
+     "stats": {
+      "sincerity": -1
+     },
+     "trust": {
+      "@top": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그래서요",
+      "register": "polite"
+     },
+     {
+      "who": "narr",
+      "text": "그 뒤로 한참 말이 없었다."
      }
     ]
    },
    {
     "text": "우리 얘기 좀 하자",
+    "register": "casual",
     "require": {
      "stats": {
       "talk": 55
@@ -5602,8 +7981,59 @@
      }
     },
     "reply": [
-     "응. 나도 하고 싶은 말 많아",
-     "오늘 저녁 어때?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "하고 싶은 말 많았는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까요?",
+      "register": "polite"
+     }
+    ]
+   },
+   {
+    "text": "우리 얘기 좀 해요",
+    "register": "polite",
+    "require": {
+     "stats": {
+      "talk": 55
+     }
+    },
+    "effects": {
+     "stats": {
+      "talk": 4
+     },
+     "trust": {
+      "@top": 4
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "하고 싶은 말 많았는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까?",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "오늘 저녁 될까요?",
+      "register": "polite"
+     }
     ]
    }
   ],
@@ -5801,7 +8231,7 @@
     ]
    },
    {
-    "text": "물어볼게",
+    "text": "{top}한테 물어볼게",
     "effects": {
      "stats": {
       "esteem": 2
@@ -5859,8 +8289,52 @@
   "title": "권태",
   "lines": [
    {
+    "who": "them",
+    "name": "{top}",
+    "text": "밥",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "밥은요",
+    "register": "polite"
+   },
+   {
+    "who": "me",
+    "text": "먹음",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "먹었어요",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "뭐 함",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "뭐 하세요",
+    "register": "polite"
+   },
+   {
+    "who": "me",
+    "text": "누워 있음",
+    "register": "casual"
+   },
+   {
+    "who": "me",
+    "text": "누워 있어요",
+    "register": "polite"
+   },
+   {
     "who": "narr",
-    "text": "매일 같은 대화. 밥 먹었어, 뭐해, 자자."
+    "text": "{top|과와} 매일 같은 대화. 어제도 이 순서였다."
    },
    {
     "who": "narr",
@@ -5884,8 +8358,23 @@
      }
     },
     "reply": [
-     "오 뭐야 갑자기? 좋아 ㅋㅋ",
-     "근데 이런 건 어디서 알았어?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "갑자기 뭐야. 좋은데",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "갑자기 뭐예요. 좋은데요",
+      "register": "polite"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "이런 건 어디서 알았는지"
+     }
     ]
    },
    {
@@ -5904,8 +8393,23 @@
      }
     },
     "reply": [
-     "…사실 나도 그 생각 했어",
-     "우리 잘하고 있는 거 맞지?"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "사실 같은 생각 하고 있었는데"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "우리 잘하고 있는 걸까",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "우리 잘하고 있는 걸까요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -5919,10 +8423,26 @@
      }
     },
     "reply": [
-     "응",
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "ㅇ",
+      "humor": "loud"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": ".",
+      "humor": [
+       "dry",
+       "witty",
+       "meme",
+       "warm"
+      ]
+     },
      {
       "who": "narr",
-      "text": "'응'이 오늘 받은 가장 긴 답이었다."
+      "text": "그 한 글자가 오늘 받은 가장 긴 답이었다."
      }
     ]
    }
@@ -5956,7 +8476,11 @@
      }
     },
     "reply": [
-     "…안녕하세요",
+     {
+      "who": "them",
+      "name": "그 사람",
+      "text": "…안녕하세요"
+     },
      {
       "who": "narr",
       "text": "그쪽이 먼저 웃었다. 생각보다 괜찮았다."
@@ -5993,8 +8517,16 @@
      "album": "차인 사람에게 다시 연락"
     },
     "reply": [
-     "어… 오랜만이에요",
-     "무슨 일 있으세요?"
+     {
+      "who": "them",
+      "name": "그 사람",
+      "text": "어… 오랜만이에요"
+     },
+     {
+      "who": "them",
+      "name": "그 사람",
+      "text": "무슨 일 있으세요?"
+     }
     ]
    }
   ],
@@ -6291,7 +8823,7 @@
      {
       "who": "them",
       "name": "후배",
-      "text": "…그게 더 위로 돼요 ㅋㅋ"
+      "text": "그게 더 위로 돼요 ㅋㅋ"
      },
      {
       "who": "them",
@@ -6358,7 +8890,7 @@
      {
       "who": "them",
       "name": "후배",
-      "text": "…선배한테 말하니까 좀 괜찮아졌어요"
+      "text": "선배한테 말하니까 좀 괜찮아졌어요"
      },
      {
       "who": "narr",
@@ -6603,7 +9135,10 @@
      "stats": {
       "talk": -1,
       "esteem": -1
-     }
+     },
+     "setFlags": [
+      "best_man"
+     ]
     },
     "minigame": "word_order",
     "reply": [
@@ -6626,7 +9161,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "…그거 양가 부모님도 들으신다"
+      "text": "그거 양가 부모님도 들으신다"
      }
     ],
     "critReply": [
@@ -6638,7 +9173,7 @@
      {
       "who": "them",
       "name": "준호",
-      "text": "…이거 여친한테 보여줘도 되냐"
+      "text": "이거 여친한테 보여줘도 되냐"
      }
     ]
    },
@@ -6700,7 +9235,67 @@
   "lines": [
    {
     "who": "narr",
-    "text": "8일 남았다."
+    "text": "8일 남았다. 머릿속에 {top} 이름 하나가 남았다."
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭐 정리하는 것 같은데. 물어봐도 되냐",
+    "humor": "dry",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하는 것 같아요. 물어봐도 될까요?",
+    "humor": "dry",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "야 요즘 뭐 정리하지 ㅋㅋ 물어봐도 됨?",
+    "humor": "loud"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하는 사람 같은데, 그 목록에 나도 있나",
+    "humor": "witty",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 정리하는 게 있는 것 같아요. 그 목록에 저도 있나요?",
+    "humor": "witty",
+    "register": "polite"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "[짤] 뭔가 정리하는 사람.jpg",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "물어봐도 되는지",
+    "humor": "meme"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하는 것 같아서. 물어봐도 돼?",
+    "humor": "warm",
+    "register": "casual"
+   },
+   {
+    "who": "them",
+    "name": "{top}",
+    "text": "요즘 뭔가 정리하시는 것 같아서요. 물어봐도 될까요?",
+    "humor": "warm",
+    "register": "polite"
    },
    {
     "who": "narr",
@@ -6713,7 +9308,7 @@
   ],
   "choices": [
    {
-    "text": "고백한다",
+    "text": "{top}한테 고백한다",
     "effects": {
      "affection": {
       "@top": 10
@@ -6734,25 +9329,58 @@
       "who": "narr",
       "text": "읽음. 그리고 긴 침묵."
      },
-     "…나도 같은 마음이었어"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "같은 마음인 건 진작이었어. 말 못 한 건 나도 마찬가지야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "같은 마음인 건 진작이었어요. 말 못 한 건 저도 마찬가지예요",
+      "register": "polite"
+     }
     ],
     "failReply": [
      {
       "who": "narr",
       "text": "읽음. 그리고 긴 침묵."
      },
-     "미안. 지금은 대답 못 하겠어"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "미안한데 지금은 대답 못 하겠어",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "미안한데 지금은 대답 못 하겠어요",
+      "register": "polite"
+     }
     ],
     "critReply": [
      {
       "who": "narr",
       "text": "읽음. 그리고 긴 침묵."
      },
-     "…지금 나와. 얼굴 보고 대답할래"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "전화해도 돼? 이건 목소리로 할게",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "전화해도 돼요? 이건 목소리로 할게요",
+      "register": "polite"
+     }
     ]
    },
    {
-    "text": "관계를 정리한다",
+    "text": "{top|과와} 정리한다",
     "effects": {
      "stats": {
       "esteem": 5,
@@ -6763,8 +9391,23 @@
      }
     },
     "reply": [
-     "…그래. 네가 그렇게 정했다면",
-     "고마웠어. 진심으로"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "그렇게 정한 거면"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "고마웠다는 말은 진심이야",
+      "register": "casual"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "고마웠다는 말은 진심이에요",
+      "register": "polite"
+     }
     ]
    },
    {
@@ -6832,14 +9475,17 @@
      "stats": {
       "esteem": -3,
       "stress": 8
-     }
+     },
+     "setFlags": [
+      "taehyun_truth"
+     ]
     },
     "minigame": "nerve_gauge",
     "reply": [
      {
       "who": "them",
       "name": "태현",
-      "text": "…미안하다. 진짜로"
+      "text": "미안하다. 진짜로"
      },
      {
       "who": "them",
@@ -6855,7 +9501,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…그래도 너 많이 달라졌잖아. 그건 진짜야"
+      "text": "그래도 너 많이 달라졌잖아. 그건 진짜야"
      }
     ]
    },
@@ -6875,7 +9521,7 @@
      {
       "who": "them",
       "name": "태현",
-      "text": "…야 그런 말 하지 마"
+      "text": "야 그런 말 하지 마"
      },
      {
       "who": "them",
@@ -7110,7 +9756,11 @@
       "who": "narr",
       "text": "한 줄을 쓰고 한참 봤다. 눈가가 뜨거웠다."
      },
-     "자? 갑자기 너 생각나서"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "내일 100일째인 거 맞는지"
+     }
     ]
    },
    {
@@ -7190,14 +9840,19 @@
     "text": "숫자로 남은 건 달력의 동그라미 100개뿐이지만, 남은 건 그것만이 아니다."
    },
    {
+    "who": "them",
+    "name": "{top}",
+    "text": "오늘은 시간 되는지"
+   },
+   {
     "who": "narr",
     "text": "고마운 얼굴이 줄줄이 떠오른다. 한 명씩 다 연락하고 싶다.",
     "mbti": "E"
    },
    {
     "who": "them",
-    "text": "야 오늘 100일인데 다 모여야 되는 거 아니냐 ㅋㅋ",
     "name": "태현",
+    "text": "야 오늘 100일인데 다 모여야 되는 거 아니냐 ㅋㅋ",
     "mbti": "E"
    },
    {
@@ -7217,7 +9872,7 @@
   ],
   "choices": [
    {
-    "text": "가장 가까운 사람에게 연락한다",
+    "text": "{top}한테 연락한다",
     "effects": {
      "affection": {
       "@top": 5
@@ -7228,8 +9883,16 @@
       "who": "narr",
       "text": "보냈다. 짧게, 고맙다고."
      },
-     "…갑자기 왜 그래 ㅋㅋ",
-     "근데 나도. 내일도 연락해"
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "갑자기 왜 그러는지"
+     },
+     {
+      "who": "them",
+      "name": "{top}",
+      "text": "내일도 연락하는 걸로"
+     }
     ]
    },
    {

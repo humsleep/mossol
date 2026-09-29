@@ -66,8 +66,9 @@ void main() {
     await tester.tap(findText('헬스장'));
     await tester.pump();
     expect(c.phase, Phase.event);
-    // 홈 진입 때 첫 출석 하트(+1)가 보류됐다가 새 게임에 얹힌다. 거기서 하나를 썼다.
-    expect(c.hearts, c.config.maxHearts + Attendance.dailyHearts - 1);
+    // 홈 진입 때 첫 출석 하트(+1)가 보류됐다가 새 게임에 얹힌다. 1회차 오프닝(D+1~3)은
+    // 하트를 쓰지 않으므로 그대로다(config `firstRunFreeHeartDays`).
+    expect(c.hearts, c.config.maxHearts + Attendance.dailyHearts);
     expect(find.byType(EventScreen), findsOneWidget);
 
     // 첫 이벤트는 m01. 대사가 자동으로 공개된다.
@@ -88,9 +89,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('다음 날로'));
     await tester.pump();
-    expect(c.phase, Phase.action);
+    // 광고 → endDay → 날짜 카드. spinRouletteSheet 의 pumpAndSettle 이 카드를 지난다.
+    expect(c.phase, Phase.dayStart);
     expect(c.state!.day, 2);
     await spinRouletteSheet(tester);
+    expect(c.phase, Phase.action);
     expect(findText('D+2  ·  1장'), findsOneWidget);
 
     // D+2 의 m02 에는 미니게임 선택지(표정 읽기)가 있다.
@@ -108,7 +111,14 @@ void main() {
     expect(c.current!.id, 'm02');
     await revealAll(tester, c);
     await tester.tap(findWidgetWithText(OutlinedButton, '알겠어, 연습해 볼게'));
-    await tester.pumpAndSettle();
+    // 미니게임이 떠 있는 동안에는 `pumpAndSettle` 을 쓰지 않는다. 남은 시간 막대가
+    // 값이 바뀔 때마다 흐르므로(`AppProgressBar`) 판이 돌아가는 내내 다음 프레임이
+    // 예약돼 있고, `pumpAndSettle` 은 "예약된 프레임이 없을 때까지" 라서 돌아오지
+    // 않는다(반복 애니메이션을 띄운 화면의 일반적인 규칙이다). 게다가 이 게임의
+    // 제한 시간은 실제 시계(`Stopwatch`)라서, 그렇게 겉도는 동안 판이 시간 초과로
+    // 끝나 버린다. 라우트 전환에 필요한 만큼만 정확히 흘린다.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(MinigameScaffold), findsOneWidget);
     expect(findText('진짜 감정은?'), findsOneWidget);
     for (final answer in ['서운함', '대화 끊고 싶음', '삐짐', '위로 원함']) {
@@ -144,9 +154,10 @@ void main() {
     expect(findText('이어하기'), findsOneWidget);
     await tester.tap(findText('이어하기'));
     await tester.pump();
-    expect(c.phase, Phase.action);
+    expect(c.phase, Phase.dayStart, reason: '아침 이어하기는 resume 카드');
     expect(c.state!.day, 4);
     await spinRouletteSheet(tester);
+    expect(c.phase, Phase.action);
   });
 
   testWidgets('세이브가 있을 때 새 게임은 확인 다이얼로그를 거친다', (tester) async {

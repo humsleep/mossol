@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/audio/sfx_service.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/save_service.dart';
 import 'package:mossol/engine/story_repository.dart';
@@ -34,10 +35,14 @@ StoryBundle testBundle() {
   );
 }
 
-Future<GameController> makeController() async {
+/// 기본은 **두 번째 세션 이후**의 컨트롤러다: 첫 실행 인트로를 이미 본 것으로 표시하므로
+/// `fullApp(c)` 가 홈에서 시작한다(기존 흐름 테스트가 보던 상태).
+/// [firstLaunch] 를 주면 아무것도 표시하지 않아 첫 실행(인트로)이 그대로 뜬다.
+Future<GameController> makeController({bool firstLaunch = false}) async {
   SharedPreferences.setMockInitialValues({});
   final c = GameController(bundle: testBundle(), save: SaveService());
   await c.init();
+  if (!firstLaunch) await c.markIntroSeen();
   return c;
 }
 
@@ -64,6 +69,18 @@ void useSmallScreenLargeFont(
     tester.view.resetDevicePixelRatio();
     tester.platformDispatcher.clearTextScaleFactorTestValue();
   });
+}
+
+/// 시스템 "동작 줄이기" 를 켠다(`MediaQuery.disableAnimations`). tearDown 에서 복원.
+///
+/// 조상에 `MediaQuery(data: MediaQueryData(disableAnimations: true))` 를 씌우는 방법도
+/// 있지만, 그러면 `MediaQueryData()` 의 기본값인 **크기 0×0** 까지 함께 덮어써서 화면이
+/// 레이아웃되지 않는다 — 탭이 아무것도 맞히지 못하는 테스트가 된다. 앱의 `MediaQuery` 는
+/// 뷰에서 만들어지므로 접근성 설정을 뷰에 꽂는 쪽이 실제 기기와 같다.
+void useReducedMotion(WidgetTester tester) {
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
 }
 
 void useDarkMode(WidgetTester tester) {
@@ -130,6 +147,58 @@ Future<void> spinRouletteSheet(WidgetTester tester) async {
   await tester.tap(findText('시작'));
   await tester.pumpAndSettle();
   expect(findText('오늘의 운'), findsNothing);
+}
+
+/// 효과음·진동 호출을 기록만 하는 서비스. 플러그인 채널을 건드리지 않는다.
+///
+/// `setUp` 에서 `SfxService.instance = RecordingSfxService()`, `tearDown` 에서
+/// `NoopSfxService()` 로 되돌린다([useRecordingSfx]). 벨은 [played] 에
+/// `Sfx.callRing` 으로 남고 정지는 [ringStops] 로 센다.
+class RecordingSfxService extends SfxService {
+  final played = <Sfx>[];
+  final haptics = <HapticKind>[];
+  int ringStops = 0;
+  int stopAlls = 0;
+  bool ringing = false;
+
+  @override
+  void onPlay(Sfx cue) => played.add(cue);
+
+  @override
+  void onHaptic(HapticKind kind) => haptics.add(kind);
+
+  @override
+  void startRing() {
+    if (ringing) return;
+    ringing = true;
+    play(Sfx.callRing);
+  }
+
+  @override
+  void stopRing() {
+    if (!ringing) return;
+    ringing = false;
+    ringStops++;
+  }
+
+  @override
+  void stopAll() {
+    stopRing();
+    stopAlls++;
+  }
+
+  void clear() {
+    played.clear();
+    haptics.clear();
+  }
+}
+
+/// 기록용 서비스를 끼우고 테스트가 끝나면 기본(Noop)으로 되돌린다.
+RecordingSfxService useRecordingSfx() {
+  final s = RecordingSfxService();
+  SfxService.instance = s;
+  addTearDown(() => SfxService.instance = NoopSfxService());
+  return s;
 }
 
 MinigameContext ctxFor(GameController c, {String? partner}) => MinigameContext(

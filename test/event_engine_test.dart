@@ -51,7 +51,7 @@ void main() {
 
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 12);
-      expect(baseEvents().length, 448); // + 아침 행동 장면(events_action.json) 55
+      expect(baseEvents().length, 458); // + 아침 행동 장면(events_action.json) 55
       expect(bundle.endings.length, 60);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
@@ -114,10 +114,18 @@ void main() {
         byLayer[e.layer] = byLayer[e.layer]! + 1;
       }
       expect(byLayer, {
-        EventLayer.main: 55, // + MBTI 자기소개·궁합 테스트 f/m
+        // 55 + 인물 소개(m_brief)·일주일 정리(m_week1) 쪽별 2편씩 4개
+        //    + 두 번째 문(m10_refused·m10_lied) 쪽별 2편씩 4개.
+        // 앞은 첫 주 플롯을 D1·2·4·5 → D1·2·3·4·5·7 로 늘린 것이고,
+        // 뒤는 엄마 소개팅을 거절·거짓말한 회차에서 지우·승현을 만나는 다른 길이다
+        // (그게 없으면 12명 중 2명이 영영 사라진다 — docs/review/10_second_door.md).
+        EventLayer.main: 63,
         EventLayer.route: 189,
-        EventLayer.daily: 172, // 105 + 캐릭터별 MBTI 대화(<id>_mbti_talk) 12 — 루트 슬롯을 뺏지 않게 일상층
-        // + 아침 행동 장면(events_action.json, trigger.action) 55
+        // 117 + 오프닝 플래그 후속 2편(d_fu_pact·d_fu_taehyun) — 세워만 두고
+        // 아무도 안 읽던 플래그를 읽는 쪽.
+        // + 아침 행동 장면 55(events_action.json, trigger.action) — 일상층이지만
+        // 일상 칸이 아니라 하루 첫 장면 자리에서만 뽑힌다(EventEngine.actionScenePool).
+        EventLayer.daily: 174,
         EventLayer.crisis: 16,
         EventLayer.hidden: 16, // h_* 15 + 유나 첫 만남(yuna_r00)
       });
@@ -207,7 +215,10 @@ void main() {
             ...c.effects.setFlags,
             ...c.fail.setFlags,
           ],
-      }..addAll(['album_10', 'album_20', 'burnout_x3']);
+      }..addAll(const [
+        // 선택지가 아니라 엔진이 세우는 플래그(lib/engine/effects.dart).
+        'album_10', 'album_20', 'album_30', 'burnout_x3',
+      ]);
       final required = {for (final e in bundle.endings) ...e.when.flags};
       expect(required.difference(produced), isEmpty);
     });

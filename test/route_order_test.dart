@@ -516,6 +516,10 @@ const optionalScenes = {
 
 const kRouteSeeds = int.fromEnvironment('ROUTE_SEEDS', defaultValue: 300);
 
+/// 단계 역행 검사용 시드 수(전략 2개 × 선호 2쪽). 진단은 300시드에서 f 290/300 회차가
+/// 역행이었으므로, 60이면 수정 전 코드가 확실히 걸린다.
+const kStageSeeds = int.fromEnvironment('STAGE_SEEDS', defaultValue: 60);
+
 /// MBTI 도달성(16유형 + 모름 × 선호): 유형·선호마다 focus 봇 시드 수. 대상 캐릭터를 시드로
 /// 돌리므로 캐릭터마다 이 수 ÷ 인원만큼 돈다(기본 144 → 6명이면 24회씩).
 /// 17 × 2 × 144 ≈ 4,900회라 스위트 시간을 지키려고 focus 전략만 쓴다(docs/MBTI_SPEC.md §2.4).
@@ -792,6 +796,38 @@ void main() {
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 
+  test('정적 검사: 한 선택지 안에서 진행 플래그가 실패로 사라지지 않는다', () {
+    // 위 검사는 "이벤트의 **모든 선택지**가 세우는가" 를 본다. 이번 사고는 한 칸 아래,
+    // **같은 선택지 안**에서 일어났다: `applyChoice` 는 실패하면 `c.fail` 만 적용하고
+    // `c.effects.setFlags` 를 건너뛴다(event_engine.dart:474). 그래서 확률·미니게임이
+    // 붙은 선택지를 고르고 지면, 장면은 겪었는데 겪은 적 없는 사람이 된다.
+    //
+    // `m07` "자기소개를 한다"(미니게임)·"안주만 먹는다"(확률 60)가 그랬고, 무작위
+    // 200회차 중 50회차가 `club_afterparty` 를 못 얻어 서연 장면 2편을 영구히 잃었다.
+    // 세터가 main 층이라 위 검사는 이걸 볼 수 없었다(docs/review/11_claims_audit.md).
+    //
+    // 성공해야만 서는 게 맞는 플래그는 여기 적는다 — 실패하면 안 일어난 일이다.
+    const successOnly = {
+      'stranger_laugh', // 모르는 사람이 웃어 줬다 — 지면 안 웃은 것이다
+      'seoyeon_banmal', // 반말하기로 했다 — 지면 서연이 안 받아 준 것이다
+    };
+    final required = bundle.events.expand((e) => e.trigger.flags).toSet();
+    final bad = <String>[];
+    for (final e in bundle.events) {
+      for (var i = 0; i < e.choices.length; i++) {
+        final c = e.choices[i];
+        if (c.minigame == null && c.chance == null) continue;
+        for (final f in c.effects.setFlags) {
+          if (!required.contains(f) || successOnly.contains(f)) continue;
+          if (!c.fail.setFlags.contains(f)) {
+            bad.add('${e.id}[$i] 이 지면 $f 를 잃는다 (fail.setFlags 에 없음)');
+          }
+        }
+      }
+    }
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
   test('정적 검사: 막다른 길 없음 (앞 이벤트 상한이 뒤 이벤트 상한 이상)', () {
     final set = setters(bundle);
     // 앞 하나가 뒤를 막지 않는지. 문제가 있으면 이유 목록.
@@ -846,6 +882,155 @@ void main() {
     }
     expect(bad.toList(), isEmpty, reason: bad.join('\n'));
   });
+
+  // ---- 단계 역행 금지 (docs/review/07_story_flow.md (c)#3) ----
+  //
+  // 진단: 루트 이벤트 6000개 중 번호가 뒤로 간 경우 선호 f 9.9% · m 18.1%,
+  // 한 번 이상 역행한 회차는 f 290/300 · m 300/300 이었다
+  // (seoyeon r13 → r5 가 219회, yeeun r14 → r4 가 45회 …).
+  // 수정 전 `_pickRoute` 는 그 캐릭터의 후보 전체에서 가중치 추첨만 했으므로
+  // 아래 두 테스트는 **수정 전 코드에서 반드시 실패한다**.
+
+  test('단계 유도: 루트 id 의 _rNN 이 곧 단계, 모먼트 루트는 단계 없음', () {
+    final numbered = bundle.events.where(
+      (e) => e.layer == EventLayer.route && e.stage != null,
+    );
+    expect(numbered.length, 189, reason: '<캐릭터>_rNN 루트');
+    expect(bundle.eventById['seoyeon_r03']!.stage, 3);
+    expect(bundle.eventById['seoyeon_r13']!.stage, 13);
+    expect(bundle.eventById['mo_seoyeon_call_dawn']!.stage, isNull);
+  });
+
+  test('단계 규칙: 오늘 후보 중 가장 낮은 단계부터 나간다', () {
+    final engine = EventEngine(bundle);
+    final s = GameState.fresh(bundle.config, bundle.characters, seed: 1);
+    List<StoryEvent> ev(List<String> ids) => [
+      for (final id in ids) bundle.eventById[id]!,
+    ];
+    final pool = ev([
+      'seoyeon_r03',
+      'seoyeon_r05',
+      'seoyeon_r13',
+      'seoyeon_r14',
+      'mo_seoyeon_call_dawn',
+    ]);
+    // r05 와 r13 이 같이 올라와도 낮은 쪽이 먼저다(= 진단의 seoyeon r13 → r5 219회).
+    expect(engine.nextStageEvents(s, pool).map((e) => e.id).toSet(), {
+      'seoyeon_r03',
+      'mo_seoyeon_call_dawn',
+    }, reason: '번호 없는 모먼트는 단계 밖이라 늘 함께 남는다');
+    // 앞 단계를 보고 나면(= candidates 에서 빠지면) 다음으로 낮은 단계가 나간다.
+    final next = ev([
+      'seoyeon_r05',
+      'seoyeon_r13',
+      'seoyeon_r14',
+      'mo_seoyeon_call_dawn',
+    ]);
+    expect(
+      engine.nextStageEvents(s, next).map((e) => e.id).toSet(),
+      {'seoyeon_r05', 'mo_seoyeon_call_dawn'},
+    );
+    // 뒤 단계를 이미 봤다고 해서 앞 단계를 **잠그지는 않는다** — 잠그면 r15(엔딩 조건)에
+    // 아무도 못 닿는다. 자세한 이유는 EventEngine.nextStageEvents 주석.
+    s.seen.add('seoyeon_r13');
+    expect(engine.highestSeenStage(s, 'seoyeon'), 13);
+    expect(
+      engine.nextStageEvents(s, next).map((e) => e.id),
+      contains('seoyeon_r05'),
+    );
+  });
+
+  for (final pref in Preference.genders) {
+    test('시뮬레이션[$pref]: 더 낮은 단계를 두고 뒤 단계가 먼저 나간 적 0번', () {
+      if (!routePrefs(bundle).contains(pref)) {
+        markTestSkipped('ROUTE_PREF=$kRoutePref 이거나 $pref 쪽 캐릭터가 없음');
+        return;
+      }
+      final chars = bundle.charactersFor(pref).map((c) => c.id).toList();
+      // 그날 루트 후보를 직접 들여다봐야 해서 _simulate 대신 짧은 시뮬레이터를 쓴다.
+      // 하루: (후보 기록) → planDay → 각 이벤트를 첫 선택지로 넘김 → endDay.
+      final jumps = <String, int>{}; // 후보에 더 낮은 단계가 있었는데 뒤 단계가 나간 경우
+      final regress = <String, int>{}; // 이미 본 단계보다 번호가 낮은 장면이 나온 경우(데이터 몫)
+      var routeSeen = 0;
+      for (var seed = 1; seed <= kStageSeeds; seed++) {
+        final target = chars[seed % chars.length];
+        final engine = EventEngine(bundle);
+        final s = GameState.fresh(
+          bundle.config,
+          bundle.characters,
+          seed: seed,
+          preference: pref,
+        );
+        simAbsent = engine.absentFor(s);
+        final r = Random(seed * 7919);
+        final strat = seed.isEven
+            ? MaxAffectionStrategy()
+            : FocusStrategy(target);
+        final top = <String, int>{};
+        while (!engine.isFinished(s)) {
+          // 오늘 루트 후보의 캐릭터별 최소 단계.
+          final low = <String, int>{};
+          for (final e in engine.candidates(s, EventLayer.route)) {
+            final st = e.stage;
+            if (st == null) continue;
+            final c = e.character ?? '';
+            if (!low.containsKey(c) || st < low[c]!) low[c] = st;
+          }
+          final queue = engine.planDay(s);
+          for (final planned in queue) {
+            final ev = engine.viewFor(s, planned);
+            final st = ev.stage;
+            if (ev.layer == EventLayer.route && st != null) {
+              routeSeen++;
+              final c = ev.character ?? '';
+              final lowest = low[c];
+              if (lowest != null && st > lowest) {
+                final k = '$c r$lowest 두고 r$st';
+                jumps[k] = (jumps[k] ?? 0) + 1;
+              }
+              final seenMax = top[c];
+              if (seenMax != null && st < seenMax) {
+                final k = '$c r$seenMax → r$st';
+                regress[k] = (regress[k] ?? 0) + 1;
+              }
+              top[c] = seenMax == null || st > seenMax ? st : seenMax;
+            }
+            final views = engine.choicesFor(s, ev);
+            final open = views.where((v) => !v.locked).toList();
+            if (open.isEmpty) {
+              s.seen.add(ev.id);
+              continue;
+            }
+            final c = ev.choices[strat.pick(s, ev, open, r, engine)];
+            engine.applyChoice(s, ev, c, forcedSuccess: true);
+          }
+          engine.endDay(s);
+        }
+      }
+      final rs = regress.entries.toList()..sort((a, b) => b.value - a.value);
+      print(
+        '[$pref] 루트 $routeSeen개 / $kStageSeeds회차 — 후보 건너뜀 ${jumps.values.fold(0, (a, b) => a + b)}개, '
+        '번호 역행 ${regress.values.fold(0, (a, b) => a + b)}개'
+        '${rs.isEmpty ? '' : ' (최다: ${rs.first.key} ${rs.first.value}회)'}',
+      );
+      // 엔진이 책임지는 것: 같은 날 후보에 더 낮은 단계가 있으면 그것부터 나간다.
+      expect(
+        jumps,
+        isEmpty,
+        reason: '후보를 건너뛴 경우:\n${jumps.entries.map((e) => '${e.key} ${e.value}회').join('\n')}',
+      );
+      // 남은 역행은 "앞 단계가 그날 아직 안 열려 있던" 경우뿐이다(예: daeun r14 → r8 —
+      // r08 의 day·호감 하한이 r14 보다 늦게 열린다). 트리거를 고치는 건 데이터 몫이라
+      // (09_engine_handoff.md §3) 여기서는 숫자만 남기고, 수정 전 수준으로 되돌아가면
+      // 알아채도록 상한을 둔다. 측정값: 수정 전 회차당 f 29.5 · m 28.3 → 지금 f 17.7 · m 15.9.
+      final total = regress.values.fold(0, (a, b) => a + b);
+      expect(
+        total / kStageSeeds,
+        lessThan(22),
+        reason: '회차당 번호 역행이 22개를 넘으면 단계 우선순위가 안 먹고 있다',
+      );
+    }, timeout: const Timeout(Duration(minutes: 15)));
+  }
 
   // 선호마다 따로 돈다. 데이터가 없는 쪽(캐릭터 0명)은 routePrefs 가 뺀다.
   for (final pref in Preference.values) {

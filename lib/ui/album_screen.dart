@@ -5,6 +5,8 @@ import '../engine/album_index.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -13,6 +15,9 @@ import 'keep_all.dart';
 /// 규격: docs/DESIGN_SYSTEM.md §2.6.
 /// - 주인공은 상단 수집 진행도와 카드 목록, 배경은 탭 바와 티어 라벨.
 /// - 엔딩은 트로피(메달 + 좌측 강조 띠), 흑역사는 번호가 붙은 수집 카드.
+/// - 흑역사 카드에는 종류별 빨간 도장([ShameStamp])이 비스듬히 찍히고, 누르면 그날의
+///   대화를 다시 보는 [ShameDetailSheet] 가 뜬다.
+/// - 본 엔딩에 그림이 있으면 메달 자리에 세로 썸네일, 누르면 크게 보기.
 /// - 미획득은 불투명도를 내리지 않고 자물쇠 + 글자색으로만 구분한다.
 class AlbumScreen extends StatefulWidget {
   final GameController c;
@@ -46,13 +51,20 @@ class _AlbumScreenState extends State<AlbumScreen> {
             ],
           ),
         ),
-        body: TabBarView(
+        // 배너는 TabBar 아래, 탭을 바꿔도 고정(DESIGN_SYSTEM §2 공통).
+        body: Column(
           children: [
-            _ShameTab(c: c),
-            _EndingTab(c: c),
+            const BannerSlot(edge: BannerEdge.top, safeArea: false),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _ShameTab(c: c),
+                  _EndingTab(c: c),
+                ],
+              ),
+            ),
           ],
         ),
-        bottomNavigationBar: const BannerSlot(),
       ),
     );
   }
@@ -144,66 +156,189 @@ class _ShameTab extends StatelessWidget {
         body: '실패한 선택은 여기에 카드로 남는다. 20개를 모으면 전용 엔딩이 열린다.',
       );
     }
-    return ListView(
-      padding: AppInsets.screen,
-      children: [
-        _CollectionHeader(
-          icon: Icons.local_fire_department_outlined,
-          title: '모은 흑역사',
-          count: '${album.length} / $_goal',
-          // 수집 목표가 빈 상태에서만 보이면 한 장 모으는 순간 동기가 사라진다.
-          note: album.length < _goal ? '20개를 모으면 전용 엔딩이 열린다' : null,
-          value: album.length / _goal,
-          semanticLabel: '수집한 흑역사 ${album.length}개 / $_goal개',
-        ),
-        const SizedBox(height: AppSpace.sectionGap),
-        // 최근 것이 위로. 번호는 실제 수집 순서를 유지한다.
-        for (var i = album.length - 1; i >= 0; i--) ...[
-          _ShameCard(c: c, number: i + 1, text: album[i]),
-          if (i > 0) const SizedBox(height: AppSpace.listGap),
-        ],
-      ],
-    );
-  }
-}
-
-/// 흑역사 한 장. 번호 메달이 붙은 수집 카드처럼 보이게 한다. 누르면 [ShameDetailSheet].
-class _ShameCard extends StatelessWidget {
-  final GameController c;
-  final int number;
-  final String text;
-
-  const _ShameCard({required this.c, required this.number, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: AppInsets.cardTight,
-      onTap: () =>
-          ShameDetailSheet.show(context, c, number: number, title: text),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SceneScope(
+      builder: (context, r) => ListView(
+        padding: AppInsets.screen,
         children: [
-          _ShameMedal(number: number),
-          const SizedBox(width: AppSpace.md),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Text(c.say(text), style: context.text.bodyMedium),
-            ),
+          _CollectionHeader(
+            icon: Icons.local_fire_department_outlined,
+            title: '모은 흑역사',
+            count: '${album.length} / $_goal',
+            // 수집 목표가 빈 상태에서만 보이면 한 장 모으는 순간 동기가 사라진다.
+            note: album.length < _goal ? '20개를 모으면 전용 엔딩이 열린다' : null,
+            value: album.length / _goal,
+            semanticLabel: '수집한 흑역사 ${album.length}개 / $_goal개',
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpace.xs),
-            child: Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: context.scheme.onSurfaceVariant,
+          const SizedBox(height: AppSpace.sectionGap),
+          // 최근 것이 위로. 번호는 실제 수집 순서를 유지한다.
+          for (var i = album.length - 1; i >= 0; i--) ...[
+            Builder(
+              builder: (context) {
+                final entry = ShameEntry.of(c, album[i]);
+                return _ShameCard(
+                  number: i + 1,
+                  entry: entry,
+                  stamp: r.stamp(entry.kind),
+                  bundle: r.bundle,
+                  onTap: () => ShameDetailSheet.show(
+                    context,
+                    c,
+                    number: i + 1,
+                    title: album[i],
+                  ),
+                );
+              },
             ),
-          ),
+            if (i > 0) const SizedBox(height: AppSpace.listGap),
+          ],
         ],
       ),
     );
   }
+}
+
+/// 흑역사 한 장의 출처([source], 못 찾으면 null)와 도장 종류([kind]).
+@immutable
+class ShameEntry {
+  final String title;
+  final ShameSource? source;
+  final String kind;
+
+  const ShameEntry(this.title, this.source, this.kind);
+
+  /// 제목으로 출처를 찾고 도장을 고른다. 같은 제목이면 로스터 캐릭터 쪽이 먼저다.
+  factory ShameEntry.of(GameController c, String title) {
+    final src = AlbumIndex.find(
+      c.bundle.events,
+      title,
+      roster: {for (final ch in c.roster) ch.id},
+    );
+    return ShameEntry(title, src, ShameStamp.classify(title, source: src));
+  }
+}
+
+/// 흑역사 한 장. 번호 메달 + 제목 + 종류 라벨, 오른쪽에 비스듬한 도장. 누르면 상세.
+class _ShameCard extends StatelessWidget {
+  final GameController c;
+  final int number;
+  final ShameEntry entry;
+
+  /// 도장 그림 경로. 없으면 도장 자리 없이 글만.
+  final String? stamp;
+  final AssetBundle? bundle;
+  final VoidCallback onTap;
+
+  const _ShameCard({
+    required this.number,
+    required this.entry,
+    required this.stamp,
+    required this.bundle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final label = ShameStamp.label(entry.kind);
+    return Semantics(
+      button: true,
+      label: '흑역사 $number번: ${entry.title}. $label',
+      hint: '그날 대화 다시 보기',
+      excludeSemantics: true,
+      child: AppCard(
+        padding: AppInsets.cardTight,
+        onTap: onTap,
+        child: Row(
+          children: [
+            _ShameMedal(number: number),
+            const SizedBox(width: AppSpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(keepAll(entry.title), style: context.text.bodyMedium),
+                  const SizedBox(height: AppSpace.xxs),
+                  Text(
+                    keepAll(label),
+                    style: context.text.labelSmall?.copyWith(color: t.danger),
+                  ),
+                ],
+              ),
+            ),
+            if (stamp != null) ...[
+              const SizedBox(width: AppSpace.sm),
+              ShameStampMark(
+                path: stamp!,
+                size: ShameStampMark.cardSize,
+                seed: number,
+                bundle: bundle,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 빨간 고무도장 한 개. 번호로 정한 각도만큼 비스듬히, 살짝 바랜 잉크처럼 찍힌다.
+/// 장식이다(뜻은 옆의 글 라벨이 전한다). 그림이 깨지면 빈 칸.
+class ShameStampMark extends StatelessWidget {
+  final String path;
+  final double size;
+
+  /// 각도를 고르는 수(흑역사 번호). 같은 카드는 늘 같은 각도로 찍힌다.
+  final int seed;
+  final AssetBundle? bundle;
+
+  const ShameStampMark({
+    super.key,
+    required this.path,
+    required this.size,
+    required this.seed,
+    this.bundle,
+  });
+
+  /// 카드 도장 한 변. 번호 메달(32)보다 크고 두 줄 카드 높이 안에 든다.
+  static const double cardSize = AppSize.avatarLg;
+
+  /// 상세 시트 도장 한 변.
+  static const double sheetSize = AppSize.avatarXl + AppSpace.xxl;
+
+  /// 찍힌 각도(라디안). 도장을 똑바로 찍는 사람은 없다: -12° ~ +9°.
+  static const List<double> _angles = [-0.21, 0.12, -0.09, 0.16, -0.14, 0.06];
+
+  /// 잉크가 덜 묻은 느낌. 글자 대비와 무관한 장식이라 불투명도를 조금 내린다.
+  static const double _ink = 0.88;
+
+  static double angleFor(int seed) => _angles[seed.abs() % _angles.length];
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox.square(
+      dimension: size,
+      child: Transform.rotate(
+        angle: angleFor(seed),
+        child: Opacity(
+          opacity: _ink,
+          child: Image(
+            image: SceneImage.providerFor(
+              path,
+              bundle: bundle,
+              cacheWidth: (size * MediaQuery.devicePixelRatioOf(context))
+                  .ceil(),
+            ),
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _ShameMedal extends StatelessWidget {
@@ -237,7 +372,8 @@ class _ShameMedal extends StatelessWidget {
 }
 
 /// 흑역사 상세. 그날의 장면 → 내가 한 선택 → 돌아온 반응을 짧은 대화로 다시 보여 준다.
-/// 출처는 제목으로 스토리 데이터를 거꾸로 찾는다([AlbumIndex]).
+/// 출처는 제목으로 스토리 데이터를 거꾸로 찾는다([AlbumIndex]). 못 찾으면(데이터에서 빠진
+/// 옛 흑역사) 제목·도장·한마디만.
 class ShameDetailSheet extends StatelessWidget {
   final GameController c;
   final int number;
@@ -255,14 +391,14 @@ class ShameDetailSheet extends StatelessWidget {
     GameController c, {
     required int number,
     required String title,
-  }) => showModalBottomSheet(
+  }) => showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (_) => ShameDetailSheet(c: c, number: number, title: title),
   );
 
-  /// 출처를 못 찾았을 때와 카드 맨 아래의 한마디. 번호로 돌려 가며 고른다.
+  /// 카드 맨 아래의 한마디. 번호로 돌려 가며 고른다.
   static const quips = [
     '이불 킥 한 번이면 괜찮아진다. 두 번이면… 조금 오래 간다.',
     '그날의 나에게: 그래도 용기는 있었다.',
@@ -271,19 +407,19 @@ class ShameDetailSheet extends StatelessWidget {
     '다음엔 3초만 더 생각하기로 했다.',
   ];
 
+  static String quipFor(int number) => quips[(number - 1).abs() % quips.length];
+
   @override
   Widget build(BuildContext context) {
     final text = context.text;
     final t = context.tokens;
     final soft = context.scheme.onSurfaceVariant;
-    final src = AlbumIndex.find(
-      c.bundle.events,
-      title,
-      roster: {for (final ch in c.roster) ch.id},
-    );
+    final entry = ShameEntry.of(c, title);
+    final src = entry.source;
     final ch = src?.event.character == null
         ? null
         : c.bundle.characterById[src!.event.character];
+    final label = ShameStamp.label(entry.kind);
 
     return SafeArea(
       child: ConstrainedBox(
@@ -299,36 +435,68 @@ class ShameDetailSheet extends StatelessWidget {
             AppSpace.xxl,
           ),
           children: [
+            // 머리: 번호 · 제목 · 종류 라벨, 오른쪽에 크게 찍힌 도장.
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ShameMedal(number: number),
-                const SizedBox(width: AppSpace.md),
                 Expanded(
-                  child: Text(
-                    keepAll('흑역사 #$number'),
-                    style: text.labelLarge?.copyWith(color: t.danger),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _ShameMedal(number: number),
+                          const SizedBox(width: AppSpace.sm),
+                          Flexible(
+                            child: Text(
+                              keepAll('흑역사 #$number · $label'),
+                              style: text.labelLarge?.copyWith(color: t.danger),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpace.sm),
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          keepAll(c.say(title)),
+                          style: text.headlineSmall,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                SceneScope(
+                  builder: (context, r) {
+                    final path = r.stamp(entry.kind);
+                    if (path == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(left: AppSpace.sm),
+                      child: ShameStampMark(
+                        path: path,
+                        size: ShameStampMark.sheetSize,
+                        seed: number,
+                        bundle: r.bundle,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: AppSpace.sm),
-            Text(keepAll(c.say(title)), style: text.headlineSmall),
             if (src != null) ...[
               const SizedBox(height: AppSpace.lg),
               Row(
                 children: [
-                  if (ch != null) ...[
+                  if (ch != null)
                     CharacterAvatar(
                       name: ch.name,
                       characterId: ch.id,
                       accent: t.accentFor(ch.id),
-                      size: 32,
-                    ),
-                    const SizedBox(width: AppSpace.sm),
-                  ] else ...[
+                      size: AppSize.avatarSm,
+                    )
+                  else
                     Icon(Icons.history, size: 20, color: soft),
-                    const SizedBox(width: AppSpace.sm),
-                  ],
+                  const SizedBox(width: AppSpace.sm),
                   Expanded(
                     child: Text(
                       keepAll(
@@ -367,7 +535,7 @@ class ShameDetailSheet extends StatelessWidget {
                 const SizedBox(width: AppSpace.xs),
                 Expanded(
                   child: Text(
-                    keepAll(quips[(number - 1) % quips.length]),
+                    keepAll(quipFor(number)),
                     style: text.bodyMedium?.copyWith(color: soft),
                   ),
                 ),
@@ -381,10 +549,13 @@ class ShameDetailSheet extends StatelessWidget {
 }
 
 /// 상세 속 대화 한 줄. 나는 오른쪽, 상대는 왼쪽, 지문은 가운데 기울임.
+/// 채팅 화면과 같은 말풍선 모양([AppRadius.bubble])·색을 작게 쓴다.
 class _RecapLine extends StatelessWidget {
   final GameController c;
   final Line line;
   final CharacterDef? ch;
+
+  /// 내 줄 머리글. 없으면 '나'.
   final String? label;
 
   const _RecapLine({
@@ -393,6 +564,9 @@ class _RecapLine extends StatelessWidget {
     required this.ch,
     this.label,
   });
+
+  /// 말풍선 최대 폭(화면 폭 대비). 채팅 말풍선보다 조금 좁다 — 카드 안이다.
+  static const double _maxWidthFactor = 0.62;
 
   @override
   Widget build(BuildContext context) {
@@ -414,7 +588,9 @@ class _RecapLine extends StatelessWidget {
       );
     }
     final me = line.who == 'me';
-    final who = me ? (label ?? '나') : (line.name ?? ch?.name ?? '상대');
+    final who = me
+        ? (label ?? '나')
+        : (line.name == null ? (ch?.name ?? '상대') : c.say(line.name!));
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
       child: Column(
@@ -423,7 +599,7 @@ class _RecapLine extends StatelessWidget {
             : CrossAxisAlignment.start,
         children: [
           Text(
-            who,
+            keepAll(who),
             style: text.labelSmall?.copyWith(
               color: me ? t.danger : scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -432,20 +608,23 @@ class _RecapLine extends StatelessWidget {
           const SizedBox(height: AppSpace.xxs),
           Container(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.62,
+              maxWidth: MediaQuery.sizeOf(context).width * _maxWidthFactor,
             ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.md,
-              vertical: AppSpace.sm,
-            ),
+            padding: AppInsets.bubble,
             decoration: BoxDecoration(
-              color: me ? scheme.primaryContainer : scheme.surfaceContainerHigh,
-              borderRadius: AppRadius.rLg,
+              color: me ? t.bubbleMine : t.bubbleTheirs,
+              borderRadius: AppRadius.bubble(mine: me),
+              border: me
+                  ? null
+                  : Border.all(
+                      color: t.bubbleBorder,
+                      width: AppBorderWidth.hairline,
+                    ),
             ),
             child: Text(
               keepAll(body),
               style: text.bodyMedium?.copyWith(
-                color: me ? scheme.onPrimaryContainer : scheme.onSurface,
+                color: me ? t.onBubbleMine : t.onBubbleTheirs,
               ),
             ),
           ),
@@ -500,47 +679,69 @@ class _EndingTabState extends State<_EndingTab> {
       for (final e in all)
         if (_filter.accepts(c.bundle.endingSide(e))) e,
     ];
-    return ListView(
-      padding: AppInsets.screen,
-      children: [
-        _CollectionHeader(
-          icon: Icons.emoji_events_outlined,
-          title: '본 엔딩',
-          count: '${got.length} / ${all.length}',
-          value: all.isEmpty ? 0 : got.length / all.length,
-          semanticLabel: '본 엔딩 ${got.length}개 / ${all.length}개',
-        ),
-        const SizedBox(height: AppSpace.lg),
-        EndingFilterBar(
-          value: _filter,
-          onChanged: (f) => setState(() => _filter = f),
-        ),
-        const SizedBox(height: AppSpace.lg),
-        if (shown.isEmpty)
-          const AppEmptyState(
-            icon: Icons.filter_alt_off_outlined,
-            title: '이 분류의 엔딩이 없다',
-            body: '다른 분류를 골라 보자.',
+    return SceneScope(
+      builder: (context, r) => ListView(
+        padding: AppInsets.screen,
+        children: [
+          _CollectionHeader(
+            icon: Icons.emoji_events_outlined,
+            title: '본 엔딩',
+            count: '${got.length} / ${all.length}',
+            value: all.isEmpty ? 0 : got.length / all.length,
+            semanticLabel: '본 엔딩 ${got.length}개 / ${all.length}개',
           ),
-        for (var i = 0; i < shown.length; i++) ...[
-          Builder(
-            builder: (context) {
-              final e = shown[i];
-              final owned = got.contains(e.id);
-              return _EndingCard(
-                title: owned ? e.name : '???',
-                body: owned
-                    ? c.say(c.epilogueOf(e, mbti: c.runMbti ?? c.playerMbti))
-                    : endingHintFor(e, c),
-                tierLabel: _tier(e.tier),
-                owned: owned,
-                accent: context.tokens.accentFor(e.character),
-              );
-            },
+          const SizedBox(height: AppSpace.lg),
+          EndingFilterBar(
+            value: _filter,
+            onChanged: (f) => setState(() => _filter = f),
           ),
-          if (i < shown.length - 1) const SizedBox(height: AppSpace.listGap),
+          const SizedBox(height: AppSpace.lg),
+          if (shown.isEmpty)
+            const AppEmptyState(
+              icon: Icons.filter_alt_off_outlined,
+              title: '이 분류의 엔딩이 없다',
+              body: '다른 분류를 골라 보자.',
+            ),
+          for (var i = 0; i < shown.length; i++) ...[
+            Builder(
+              builder: (context) {
+                final e = shown[i];
+                final owned = got.contains(e.id);
+                // 본 엔딩만 그림을 보여 준다. 못 본 엔딩의 그림은 스포일러다.
+                final thumb = owned
+                    ? SceneImages.forEnding(e, registry: r)
+                    : null;
+                return _EndingCard(
+                  thumb: thumb == null
+                      ? null
+                      : _EndingThumb(
+                          path: thumb,
+                          tier: e.tier,
+                          bundle: r.bundle,
+                          accent: context.tokens.accentFor(e.character),
+                        ),
+                  onTap: thumb == null
+                      ? null
+                      : () => showAppSceneViewer(
+                          context,
+                          thumb,
+                          label: '${e.name} 엔딩 그림',
+                          bundle: r.bundle,
+                        ),
+                  title: owned ? e.name : '???',
+                  body: owned
+                      ? c.say(c.epilogueOf(e, mbti: c.runMbti ?? c.playerMbti))
+                      : endingHintFor(e, c),
+                  tierLabel: _tier(e.tier),
+                  owned: owned,
+                  accent: context.tokens.accentFor(e.character),
+                );
+              },
+            ),
+            if (i < shown.length - 1) const SizedBox(height: AppSpace.listGap),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -626,12 +827,18 @@ class _EndingCard extends StatelessWidget {
   final bool owned;
   final CharacterAccent accent;
 
+  /// 본 엔딩의 그림 썸네일. 있으면 메달 대신 이것을, 카드를 누르면 크게 보기.
+  final Widget? thumb;
+  final VoidCallback? onTap;
+
   const _EndingCard({
     required this.title,
     required this.body,
     required this.tierLabel,
     required this.owned,
     required this.accent,
+    this.thumb,
+    this.onTap,
   });
 
   @override
@@ -642,30 +849,35 @@ class _EndingCard extends StatelessWidget {
     return AppCard(
       padding: AppInsets.cardTight,
       accentStripe: owned ? accent.base : null,
+      onTap: onTap,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 메달. 획득 여부를 색이 아니라 모양(체크/자물쇠)으로 먼저 알린다.
-          Container(
-            constraints: const BoxConstraints(
-              minWidth: AppSpace.huge,
-              minHeight: AppSpace.huge,
-            ),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: owned ? accent.container : scheme.surfaceContainerHigh,
-              borderRadius: AppRadius.rPill,
-              border: Border.all(
-                color: owned ? accent.base : scheme.outlineVariant,
-                width: AppBorderWidth.hairline,
+          // 본 엔딩에 그림이 있으면 그 자리에 썸네일(그 자체가 '봤다' 는 표시다).
+          if (thumb != null)
+            thumb!
+          else
+            Container(
+              constraints: const BoxConstraints(
+                minWidth: AppSpace.huge,
+                minHeight: AppSpace.huge,
+              ),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: owned ? accent.container : scheme.surfaceContainerHigh,
+                borderRadius: AppRadius.rPill,
+                border: Border.all(
+                  color: owned ? accent.base : scheme.outlineVariant,
+                  width: AppBorderWidth.hairline,
+                ),
+              ),
+              child: Icon(
+                owned ? Icons.check_circle : Icons.lock_outline,
+                size: 20,
+                color: owned ? accent.base : t.lockedForeground,
               ),
             ),
-            child: Icon(
-              owned ? Icons.check_circle : Icons.lock_outline,
-              size: 20,
-              color: owned ? accent.base : t.lockedForeground,
-            ),
-          ),
           const SizedBox(width: AppSpace.md),
           Expanded(
             child: Column(
@@ -707,6 +919,60 @@ class _EndingCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 본 엔딩의 세로 썸네일(3:4). 엔딩 그림은 대부분 세로 2:3 이라 얼굴이 있는 위쪽에 맞춘다.
+/// 티어 색 보정(배드 = 바램, 히든 = 세피아)은 엔딩 화면 히어로와 같다([EndingHero.matrixFor]).
+class _EndingThumb extends StatelessWidget {
+  final String path;
+  final String tier;
+  final AssetBundle? bundle;
+  final CharacterAccent accent;
+
+  const _EndingThumb({
+    required this.path,
+    required this.tier,
+    required this.bundle,
+    required this.accent,
+  });
+
+  /// 썸네일 폭. 메달(40)보다 조금 넓고, 3:4 로 세우면 카드 세 줄 높이와 맞는다.
+  static const double width = AppSize.avatarLg;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget img = ClipRRect(
+      borderRadius: AppRadius.rSm,
+      child: SizedBox(
+        width: width,
+        height: width / SceneFrame.portraitMin,
+        child: SceneImage(
+          path: path,
+          width: width,
+          bundle: bundle,
+          alignment: Alignment.topCenter,
+          fallback: (context) => ColoredBox(color: accent.container),
+        ),
+      ),
+    );
+    final matrix = EndingHero.matrixFor(tier);
+    if (matrix != null) {
+      img = ColorFiltered(colorFilter: ColorFilter.matrix(matrix), child: img);
+    }
+    return ExcludeSemantics(
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.rSm,
+          border: Border.all(
+            color: accent.base,
+            width: AppBorderWidth.hairline,
+          ),
+        ),
+        child: img,
       ),
     );
   }

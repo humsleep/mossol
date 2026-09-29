@@ -1,0 +1,117 @@
+{
+ "_doc": "캐릭터별 말버릇 상한과 금지어. docs/CAST_BIBLE.md '절대 안 쓰는 표현'과 docs/review/05_writing.md S1·S3 을 데이터로 옮긴 것이다. 검사는 tool/check_voice.py.",
+ "ellipsis": {
+  "_doc": "말머리 '…'. 줄 전체가 '…' 인 줄(침묵 한 칸)은 세지 않는다.",
+  "globalMaxRatio": 0.12,
+  "perEventMax": 1,
+  "afterWait": false,
+  "perCharacterMaxRatio": {
+   "daeun": 0.17,
+   "jeongwoo": 0.17,
+   "seoyeon": 0.12,
+   "jiwoo": 0.12,
+   "seunghyun": 0.12,
+   "doyun": 0.12,
+   "_default": 0.1
+  },
+  "exempt": [
+   "daeun_r07.choices[0].reply[0]",
+   "daeun_r07.choices[0].reply[2]",
+   "daeun_r07.choices[0].critReply[0]",
+   "daeun_r07.choices[0].critReply[2]"
+  ],
+  "_exemptDoc": "05_writing.md §3 '최고 5줄' 의 다은 r07 — 존댓말에서 반말로 넘어가는 세 줄이 '…' 로 한 박자씩 쉬는 것이 장면 자체다. 규칙보다 이 장면이 먼저다."
+ },
+ "signatures": [
+  {
+   "phrase": "반칙",
+   "owner": "geonwoo",
+   "ownerMax": 6,
+   "otherMax": 0,
+   "note": "건우의 것. 일곱 명에게 새어 나갔던 말이다(05_writing S3)."
+  },
+  {
+   "phrase": "농담",
+   "owner": "geonwoo",
+   "ownerMax": 8,
+   "otherMax": 2,
+   "note": "건우가 진심을 덮는 말. 다른 캐릭터는 한 루트에 두 번까지."
+  },
+  {
+   "phrase": "처음이",
+   "owner": null,
+   "ownerMax": 0,
+   "otherMax": 2,
+   "note": "'~한 사람 처음이야'. 한 캐릭터당 한두 번이면 고백이고, 열한 명이 쓰면 상투어다."
+  },
+  {
+   "phrase": "캡처",
+   "owner": "seoyeon",
+   "ownerMax": 4,
+   "otherMax": 2,
+   "note": "말을 증거로 붙잡는 버릇. 서연(과 조연 태현)의 것이다."
+  },
+  {
+   "phrase": "저장",
+   "owner": null,
+   "ownerMax": 0,
+   "otherMax": 3,
+   "note": "같은 '증거' 계열. 다은의 첫 소개(저장해 두세요)처럼 뜻이 다른 쓰임은 남긴다."
+  },
+  {
+   "phrase": "녹음",
+   "owner": "sohee",
+   "ownerMax": 8,
+   "otherMax": 2,
+   "note": "소희는 녹음이 직업이다. 남이 쓰면 그냥 증거 삼는 말버릇이 된다."
+  },
+  {
+   "phrase": "박제",
+   "owner": null,
+   "ownerMax": 0,
+   "otherMax": 2,
+   "note": "단톡 조연들의 말. 공략 캐릭터가 쓰면 목소리가 겹친다."
+  }
+ ],
+ "banned": {
+  "_doc": "그 캐릭터가 절대 쓰지 않는 표현(CAST_BIBLE 말투 항목). 부정문으로 쓰면 오히려 캐릭터인 낱말(소희의 '난 팀운 얘기 안 해')은 넣지 않는다.",
+  "seunghyun": [
+   "ㅋ",
+   "밀당",
+   "아무거나"
+  ],
+  "daeun": [
+   "ㅋㅋ",
+   "예쁘다",
+   "못생겼",
+   "대박"
+  ],
+  "jeongwoo": [
+   "넌 내 거",
+   "누구랑 있었어"
+  ],
+  "sohee": [
+   "미쳤다",
+   "여자라서"
+  ],
+  "yuna": [
+   "살 빼",
+   "몸 좋다"
+  ],
+  "geonwoo": [
+   "좋아해서 괴롭"
+  ],
+  "jiwoo": [
+   "밀당"
+  ],
+  "doyun": [
+   "살 빼"
+  ]
+ },
+ "narration": {
+  "_doc": "서술은 1인칭이다. 2인칭 '당신' 은 쓰지 않는다(05_writing §2 #5).",
+  "bannedWords": [
+   "당신"
+  ]
+ }
+}

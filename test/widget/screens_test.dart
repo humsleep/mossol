@@ -17,11 +17,15 @@ void main() {
   setUp(() async {
     c = await makeController();
     await c.newGame(seed: 5);
+    // 새 게임은 날짜 카드(dayStart)로 시작한다. 화면 단위 테스트는 아침부터.
+    c.beginMorning();
   });
 
   group('행동 화면', () {
     testWidgets('하트 0 이면 행동 탭 시 다이얼로그가 뜬다', (tester) async {
       c.state!
+        // 1회차 오프닝(D+1~3)은 하트를 쓰지 않는다 — 하트 벽은 그다음 날부터다.
+        ..day = c.config.firstRunFreeHeartDays + 1
         ..hearts = 0
         ..lastHeartMs = DateTime.now().millisecondsSinceEpoch
         ..rouletteDay = c.state!.day; // 룰렛 시트는 이미 돌린 걸로.
@@ -64,6 +68,31 @@ void main() {
       await tester.pumpWidget(wrapApp(ActionScreen(c: c)));
       await tester.pumpAndSettle();
       expect(findText('오늘의 운'), findsNothing);
+    });
+
+    testWidgets('룰렛 "한 번 더 (광고)" 는 광고를 못 받으면 시트 안에 이유를 남긴다 (회귀)', (tester) async {
+      // TestFlight: 버튼을 눌러도 아무 일도 안 일어났다. showRewarded 가 false 를
+      // 돌려줄 때 else 가지가 없었다. 스낵바는 시트 뒤에 가려지므로 시트 안에서 말한다.
+      await tester.pumpWidget(wrapApp(ActionScreen(c: c)));
+      await tester.pumpAndSettle();
+      await tester.tap(findText('돌리기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump();
+      expect(findText('한 번 더 (광고)'), findsOneWidget);
+      expect(findTextContaining('광고를 불러오지 못했어요'), findsNothing);
+
+      final before = c.rouletteSlot;
+      await tester.tap(findText('한 번 더 (광고)'));
+      await tester.pumpAndSettle();
+      // 미지원 환경(테스트 호스트)에선 광고가 없으니 결과는 그대로, 안내만 뜬다.
+      expect(findTextContaining('광고를 불러오지 못했어요'), findsOneWidget);
+      expect(c.rouletteSlot, before);
+      expect(c.rouletteRerolled, isFalse);
+      // 다시 누를 수 있어야 한다(잠시 뒤 재시도 안내와 맞아야 하므로).
+      expect(findText('한 번 더 (광고)'), findsOneWidget);
+      await tester.tap(findText('시작'));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('하트 타이머가 1초마다 줄고 차면 하트가 는다 (회귀)', (tester) async {
@@ -132,9 +161,13 @@ void main() {
 
       // 새 회차가 시작되면 controller.ending 은 비워지므로 미리 잡아 둔다.
       final endedId = c.ending!.id;
+      // 기념품 아래에 `엔딩 공유` 가 하나 늘어 1차 버튼이 첫 화면 밖으로 밀렸다.
+      await tester.ensureVisible(findText('2회차 시작'));
+      await tester.pumpAndSettle();
       await tester.tap(findText('2회차 시작'));
       await tester.pump();
-      expect(c.phase, Phase.action);
+      // 새 회차는 first 카드를 지나 행동 화면으로. spinRouletteSheet 의 pumpAndSettle 이 통과한다.
+      expect(c.phase, Phase.dayStart);
       expect(c.state!.run, 2);
       expect(c.state!.day, 1);
       expect(c.state!.endings, contains(endedId), reason: '엔딩 앨범은 회차를 넘어 유지된다');
@@ -146,6 +179,9 @@ void main() {
       c.state!.day = c.config.totalDays;
       await c.endDay();
       await tester.pumpWidget(fullApp(c));
+      // `엔딩 공유` 가 늘어 마지막 링크가 첫 화면 밖으로 밀렸다.
+      await tester.ensureVisible(findText('홈으로'));
+      await tester.pumpAndSettle();
       await tester.tap(findText('홈으로'));
       await tester.pump();
       expect(c.phase, Phase.home);
@@ -262,10 +298,18 @@ void main() {
       // 매력 막대 옆에 변화량(+3)과 오늘 값이 따로 보인다.
       expect(findText('+3'), findsOneWidget);
       expect(findText('${c.state!.stat(Stat.charm)}'), findsWidgets);
+      // 맨 위에 100일 카운트다운이 한 덩어리 늘어 버튼이 첫 화면 밖으로 밀렸다.
+      // `ListView` 는 화면 밖 항목을 만들지 않으므로 끌어 내려서 찾는다(flow_test 와 같은 방법).
+      await tester.dragUntilVisible(
+        findText('다음 날로'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(findText('다음 날로'));
       await tester.pump();
       expect(c.state!.day, 2);
-      expect(c.phase, Phase.action);
+      expect(c.phase, Phase.dayStart, reason: '광고 → endDay → 날짜 카드');
       await spinRouletteSheet(tester);
     });
   });

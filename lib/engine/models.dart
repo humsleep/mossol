@@ -24,6 +24,34 @@ class Stat {
   static const hidden = [sincerity, reputation];
   static const all = [...visible, ...hidden];
 
+  /// 돈 1 = **1,000원**. 대본이 이미 이 축척으로 쓰여 있다
+  /// (`d_luck_01` money +50 = "5만원", `d_friend_05` -150 = "15만원",
+  /// `haneul_r09` -30 = "3만원", `c_broke` +120 = "12만원").
+  static const wonPerMoney = 1000;
+
+  /// 돈을 사람이 읽는 금액으로. `72` → `7.2만원`, `30` → `3만원`, `5` → `5천원`.
+  ///
+  /// 숫자만 보여 주면("72") 현실감이 없다는 지적을 받았다. 원 단위 전체("72,000원")는
+  /// 320pt·글자 1.3배에서 스탯 줄을 넘치고, 무엇보다 대본이 이미 만원으로 말한다
+  /// ("5만원 벌었다"). 그래서 만원을 기본 단위로 쓰고 1만원 미만만 천원으로 내린다.
+  static String won(int money) => _won(money, sign: false);
+
+  /// 돈 증감. `15` → `+1.5만원`, `-5` → `-5천원`.
+  static String wonDelta(int money) => _won(money, sign: true);
+
+  static String _won(int money, {required bool sign}) {
+    final s = sign && money > 0 ? '+' : (money < 0 ? '-' : '');
+    final a = money.abs();
+    if (a == 0) return '0원';
+    if (a < 10) return '$s$a천원';
+    final man = a / 10;
+    // 1만원 단위로 떨어지면 소수점을 떼고, 아니면 한 자리만 남긴다.
+    final text = man == man.truncateToDouble()
+        ? man.toInt().toString()
+        : man.toStringAsFixed(1);
+    return '$s$text만원';
+  }
+
   static const labels = {
     charm: '매력',
     talk: '화술',
@@ -37,6 +65,52 @@ class Stat {
 
   static String label(String key) => labels[key] ?? key;
   static int maxOf(String key) => key == money ? 9999 : 100;
+}
+
+/// 캐릭터의 농담 코드(`characters.json` 의 `humor`). 짤 고르기 미니게임이 쓰던 값인데,
+/// 줄 조건 `Line.humor` 가 같은 값을 쓴다 — 상대가 정해지지 않은 씬에서 **호감 1위의 목소리**로
+/// 대사를 고르는 축이다(docs/review/12_main_rewrite.md §5.3 E1).
+///
+/// 한 쪽 5명이 다섯 값을 하나씩 나눠 갖도록 짜여 있어(docs/CAST_BIBLE.md §0.2) 이 축은
+/// 어느 회차에서도 상호배타다. 1위가 없는 회차(아무와도 호감이 0)에는 [fallback] 로 본다 —
+/// 미니게임이 이미 그렇게 하고 있다(`lib/minigames/minigame.dart` `MinigameContext.humor`).
+class Humor {
+  Humor._();
+
+  static const values = ['dry', 'loud', 'witty', 'meme', 'warm'];
+
+  /// 1위가 없거나 `humor` 가 비어 있을 때의 값.
+  static const fallback = 'warm';
+
+  static bool isValid(String v) => values.contains(v);
+}
+
+/// 말높임(`characters.json` 의 `politeness`, 줄·선택지의 `register`).
+///
+/// 한국어 말높임은 **문장 종결어미**에 붙으므로 한 줄은 반말이거나 존댓말이지 둘 다일 수 없다.
+/// 상대가 정해지지 않은 씬(`character` 없음 + `{top}`)은 12명 중 누구의 입에나 들어가야 하는데,
+/// 9명은 반말이고 지우·승현·도윤 3명은 끝까지 존댓말이다. 그래서 작가는 종결어미를 못 쓰고
+/// 명사구로만 썼다(docs/review/12_main_rewrite.md §3). 이 축이 그 제약을 푼다.
+///
+/// **정적 값으로 충분한 이유**(12_main_rewrite §5.3 E2 가 제기한 복잡성에 대한 답):
+/// 다은(r07)·유나(r08)는 루트 중간에 존댓말에서 반말로 갈아타고 도윤(r09)은 호칭만 바꾼다.
+/// 그런데 이 조건이 쓰이는 곳은 **상대가 정해지지 않은 씬**뿐이고(정해진 씬은 작가가 그 입에
+/// 맞춰 한 벌만 쓴다) 그런 씬은 `{top}` 이 성립할 만큼 호감이 쌓인 뒤 — 즉 다은 r07(D+25~),
+/// 유나 r08 이 지난 뒤 — 에 열린다. 전환 **후**의 값을 적으면 이 기능이 닿는 모든 시점에서 맞다.
+/// 전환 플래그까지 보는 동적 판정은 이 기능이 풀려는 문제를 하나도 더 풀지 못하면서 `characters.json`
+/// 에 루트 플래그를 끌어들인다. 좁고 맞는 기능을 고른다.
+class Politeness {
+  Politeness._();
+
+  /// 반말. 12명 중 9명이라 기본값이다 — `characters.json` 에 안 적으면 이것.
+  static const casual = 'casual';
+
+  /// 존댓말. 지우·승현·도윤만.
+  static const polite = 'polite';
+
+  static const values = [casual, polite];
+
+  static bool isValid(String v) => values.contains(v);
 }
 
 /// 새 게임에서 고르는 "누구를 만나고 싶나요?" 선호. 회차마다 하나.
@@ -184,6 +258,16 @@ Map<String, int> _intMap(Object? j) => j == null
 List<String> _strList(Object? j) =>
     j == null ? const [] : (j as List).map((e) => e as String).toList();
 
+/// 값 하나도 한 항목짜리 목록으로 받는다 — `"humor": "dry"` = `"humor": ["dry"]`.
+/// 조건 하나를 쓰는 줄이 대부분이라 대괄호를 강요하면 데이터가 시끄러워진다.
+/// (`reply` 가 문자열 하나를 한 줄로 받는 것과 같은 관용.)
+List<String> _strListOrOne(Object? j) => switch (j) {
+  null => const [],
+  final String v => v.trim().isEmpty ? const [] : [v.trim()],
+  final List l => [for (final e in l) (e as String).trim()],
+  _ => throw StateError('문자열 또는 문자열 목록이어야 함: $j'),
+};
+
 /// "N명 이상이 호감도 min 이상" 같은 집계 조건.
 class CountCondition {
   final int min;
@@ -234,8 +318,9 @@ class Trigger {
   /// [FlagCount.of] 중 [FlagCount.n]개 이상 플래그.
   final FlagCount? flagsAtLeast;
 
-  /// 아침 행동 id 목록(`"gym"`, `"work"` …). 있으면 오늘 고른 행동이 이 안에 있을 때만 열린다.
-  /// 행동 장면(assets/story/events_action.json)이 쓴다. 행동을 고르기 전에는 거짓.
+  /// 아침 행동 id 목록(`"gym"`, `"work"` …). 있으면 오늘 고른 행동([GameState.todayAction])이
+  /// 이 안에 있을 때만 열린다. 행동 장면(assets/story/events_action.json)이 쓴다.
+  /// 행동을 고르기 전(null)에는 거짓.
   final List<String> action;
 
   const Trigger({
@@ -339,7 +424,72 @@ class Effects {
   }
 }
 
-/// 사진 메시지(docs/MOMENTS_SPEC.md §1.3). 실제 이미지는 없고 아이콘과 장면 설명만 있다.
+/// 그림 에셋 경로 규약(docs/overhaul/06_scene_plan.md §4).
+///
+/// 경로는 **있는지 검사하지 않는다** — 테스트·CI 는 그림 파일 없이 돌아야 한다.
+/// 형식(`assets/` 로 시작하는 한 줄)만 본다. 실제로 있는지는 화면을 그릴 때
+/// `SceneRegistry` 가 답하고, 없으면 아무것도 그리지 않는다.
+abstract final class AssetPath {
+  static const prefix = 'assets/';
+
+  /// 규약에 맞는 경로인지. 빈 칸·줄바꿈·역슬래시가 들어가면 오타다.
+  static bool isValid(String path) =>
+      path.startsWith(prefix) &&
+      path.length > prefix.length &&
+      !path.contains(RegExp(r'[\s\\]'));
+}
+
+/// 스티커 id 규약(06 §4, docs/SCENE_PROMPTS.md §0.3).
+///
+/// [Line.sticker] 값은 **파일 이름 그대로**다: `<캐릭터 id>_<감정>`(`seoyeon_joy`).
+/// 넷은 감정 자리에 그 캐릭터만의 시그니처 이름이 온다([extras]).
+abstract final class Sticker {
+  /// 전원 공통 감정 4종.
+  static const emotions = ['joy', 'sulk', 'shy', 'surprise'];
+
+  /// 5번째 스티커가 있는 넷. 파일 이름이 곧 id 다.
+  static const extras = [
+    'daeun_blank',
+    'sohee_call',
+    'jeongwoo_haha',
+    'seunghyun_sure',
+  ];
+
+  /// 화이트리스트 통과 여부. `<캐릭터>_<감정 4종>` 이거나 [extras] 중 하나.
+  static bool isValid(String key) {
+    if (extras.contains(key)) return true;
+    final cut = key.lastIndexOf('_');
+    if (cut <= 0 || cut == key.length - 1) return false;
+    return emotions.contains(key.substring(cut + 1));
+  }
+
+  /// 스티커의 캐릭터 id. 규약 밖이면 null.
+  static String? characterOf(String key) {
+    if (!isValid(key)) return null;
+    return key.substring(0, key.lastIndexOf('_'));
+  }
+
+  /// 스티커의 감정 id. 규약 밖이면 null.
+  static String? emotionOf(String key) {
+    if (!isValid(key)) return null;
+    return key.substring(key.lastIndexOf('_') + 1);
+  }
+
+  /// 스크린리더용 감정 이름. 모르는 값이면 null.
+  static const labels = {
+    'joy': '기쁨',
+    'sulk': '삐짐',
+    'shy': '부끄',
+    'surprise': '놀람',
+    'blank': '무표정',
+    'call': '집중',
+    'haha': '하하',
+    'sure': '응시',
+  };
+}
+
+/// 사진 메시지(docs/MOMENTS_SPEC.md §1.3). [image] 가 없으면 아이콘과 장면 설명만으로
+/// 그린다(지금까지의 모습).
 class Photo {
   /// [Photo.icons] 중 하나. 모르는 값이면 UI 가 기본 사진 아이콘을 쓴다.
   final String icon;
@@ -347,7 +497,10 @@ class Photo {
   /// 사진 속 장면 설명. 20자 이내([maxCaption]).
   final String caption;
 
-  const Photo({required this.icon, this.caption = ''});
+  /// 전용 사진 에셋 경로(선택, 06 §4). 없으면 아이콘 공용 그림을 찾는다.
+  final String? image;
+
+  const Photo({required this.icon, this.caption = '', this.image});
 
   /// 규격이 정한 아이콘 이름 14종.
   static const icons = [
@@ -371,11 +524,12 @@ class Photo {
 
   /// 캡션을 [f] 로 바꾼 사본(이름 치환, lib/engine/text_template.dart).
   Photo mapText(String Function(String) f) =>
-      Photo(icon: icon, caption: f(caption));
+      Photo(icon: icon, caption: f(caption), image: image);
 
   factory Photo.fromJson(Map<String, dynamic> j) => Photo(
     icon: (j['icon'] as String?) ?? '',
     caption: (j['caption'] as String?) ?? '',
+    image: j['image'] as String?,
   );
 }
 
@@ -397,6 +551,20 @@ class Line {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// **호감 1위의 농담 코드** 조건([Humor.values] 중 하나 이상). 비어 있으면 조건 없음.
+  /// `mbti` 가 플레이어를 보는 것과 달리 이쪽은 **상대**를 본다 — `{top}` 이 이름을 꺼내는
+  /// 바로 그 사람이다(`EventEngine.voiceOf`). 상대가 정해지지 않은 씬에서 한 비트를 다섯
+  /// 목소리로 쓰는 축(docs/review/13_engine_fixes.md §1).
+  final List<String> humor;
+
+  /// **호감 1위의 말높임** 조건([Politeness.values]). null 이면 조건 없음.
+  /// 같은 줄을 반말·존댓말 두 벌로 쓰고 상대에 맞는 쪽만 화면에 낸다(같은 문서 §2).
+  final String? register;
+
+  /// 이 줄 뒤에 붙는 스티커 id(선택, 06 §4). 파일 이름 그대로 `<캐릭터 id>_<감정>`.
+  /// 규약은 [Sticker], 에셋이 없으면 아무것도 그리지 않는다(빈 줄도 없음).
+  final String? sticker;
+
   const Line({
     required this.who,
     this.text = '',
@@ -406,23 +574,39 @@ class Line {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.humor = const [],
+    this.register,
+    this.sticker,
   });
 
   bool get isWait => who == 'sys' && wait > 0;
 
-  /// MBTI·궁합 조건이 붙은 줄인지.
-  bool get isGated => mbti != null || noMbti || compat != null;
+  /// 플레이어(MBTI·궁합) 조건이 붙은 줄인지.
+  bool get isPlayerGated => mbti != null || noMbti || compat != null;
+
+  /// 상대(1위) 목소리 조건이 붙은 줄인지.
+  bool get isVoiceGated => humor.isNotEmpty || register != null;
+
+  /// 조건이 하나라도 붙은 줄인지. 붙은 줄이 하나도 없으면 거르기 자체를 건너뛴다.
+  bool get isGated => isPlayerGated || isVoiceGated;
 
   /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
+  ///
+  /// [name] — 말풍선 머리에 뜨는 이름 — 도 함께 치환한다. `@top` 으로 호감이
+  /// 움직이는 장면은 상대를 `{top}` 으로 부르는데, 여기서 건너뛰면 지문은
+  /// "다은이한테" 라고 하면서 말풍선 머리에는 `{top}` 이 그대로 찍혔다.
   Line mapText(String Function(String) f) => Line(
     who: who,
     text: f(text),
     wait: wait,
-    name: name,
+    name: name == null ? null : f(name!),
     photo: photo?.mapText(f),
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
+    sticker: sticker,
   );
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
@@ -436,6 +620,12 @@ class Line {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    humor: _strListOrOne(j['humor']),
+    register: switch ((j['register'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
+    sticker: j['sticker'] as String?,
   );
 }
 
@@ -470,6 +660,18 @@ class Choice {
   /// 이 이벤트 캐릭터와의 궁합 점수 범위(0~4).
   final Range? compat;
 
+  /// 호감 1위의 농담 코드·말높임 조건. 뜻과 해소 규칙은 [Line.humor]·[Line.register] 와 같다.
+  ///
+  /// `register` 는 **플레이어가 상대에게 하는 말**을 상대에 맞춰 고르는 데 쓴다 — 지우·승현·도윤을
+  /// 공략하는 회차에서 선택지가 `미안했어` 라고 반말하던 문제(12_main_rewrite §6-3)가 이것이다.
+  /// `humor` 도 같은 모양으로 받지만 선택지에는 권하지 않는다(13_engine_fixes.md §2.3).
+  final List<String> humor;
+  final String? register;
+
+  /// 자유 입력 보정(선택, docs/overhaul/07_free_input.md §2). 플레이어가 칠 법한 짧은 표현들.
+  /// 문구 2-gram·태그에 합쳐진다. 없으면 빈 목록 — 스키마 호환.
+  final List<String> intent;
+
   const Choice({
     required this.text,
     this.require,
@@ -486,10 +688,18 @@ class Choice {
     this.mbti,
     this.noMbti = false,
     this.compat,
+    this.humor = const [],
+    this.register,
+    this.intent = const [],
   });
 
-  /// MBTI·궁합 조건이 붙은 선택지인지.
-  bool get isGated => mbti != null || noMbti || compat != null;
+  /// 플레이어(MBTI·궁합) 조건이 붙은 선택지인지.
+  bool get isPlayerGated => mbti != null || noMbti || compat != null;
+
+  /// 상대(1위) 목소리 조건이 붙은 선택지인지.
+  bool get isVoiceGated => humor.isNotEmpty || register != null;
+
+  bool get isGated => isPlayerGated || isVoiceGated;
 
   /// 문구와 반응 줄을 [f] 로 바꾼 사본. 효과·조건·다음 이벤트는 그대로.
   Choice mapText(String Function(String) f) => Choice(
@@ -508,6 +718,9 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
+    intent: intent,
   );
 
   /// 반응 줄만 바꾼 사본(MBTI 줄 거르기).
@@ -531,6 +744,9 @@ class Choice {
     mbti: mbti,
     noMbti: noMbti,
     compat: compat,
+    humor: humor,
+    register: register,
+    intent: intent,
   );
 
   /// 이 결과에 맞는 반응 줄.
@@ -558,6 +774,12 @@ class Choice {
     mbti: j['mbti'] as String?,
     noMbti: j['noMbti'] == true,
     compat: Range.parse(j['compat']),
+    humor: _strListOrOne(j['humor']),
+    register: switch ((j['register'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
+    intent: _strList(j['intent']),
   );
 }
 
@@ -587,6 +809,24 @@ class StoryEvent {
   final bool once;
   final String title;
   final List<Line> lines;
+
+  /// 같은 장면을 또 볼 때 쓸 **대체 대사 묶음**(`variants`, 선택). 비어 있으면 늘 [lines].
+  ///
+  /// 왜: 100일 완주 회차에서 읽는 씬의 20% 남짓은 이미 읽은 씬이고, 그 바닥은 추첨
+  /// 규칙이 아니라 분량이 정한다 — 일상 칸이 회차당 약 150번 뽑는데 트리거를 통과하는
+  /// 일상은 94~99종뿐이다(docs/review/12_engine_fixes.md §3). 장면 수를 늘리는 것 말고
+  /// **한 장면이 여러 대사를 들고 있게** 하는 길이 하나 더 있고, 이게 그것이다.
+  /// `d_meet_01`(엘리베이터)이 세 번째로 나올 때 다른 8초를 쓰면 재방송이 아니다.
+  ///
+  /// 고르는 규칙은 [EventEngine.variantOf] 에 있다 — **회차 시드 + 이 회차에 본 횟수**로
+  /// 정해지므로 시드가 같으면 늘 같고, 연속해서 같은 대사가 나오지 않는다.
+  /// 세이브에는 아무것도 더 안 적는다(본 횟수 [GameState.seenCount] 를 그대로 쓴다).
+  ///
+  /// 바꾸는 것은 대사뿐이다 — 선택지·효과·조건·알림·삽화는 원본 그대로다. 그래서
+  /// 작가가 변형을 붙여도 밸런스·루트 순서·엔딩 조건이 흔들리지 않는다.
+  /// 사진 줄 유무는 모먼트 판정([isMoment])을 바꾸므로 검증기가 원본과 같기를 요구한다.
+  final List<List<Line>> variants;
+
   final List<Choice> choices;
 
   /// 힌트 리워드 광고가 가리킬 정답 선택지 인덱스.
@@ -598,6 +838,10 @@ class StoryEvent {
 
   /// 상대가 먼저 보낸 톡 알림 문장(40자 이내). 있으면 이벤트 진입 때 알림 카드가 먼저 뜬다.
   final String? preview;
+
+  /// 장면 삽화 에셋 경로(선택, 06 §4). 없으면 `assets/scenes/<id>.<확장자>` 를 찾는다.
+  /// 여러 이벤트가 한 장을 나눠 쓸 때(`m03`/`m03_m`)만 적는다.
+  final String? image;
 
   static const formatChat = 'chat';
   static const formatCall = 'call';
@@ -614,15 +858,28 @@ class StoryEvent {
     this.once = true,
     this.title = '',
     this.lines = const [],
+    this.variants = const [],
     this.choices = const [],
     this.hint,
     this.cliffhanger,
     this.format = formatChat,
     this.preview,
+    this.image,
   });
 
   /// 상대가 먼저 거는 전화인지.
   bool get isCall => format == formatCall;
+
+  /// 루트 단계 번호. id 끝의 `_rNN`(`seoyeon_r03` → 3)에서 유도한다. 데이터에 새 칸을
+  /// 만들지 않는 이유는 189개 루트 이벤트가 이미 전부 `<캐릭터>_rNN` 이기 때문이다
+  /// (모먼트 루트 `mo_seoyeon_call_dawn` 48개만 번호가 없다 → null = 순서 제약 없음).
+  /// `_pickRoute` 가 같은 캐릭터의 단계 역행을 막는 데 쓴다(docs/review/07_story_flow.md (c)#3).
+  int? get stage {
+    final m = _stagePattern.firstMatch(id);
+    return m == null ? null : int.parse(m[1]!);
+  }
+
+  static final _stagePattern = RegExp(r'_r(\d+)$');
 
   /// 화면에 보이는 글(제목·대사·사진 캡션·선택지·반응·알림·클리프행어)을 [f] 로 바꾼
   /// 사본. id·조건·효과는 그대로라 엔진에는 원본을 넘긴다. `GameController.shownEvent`.
@@ -636,11 +893,15 @@ class StoryEvent {
     once: once,
     title: f(title),
     lines: [for (final l in lines) l.mapText(f)],
+    variants: [
+      for (final v in variants) [for (final l in v) l.mapText(f)],
+    ],
     choices: [for (final c in choices) c.mapText(f)],
     hint: hint,
     cliffhanger: cliffhanger == null ? null : f(cliffhanger!),
     format: format,
     preview: preview == null ? null : f(preview!),
+    image: image,
   );
 
   /// 대사·선택지·힌트만 바꾼 사본(MBTI 거르기, lib/engine/mbti.dart).
@@ -658,11 +919,34 @@ class StoryEvent {
     once: once,
     title: title,
     lines: lines,
+    variants: variants,
     choices: choices,
     hint: hint,
     cliffhanger: cliffhanger,
     format: format,
     preview: preview,
+    image: image,
+  );
+
+  /// 대사 묶음만 갈아 끼운 사본([EventEngine.variantOf]). 변형 목록은 그대로 들고 간다 —
+  /// 같은 이벤트라는 사실이 바뀌지 않아야 검증기·진단이 원본과 짝지어 볼 수 있다.
+  StoryEvent withLines(List<Line> newLines) => StoryEvent(
+    id: id,
+    layer: layer,
+    character: character,
+    trigger: trigger,
+    weight: weight,
+    day: day,
+    once: once,
+    title: title,
+    lines: newLines,
+    variants: variants,
+    choices: choices,
+    hint: hint,
+    cliffhanger: cliffhanger,
+    format: format,
+    preview: preview,
+    image: image,
   );
 
   /// 화면에 보이는 글 전부(위치, 문자열). 검증기가 자리표시자 형식을 본다.
@@ -673,12 +957,21 @@ class StoryEvent {
     Iterable<(String, String)> linesOf(String where, List<Line> ls) sync* {
       for (var i = 0; i < ls.length; i++) {
         yield ('$where[$i]', ls[i].text);
+        // 말풍선 머리에 뜨는 이름도 화면에 나가는 글이다. 여기 빠뜨리면
+        // `"name": "{top}"` 이 치환 대상으로 안 잡혀 토큰이 그대로 찍힌다.
+        final n = ls[i].name;
+        if (n != null) yield ('$where[$i].name', n);
         final p = ls[i].photo;
         if (p != null) yield ('$where[$i].photo.caption', p.caption);
       }
     }
 
     yield* linesOf('$id.lines', lines);
+    // 변형 대사도 화면에 나가는 글이다 — 여기 빠뜨리면 변형 안의 `{top}` 오타를
+    // 검증기가 못 잡는다(StoryBundle.validate 가 이 목록만 본다).
+    for (var i = 0; i < variants.length; i++) {
+      yield* linesOf('$id.variants[$i].lines', variants[i]);
+    }
     for (var i = 0; i < choices.length; i++) {
       final c = choices[i];
       final w = '$id.choices[$i]';
@@ -690,6 +983,9 @@ class StoryEvent {
   }
 
   /// 사진 줄이 있는지. 대사와 반응(reply/failReply/critReply) 전부를 본다.
+  /// **변형([variants])은 보지 않는다** — 모먼트 판정([isMoment])이 보는 회차마다
+  /// 달라지면 하루 계획의 가중치가 흔들린다. 그래서 검증기가 변형의 사진 줄 유무를
+  /// 원본과 같게 맞추도록 요구한다(`StoryBundle._checkVariants`).
   bool get hasPhoto =>
       lines.any((l) => l.photo != null) ||
       choices.any(
@@ -723,6 +1019,15 @@ class StoryEvent {
       lines: ((j['lines'] as List?) ?? const [])
           .map((e) => Line.fromJson(e as Map<String, dynamic>))
           .toList(),
+      // `"variants": [{"lines": [...]}, ...]`. 칸이 없으면 변형 없음 = 예전 그대로.
+      variants: [
+        for (final v in (j['variants'] as List?) ?? const [])
+          [
+            for (final l in ((v as Map<String, dynamic>)['lines'] as List?) ??
+                const [])
+              Line.fromJson(l as Map<String, dynamic>),
+          ],
+      ],
       choices: ((j['choices'] as List?) ?? const [])
           .map((e) => Choice.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -734,6 +1039,7 @@ class StoryEvent {
         final p? when p.trim().isNotEmpty => p,
         _ => null,
       },
+      image: j['image'] as String?,
     );
   }
 }
@@ -758,6 +1064,11 @@ class CharacterDef {
   /// [replyZone] 은 선호하는 답장 속도 구간(0 = 즉답, 1 = 하루 뒤).
   final List<double> replyZone;
   final String humor;
+
+  /// 말높임([Politeness.values]). 없으면 [Politeness.casual](12명 중 9명).
+  /// 줄·선택지의 `register` 조건이 이 값과 맞는 것만 화면에 낸다.
+  final String politeness;
+
   final List<String> tags;
   final int budget;
 
@@ -783,7 +1094,8 @@ class CharacterDef {
     this.mines = const [],
     this.hidden = false,
     this.replyZone = const [0.35, 0.6],
-    this.humor = 'warm',
+    this.humor = Humor.fallback,
+    this.politeness = Politeness.casual,
     this.tags = const [],
     this.budget = 40,
     this.tagline = '',
@@ -803,7 +1115,11 @@ class CharacterDef {
     replyZone: j['replyZone'] == null
         ? const [0.35, 0.6]
         : (j['replyZone'] as List).map((e) => (e as num).toDouble()).toList(),
-    humor: (j['humor'] as String?) ?? 'warm',
+    humor: (j['humor'] as String?) ?? Humor.fallback,
+    politeness: switch ((j['politeness'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => Politeness.casual,
+    },
     tags: _strList(j['tags']),
     budget: ((j['budget'] as num?) ?? 40).toInt(),
     tagline: ((j['tagline'] as String?) ?? '').trim(),
@@ -845,6 +1161,10 @@ class Ending {
   final bool immediate;
   final bool isDefault;
 
+  /// 엔딩 히어로 그림 경로(선택, 06 §4). 없으면 엔딩 id → 캐릭터 id →
+  /// 공용 `common_<tier>` 순으로 `assets/endings/` 를 찾는다.
+  final String? image;
+
   // 캐릭터 엔딩([character])은 그 캐릭터의 성별로 자동 필터된다([EndingResolver]).
   // 공용 엔딩을 한쪽에만 두려면 `when.pref` 를 쓴다.
 
@@ -860,6 +1180,7 @@ class Ending {
     this.hint,
     this.immediate = false,
     this.isDefault = false,
+    this.image,
   });
 
   /// [temperament](`NT`·`NF`·`SJ`·`SP`, 없으면 null) 플레이어에게 보여 줄 에필로그.
@@ -887,6 +1208,7 @@ class Ending {
     hint: j['hint'] as String?,
     immediate: (j['immediate'] as bool?) ?? false,
     isDefault: (j['default'] as bool?) ?? false,
+    image: j['image'] as String?,
   );
 }
 
@@ -910,6 +1232,7 @@ class DayAction {
     this.affinity = const [],
   });
 
+  /// [eventId] 가 이 행동과 어울리는 일상인지([affinity] 접두어).
   bool fits(String eventId) => affinity.any(eventId.startsWith);
 
   factory DayAction.fromJson(Map<String, dynamic> j) => DayAction(
@@ -1000,6 +1323,81 @@ class GameConfig {
 
   static const defaultCompatMultiplier = [1.0, 1.0, 1.0, 1.03, 1.06];
 
+  /// 장 제목(`chapterTitles`, 선택). 날짜 카드의 장 첫날 pill 에만 쓴다 — 표시 전용이라
+  /// 엔진·계획에는 들어가지 않는다(docs/overhaul/02_game_loop.md §2.2). 없으면 빈 목록.
+  final List<String> chapterTitles;
+
+  /// 1회차 오프닝 중 하트를 쓰지 않는 날 수(`firstRunFreeHeartDays`, 선택). 기본 0 = 예전 그대로.
+  ///
+  /// 왜: 첫 세션이 D+5~6, 약 10분에 하트로 끊겨 첫 모먼트(전화·사진)를 보기 전에 끝났다
+  /// (docs/review/00_VERDICT.md §3 R4). `run == 1` 이고 `day <= 이 값` 인 아침만 공짜다.
+  /// [GameController.startDay] 한 곳에서만 본다 — 엔진·밸런스 시뮬레이터는 이 값을 모른다.
+  final int firstRunFreeHeartDays;
+
+  /// 같은 일상(daily) 이벤트를 다시 뽑기까지 비워 두는 날 수(`dailyCooldownDays`, 선택).
+  /// 0 이면 예전 그대로(무제한 반복). 기본 [defaultDailyCooldownDays].
+  ///
+  /// 왜: 일상 123개 중 105개가 `once:false` 라 같은 장면이 계속 재추첨됐다 — 300시드 **전부**
+  /// 20일 안에 같은 일상을 두 번 이상 받았고, `d_misc_01` 은 5일 안에 네 번까지 나왔다
+  /// (docs/review/07_story_flow.md (c)#8). [EventEngine.dailyPool] 이 이 기간 안에 본 일상을
+  /// 후보에서 빼고, 그러면 후보가 비는 날에는 원래 후보로 되돌린다(막히지 않는다).
+  final int dailyCooldownDays;
+
+  /// 1회차 D+1 에 **반드시**, 적힌 순서대로 먼저 재생할 이벤트 id 목록(`openingScript`, 선택).
+  /// 비어 있으면(기본) 예전과 똑같이 평소 추첨만 돈다.
+  ///
+  /// 왜: 100일 내기라는 전제를 세우는 `d_open_bet` 이 일상 풀에서 추첨되는 탓에 회차의
+  /// 30.3% 가 전제를 못 듣고 시작했다(docs/review/07_story_flow.md (c)#4).
+  /// 내용은 스토리 담당이 채운다 — 엔진은 "있으면 맨 앞에 순서대로 깐다"까지만 안다.
+  final List<String> openingScript;
+
+  /// [dailyCooldownDays] 기본값. 하루에 뽑는 일상은 1~2개(오프닝 3~4개)이므로 14일이면
+  /// 최대 30개 남짓이 냉각 중이고, 조건을 통과한 일상 후보는 그보다 훨씬 많다.
+  /// 2주면 플레이어가 같은 장면을 '방금 그거'로 알아채지 않는 선이기도 하다.
+  static const defaultDailyCooldownDays = 14;
+
+  /// 한 번 본 장면의 추첨 가중치를 **볼 때마다** 이 비율(%)로 줄인다
+  /// (`repeatWeightPercent`, 선택). 100 이면 감쇠 없음 = 예전 그대로.
+  ///
+  /// 왜: [dailyCooldownDays] 는 '14일 안에는 안 나온다'까지만 보장한다. 15일째가 되면
+  /// 이미 여섯 번 본 `d_drink_02`(weight 3)가 한 번도 안 본 weight 1 장면보다 **세 배**
+  /// 유리하게 다시 추첨에 들어간다. 그래서 100일 완주 회차의 재방송이 26~30% 였고
+  /// 한 장면이 최대 7번 나왔다(docs/review/11_story_verdict.md §4-1).
+  /// 냉각이 '언제'를 막는다면 이 값은 '몇 번째냐'를 벌점으로 매긴다 —
+  /// 가중치는 1 아래로 내려가지 않으므로 후보가 감쇠 때문에 비는 일은 없다.
+  final int repeatWeightPercent;
+
+  /// [repeatWeightPercent] 기본값. weight 3(가장 센 일상)이 한 번 보고 나면 0.6,
+  /// 두 번 보고 나면 0.12 로 떨어져 **한 번도 안 본 weight 1 장면에게 확실히 진다.**
+  /// 0 으로 두면 본 장면이 사실상 사라져 후보가 마르는 날 폭이 커지므로 20 으로 둔다.
+  static const defaultRepeatWeightPercent = 20;
+
+  /// 보충 칸이 **이미 본 장면으로도** 채워도 되는 하루 길이(`fillSeenBelow`, 선택).
+  /// 오늘 잡힌 장면이 이 개수보다 적을 때만 재방송으로 채운다.
+  /// 0 = 절대 안 쓴다, [EventEngine.minEventsPerDay] 이상 = 예전 그대로.
+  ///
+  /// 왜 칸을 나누는가: `planDay` 는 일상을 두 군데서 뽑는다 — ① 위기가 없는 날의 일상 칸
+  /// ② 하루가 [EventEngine.minEventsPerDay] 보다 짧을 때의 보충 칸. ②는 "하트 하나 쓴
+  /// 보람"을 위해 분량을 맞추는 칸인데, **이미 본 장면으로 채우면 분량은 늘고 보람은 줄어든다.**
+  /// 실측(docs/review/12_engine_fixes.md §3): ②가 재방송을 쓰지 않으면 재방송 비율이
+  /// 28.0% → 17.7% 로 떨어지는 대신 200일 중 28일이 **장면 하나뿐인 날**이 된다.
+  /// 그래서 기본 [defaultFillSeenBelow] = 2 — 장면 하나뿐인 날만 재방송으로 구제하고,
+  /// 둘 이상 잡힌 날은 굳이 재방송으로 늘리지 않는다.
+  final int fillSeenBelow;
+
+  /// [fillSeenBelow] 기본값. 하트 하나에 장면 하나는 너무 얇다는 판단선이다.
+  static const defaultFillSeenBelow = 2;
+
+  /// 카운트다운을 강조할 '분기점'(남은 날 수, `countdownMilestones`, 선택).
+  /// 화면이 `D-xx` 를 평소보다 크게 낼 날을 정하는 표시 전용 값이다 — 엔진의 하루
+  /// 계획에는 들어가지 않는다([GameState.isCountdownMilestone]).
+  final List<int> countdownMilestones;
+
+  /// [countdownMilestones] 기본값. 100일 중 카운트다운이 화면에 4~5번만 떴다는
+  /// docs/review/11_story_verdict.md §4-3 의 실측에 대한 엔진 쪽 답이다 —
+  /// 남은 날이 이 숫자가 되는 날은 화면이 반드시 카운트다운을 세게 보여 준다.
+  static const defaultCountdownMilestones = [90, 75, 50, 30, 20, 10, 5, 3, 1, 0];
+
   const GameConfig({
     this.totalDays = 100,
     this.chapterLength = 20,
@@ -1009,7 +1407,22 @@ class GameConfig {
     this.actions = const [],
     this.earlyAffection = EarlyAffection.none,
     this.compatMultiplier = defaultCompatMultiplier,
+    this.chapterTitles = const [],
+    this.firstRunFreeHeartDays = 0,
+    this.dailyCooldownDays = defaultDailyCooldownDays,
+    this.repeatWeightPercent = defaultRepeatWeightPercent,
+    this.fillSeenBelow = defaultFillSeenBelow,
+    this.countdownMilestones = defaultCountdownMilestones,
+    this.openingScript = const [],
   });
+
+  /// [chapter](1부터) 의 제목. 없거나 비어 있으면 null.
+  String? chapterTitleFor(int chapter) {
+    final i = chapter - 1;
+    if (i < 0 || i >= chapterTitles.length) return null;
+    final t = chapterTitles[i].trim();
+    return t.isEmpty ? null : t;
+  }
 
   /// 궁합 점수 [score] 의 호감 상승 배율. 범위 밖이면 1.
   double compatMultiplierFor(int score) =>
@@ -1031,6 +1444,44 @@ class GameConfig {
       final List l => [for (final v in l) (v as num).toDouble()],
       _ => defaultCompatMultiplier,
     },
+    chapterTitles: [
+      for (final v in (j['chapterTitles'] as List?) ?? const []) '$v',
+    ],
+    // 음수·이상한 값은 0(없음)으로 읽는다.
+    firstRunFreeHeartDays: switch (j['firstRunFreeHeartDays']) {
+      final num v when v > 0 => v.toInt(),
+      _ => 0,
+    },
+    // 칸이 없는 예전 데이터는 기본값, 음수·이상한 값은 0(냉각 없음)으로 읽는다.
+    dailyCooldownDays: switch (j['dailyCooldownDays']) {
+      final num v when v > 0 => v.toInt(),
+      final num _ => 0,
+      _ => defaultDailyCooldownDays,
+    },
+    // 칸이 없는 예전 데이터는 기본값. 범위 밖(음수·100 초과)은 100 = 감쇠 없음으로 읽어
+    // 데이터 오타가 장면을 몰래 지우지 않게 한다.
+    repeatWeightPercent: switch (j['repeatWeightPercent']) {
+      final num v when v >= 0 && v <= 100 => v.toInt(),
+      final num _ => 100,
+      _ => defaultRepeatWeightPercent,
+    },
+    // 칸이 없으면 기본값, 음수는 0(절대 안 씀)으로 읽는다.
+    fillSeenBelow: switch (j['fillSeenBelow']) {
+      final num v when v > 0 => v.toInt(),
+      final num _ => 0,
+      _ => defaultFillSeenBelow,
+    },
+    countdownMilestones: switch (j['countdownMilestones']) {
+      final List l => [
+        for (final v in l)
+          if (v is num && v >= 0) v.toInt(),
+      ],
+      _ => defaultCountdownMilestones,
+    },
+    openingScript: [
+      for (final v in (j['openingScript'] as List?) ?? const [])
+        if ('$v'.trim().isNotEmpty) '$v'.trim(),
+    ],
   );
 }
 
@@ -1055,6 +1506,53 @@ class Relation {
   );
 }
 
+/// 자유 입력 기록 한 건(docs/overhaul/07_free_input.md §3.4). 기기 세이브에만 남고 밖으로 안 나간다.
+class FreeInputEntry {
+  final String eventId;
+  final int choiceIndex;
+
+  /// 친 문장. [maxChars] 자까지.
+  final String text;
+  final int day;
+
+  /// 자동 확정이었는지(피커·확인을 거치지 않음). 무료 되돌리기 대상.
+  final bool auto;
+
+  static const maxChars = 80;
+
+  FreeInputEntry({
+    required this.eventId,
+    required this.choiceIndex,
+    required String text,
+    required this.day,
+    required this.auto,
+  }) : text = text.length > maxChars ? text.substring(0, maxChars) : text;
+
+  Map<String, dynamic> toJson() => {
+    'e': eventId,
+    'i': choiceIndex,
+    't': text,
+    'd': day,
+    'a': auto ? 1 : 0,
+  };
+
+  /// 형식이 틀린 항목은 null(건너뛴다).
+  static FreeInputEntry? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final e = j['e'];
+    final i = j['i'];
+    final t = j['t'];
+    if (e is! String || i is! num || t is! String) return null;
+    return FreeInputEntry(
+      eventId: e,
+      choiceIndex: i.toInt(),
+      text: t,
+      day: ((j['d'] as num?) ?? 0).toInt(),
+      auto: j['a'] == 1 || j['a'] == true,
+    );
+  }
+}
+
 /// 한 회차의 전체 상태. 저장·복원 대상.
 class GameState {
   int day;
@@ -1065,9 +1563,13 @@ class GameState {
   /// 필드가 없는 예전 세이브는 [Preference.all] 로 읽는다.
   final String preference;
 
-  /// 이 회차의 플레이어 MBTI(대문자 4글자). 새 게임 때 기기 설정(`PlayerMeta.mbti`)에서 복사해
-  /// 회차 내내 바뀌지 않는다(분기 일관성). 모름·건너뜀·예전 세이브는 null. docs/MBTI_SPEC.md §1.2.
-  final String? mbti;
+  /// 이 회차의 플레이어 MBTI(대문자 4글자). 새 게임 때 기기 설정(`PlayerMeta.mbti`)에서 복사한다.
+  /// 모름·건너뜀·예전 세이브는 null. docs/MBTI_SPEC.md §1.2.
+  ///
+  /// 회차 도중에 바뀌는 자리는 하나뿐이다: 온보딩에서 MBTI 를 묻지 않은 첫 회차가 D+4
+  /// `m_mbti_chat` 대화에서 처음 답할 때([GameController.adoptMbti]). 그때도 null → 값
+  /// 한 방향뿐이고, 이미 지나간 이벤트를 다시 거르지 않는다(00_VERDICT §3 R6).
+  String? mbti;
   final Map<String, int> stats;
   final Map<String, Relation> relations;
   final Set<String> flags;
@@ -1096,7 +1598,7 @@ class GameState {
   List<String> dayQueue;
 
   /// 오늘 아침에 고른 행동 id. [dayStarted] 동안만 의미가 있고 마감에서 비운다.
-  /// `trigger.action` 판정과 하루 계획의 일상 가중치에 쓴다.
+  /// `trigger.action` 판정과 하루 계획(행동 장면·일상 가중치)에 쓴다. 예전 세이브는 null.
   String? todayAction;
 
   GameState({
@@ -1186,6 +1688,9 @@ class GameState {
     'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
     'overnightShifts': Map.of(overnightShifts),
     'dayDelta': dayDelta.map((k, v) => MapEntry(k, Map.of(v))),
+    'dailySeenDay': Map.of(dailySeenDay),
+    'seenCount': Map.of(seenCount),
+    'freeInputs': [for (final f in freeInputs) f.toJson()],
   };
 
   factory GameState.fromJson(Map<String, dynamic> j) =>
@@ -1226,7 +1731,13 @@ class GameState {
         ..dayDelta.addAll({
           for (final e in ((j['dayDelta'] as Map?) ?? const {}).entries)
             e.key as String: _intMap(e.value),
-        });
+        })
+        ..dailySeenDay.addAll(_intMap(j['dailySeenDay']))
+        ..seenCount.addAll(_intMap(j['seenCount']))
+        ..freeInputs.addAll([
+          for (final e in (j['freeInputs'] as List?) ?? const [])
+            ?FreeInputEntry.fromJson(e),
+        ]);
 
   // ---- 서사 신호(lib/engine/signals.dart). 없는 예전 세이브는 전부 빈 값. ----
 
@@ -1242,6 +1753,65 @@ class GameState {
   /// 오늘 쌓인 변화(`stats`/`affection`/`trust` → 키 → 변화량). 하루 도중 앱을 다시
   /// 켜도 정산이 이어지게 컨트롤러가 저장 직전에 채운다.
   final Map<String, Map<String, int>> dayDelta = {};
+
+  /// 일상(daily) 이벤트 id → 마지막으로 본 날. 같은 장면이 며칠 안에 또 나오지 않게
+  /// [GameConfig.dailyCooldownDays] 동안 후보에서 빼는 데 쓴다(`EventEngine.dailyPool`).
+  /// 칸이 없는 예전 세이브는 빈 맵 = 냉각 중인 일상이 없음 → 예전과 똑같이 굴러간다.
+  /// 냉각이 지난 기록은 [noteDailySeen] 이 지워서 세이브가 계속 커지지 않는다.
+  final Map<String, int> dailySeenDay = {};
+
+  /// 오늘 일상 [id] 를 봤다고 적고, 냉각이 지난 기록은 버린다.
+  void noteDailySeen(String id, {required int cooldownDays}) {
+    dailySeenDay[id] = day;
+    if (cooldownDays <= 0) {
+      dailySeenDay.clear();
+      return;
+    }
+    dailySeenDay.removeWhere((_, d) => day - d >= cooldownDays);
+  }
+
+  /// 이벤트 id → 이 회차에 본 횟수. **반복될 수 있는 이벤트만** 센다
+  /// (`once: true` 는 두 번 나오지 않으므로 세도 쓸 데가 없고 세이브만 커진다 —
+  /// 지금 데이터에서 반복 가능한 것은 일상 25개 + 위기 1개로 26개뿐이다).
+  ///
+  /// [GameConfig.repeatWeightPercent] 감쇠의 지수로 쓴다([EventEngine.viewsOf]).
+  /// 칸이 없는 예전 세이브는 빈 맵 = 아직 아무것도 두 번 안 본 상태 → 감쇠가 꺼진 것과
+  /// 같아 예전 세이브가 그대로 굴러간다(test/save_migration_test.dart).
+  /// [dailySeenDay] 와 달리 **지우지 않는다** — '몇 번째냐'는 회차 내내 유효해야 한다.
+  final Map<String, int> seenCount = {};
+
+  /// 이 회차에 [id] 를 본 횟수. 기록이 없으면 0.
+  int viewsOf(String id) => seenCount[id] ?? 0;
+
+  /// [id] 를 한 번 더 봤다고 적는다.
+  void noteSeenCount(String id) => seenCount[id] = viewsOf(id) + 1;
+
+  /// 오늘 이후로 남은 날 수. 마지막 날([GameConfig.totalDays])에는 0 이다.
+  ///
+  /// 기준을 '오늘을 뺀 나머지'로 잡은 근거는 대본이다 — `m_week1`(D+7)이 "오늘로 D-93",
+  /// "93일 남았다"로 말한다. 100 − 7 = 93. D+1 의 "오늘부터 D-100" 은 구호(제목)이지
+  /// 계산값이 아니다. 화면이 `D-{daysLeft}` 로 찍으면 대본과 어긋나지 않는다.
+  int daysLeft(GameConfig cfg) {
+    final left = cfg.totalDays - day;
+    return left < 0 ? 0 : left;
+  }
+
+  /// 오늘이 카운트다운 분기점인지([GameConfig.countdownMilestones]). 표시 전용이다.
+  bool isCountdownMilestone(GameConfig cfg) =>
+      cfg.countdownMilestones.contains(daysLeft(cfg));
+
+  /// 자유 입력 기록(최근 [maxFreeInputs] 건, 추가만). 없는 예전 세이브는 빈 목록.
+  final List<FreeInputEntry> freeInputs = [];
+
+  static const maxFreeInputs = 30;
+
+  /// 기록을 뒤에 붙이고 오래된 것부터 버린다.
+  void addFreeInput(FreeInputEntry e) {
+    freeInputs.add(e);
+    if (freeInputs.length > maxFreeInputs) {
+      freeInputs.removeRange(0, freeInputs.length - maxFreeInputs);
+    }
+  }
 
   static Map<String, List<int>> _intListMap(Object? j) => {
     for (final e in ((j as Map?) ?? const {}).entries)

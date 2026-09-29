@@ -10,6 +10,7 @@
   "weight": 2,
   "once": false,
   "title": "한 세트만 더",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -112,6 +113,7 @@
   "weight": 2,
   "once": false,
   "title": "옆 러닝머신",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -202,6 +204,7 @@
   },
   "weight": 3,
   "title": "기구 사용법",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -279,6 +282,7 @@
   },
   "weight": 4,
   "title": "첫 등록 상담",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "them",
@@ -358,6 +362,7 @@
   },
   "weight": 3,
   "title": "단백질 쉐이크",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -439,6 +444,7 @@
   },
   "weight": 4,
   "title": "3주 전 사진",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -532,6 +538,7 @@
   },
   "weight": 5,
   "title": "허리가 보내는 신호",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "narr",
@@ -625,6 +632,7 @@
   },
   "weight": 4,
   "title": "오늘 기분은 몇 점",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "them",
@@ -730,6 +738,7 @@
   },
   "weight": 4,
   "title": "허리부터 푸세요",
+  "image": "assets/scenes/gym",
   "lines": [
    {
     "who": "them",
@@ -826,6 +835,7 @@
   "weight": 2,
   "once": false,
   "title": "알고리즘의 부름",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -914,6 +924,7 @@
   "weight": 2,
   "once": false,
   "title": "밑줄 친 한 문장",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1014,6 +1025,7 @@
   },
   "weight": 3,
   "title": "도서관 옆자리",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1105,6 +1117,7 @@
   },
   "weight": 4,
   "title": "모쏠 탈출 10계명",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1185,6 +1198,7 @@
   },
   "weight": 4,
   "title": "표정 읽기 강좌",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1275,6 +1289,7 @@
   },
   "weight": 3,
   "title": "읽씹의 심리학",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1350,6 +1365,7 @@
   },
   "weight": 3,
   "title": "선배가 추천한 책",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "them",
@@ -1479,6 +1495,7 @@
   },
   "weight": 3,
   "title": "선배가 추천한 책",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "them",
@@ -1607,6 +1624,7 @@
   },
   "weight": 5,
   "title": "세 쪽의 저주",
+  "image": "assets/scenes/read",
   "lines": [
    {
     "who": "narr",
@@ -1676,6 +1694,7 @@
   "weight": 2,
   "once": false,
   "title": "뜨겁지만 안 뜨겁게",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "them",
@@ -1773,6 +1792,7 @@
   "weight": 2,
   "once": false,
   "title": "마감 정산",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -1849,6 +1869,7 @@
   },
   "weight": 3,
   "title": "점심 12시 10분",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -1941,6 +1962,7 @@
   },
   "weight": 4,
   "title": "버튼 마흔 개",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2033,6 +2055,7 @@
   },
   "weight": 5,
   "title": "월급날까지 9일",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2110,6 +2133,7 @@
   },
   "weight": 4,
   "title": "영수증 뒷면",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2145,7 +2169,7 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…오늘은 한 명만 그렸어."
+      "text": "오늘은 한 명만 그렸어."
      },
      {
       "who": "narr",
@@ -2154,7 +2178,7 @@
     ]
    },
    {
-    "text": "모른 척 걸레질을 한다",
+    "text": "모른 척 바닥을 닦는다",
     "effects": {
      "stats": {
       "sincerity": 1
@@ -2167,11 +2191,11 @@
      {
       "who": "them",
       "name": "다은",
-      "text": "…고마워. 안 물어봐서."
+      "text": "고마워. 안 물어봐서."
      },
      {
       "who": "narr",
-      "text": "걸레질이 끝날 때까지 펜 소리가 났다."
+      "text": "바닥을 다 닦을 때까지 펜 소리가 났다."
      }
     ]
    },
@@ -2218,6 +2242,7 @@
   },
   "weight": 4,
   "title": "마감 후 국밥",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2316,6 +2341,7 @@
   },
   "weight": 3,
   "title": "스팀 연습",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2421,6 +2447,7 @@
   },
   "weight": 3,
   "title": "스팀 연습",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2521,6 +2548,7 @@
   },
   "weight": 5,
   "title": "사장님의 한마디",
+  "image": "assets/scenes/work",
   "lines": [
    {
     "who": "narr",
@@ -2609,6 +2637,7 @@
   "weight": 2,
   "once": false,
   "title": "옷장 앞 30분",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -2696,6 +2725,7 @@
   "weight": 2,
   "once": false,
   "title": "다 잘 어울린다는 점원",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -2775,6 +2805,7 @@
   },
   "weight": 3,
   "title": "어떻게 해 드릴까요",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -2882,6 +2913,7 @@
   },
   "weight": 4,
   "title": "3년 된 후드티",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -2961,6 +2993,7 @@
   },
   "weight": 3,
   "title": "70% 세일",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -3050,6 +3083,7 @@
   },
   "weight": 4,
   "title": "그 옷 어디서 사셨어요",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -3132,6 +3166,7 @@
   },
   "weight": 3,
   "title": "피팅룸 앞에서",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -3253,6 +3288,7 @@
   },
   "weight": 3,
   "title": "피팅룸 앞에서",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -3373,6 +3409,7 @@
   },
   "weight": 5,
   "title": "거울이 싫은 날",
+  "image": "assets/scenes/style",
   "lines": [
    {
     "who": "narr",
@@ -3442,6 +3479,7 @@
   "weight": 2,
   "once": false,
   "title": "이불 밖은 위험해",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -3511,6 +3549,7 @@
   "weight": 2,
   "once": false,
   "title": "한 편만 보고 자자",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -3597,6 +3636,7 @@
   },
   "weight": 3,
   "title": "사장님의 답글",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -3671,6 +3711,7 @@
   },
   "weight": 4,
   "title": "엄마의 전화",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "them",
@@ -3776,6 +3817,7 @@
   },
   "weight": 3,
   "title": "한 판만",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "them",
@@ -3900,11 +3942,12 @@
   },
   "weight": 3,
   "title": "한 판만",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "them",
     "name": "민재",
-    "text": "…자냐"
+    "text": "자냐"
    },
    {
     "who": "them",
@@ -4028,6 +4071,7 @@
   },
   "weight": 3,
   "title": "너무 평화로운 오후",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -4106,6 +4150,7 @@
   },
   "weight": 3,
   "title": "혼자 요리",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -4193,6 +4238,7 @@
   },
   "weight": 5,
   "title": "아무것도 안 하기",
+  "image": "assets/scenes/rest",
   "lines": [
    {
     "who": "narr",
@@ -4263,6 +4309,7 @@
   "weight": 2,
   "once": false,
   "title": "단톡방 폭주",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4360,6 +4407,7 @@
   "weight": 2,
   "once": false,
   "title": "국밥 연애 상담",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4447,6 +4495,7 @@
   },
   "weight": 3,
   "title": "치킨집 모임",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4540,6 +4589,7 @@
   },
   "weight": 4,
   "title": "태현의 연애 강의",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "them",
@@ -4578,7 +4628,7 @@
     ]
    },
    {
-    "text": "\"형은 마지막 연애가 언제야?\"",
+    "text": "\"마지막 연애는 언제였는데?\"",
     "effects": {
      "stats": {
       "talk": 2,
@@ -4637,6 +4687,7 @@
   },
   "weight": 4,
   "title": "소개 좀 해 줘",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4724,6 +4775,7 @@
   },
   "weight": 3,
   "title": "준호의 동창 모임",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4850,6 +4902,7 @@
   },
   "weight": 3,
   "title": "준호의 동창 모임",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -4910,7 +4963,7 @@
      {
       "who": "them",
       "name": "건우",
-      "text": "…근데 난 그 얘기 좋아하는데"
+      "text": "근데 난 그 얘기 좋아하는데"
      }
     ]
    },
@@ -4976,6 +5029,7 @@
   },
   "weight": 5,
   "title": "하소연 대회",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",
@@ -5074,6 +5128,7 @@
   },
   "weight": 3,
   "title": "갑자기 날아온 청첩장",
+  "image": "assets/scenes/friends",
   "lines": [
    {
     "who": "narr",

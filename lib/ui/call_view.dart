@@ -20,6 +20,9 @@ import '../engine/models.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'portraits.dart';
+import 'profile_view.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart';
 
 /// `mm:ss`. 한 시간을 넘으면 분이 60 을 넘어 그대로 센다(통화가 그렇게 길 일은 없다).
@@ -35,7 +38,36 @@ String formatCallTime(int seconds) {
 /// 어느 지점에서도 `onSurface`·`onSurfaceVariant` 글자가 4.5:1 을 넘는다.
 class CallBackdrop extends StatelessWidget {
   final Widget child;
-  const CallBackdrop({super.key, required this.child});
+
+  /// 통화 배경으로 깔 장면 삽화(선택, 06 §1). null 이면 지금까지의 그라데이션 그대로다.
+  final String? image;
+
+  /// 삽화를 얼마나 어둡게 얹는지. 06 §1 "30% 어둡게" — 글자 대비를 지키는 선이다.
+  static const double dim = 0.3;
+
+  /// 삽화가 차지하는 화면 높이 비율. **통화 화면의 값이다** — 아래쪽 45% 는
+  /// 발신자 정보·자막·끊기 버튼이 채우므로 비운다.
+  static const double sceneHeightFactor = 0.55;
+
+  /// 이 화면에서 삽화가 차지할 높이 비율. 기본은 통화 화면 값([sceneHeightFactor]).
+  ///
+  /// 타이틀 화면(§2.16)은 1 을 준다. 아래를 채울 자막도 버튼 줄도 없어서 0.55 를
+  /// 그대로 물려받으면 **아래 45% 가 빈 자수정색으로 남고 그림이 끊기는 가로 이음매가
+  /// 보였다**(docs/review/11_polish_verdict.md 7위). 꽉 채운 뒤 글자 자리는
+  /// [bottomScrim] 으로 만든다.
+  final double heightFactor;
+
+  /// 아래쪽에 깔 어둠. 그림이 화면을 꽉 채울 때 글자가 앉을 자리를 만든다.
+  /// 그림이 없으면(그라데이션만) 아무 일도 하지 않는다 — 덮을 것이 없다.
+  final bool bottomScrim;
+
+  const CallBackdrop({
+    super.key,
+    required this.child,
+    this.image,
+    this.heightFactor = sceneHeightFactor,
+    this.bottomScrim = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +89,91 @@ class CallBackdrop extends StatelessWidget {
                   stops: const [0, 0.85],
                 ),
               ),
-              child: SafeArea(bottom: false, child: child),
+              child: Stack(
+                children: [
+                  if (image case final path?) ...[
+                    Positioned.fill(
+                      child: _CallScenery(
+                        path: path,
+                        heightFactor: heightFactor,
+                      ),
+                    ),
+                    if (bottomScrim)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  context.scheme.surface.withValues(alpha: 0),
+                                  context.scheme.surface,
+                                ],
+                                // 위 40% 는 그림 그대로, 아래로 가면서 바탕색으로 잠긴다.
+                                stops: const [0.4, 0.95],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                  SafeArea(bottom: false, child: child),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 통화 배경의 삽화 한 장. 위쪽에만 깔고 아래로 서서히 사라진다.
+///
+/// 어두운 바탕 위에 [CallBackdrop.dim] 만큼 눌러 얹으므로 그림이 30% 어두워지고,
+/// 아바타·이름·타이머 글자는 그 위에서도 대비를 지킨다. 그림을 못 읽으면 아무것도
+/// 그리지 않아 지금까지의 그라데이션만 남는다.
+class _CallScenery extends StatelessWidget {
+  final String path;
+  final double heightFactor;
+  const _CallScenery({required this.path, required this.heightFactor});
+
+  /// 그림이 아래로 사라지기 시작하는 지점(그림 높이 기준).
+  ///
+  /// 통화 화면은 그림 **아래에** 자막이 흐르니 절반쯤에서 지워 자리를 비운다.
+  /// 화면을 꽉 채우는 쪽(타이틀)은 지우지 않고 거의 끝까지 살려 둔다 — 여기서 0.55
+  /// 로 지우면 화면 중간에 그림이 끊기는 가로 이음매가 생긴다. 글자 자리는
+  /// `CallBackdrop.bottomScrim` 이 만든다.
+  double get _fadeFrom => heightFactor >= 1 ? 0.88 : 0.55;
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: FractionallySizedBox(
+          heightFactor: heightFactor,
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (rect) => LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
+              stops: [_fadeFrom, 1],
+            ).createShader(rect),
+            child: Opacity(
+              opacity: 1 - CallBackdrop.dim,
+              child: SceneScope(
+                builder: (context, r) => SceneImage(
+                  path: path,
+                  width: w,
+                  bundle: r.bundle,
+                  alignment: Alignment.topCenter,
+                  kenBurns: true,
+                ),
+              ),
             ),
           ),
         ),
@@ -362,6 +478,9 @@ class ActiveCallView extends StatelessWidget {
   final String name;
   final String? characterId;
 
+  /// 통화 배경 삽화(선택). 없으면 지금까지의 바탕 그대로.
+  final String? image;
+
   /// 통화 시간(초). [ended] 면 "통화 종료" 와 함께 멈춘 값을 보여 준다.
   final int seconds;
   final bool ended;
@@ -379,6 +498,7 @@ class ActiveCallView extends StatelessWidget {
     required this.characterId,
     required this.seconds,
     required this.subtitles,
+    this.image,
     this.ended = false,
     this.scroll,
     this.bottom,
@@ -387,6 +507,7 @@ class ActiveCallView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CallBackdrop(
+      image: image,
       child: Builder(
         builder: (context) {
           final scheme = context.scheme;
@@ -404,15 +525,29 @@ class ActiveCallView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    ExcludeSemantics(
-                      child: _CallAvatar(
-                        name: name,
-                        characterId: characterId,
-                        accent: accent,
-                        size: AppSpace.huge,
+                    // 통화 머리줄의 아바타도 채팅 아바타와 같다 — 누르면 초상화가
+                    // 크게 열린다(§2.15). 프로필이 없는 상대면 그냥 그림이다.
+                    // 그림은 40 인데 탭 대상은 44 여야 하므로(§4.2) 상자만 44 로 잡고
+                    // 뒤 간격을 md → sm 로 줄인다(44 + 8 = 40 + 12, 이름 열은 제자리).
+                    PortraitTapTarget(
+                      characterId: characterId,
+                      name: name,
+                      child: SizedBox.square(
+                        dimension: AppSpace.minTouch,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: ExcludeSemantics(
+                            child: _CallAvatar(
+                              name: name,
+                              characterId: characterId,
+                              accent: accent,
+                              size: AppSpace.huge,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpace.md),
+                    const SizedBox(width: AppSpace.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

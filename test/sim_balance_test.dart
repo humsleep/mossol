@@ -671,7 +671,20 @@ class RunResult {
   int onFireChoices = 0;
   int? dailyExhaustDay;
   int dailyPicked = 0;
-  int dailyRepeatPicked = 0;
+  /// 일상 칸에서 뽑힌 것 중 **반복 가능한(`once: false`)** 이벤트 수.
+  /// 처음 보는 것도 포함한다 — '반복될 수 있는 풀에서 얼마나 뽑히나'를 재는 값이다.
+  ///
+  /// 이름이 `dailyRepeatPicked` 였고 출력 문구도 모호해서 **재방송 비율로 오독됐다.**
+  /// 이것은 재방송이 아니다. 실제로 이미 읽은 씬을 다시 읽은 횟수는
+  /// [dailyRerunPicked] 이고, 100일 완주 기준의 제대로 된 측정은
+  /// test/rerun_share_test.dart 가 한다.
+  int dailyRepeatablePicked = 0;
+
+  /// 일상 칸에서 **이미 이 회차에 읽은 씬**이 또 뽑힌 횟수. 이게 재방송이다.
+  int dailyRerunPicked = 0;
+
+  /// 재방송 판정을 위해 이 회차에 일상 칸에서 뽑힌 id.
+  final Set<String> _dailyPickedIds = {};
   final Map<String, int> routeByChar = {};
   int hiddenSeen = 0;
   int stuckEvents = 0;
@@ -684,6 +697,9 @@ class RunResult {
   int decayTotal = 0;
   final Map<String, int> firstDay = {};
   final Map<int, int> onceDailyUnseenAt = {};
+
+  /// `once: true` 인 일상 총 개수([onceDailyUnseenAt] 의 분모). 데이터에서 센다.
+  int onceDailyTotal = 0;
   final Map<int, int> onceDailyAvailAt = {};
   final Set<String> dailySeen = {};
   final List<int> lockSeenByCh = List.filled(5, 0);
@@ -753,6 +769,9 @@ RunResult simulate(
       final onceDaily = b.events.where(
         (e) => e.layer == EventLayer.daily && e.once,
       );
+      // 분모는 데이터에서 센다. 예전에는 `/56` 이 문구에 박혀 있어서 콘텐츠가
+      // `once` 를 늘린 뒤로 계속 틀린 값을 찍고 있었다.
+      res.onceDailyTotal = onceDaily.length;
       res.onceDailyUnseenAt[s.day] = onceDaily
           .where((e) => !s.seen.contains(e.id))
           .length;
@@ -771,7 +790,8 @@ RunResult simulate(
       if (e.layer == EventLayer.daily) {
         res.dailyPicked++;
         res.dailySeen.add(e.id);
-        if (!e.once) res.dailyRepeatPicked++;
+        if (!e.once) res.dailyRepeatablePicked++;
+        if (!res._dailyPickedIds.add(e.id)) res.dailyRerunPicked++;
       }
       if (e.layer == EventLayer.route) {
         res.routeByChar[e.character ?? '?'] =
@@ -1156,7 +1176,7 @@ void main() {
         '[f] 하루 평균 이벤트 ${evPerDay.summary}; 빈 날 평균 ${Dist(rs.map((r) => r.emptyDays)).mean.toStringAsFixed(2)}; 일상 후보 0인 날 평균 ${Dist(rs.map((r) => r.daysWithNoDailyCandidate)).mean.toStringAsFixed(1)}; 일상 고갈 첫날 ${Dist(rs.where((r) => r.dailyExhaustDay != null).map((r) => r.dailyExhaustDay!)).summary} (고갈 발생 ${pct(rs.where((r) => r.dailyExhaustDay != null).length, n)})',
       );
       p(
-        '    일상 중 반복(once:false) 비율 ${pct(rs.fold(0, (a, r) => a + r.dailyRepeatPicked), rs.fold(0, (a, r) => a + r.dailyPicked))}; 읽씹 대기 줄 ${Dist(rs.map((r) => r.waitLines)).mean.toStringAsFixed(1)}회/회차; 히든 ${Dist(rs.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차',
+        '    일상 중 반복 가능(once:false)한 것이 뽑힌 비율 ${pct(rs.fold(0, (a, r) => a + r.dailyRepeatablePicked), rs.fold(0, (a, r) => a + r.dailyPicked))} (처음 보는 것 포함 — 재방송이 아니다); 그중 실제 재방송(이미 읽은 씬) ${pct(rs.fold(0, (a, r) => a + r.dailyRerunPicked), rs.fold(0, (a, r) => a + r.dailyPicked))}; 읽씹 대기 줄 ${Dist(rs.map((r) => r.waitLines)).mean.toStringAsFixed(1)}회/회차; 히든 ${Dist(rs.map((r) => r.hiddenSeen)).mean.toStringAsFixed(2)}회/회차',
       );
       final routeTot = <String, num>{
         for (final c in chars)
@@ -1237,7 +1257,7 @@ void main() {
                 )
                 .join(' ');
         p(
-          '    D$d 스탯 평균: $st | once 일상 미열람 ${Dist(rs.where((r) => r.onceDailyUnseenAt[d] != null).map((r) => r.onceDailyUnseenAt[d]!)).mean.toStringAsFixed(1)}/56, 그날 once 후보 ${Dist(rs.where((r) => r.onceDailyAvailAt[d] != null).map((r) => r.onceDailyAvailAt[d]!)).mean.toStringAsFixed(1)}',
+          '    D$d 스탯 평균: $st | once 일상 미열람 ${Dist(rs.where((r) => r.onceDailyUnseenAt[d] != null).map((r) => r.onceDailyUnseenAt[d]!)).mean.toStringAsFixed(1)}/${rs.map((r) => r.onceDailyTotal).fold(0, max)}, 그날 once 후보 ${Dist(rs.where((r) => r.onceDailyAvailAt[d] != null).map((r) => r.onceDailyAvailAt[d]!)).mean.toStringAsFixed(1)}',
         );
       }
       p(

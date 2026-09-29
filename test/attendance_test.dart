@@ -257,7 +257,8 @@ void main() {
       expect(c2.hearts, max + 1);
       expect(c2.secondsToNextHeart, 0);
       expect(c2.heartsFull, isTrue);
-      // 초과 하트로 하루를 시작할 수 있다.
+      // 초과 하트로 하루를 시작할 수 있다. 오프닝(1회차 D+1~3)은 하트를 안 쓰므로 그 뒤로.
+      c2.state!.day = c2.config.firstRunFreeHeartDays + 1;
       expect(await c2.startDay(c2.config.actions.first), isTrue);
       expect(c2.hearts, max);
     });
@@ -283,6 +284,8 @@ void main() {
       final c = controller();
       await c.init();
       await c.newGame(seed: 1);
+      // 오프닝(1회차 D+1~3)은 하트를 안 쓴다 — 타이머는 하트를 쓴 날부터 본다.
+      c.state!.day = c.config.firstRunFreeHeartDays + 1;
       final period = c.engine.heartPeriodMs;
       expect(c.secondsToNextHeart, 0, reason: '가득 찼으면 0');
       await c.startDay(c.config.actions.first);

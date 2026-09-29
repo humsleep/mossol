@@ -47,8 +47,10 @@ class NextRunAdvisor {
   final StoryBundle bundle;
   const NextRunAdvisor(this.bundle);
 
-  static const destinyLine = '당신 MBTI와 천생연분이에요';
-  static const goodMatchLine = '당신 MBTI와 잘 맞아요';
+  // 이 게임은 1인칭이다("나는?"·"내 MBTI가 뭐더라"). 앱이 플레이어를 "당신" 이라 부르면
+  // 화자가 갑자기 바뀐다 — 엔딩 문장에서 같은 문제를 고쳤다(docs/review/05_writing.md).
+  static const destinyLine = '내 MBTI와 천생연분이에요';
+  static const goodMatchLine = '내 MBTI와 잘 맞아요';
   static const neverLine = '아직 끝까지 가 본 적 없는 사람이에요';
   static const fewLine = '아직 못 본 이야기가 많이 남은 사람이에요';
 
@@ -227,6 +229,9 @@ class TomorrowPeek {
 
   /// 화면 문장. [name] 은 캐릭터 이름.
   static String lineFor(String name) => '내일 $name에게서 연락이 올 것 같다';
+
+  /// 같은 예고를 다음 날 아침(날짜 카드)에서 읽을 때. "내일" 이 "오늘" 이 된다.
+  static String todayLineFor(String name) => '오늘 $name에게서 연락이 올 것 같다';
 }
 
 // ---------------------------------------------------------------------------

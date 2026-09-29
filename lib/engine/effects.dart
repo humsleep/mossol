@@ -144,6 +144,7 @@ AppliedDelta applyEffects(
     d.album = album;
     if (s.album.length >= 10) s.flags.add('album_10');
     if (s.album.length >= 20) s.flags.add('album_20');
+    if (s.album.length >= 30) s.flags.add('album_30');
   }
   return d;
 }

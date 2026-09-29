@@ -93,6 +93,8 @@ void main() {
       final c = controller();
       await c.init();
       await c.newGame(seed: 5, preference: Preference.female);
+      // 1회차 오프닝(D+1~3)은 하트를 쓰지 않는다 — 하트 경제는 그다음 날부터 본다.
+      c.state!.day = real.config.firstRunFreeHeartDays + 1;
       final full = c.hearts;
       expect(await c.startDay(real.config.actions.first), isTrue);
       expect(c.hearts, full - 1);
@@ -109,11 +111,14 @@ void main() {
       final c = controller();
       await c.init();
       await c.newGame(seed: 5, preference: Preference.male);
+      final day = real.config.firstRunFreeHeartDays + 1;
       c.state!
+        // 오프닝은 하트를 쓰지 않으므로 하트 0 판정은 그다음 날부터다.
+        ..day = day
         ..hearts = 0
         ..lastHeartMs = now;
       expect(await c.startDay(real.config.actions.first), isFalse);
-      expect(rec.paramsOf(Analytics.heartEmpty).single, {'day': 1});
+      expect(rec.paramsOf(Analytics.heartEmpty).single, {'day': day});
     });
   });
 
@@ -200,6 +205,8 @@ void main() {
       await c.newGame(seed: 9, preference: Preference.female);
       c.state!.day = 99;
       await c.endDay();
+      expect(c.phase, Phase.dayStart, reason: '마감 뒤엔 날짜 카드');
+      c.beginMorning();
       expect(c.phase, Phase.action);
       expect(c.state!.day, 100);
       expect(c.bestDayReached, 100);
@@ -225,15 +232,23 @@ void main() {
       );
     });
 
-    test('전면 광고: 1 · 2일은 안 되고 3일부터(처음 켠 상태), 상수는 설계서대로', () {
+    test('전면 광고: 첫 세션(D+6까지)은 안 되고 7일부터(처음 켠 상태), 상수는 설계서대로', () {
       final ads = AdManager.instance;
       expect(ads.canShowInterstitial(1), isFalse);
-      expect(ads.canShowInterstitial(2), isFalse);
-      expect(ads.canShowInterstitial(3), isTrue);
+      expect(ads.canShowInterstitial(3), isFalse, reason: '첫 세션 안에서 전면 광고 금지');
+      expect(ads.canShowInterstitial(6), isFalse);
+      expect(ads.canShowInterstitial(7), isTrue);
       expect(ads.canShowInterstitial(100), isTrue);
-      expect(AdManager.interstitialMinDay, 3);
-      expect(AdManager.interstitialMinInterval, const Duration(minutes: 2));
-      expect(AdManager.interstitialMaxPerDay, 12);
+      // 마지막 날 정산 버튼은 "엔딩 보기" 다. 100일을 걸어온 사람에게
+      // 엔딩 직전 전면 광고를 끼우지 않는다(11_polish_verdict §9).
+      expect(
+        ads.canShowInterstitial(100, isLastDay: true),
+        isFalse,
+        reason: '엔딩 직전에는 전면 광고 금지',
+      );
+      expect(AdManager.interstitialMinDay, 7);
+      expect(AdManager.interstitialMinInterval, const Duration(minutes: 6));
+      expect(AdManager.interstitialMaxPerDay, 6);
     });
 
     test('광고 단위 표: 종류 3개, 서로 다른 단위, 실제·테스트가 섞이지 않는다', () {

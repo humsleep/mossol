@@ -486,6 +486,10 @@ void main() {
         while (c.phase != Phase.ending) {
           expect(++guard, lessThan(5000), reason: '무한 루프');
           switch (c.phase) {
+            case Phase.dayStart:
+              // 날짜 카드는 화면 박자라 여기서는 곧바로 아침으로.
+              c.beginMorning();
+              expect(c.phase, Phase.action);
             case Phase.action:
               if (c.canSpinRoulette) c.spinRoulette();
               if (c.hearts == 0) c.state!.hearts = 1;
@@ -630,6 +634,8 @@ void main() {
         s.flags.add('burnout');
         await c.endDay();
         if (i < 3) {
+          expect(c.phase, Phase.dayStart, reason: '$i번째');
+          c.beginMorning();
           expect(c.phase, Phase.action, reason: '$i번째');
           expect(s.flags, contains('burnout_$i'));
           expect(s.flags, isNot(contains('burnout_x3')));

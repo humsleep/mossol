@@ -32,8 +32,20 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 
 - **실제 광고 단위는 릴리스 빌드(TestFlight·App Store)에서만** 쓰인다. 디버그 빌드는 Google 테스트 광고가 뜬다(`AdManager.idsFor`, `test/ad_ids_test.dart`).
 - TestFlight 에서 본인 폰으로 확인할 때는 AdMob → 설정 → **테스트 기기**에 폰을 먼저 등록한다. 등록 안 된 폰에서 실제 광고를 반복해 누르면 계정 정지 사유다.
+- **TestFlight 에서 광고가 안 뜨면** (2026-09-23 "오늘의 운 → 한 번 더" 로 실제 겪음) 앱 코드보다 AdMob 쪽을 먼저 본다.
+  같은 코드가 디버그 빌드(테스트 ID)에서는 광고를 띄우므로, 실제 ID 로 광고가 안 오는 이유는 대개 콘솔에 있다.
+  - AdMob → 앱 → **앱 승인 상태**: 스토어에 아직 없는 앱은 "검토 중/승인되지 않음" 이고 그동안 실제 광고가 거의 안 온다. 출시 뒤 스토어 URL 을 연결해야 풀린다.
+  - 광고 단위를 새로 만든 직후(수 시간~하루)는 "No ad config" / no fill 로 온다. 기다리는 것 말고 방법이 없다.
+  - **배너도 안 뜨면** SDK 초기화 자체가 안 된 것(UMP 동의 조회 실패 → `canRequestAds()` false). §2 의 UMP 메시지 게시 여부를 본다.
+  - 폰을 맥에 꽂고 Console.app 에서 프로세스 `Runner` 로 걸러 보면 `리워드 광고 로드 실패(N회): …` 에 SDK 가 준 이유가 그대로 찍힌다(릴리스 빌드에서도 `debugPrint` 는 나온다).
 - 보상형 광고 단위의 **보상 설정**: 수량 `1`, 항목 `reward`, 서버 측 확인(SSV) 끔. 앱은 AdMob 의 보상 값을 쓰지 않고
   "보상 콜백이 왔는가"만 보고 하트·힌트 등을 앱이 정한 만큼 준다.
+- **전면 광고 빈도 정책**(`AdManager`, 상수 3개 · `test/release_gaps_test.dart` 가 고정):
+  `interstitialMinDay = 7` · `interstitialMinInterval = 6분` · `interstitialMaxPerDay = 6`.
+  게임 내 하루가 약 2분이라 예전 값(3일 · 2분 · 12회)은 "D+3부터 매일 광고" 였고 첫 세션(약 10분)
+  안에 전면 광고가 들어갔다. 광고 빈도는 이 장르에서 별점을 떨어뜨리는 1순위다
+  (docs/overhaul/01_benchmark.md §2 #10, docs/review/00_VERDICT.md §3 R1). **첫 세션은 전면 광고 없이 끝난다.**
+  배너는 채팅·통화·알림 화면에 두지 않고, 다른 화면에서는 AppBar(홈은 제목 줄) 아래에 둔다.
 
 ---
 

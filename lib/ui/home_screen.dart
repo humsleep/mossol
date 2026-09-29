@@ -12,12 +12,14 @@ import 'design_system.dart';
 import 'keep_all.dart';
 import 'onboarding_gender_screen.dart';
 import 'retention_widgets.dart';
+import 'scene_card.dart' show SceneImage;
+import 'scene_registry.dart';
 import 'settings_screen.dart';
 import 'widgets.dart';
 
 /// 첫 화면 v2. 규격은 docs/HOME_REDESIGN.md §1 (요약은 DESIGN_SYSTEM §2.1).
 ///
-/// 블록은 위에서 아래로 A 헤더 → B 히어로 카드 → C 자원 줄(세이브 있음만) → D 출석 줄
+/// 블록은 위에서 아래로 A 헤더 → 배너 → B 히어로 카드 → C 자원 줄(세이브 있음만) → D 출석 줄
 /// → E 1차 버튼 → F 사람들 → G 앨범. 1차 버튼은 여전히 하나(`이어하기` 또는 `새 게임`)이고
 /// 나머지는 전부 한 단 이상 뒤로 물러난다. 배경은 `surface` 단색 — 상단 40% 여백과
 /// 로즈 그라데이션은 실기기에서 휑함으로 읽혀 폐지했다.
@@ -127,111 +129,134 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.screenX,
-            AppSpace.screenY,
-            AppSpace.screenX,
-            AppSpace.xxl,
-          ),
-          children: [
-            // A. 헤더
-            _Header(onSettings: () => _openSettings(context)),
-            const SizedBox(height: AppSpace.md),
-
-            // B. 히어로 카드
-            if (!hasSave)
-              _IntroCard(endings: _endingsPerRun)
-            else if (summary == null)
-              const ContinueCard.placeholder()
-            else
-              ContinueCard(
-                run: summary.run,
-                chapter: summary.chapter,
-                day: summary.day,
-                totalDays: summary.totalDays,
-                cliffhanger: c.sayOrNull(summary.lastCliffhanger),
-                topName: c.characterOf(summary.topCharacterId)?.name,
-                topAffection: summary.topAffection,
-                topSignal: c.sayOrNull(summary.topSignal),
-                topAccent: summary.topCharacterId == null
-                    ? null
-                    : context.tokens.accentFor(summary.topCharacterId),
-                // 선호가 없던 예전 세이브(all)는 표기하지 않는다.
-                preferenceLabel: summary.preference == Preference.all
-                    ? null
-                    : Preference.label(summary.preference),
-              ),
-            // B-0. 지난 판 요약. 세이브가 없거나(엔딩 뒤 홈) 새 회차 첫날일 때만.
-            if (_previousRun(summary) case final line?) ...[
-              const SizedBox(height: AppSpace.sm),
-              PreviousRunNote(text: line),
-            ],
-            // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
-            if (summary != null)
-              for (final e in summary.overnight.entries) ...[
-                const SizedBox(height: AppSpace.sm),
-                OvernightNote(id: e.key, text: c.say(e.value)),
-              ],
-            const SizedBox(height: AppSpace.lg),
-
-            // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
-            if (summary != null) ...[
-              _ResourceRow(c: c, hearts: summary.hearts),
-              const SizedBox(height: AppSpace.md),
-            ],
-
-            // D. 출석 줄
-            RewardStrip(
-              state: _stripState,
-              streakDays: c.streakDays,
-              bonusLabel: _bonusLabel,
-              pendingHearts: hasSave ? 0 : c.pendingHearts,
-              onClaim: _claim,
-            ),
-            const SizedBox(height: AppSpace.md),
-
-            // E. 1차 버튼 묶음
-            if (hasSave) ...[
-              FilledButton(
-                onPressed: () => c.continueGame(),
-                child: const Text('이어하기'),
-              ),
-              const SizedBox(height: AppSpace.sm),
-              TextButton(
-                onPressed: () => _confirmNewGame(context),
-                // DS §5.7 예외 ②: 2차 버튼을 1차와 다른 무게로.
-                style: TextButton.styleFrom(
-                  foregroundColor: scheme.onSurfaceVariant,
+      // 배너는 헤더 줄 **아래**(DESIGN_SYSTEM §2 공통). 다른 화면이 앱바 아래에 두는 것과 같은
+      // 자리다 — 앱을 켠 첫 화면의 맨 위가 광고이고 앱 이름이 그 아래였다(00_VERDICT §3 R3).
+      // 헤더는 좌우 여백을 직접 먹고, 배너 아래부터가 스크롤 목록이다.
+      // 광고를 기다리는 동안에는 이 화면의 탭을 전부 막는다(무반응처럼 보이는 8초).
+      body: RewardedBusyScope(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // A. 헤더
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.screenX,
+                  AppSpace.screenY,
+                  AppSpace.screenX,
+                  0,
                 ),
-                child: const Text('새 게임'),
+                child: _Header(onSettings: () => _openSettings(context)),
               ),
-            ] else
-              FilledButton(
-                onPressed: () => _startNewGame(context),
-                child: const Text('새 게임'),
-              ),
-            const SizedBox(height: AppSpace.sectionGap),
+              const BannerSlot(edge: BannerEdge.top, safeArea: false),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.screenX,
+                    AppSpace.md,
+                    AppSpace.screenX,
+                    AppSpace.xxl,
+                  ),
+                  children: [
+                    // B. 히어로 카드. 키 아트(assets/keyart/home)가 있으면 소개 카드의 바탕,
+                    // 이어하기 카드는 그 위 창(키 큰 화면만)에 깐다. 없으면 지금 그대로.
+                    if (!hasSave)
+                      _IntroCard(endings: _endingsPerRun)
+                    else if (summary == null)
+                      const ContinueCard.placeholder()
+                    else
+                      _KeyArtWindow(
+                        child: ContinueCard(
+                          run: summary.run,
+                          chapter: summary.chapter,
+                          day: summary.day,
+                          totalDays: summary.totalDays,
+                          cliffhanger: c.sayOrNull(summary.lastCliffhanger),
+                          topName: c.characterOf(summary.topCharacterId)?.name,
+                          topAffection: summary.topAffection,
+                          topSignal: c.sayOrNull(summary.topSignal),
+                          topAccent: summary.topCharacterId == null
+                              ? null
+                              : context.tokens.accentFor(
+                                  summary.topCharacterId,
+                                ),
+                          // 선호가 없던 예전 세이브(all)는 표기하지 않는다.
+                          preferenceLabel: summary.preference == Preference.all
+                              ? null
+                              : Preference.label(summary.preference),
+                        ),
+                      ),
+                    // B-0. 지난 판 요약. 세이브가 없거나(엔딩 뒤 홈) 새 회차 첫날일 때만.
+                    if (_previousRun(summary) case final line?) ...[
+                      const SizedBox(height: AppSpace.sm),
+                      PreviousRunNote(text: line),
+                    ],
+                    // B-1. 밤사이 멀어진 사람(어젯밤 마감 −1 로 구간 하락). 조용한 한 줄.
+                    if (summary != null)
+                      for (final e in summary.overnight.entries) ...[
+                        const SizedBox(height: AppSpace.sm),
+                        OvernightNote(id: e.key, text: c.say(e.value)),
+                      ],
+                    const SizedBox(height: AppSpace.lg),
 
-            // F. 사람들. 세이브가 없고 아직 쪽을 모르면(첫 실행 · 선택 안 함) 줄을 숨긴다.
-            if (summary != null || c.defaultSide != null) ...[
-              SectionHeader(
-                title: summary != null ? '사람들' : '등장인물',
-                trailing: summary != null
-                    ? Text('호감 순', style: context.text.labelMedium)
-                    : null,
+                    // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
+                    if (summary != null) ...[
+                      _ResourceRow(c: c, hearts: summary.hearts),
+                      const SizedBox(height: AppSpace.md),
+                    ],
+
+                    // D. 출석 줄
+                    RewardStrip(
+                      state: _stripState,
+                      streakDays: c.streakDays,
+                      bonusLabel: _bonusLabel,
+                      pendingHearts: hasSave ? 0 : c.pendingHearts,
+                      onClaim: _claim,
+                    ),
+                    const SizedBox(height: AppSpace.md),
+
+                    // E. 1차 버튼 묶음
+                    if (hasSave) ...[
+                      FilledButton(
+                        onPressed: () => c.continueGame(),
+                        child: const Text('이어하기'),
+                      ),
+                      const SizedBox(height: AppSpace.sm),
+                      TextButton(
+                        onPressed: () => _confirmNewGame(context),
+                        // DS §5.7 예외 ②: 2차 버튼을 1차와 다른 무게로.
+                        style: TextButton.styleFrom(
+                          foregroundColor: scheme.onSurfaceVariant,
+                        ),
+                        child: const Text('새 게임'),
+                      ),
+                    ] else
+                      FilledButton(
+                        onPressed: () => _startNewGame(context),
+                        child: const Text('새 게임'),
+                      ),
+                    const SizedBox(height: AppSpace.sectionGap),
+
+                    // F. 사람들. 세이브가 없고 아직 쪽을 모르면(첫 실행 · 선택 안 함) 줄을 숨긴다.
+                    if (summary != null || c.defaultSide != null) ...[
+                      SectionHeader(
+                        title: summary != null ? '사람들' : '등장인물',
+                        trailing: summary != null
+                            ? Text('호감 순', style: context.text.labelMedium)
+                            : null,
+                      ),
+                      CastStrip(entries: _castEntries(summary)),
+                      const SizedBox(height: AppSpace.sectionGap),
+                    ],
+
+                    // G. 앨범
+                    _AlbumCard(c: c, onTap: () => _openAlbum(context)),
+                  ],
+                ),
               ),
-              CastStrip(entries: _castEntries(summary)),
-              const SizedBox(height: AppSpace.sectionGap),
             ],
-
-            // G. 앨범
-            _AlbumCard(c: c, onTap: () => _openAlbum(context)),
-          ],
+          ),
         ),
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
 
@@ -370,67 +395,209 @@ class _Header extends StatelessWidget {
   );
 }
 
+/// 홈 키 아트가 한 장을 다 차지해도 되는 화면인지. 높이 예산(§1.5, 320×568)을 지키려고
+/// 작은 화면에서는 그림을 바탕으로만 깔고 자리를 더 잡지 않는다.
+bool _roomyHome(BuildContext context) =>
+    MediaQuery.sizeOf(context).height >= _KeyArt.roomyHeight;
+
+/// 홈 키 아트 공용 값. 그림은 밤 책상(3:2)이라 라이트·다크 모두 밤 잉크 위에 올린다 —
+/// 글자는 언제나 밤 글자색이고, 스크림이 그림을 눌러 본문 대비 4.5:1 을 지킨다.
+abstract final class _KeyArt {
+  /// 이 높이(pt) 이상이면 그림 창을 따로 연다.
+  static const double roomyHeight = 700;
+
+  /// 그림 초점. 가운데 책상의 휴대폰·달력이 보이게 조금 오른쪽 아래.
+  static const Alignment focus = Alignment(0.2, 0.1);
+
+  /// 스크림 색(밤 잉크)과 그 위 글자색. 테마와 무관하게 밤이다.
+  static const Color ink = AppPalette.night;
+  static const Color onInk = AppPalette.nightText;
+  static const Color onInkAccent = AppPalette.rose300;
+}
+
 /// B-1. 소개 카드(세이브 없음). 화면에서 primaryContainer 를 쓰는 유일한 면.
 /// 3초 안에 "아침에 고르고, 밤에 톡 하고, 100일 뒤 엔딩" 이 읽혀야 한다.
+///
+/// 키 아트가 있으면 같은 내용을 밤 책상 그림 위에 올린다. 위쪽은 그림이 보이고 글자가 놓인
+/// 아래쪽으로 갈수록 스크림이 짙어진다(글자 뒤 스크림 α0.86 이상 → 본문 대비 4.5:1 이상).
 class _IntroCard extends StatelessWidget {
   /// 엔딩 총수. 캐릭터가 늘면 같이 는다(하드코딩 금지).
   final int endings;
   const _IntroCard({required this.endings});
 
+  List<Widget> _body(BuildContext context, Color fg, Color label) => [
+    Text('100일 프로젝트', style: context.text.labelSmall?.copyWith(color: label)),
+    const SizedBox(height: AppSpace.xs),
+    Text(
+      keepAll('100일 뒤, 나는 달라져 있을까'),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: context.text.headlineMedium?.copyWith(color: fg),
+    ),
+    const SizedBox(height: AppSpace.md),
+    _Step(Icons.wb_twilight, '아침: 오늘 할 일 하나 고르기', color: fg),
+    const SizedBox(height: AppSpace.sm),
+    _Step(Icons.chat_bubble_outline, '밤: 메신저로 대화하기', color: fg),
+    const SizedBox(height: AppSpace.sm),
+    _Step(Icons.auto_stories_outlined, '100일: 엔딩 $endings개 중 하나', color: fg),
+  ];
+
   @override
-  Widget build(BuildContext context) {
-    final fg = context.scheme.onPrimaryContainer;
-    return AppCard(
-      tone: AppTone.brand,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '100일 프로젝트',
-            style: context.text.labelSmall?.copyWith(color: fg),
+  Widget build(BuildContext context) => SceneScope(
+    builder: (context, registry) {
+      final art = SceneImages.homeKeyart(registry: registry);
+      if (art == null) {
+        final fg = context.scheme.onPrimaryContainer;
+        return AppCard(
+          tone: AppTone.brand,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _body(context, fg, fg),
           ),
-          const SizedBox(height: AppSpace.xs),
-          Text(
-            keepAll('100일 뒤, 나는 달라져 있을까'),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.headlineMedium?.copyWith(color: fg),
+        );
+      }
+      return _KeyArtCard(
+        path: art,
+        bundle: registry.bundle,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _body(context, _KeyArt.onInk, _KeyArt.onInkAccent),
+        ),
+      );
+    },
+  );
+}
+
+/// 키 아트를 바탕으로 깐 히어로 카드. 넓은 화면이면 위에 그림만 보이는 창(폭의 30%)을 연다.
+class _KeyArtCard extends StatelessWidget {
+  final String path;
+  final AssetBundle? bundle;
+  final Widget child;
+
+  const _KeyArtCard({
+    required this.path,
+    required this.bundle,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final window = _roomyHome(context) ? box.maxWidth * 0.3 : 0.0;
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: _KeyArt.ink,
+          borderRadius: AppRadius.rXl,
+          boxShadow: context.isDark ? null : context.tokens.shadowCard,
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.rXl,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ExcludeSemantics(
+                  child: SceneImage(
+                    path: path,
+                    width: box.maxWidth,
+                    bundle: bundle,
+                    alignment: _KeyArt.focus,
+                  ),
+                ),
+              ),
+              // 스크림: 위는 그림이 숨 쉬고, 글자가 시작되는 곳부터 짙어진다.
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        _KeyArt.ink.withValues(alpha: window > 0 ? 0.05 : 0.72),
+                        _KeyArt.ink.withValues(alpha: 0.86),
+                        _KeyArt.ink.withValues(alpha: 0.92),
+                      ],
+                      stops: [0, window > 0 ? 0.42 : 0.3, 1],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: AppInsets.card.add(EdgeInsets.only(top: window)),
+                child: child,
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpace.md),
-          const _Step(Icons.wb_twilight, '아침: 오늘 할 일 하나 고르기'),
-          const SizedBox(height: AppSpace.sm),
-          const _Step(Icons.chat_bubble_outline, '밤: 메신저로 대화하기'),
-          const SizedBox(height: AppSpace.sm),
-          _Step(Icons.auto_stories_outlined, '100일: 엔딩 $endings개 중 하나'),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
+/// 이어하기 카드 위의 키 아트 창. 넓은 화면에서만 연다 — 카드가 그림 아래쪽을 살짝 덮어
+/// 한 덩어리로 읽힌다. 그림에는 글자가 없어 대비 문제가 없다(장식, 스크린리더 제외).
+class _KeyArtWindow extends StatelessWidget {
+  final Widget child;
+  const _KeyArtWindow({required this.child});
+
+  @override
+  Widget build(BuildContext context) => SceneScope(
+    builder: (context, registry) {
+      final art = SceneImages.homeKeyart(registry: registry);
+      if (art == null || !_roomyHome(context)) return child;
+      return LayoutBuilder(
+        builder: (context, box) {
+          final h = box.maxWidth / 2.4;
+          return Stack(
+            children: [
+              SizedBox(
+                height: h,
+                width: box.maxWidth,
+                child: ClipRRect(
+                  // 아래 모서리는 카드가 덮는다. 카드의 둥근 윗모서리 너머로 그림이 이어진다.
+                  borderRadius: AppRadius.rXl,
+                  child: ExcludeSemantics(
+                    child: SceneImage(
+                      path: art,
+                      width: box.maxWidth,
+                      bundle: registry.bundle,
+                      alignment: _KeyArt.focus,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: h - AppSpace.xxxl),
+                child: child,
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 class _Step extends StatelessWidget {
   final IconData icon;
   final String text;
-  const _Step(this.icon, this.text);
+  final Color color;
+  const _Step(this.icon, this.text, {required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    final fg = context.scheme.onPrimaryContainer;
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: fg),
-        const SizedBox(width: AppSpace.sm),
-        Expanded(
-          child: Text(
-            keepAll(text),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.bodyMedium?.copyWith(color: fg),
-          ),
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 18, color: color),
+      const SizedBox(width: AppSpace.sm),
+      Expanded(
+        child: Text(
+          keepAll(text),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.bodyMedium?.copyWith(color: color),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
 
 /// C. 자원 줄. 하트는 "지금 이어할 수 있나" 의 답이지 화면의 주인공이 아니다.
@@ -455,26 +622,16 @@ class _ResourceRow extends StatelessWidget {
         ),
         if (canWatch) ...[
           const SizedBox(width: AppSpace.sm),
-          TextButton.icon(
-            onPressed: () => _watchAd(context),
-            icon: const Icon(Icons.play_circle_outline, size: 18),
+          RewardedButton(
+            placement: 'heart_home',
             // 홈 전용 짧은 문구. 스크린리더에는 행동 화면과 같은 문장을 읽힌다.
-            label: const Text('광고로 +1', semanticsLabel: '광고 보고 하트 받기'),
+            label: '광고로 +1',
+            semanticsLabel: '광고 보고 하트 받기',
+            onEarned: c.grantHeart,
           ),
         ],
       ],
     );
-  }
-
-  Future<void> _watchAd(BuildContext context) async {
-    final earned = await AdManager.instance.showRewarded(placement: 'heart_home');
-    if (earned) {
-      await c.grantHeart();
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(keepAll('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))),
-      );
-    }
   }
 }
 

@@ -60,9 +60,13 @@ class AdManager with WidgetsBindingObserver {
 
   /// 전면 광고 정책. 설계서 07 항목과 같다.
   /// `interstitialMinDay` 는 게임 내 일차(day), 나머지는 실제 시각 기준이다.
-  static const interstitialMinDay = 3;
-  static const interstitialMinInterval = Duration(minutes: 2);
-  static const interstitialMaxPerDay = 12;
+  ///
+  /// 왜 이 값인가(docs/review/00_VERDICT.md §3 R1): 게임 내 하루가 약 2분이라
+  /// 최소 간격 2분은 "하루에 한 번" 과 같았고, D+3 은 첫 세션(약 10분) 안이었다.
+  /// 벤치마크에서 별점을 떨어뜨린 1순위가 광고 빈도다 — 첫 세션은 광고 없이 끝낸다.
+  static const interstitialMinDay = 7;
+  static const interstitialMinInterval = Duration(minutes: 6);
+  static const interstitialMaxPerDay = 6;
 
   /// 로드된 전면·리워드 광고는 약 1시간 뒤 만료된다(Google 안내). 여유를 두고 갈아 끼운다.
   static const _adMaxAge = Duration(minutes: 50);
@@ -81,6 +85,36 @@ class AdManager with WidgetsBindingObserver {
   bool _initializing = false;
   bool _consentDone = false;
   bool _showingFullScreen = false;
+
+  /// 전체 화면 광고를 띄운 시각. 표시 콜백(닫힘·표시 실패)이 끝내 오지 않으면
+  /// 플래그가 영원히 남아 그 세션의 광고가 전부 조용히 막힌다 — 시각을 함께 들고
+  /// 있다가 [_fullScreenBusy] 가 스스로 푼다.
+  DateTime? _showingSince;
+
+  /// 이 시간이 지나도록 콜백이 없으면 플래그가 잘못 남은 것으로 본다.
+  static const _showStuck = Duration(minutes: 2);
+
+  /// 지금 전체 화면 광고가 떠 있는가. 오래 남은 플래그는 여기서 푼다.
+  bool get _fullScreenBusy {
+    if (!_showingFullScreen) return false;
+    final since = _showingSince;
+    if (since == null || DateTime.now().difference(since) < _showStuck) {
+      return true;
+    }
+    debugPrint('전체 화면 광고 상태가 ${_showStuck.inMinutes}분 넘게 남아 있어 푼다.');
+    _endFullScreen();
+    return false;
+  }
+
+  void _beginFullScreen() {
+    _showingFullScreen = true;
+    _showingSince = DateTime.now();
+  }
+
+  void _endFullScreen() {
+    _showingFullScreen = false;
+    _showingSince = null;
+  }
 
   bool get consentDone => _consentDone;
   bool get sdkInitialized => _sdkInitialized;
@@ -255,19 +289,29 @@ class AdManager with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed || !_sdkInitialized) return;
+    if (state != AppLifecycleState.resumed) return;
+    // 광고 도중 앱이 죽었다 살아나면 표시 콜백이 유실된다. 읽는 것만으로 풀린다.
+    if (_fullScreenBusy) {
+      debugPrint('복귀 시점에 전체 화면 광고가 아직 떠 있는 것으로 돼 있다.');
+    }
+    if (!_sdkInitialized) {
+      // 첫 시도 때 동의 정보를 못 받아 canRequestAds 가 false 였을 수 있다.
+      // 그대로 두면 그 세션 내내 광고가 하나도 안 뜨므로 복귀 때마다 다시 본다.
+      unawaited(_initializeSdkIfAllowed());
+      return;
+    }
     // 백그라운드에 오래 있었으면 만료된 광고를 버리고 새로 받는다.
     // 백오프 대기 중이던 재시도도 복귀 시점에 바로 한 번 시도한다.
     if (_interstitial.isStale(_adMaxAge)) _interstitial.discard();
     if (_rewarded.isStale(_adMaxAge)) _rewarded.discard();
-    if (_interstitial.ad == null) _loadInterstitial(fromResume: true);
-    if (_rewarded.ad == null) _loadRewarded(fromResume: true);
+    if (_interstitial.ad == null) _loadInterstitial(resetBackoff: true);
+    if (_rewarded.ad == null) _loadRewarded(resetBackoff: true);
   }
 
   // ───────────────────────── 로드 (백오프) ─────────────────────────
 
-  void _loadInterstitial({bool fromResume = false}) {
-    if (!_sdkInitialized || !_interstitial.beginLoad(fromResume: fromResume)) return;
+  void _loadInterstitial({bool resetBackoff = false}) {
+    if (!_sdkInitialized || !_interstitial.beginLoad(resetBackoff: resetBackoff)) return;
     InterstitialAd.load(
       adUnitId: _unit('interstitial'),
       request: const AdRequest(),
@@ -281,8 +325,8 @@ class AdManager with WidgetsBindingObserver {
     );
   }
 
-  void _loadRewarded({bool fromResume = false}) {
-    if (!_sdkInitialized || !_rewarded.beginLoad(fromResume: fromResume)) return;
+  void _loadRewarded({bool resetBackoff = false}) {
+    if (!_sdkInitialized || !_rewarded.beginLoad(resetBackoff: resetBackoff)) return;
     RewardedAd.load(
       adUnitId: _unit('rewarded'),
       request: const AdRequest(),
@@ -296,7 +340,7 @@ class AdManager with WidgetsBindingObserver {
     );
   }
 
-  void _scheduleRetry(_FullScreenSlot<Object> slot, void Function({bool fromResume}) load) {
+  void _scheduleRetry(_FullScreenSlot<Object> slot, void Function({bool resetBackoff}) load) {
     if (slot.attempts >= _retryMaxAttempts) {
       debugPrint('${slot.label} 광고 재시도 상한 도달. 앱 복귀 또는 다음 표시 시도까지 멈춘다.');
       return;
@@ -313,7 +357,11 @@ class AdManager with WidgetsBindingObserver {
   static int _calendarDay(DateTime t) => t.year * 10000 + t.month * 100 + t.day;
 
   /// 정책상 지금 전면 광고를 보여도 되는가. 상태를 바꾸지 않는다.
-  bool canShowInterstitial(int day) {
+  ///
+  /// [isLastDay] 는 100일째 정산이다. 그 버튼은 "엔딩 보기" 이고, 100일을 걸어온
+  /// 사람에게 엔딩 직전에 광고를 끼우지 않는다 — 별점이 깎이는 자리가 여기다.
+  bool canShowInterstitial(int day, {bool isLastDay = false}) {
+    if (isLastDay) return false;
     if (day < interstitialMinDay) return false;
     final now = DateTime.now();
     final shownToday = _countedCalendarDay == _calendarDay(now) ? _interstitialsShown : 0;
@@ -334,9 +382,12 @@ class AdManager with WidgetsBindingObserver {
   }
 
   /// 전면 광고. 정책에 걸리거나 로드가 안 됐으면 즉시 false 로 끝나 흐름을 막지 않는다.
-  Future<bool> showInterstitial({required int day}) async {
-    if (!supported || !_sdkInitialized || _showingFullScreen) return false;
-    if (!canShowInterstitial(day)) return false;
+  Future<bool> showInterstitial({
+    required int day,
+    bool isLastDay = false,
+  }) async {
+    if (!supported || !_sdkInitialized || _fullScreenBusy) return false;
+    if (!canShowInterstitial(day, isLastDay: isLastDay)) return false;
     if (_interstitial.isStale(_adMaxAge)) _interstitial.discard();
     final ad = _interstitial.take();
     if (ad == null) {
@@ -348,42 +399,83 @@ class AdManager with WidgetsBindingObserver {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadInterstitial();
         if (!done.isCompleted) done.complete(true);
       },
       onAdFailedToShowFullScreenContent: (a, err) {
         debugPrint('전면 광고 표시 실패: ${err.message}');
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadInterstitial();
         if (!done.isCompleted) done.complete(false);
       },
     );
-    _showingFullScreen = true;
+    _beginFullScreen();
     _countInterstitial(DateTime.now());
     try {
       await ad.show();
     } catch (e) {
       debugPrint('전면 광고 show 예외: $e');
-      _showingFullScreen = false;
+      _endFullScreen();
       return false;
     }
-    return done.future;
+    // 콜백이 끝내 오지 않아도 여기서 풀린다(그 뒤의 광고까지 막히면 안 된다).
+    return done.future.timeout(_showStuck, onTimeout: () {
+      debugPrint('전면 광고 닫힘 콜백이 오지 않았다.');
+      _endFullScreen();
+      _loadInterstitial();
+      return false;
+    });
   }
 
   // ───────────────────────── 리워드 ─────────────────────────
+
+  /// 버튼을 누른 순간 광고가 아직 안 와 있을 때 기다려 주는 시간.
+  /// 미리 받아 둔 광고가 없으면 예전에는 그 자리에서 false 로 끝나 버려서,
+  /// 사용자 눈에는 "눌러도 아무 일도 안 일어나는 버튼"이 됐다.
+  static const _showWaitTimeout = Duration(seconds: 8);
+
+  /// 리워드 광고를 쓸 수 있는 상태로 만든다. 이미 준비됐으면 즉시 true.
+  ///
+  /// 미리 로드가 실패해 슬롯이 비어 있으면(새 광고 단위의 노출 없음, 일시적 네트워크
+  /// 오류, 백오프 상한 도달) 여기서 한 번 더 요청하고 [_showWaitTimeout] 까지 기다린다.
+  Future<bool> _awaitRewarded() async {
+    if (!_sdkInitialized) {
+      // 동의·ATT 가 늦게 끝나 아직 SDK 가 안 켜졌을 수 있다. 한 번 더 시도한다.
+      await _initializeSdkIfAllowed();
+      if (!_sdkInitialized) {
+        debugPrint('리워드 광고: SDK 초기화 전이라 표시할 수 없다.');
+        return false;
+      }
+    }
+    if (_rewarded.isStale(_adMaxAge)) _rewarded.discard();
+    if (_rewarded.ad != null) return true;
+    _loadRewarded(resetBackoff: true);
+    final pending = _rewarded.inFlight;
+    if (pending != null) {
+      await pending.timeout(_showWaitTimeout, onTimeout: () {});
+    }
+    if (_rewarded.ad == null) debugPrint('리워드 광고: 기다렸지만 받지 못했다.');
+    return _rewarded.ad != null;
+  }
 
   /// 리워드 광고. 끝까지 봐서 보상을 받았을 때만 true.
   /// 보상은 `onUserEarnedReward` 콜백이 온 경우에만 인정하고, 닫힌 뒤에 결과를 돌려준다.
   /// [placement] 는 측정용 자리 이름(`heart_action` · `heart_home` · `hint` · `undo` ·
   /// `roulette` · `wait_skip`). 광고가 실제로 떴을 때만 `ad_rewarded_shown` 을 남긴다.
   Future<bool> showRewarded({String placement = 'unknown'}) async {
-    if (!supported || !_sdkInitialized || _showingFullScreen) return false;
-    if (_rewarded.isStale(_adMaxAge)) _rewarded.discard();
+    if (!supported || _fullScreenBusy) return false;
+    // 대기(최대 8초) 전에 자리를 잡는다. 그 사이 전면 광고가 끼어들면 둘 중 하나가
+    // 표시 실패로 거절돼 "광고를 봤는데 보상이 없다" 가 된다(04 P2-2).
+    _beginFullScreen();
+    if (!await _awaitRewarded()) {
+      _endFullScreen();
+      return false;
+    }
     final ad = _rewarded.take();
     if (ad == null) {
-      _loadRewarded();
+      _endFullScreen();
       return false;
     }
     final done = Completer<bool>();
@@ -391,19 +483,18 @@ class AdManager with WidgetsBindingObserver {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadRewarded();
         if (!done.isCompleted) done.complete(earned);
       },
       onAdFailedToShowFullScreenContent: (a, err) {
         debugPrint('리워드 광고 표시 실패: ${err.message}');
         a.dispose();
-        _showingFullScreen = false;
+        _endFullScreen();
         _loadRewarded();
         if (!done.isCompleted) done.complete(false);
       },
     );
-    _showingFullScreen = true;
     Analytics.instance.log(Analytics.adRewardedShown, {'placement': placement});
     try {
       await ad.show(onUserEarnedReward: (_, reward) {
@@ -412,10 +503,16 @@ class AdManager with WidgetsBindingObserver {
       });
     } catch (e) {
       debugPrint('리워드 광고 show 예외: $e');
-      _showingFullScreen = false;
+      _endFullScreen();
       return false;
     }
-    return done.future;
+    return done.future.timeout(_showStuck, onTimeout: () {
+      debugPrint('리워드 광고 닫힘 콜백이 오지 않았다.');
+      _endFullScreen();
+      _loadRewarded();
+      // 끝까지 봤다면 보상은 준다 — 콜백 유실이 사용자 손해가 되면 안 된다.
+      return earned;
+    });
   }
 
   // ───────────────────────── 배너 ─────────────────────────
@@ -459,14 +556,20 @@ class _FullScreenSlot<T extends Object> {
   int attempts = 0;
   Timer? retryTimer;
 
+  /// 진행 중인 로드 한 번이 끝나면(성공이든 실패든) 완료된다.
+  /// 버튼을 누른 순간 광고가 아직 안 와 있을 때 이걸 기다린다.
+  Completer<void>? _inFlight;
+  Future<void>? get inFlight => _inFlight?.future;
+
   /// 새 로드를 시작해도 되면 true. 이미 로드됐거나 진행 중이면 false.
-  bool beginLoad({bool fromResume = false}) {
+  bool beginLoad({bool resetBackoff = false}) {
     if (ad != null || loading) return false;
-    if (fromResume) attempts = 0; // 복귀 시엔 백오프를 처음부터
+    if (resetBackoff) attempts = 0; // 복귀·버튼 누름은 백오프를 처음부터
     retryTimer?.cancel();
     retryTimer = null;
     loading = true;
     attempts++;
+    _inFlight ??= Completer<void>();
     return true;
   }
 
@@ -475,12 +578,21 @@ class _FullScreenSlot<T extends Object> {
     loadedAt = DateTime.now();
     loading = false;
     attempts = 0;
+    _settle();
   }
 
   void failed(LoadAdError err) {
     loading = false;
     ad = null;
     debugPrint('$label 광고 로드 실패($attempts회): ${err.message}');
+    _settle();
+  }
+
+  /// 기다리던 쪽을 깨운다. 다음 로드는 새 Completer 를 쓴다.
+  void _settle() {
+    final c = _inFlight;
+    _inFlight = null;
+    if (c != null && !c.isCompleted) c.complete();
   }
 
   bool isStale(Duration maxAge) {

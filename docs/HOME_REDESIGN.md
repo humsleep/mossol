@@ -95,12 +95,15 @@ DS 토큰 표에서만 가져온다. 둘 다에 없는 값이 필요하면 구�
 Scaffold(
   backgroundColor: scheme.surface,           // 테마 기본. 그라데이션 없음
   body: SafeArea(
-    child: ListView(                          // 세로 스크롤. 짧으면 스크롤 안 됨
-      padding: EdgeInsets.fromLTRB(screenX 20, screenY 16, screenX 20, xxl 24),
-      children: [ A, gap, B, gap, C?, gap, D, gap, E, sectionGap, F, sectionGap, G ],
-    ),
+    child: Column(children: [
+      Padding(padding: fromLTRB(20, 16, 20, 0), child: A),  // 헤더 줄은 스크롤 밖
+      BannerSlot(edge: top, safeArea: false),               // 앱 이름 **아래**(R3)
+      Expanded(child: ListView(                             // 세로 스크롤. 짧으면 스크롤 안 됨
+        padding: EdgeInsets.fromLTRB(screenX 20, md 12, screenX 20, xxl 24),
+        children: [ B, gap, C?, gap, D, gap, E, sectionGap, F, sectionGap, G ],
+      )),
+    ]),
   ),
-  bottomNavigationBar: BannerSlot(),          // 그대로
 )
 ```
 
@@ -318,9 +321,10 @@ AppCard(onTap:)
 | 항목 | 세이브 있음 · 출석 미수령 | 세이브 없음 |
 |---|---|---|
 | 상태바(SafeArea top) | 20 | 20 |
-| ListView 상단 패딩 | 16 | 16 |
+| 헤더 상단 패딩 | 16 | 16 |
 | A 헤더 | 44 | 44 |
-| 간격 | 12 | 12 |
+| 배너(로드됐을 때, 헤더 **아래**) | 67 | 67 |
+| 목록 상단 패딩 | 12 | 12 |
 | B 카드 | B-2: 16 + 20(회차/D+N 줄) + 8 + 6 + 12 + 60(예고 2줄, 14.5×1.6×1.3≈30/줄) + 12 + 32 + 16 = **182** | B-1: 16 + 19(눈썹) + 4 + 78(헤드라인 2줄, 23×1.3×1.3≈39/줄) + 12 + 26×3 + 8×2 + 16 = **239** |
 | 간격 | 16 | 16 |
 | C 자원 줄 | 44 | — |
@@ -328,11 +332,11 @@ AppCard(onTap:)
 | D 출석 줄 | 56 | 56 |
 | 간격 | 12 | 12 |
 | E 1차 버튼 하단 | 52 | 52 |
-| **1차 버튼 하단 y** | **466** | **467** |
-| 배너 | 67 | 67 |
-| 합계 | 533 ≤ 568 ✓ | 534 ≤ 568 ✓ |
+| **합계(1차 버튼 하단 y)** | **533 ≤ 568 ✓** | **534 ≤ 568 ✓** |
 
 여유 34. 출석 줄이 1.3배에서 74 로 늘면(§D) 세이브 있음 484 / 없음 485 — 여전히 배너 포함 ≤ 568.
+배너는 2026-09-26 부터 **헤더 줄 아래**다(그 전에는 헤더 위 = 화면 맨 위가 광고였다,
+docs/review/00_VERDICT.md §3 R3). 총 높이는 같으므로 이 표의 합계는 그대로다.
 `새 게임` 2차 버튼(8 + 44)은 세이브 있음에서 화면 밖(577)으로 밀려도 된다 — 요구는
 1차 버튼까지다. **예고 `maxLines: 2`, 헤드라인 `maxLines: 2`, `_Step` `maxLines: 1` 을 빼면 이 표가
 깨진다.** 위젯 테스트 `layout_test.dart` 의 "홈: … 시작 버튼이 첫 화면에 보인다" 는 배너 없는 조건이라

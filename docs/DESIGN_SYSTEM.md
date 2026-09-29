@@ -136,7 +136,7 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 
 | 역할 | TextTheme 키 | 크기/행간/자간/굵기 | 쓰는 곳 |
 |---|---|---|---|
-| 디스플레이 | `displayLarge` | 40 / 1.15 / −1.0 / 700 | (예비) |
+| 디스플레이 | `displayLarge` | 40 / 1.15 / −1.0 / 700 | 날짜 카드 `'D+N'` (tabular) |
 | | `displayMedium` | 34 / 1.18 / −0.8 / 700 | 엔딩 등급 `S`~`F` |
 | | `displaySmall` | 28 / 1.22 / −0.6 / 700 | 홈 타이틀 "모쏠 탈출기" |
 | 헤드라인 | `headlineLarge` | 26 / 1.26 / −0.5 / 700 | (예비) |
@@ -163,7 +163,7 @@ final dark = context.isDark;    // 필요할 때만. 색 분기는 토큰이 이
 - 줄바꿈이 어색해지는 것을 막기 위해 `softWrap` 기본값을 유지하고, 말풍선·카드 폭을
   화면의 72% 이하로 제한한다.
 - **tabular figures 를 쓰는 곳**: 스탯 막대 오른쪽 값, 하트 타이머(`MM:SS`), `D+N`,
-  확률 `%`, 정산 변화량, 앨범 `N / 20`, 미니게임 점수·카운트다운. 줄마다 숫자 폭이
+  확률 `%`, 정산 변화량, 앨범 `N / 20`, 미니게임 점수·카운트다운, 날짜 카드 `D+N`, 채팅 시각. 줄마다 숫자 폭이
   달라지면 흔들려 보인다. 반대로 문장 안에 섞인 숫자(대사, 에필로그)는 tabular 를
   쓰지 않는다 — 문장에서는 비례 숫자가 더 자연스럽다.
 
@@ -220,6 +220,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 | `dBase` | 220ms | 기본 진입/퇴장, 배지 변화 |
 | `dSlow` | 320ms | 결과 패널, 카드 등장 |
 | `dSheet` | 380ms | 바텀시트 |
+| `dScene` | 8s | 장면 삽화 켄번즈(`AppMotion.scene`) |
 | `standard` | `easeOutCubic` | 기본 |
 | `emphasized` | `easeOutBack` | 콤보·배지 팝 |
 | `gauge` | `easeInOutCubic` | 게이지 증감 |
@@ -231,12 +232,39 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 대신 `AppMotion.curve(context)` 로 커브만 `linear` 로 낮추고, 깜빡임·흔들림
 (shake, flash)은 축소 설정에서 완전히 생략한다.
 
+**박자와 모션의 구분**: 룰렛 릴(1.4초)·날짜 카드 체류(1.4초)처럼 "얼마나 머무는가" 는 모션이 아니라
+게임의 박자다. 상수로 두고 축소 설정에서도 줄이지 않는다(`AnimationBehavior.preserve` — 기본값은
+축소 설정에서 5% 로 줄어든다). 대신 그 사이의 진입·퇴장 연출만 `Duration.zero` 가 된다.
+사용자는 언제나 탭으로 건너뛸 수 있어야 한다.
+
+### 1.11 치수 (`AppSize`)
+
+4 배수 고정 치수. 간격(§1.8)이 아니라 요소의 크기다.
+
+| 토큰 | 값 | 쓰는 곳 |
+|---|---|---|
+| `avatarSm` | 32 | 홈 신호 줄 |
+| `avatarMd` | 40 | 채팅 아바타, 알림 카드, 통화 헤더 |
+| `avatarLg` | 56 | 캐스트 카드(320pt) |
+| `avatarXl` | 72 | 캐스트 카드 |
+| `avatarHero` | 200 | 프로필 크게 보기(§2.15) |
+| `sticker` | 120 | 채팅 스티커 한 변 |
+| `sceneAspect` | 3/2 | 장면 삽화·엔딩 히어로 가로세로비(치수가 아니라 비율) |
+| `banner` | 50 | AdSize.banner 높이 |
+
+`CharacterAvatar.size` 는 이 다섯 값만 받는다(`avatarHero` 는 프로필 화면 전용).
+
 ---
 
 ## 2. 화면별 레이아웃 지침
 
-공통: 세로 전용. 모든 화면은 `SafeArea` 안. 화면 좌우 여백 20. 하단 `BannerSlot` 이
-있는 화면은 광고가 없을 때 높이 0 이어야 한다(현재 동작 유지).
+공통: 세로 전용. 모든 화면은 `SafeArea` 안. 화면 좌우 여백 20. 배너는 **화면 상단**(AppBar
+바로 아래, 홈은 헤더 줄 **아래**)에 `BannerSlot(edge: top, safeArea: false)` 로 두고 `body` 는
+`Column([BannerSlot, Expanded(본문)])`(홈은 `Column([헤더, BannerSlot, Expanded(본문)])`) 이다.
+앱의 이름보다 광고가 먼저 오지 않는다 — 홈 배너가 헤더 위에 있던 것이 첫인상 문제였다
+(docs/review/00_VERDICT.md §3 R3). 광고가 없을 때 높이 0, 로드되면 `AnimatedSize`
+로 내려앉는다. 채팅·통화·알림 화면에는 두지 않는다(우발 클릭 정책). 시트·다이얼로그 안에도 두지
+않는다. 모달의 스크림이 배너를 덮는 것은 정상이다. `bottomNavigationBar` 배너는 폐지.
 
 ### 2.1 홈 (`home_screen.dart`)
 
@@ -244,13 +272,17 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 - **주인공**: 히어로 카드(첫 실행: 소개 카드 / 세이브 있음: 이어하기 카드)와 그 아래 1차 버튼 하나.
 - **배경**: 헤더 워드마크, 자원 줄(하트), 출석 줄, 사람들 스트립, 앨범 카드. 설정은 헤더 우측 아이콘.
-- 구성(위→아래, `ListView`, 패딩 20/16/20/24): 헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정
-  `IconButton`) → `md` → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
+- 구성(위→아래, `SafeArea` 안 `Column`: 헤더 줄 → `BannerSlot(top)` → `Expanded(ListView)`,
+  헤더 패딩 20/16/20/0 · 목록 패딩 20/12/20/24):
+  헤더 줄(높이 44, `모쏠 탈출기` `titleLarge` + 설정 `IconButton`) → `BannerSlot(top)`
+  → 히어로 카드 → `lg` → [세이브 있음만] 자원 줄(`HeartsRow` + `광고로 +1`
   TextButton, 한 줄 고정) → `md` → 출석 줄(`RewardStrip`) → `md` → 1차 버튼(`이어하기` 또는 `새 게임`
   FilledButton) → [세이브 있음] `sm` + `새 게임` TextButton → `sectionGap` → `SectionHeader('사람들')`
   + `CastStrip` → `sectionGap` → 앨범 `AppCard(onTap)`(`'앨범  N / M'` 단일 Text + `EndingTierDots` +
   다음 엔딩 힌트).
 - 세이브가 없으면 `새 게임` 이 1차 버튼 자리에 온다. 빈자리를 남기지 않는다.
+- **첫 실행(세이브·회차 기록 없음)에는 홈이 뜨지 않는다.** 인트로(§2.14)가 먼저 서고, 거기서
+  이름·"나는?" 까지 받아 곧바로 첫날로 들어간다. 홈은 두 번째 세션부터 보는 화면이다.
 - `새 게임` 은 곧바로 시작하지 않고 온보딩 "나는?"(§2.11, 답이 없을 때만) → 캐스트 소개(§2.9)를 거친다.
   이어하기 카드와 사람들 줄의 선호 표기는 §2.10.
 - 세이브가 없을 때의 사람들 줄(`등장인물`)과 앨범 힌트, 소개 카드의 엔딩 수는 "나는?" 답을 따른다(§2.10).
@@ -258,6 +290,7 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   실기기에서 휑함으로 읽혔다.
 - 높이 예산: 320×568 · 글자 1.3배 · 배너 있음에서 1차 버튼 하단 ≤ 568. 이를 위해 카드 안 텍스트는
   전부 `maxLines` 를 건다(예고 2줄, 소개 헤드라인 2줄, 단계 1줄). 예산표는 HOME_REDESIGN §1.5.
+  배너가 위에 있으므로 잘리는 쪽은 히어로 카드가 아니라 1차 버튼이다 — 총 높이는 같아 예산은 그대로.
 - 캐릭터는 `CastStrip` 으로 호감 순 가로 한 줄. 히든(도윤)은 해금 전 `???` + 실루엣 아바타, 항상 맨 뒤.
   `???` 글자색은 `onSurfaceVariant`(`lockedForeground` 는 라이트 바탕 3.9:1 로 본문 대비 미달 — 잠김은
   실루엣이 먼저 말한다).
@@ -267,11 +300,15 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 ### 2.2 행동 선택 (`action_screen.dart`)
 - **주인공**: "오늘 뭘 할까" 아래 행동 카드 목록.
-- **배경**: 하트/콤보 줄, 스탯 막대, 관계 칩.
-- 구성(위→아래): AppBar(`D+N  ·  N장`) → 상태 줄(`HeartsRow` + `ComboBadge`) → `md`
-  → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `StatBars(compact: true)`
-  → `sectionGap` → `SectionHeader('관계')` + 캐릭터 칩 Wrap → `sectionGap`
-  → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`).
+- **배경**: 하트/콤보 줄, 스탯 막대, 관계 줄.
+- 구성(위→아래): AppBar(`D+N  ·  N장`) → `BannerSlot(top)` → 상태 줄(`HeartsRow` + `ComboBadge`) → `md`
+  → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `SectionHeader('내 스탯')` + [스탯 설명]
+  → `StatBars(compact: true)`(눌러도 `StatGuideSheet`) → `sectionGap`
+  → `SectionHeader('관계')` + `RelationStrip`(한 줄 가로 스크롤, 초상화 56 + 호감 고리 + `'서연 ♥12'` 단일 Text,
+  누르면 `RelationDetailSheet`: 지금 표정 · 평소/설렘/당황/삐짐 · 호감/신뢰 · 끌리는 것 · 조심) → `sectionGap`
+  → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`). 행동 행 왼쪽은 장소 그림
+  썸네일 72×48(3:2, `SceneImages.forAction`) + 아이콘 배지, 그림이 없으면 예전 아이콘 원.
+- 이 화면의 세로 스크롤은 `ListView` 하나뿐이다(관계 줄은 `SingleChildScrollView` + `Row`).
 - `StatBars` 의 돈 행은 막대 없이 숫자(`numericMedium`)만, 맨 아래에 구분선 위로 둔다
   (HOME_REDESIGN §4). `Stat.maxOf` 는 손대지 않는다.
 - 행동 행은 높이 최소 64, 제목 `titleSmall`, 설명 `bodySmall` 2줄까지, 우측 `chevron_right`.
@@ -283,8 +320,33 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 - **주인공**: 말풍선 흐름. 화면의 최소 45% 를 대화가 차지한다.
 - **배경**: AppBar, 하단 패널의 껍데기.
 - 대화 영역 배경은 `tokens.chatBackground` 로 화면 바탕과 **한 단 구분**한다.
-- 말풍선: 최대 폭 화면의 72%, 세로 간격 같은 사람 연속 `xs`, 사람이 바뀌면 `md`.
-  상대 이름은 첫 말풍선 위에만(`labelSmall`, 캐릭터 강조색). 꼬리는 마지막 말풍선에만.
+- 상대 줄은 3열: `CharacterAvatar(avatarMd)`(묶음 첫 줄만, 그 뒤는 같은 폭 빈 칸) → `sm` → 이름(`labelSmall`,
+  강조색, 첫 줄만, 색 점 없음) + 말풍선 → `xs` → 메타(시각 `labelSmall` tabular `onSurfaceVariant`, 묶음 마지막 줄만;
+  내 말엔 그 위에 `읽음` — 대비 4.5:1 때문에 `systemLine` 이 아니라 `onSurfaceVariant`). 내 줄은 반전, 아바타 없음.
+  말풍선 최대 폭 화면 72%(메타 열이 있으면 `Flexible` 이 그만큼 더 줄인다), 같은 사람 연속 `xs`, 사람 바뀌면 `md`.
+  꼬리는 마지막 말풍선에만. 등장은 상대 6pt · 내 말 12pt 상승 + 페이드.
+- 아바타의 `characterId` 는 `Line.name` → 캐스트 id 역산(`_speakerIdFor`), NPC 는 이니셜(중립색),
+  `'모르는 번호'`·`'알 수 없는 …'` 은 실루엣(`mystery`). 강조색은 이름 글자와 아바타 테두리에만.
+- 아바타 열의 **레이아웃 상자는 44**(`ChatAvatarSlot.width`, 탭 대상 §4.2)이고 그림만 40 이다. 그림은 상자 왼쪽 위에
+  붙고 뒤 간격은 `xs`(4)라, 아바타 오른쪽 끝부터 말풍선까지 보이는 간격은 여전히 `sm`(8)이고 말풍선 왼쪽 선도
+  예전(`md` + 48)과 같은 자리다. 스티커 들여쓰기(`StickerBubble.indent`)도 이 48 을 쓴다.
+- 아바타를 누르면 프로필 크게 보기(§2.15)가 열린다. 열 수 있는 상대일 때만 눌리고, 그때만 스크린리더에
+  버튼(`'<이름> 프로필'` · 힌트 `'사진 크게 보기'`)이 생긴다.
+- 대화 첫 항목은 `ChatDivider('D+N · 제목')`(sys pill 모양, 글자는 `onSurfaceVariant`). 이벤트 제목은 여기 한 번만 나온다.
+- 시각은 가짜 시계(`ChatClock`, 02 §3 P1): 오늘 i 번째 이벤트에 09/12/16/21(4개) · 10/15/21(3개) · 12/20(2개) · 19(1개)
+  슬롯 + `stableSeed(seed, day, 'clock$i') % 60` 분, 줄당 +1분, `wait` 줄은 그 초만큼. `오후 4:12` 형식. 같은 분이면 뒤 묶음은 생략.
+- 읽음은 낱말 `읽음` 하나. 내 말 뒤로 상대 줄이 공개됐을 때; 방금 보낸 말은 500ms(실패 톤 1500ms) 뒤. 숫자 배지 금지.
+- 타이핑: 다음 줄이 `them` 이면 그 화자의 아바타(첫 줄 규칙) + 상대 말풍선 안 `'…'`(`TypingIndicator`, 깜빡임 없음),
+  `narr/sys` 면 `CallTyping`. 상대 줄 지연은 `clamp(600 + 글자(공백 제외)×18, 800, 2400)`ms. "쓰다 지움" 은 이벤트당 1회
+  (가장 긴 `them` 줄 또는 `wait` 다음 줄): `…` 700ms → `fast` 페이드 아웃 → 600ms → `…` → 지연 → 대사. 동작 줄이기면 지연만.
+- 장면 삽화 카드는 대화의 **맨 위**(구분줄 위)에 온다 — §2.3.2.
+- 스티커(`Line.sticker`): 그 대사 **바로 아래 별도 줄**, 말풍선 뒤 `xs`, `AppSize.sticker`(120) 정사각, 배경·테두리 없음.
+  상대 줄에만(`them`), 이벤트당 1개. 왼쪽은 아바타 열(`avatarMd + sm`)만큼 들여써 말풍선과 선을 맞춘다.
+  등장은 팝인(`AppMotion.base` + `emphasized`, 동작 줄이기면 없음). **에셋이 없으면 아무것도 그리지 않는다**(빈 줄도 없음).
+- AppBar: 이름 `titleLarge` + 상태 `labelSmall onSurfaceVariant`(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`) 두 줄.
+  아바타·제목·D+N 없음. `bottom` 진행 막대 유지. 독백 이벤트는 제목이 이름 자리, 상태 줄 없음.
+- 대화 목록은 `SingleChildScrollView` + `Column`(십수 줄이라 전부 그린다. 게으른 `ListView` 는 끝 높이를 어림해
+  마지막 줄로 스크롤이 못 미친다).
 - `narr` 지문은 좌우 여백 `xl`, 가운데 정렬 아님, `narration` 색, 이탤릭 유지.
 - `sys` 줄은 가운데 정렬 pill(배경 `surfaceContainerHigh`, `labelSmall`, `systemLine`).
 - 대기 중 "답이 없다" 줄은 pill 안에 카운트다운 숫자를 `numericSmall` 로. 그 아래
@@ -295,6 +357,37 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   (크리티컬 `primaryContainer` / 실패 `errorContainer` / 성공·기본 `surfaceContainerLow`).
 - 선택지는 `ChoiceButton` 하나로 통일하되 **내부는 반드시 `OutlinedButton`** 이어야 한다
   (§4.1 테스트 고정 사항).
+
+#### 2.3.0 자유 입력 줄 · 피커 시트 (docs/overhaul/07_free_input.md §3)
+
+선택지 버튼은 그대로 두고 그 아래에 한 줄 입력창을 붙인다. 버튼·입력창·시트 어디에도 `ChoiceButton` 밖의
+`OutlinedButton` 은 없다(§4.1).
+
+- **입력 줄**(`Key('free-input')`): 버튼 아래 `sm`. `TextField` 한 줄, `maxLength 80`(카운터 없음, 붙여넣기로 넘치면 스낵바
+  `짧게 말해 주세요`), 힌트 `직접 쓰기…`, `surfaceContainerLowest` 채움, `rPill`, 테두리 `outlineVariant` hairline → 포커스
+  `primary` emphasis, 안쪽 `AppInsets.chip`, 글자 `bodyMedium`. 오른쪽 `sm` 뒤 보내기 `IconButton.filled`(`Icons.send_rounded` 18,
+  `Key('free-send')`, 툴팁 `보내기`) — 빈 문장·보낸 뒤 1.2 s 잠금 동안 비활성. 힌트(광고) 버튼은 입력 줄 아래.
+  이벤트당 5회 보냈거나 금칙어에 3회 연속 걸리면 입력 줄이 사라지고 버튼만 남는다.
+- **키보드가 올라오면** 버튼 묶음이 **가로 스크롤 `ActionChip` 한 줄**로 접힌다(`AnimatedSwitcher`, `AppMotion.base` — 동작 줄이기면
+  0ms). 칩 문구는 14자 + `…`, 잠긴 선택지는 자물쇠 아바타 + 비활성. 칩을 누르면 버튼과 같은 경로.
+- **입력창 위 한 줄**(`bodySmall`, 입력 줄과 `sm`): 잠김·금칙어는 지문 톤(`narration`, 이탤릭) — `아직 그 말은 안 나온다 (눈치 40↑)`
+  (`ChoiceView.reason` 재사용, 턴·되돌리기 소모 없음, 문장은 남는다) / `그 말은 보내지 않기로 했다.`(문장은 지운다, 저장·기록·분석 없음).
+  빈 입력·이모지만은 `onSurfaceVariant` `조금만 더 써 주세요`.
+- **피커 시트** `이런 뜻이에요?`(`showModalBottomSheet`, 테마 시트 모양, 안쪽 `AppInsets.panel` + SafeArea):
+  제목 `titleMedium` → (잘 못 알아들었으면) 부제 `잘 못 알아들었어요 — 어느 쪽에 가까워요?`(`bodySmall onSurfaceVariant`) → `sm` →
+  인용 `"친 문장"`(`bodyMedium` 이탤릭 `onSurfaceVariant`) → `md` → 후보 행 목록(점수순, 사이 `listGap`) → `다시 쓰기` TextButton
+  (문장을 남긴 채 입력창으로). 후보 행(`_PickRow`): `Material(surfaceContainerLowest)` + `InkWell`, `rMd`, 안쪽 `AppInsets.cardTight`,
+  테두리 `outlineVariant` hairline — 추천(1위, 2위는 차가 0.12 미만일 때)은 `primary` emphasis. 잠긴 행은 자물쇠 + 이유
+  (`lockedForeground`) + 비활성. 되돌리기 뒤 강제 피커와 약한 매칭에는 추천 강조 없음.
+- **확인 시트**(1위가 `chance`·`minigame`): 인용 → `sm` → `"선택지 원문" (75%)` / `"선택지 원문" (표정 읽기)`(`titleMedium`) → `md` →
+  `FilledButton` `이대로`(미니게임이면 `게임 시작`) → `TextButton` `다른 뜻`(피커로). 미니게임은 문장으로 건너뛸 수 없다.
+- **통화 중 "끊을게"**: 시트 `전화를 끊을까요?`(`titleMedium`) → `FilledButton` `끊기` → `TextButton` `계속 통화`. 끊기는 통화 화면의
+  거절과 같은 경로.
+- **내 말풍선**은 친 문장 그대로(`GameController.playerText`). 선택지 원문은 말풍선에 남지 않는다. 화면이 다시 만들어져도 컨트롤러·
+  세이브(`GameState.freeInputs`)에서 되살린다.
+- **결과 패널**: 헤드라인 아래 `xs` 캡션 `→ "선택지 원문" 으로 알아들었어요`(`bodySmall`, 패널 전경색). 자유 입력 **자동 확정**이면
+  광고 되돌리기 자리에 무료 되돌리기 `그런 뜻 아니었어요`(`TextButton.icon` `Icons.replay`)가 대신 선다 — 둘이 같이 뜨지 않는다.
+  누르면 선택 직전으로, 문장은 입력창에 되살아나고 이번엔 피커만 뜬다.
 
 #### 2.3.1 모먼트 변형 (docs/MOMENTS_SPEC.md)
 
@@ -332,16 +425,38 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 **사진 (`photo` 줄)** — `ChatBubble` 이 `line.photo` 가 있으면 말풍선 자리에 `PhotoBubble`(§3.2, 폴라로이드 한 장)을 그리고
 `text` 가 있으면 그 아래 `xs` 간격으로 평소 말풍선을 붙인다. `me` 면 오른쪽. 반응 줄도 같은 경로.
-통화 자막 안의 사진은 화면 폭 60% 로 가운데.
+통화 자막 안의 사진은 화면 폭 60% 로 가운데. 사진·스티커도 아바타 열 다음 본문 열에 놓이고 메타 열은 마지막 요소 아래 끝에 붙는다.
 
-**헤더 구분점**: 채팅 헤더 `'이름  ·  제목'` 의 구분점은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
+**헤더 글자색**: 채팅 헤더의 상태 줄과 대화 구분줄은 `onSurfaceVariant`(대비 검사 통과). `outlineVariant` 는 글자에 쓰지 않는다.
+
+#### 2.3.2 장면 삽화 · 사진 그림 · 스티커 · 엔딩 히어로 (docs/overhaul/06_scene_plan.md)
+
+그림 파일은 `assets/scenes|photos|stickers|endings/` 에 **규약 이름**으로 넣는다(docs/SCENE_PROMPTS.md §0.3).
+목록은 시작할 때 `AssetManifest` 를 한 번 읽어 `SceneRegistry` 에 캐시한다(초상화와 같은 방식).
+**어느 자리든 파일이 없으면 아무것도 그리지 않고 자리도 잡지 않는다** — 그림 0장이면 화면은 지금과 1px 도 다르지 않다.
+깨진 파일도 같다(`errorBuilder`·`frameBuilder` 가 그림 없는 레이아웃으로 되돌린다). 확인은 `python3 tool/check_assets.py`.
+
+| 자리 | 규격 | 경로(필드 없을 때) | 없을 때 |
+|---|---|---|---|
+| 장면 카드 (`SceneCard`) | 풀폭 3:2(`AppSize.sceneAspect`), 좌우 `md`, 위 `sm`, 모서리 `AppRadius.lg`, `BoxFit.cover`, 켄번즈 `AppMotion.scene`(8s, 6% 확대), 탭 → 크게 보기 | `assets/scenes/<이벤트 id>` (`StoryEvent.image` 로 덮어쓰기) | 카드 없음. 구분줄이 그대로 첫 줄 |
+| 통화 배경 (`CallBackdrop.image`) | 2단계(`ActiveCallView`) 상단 55% 에 깔고 아래로 페이드, 30% 어둡게(`CallBackdrop.dim`), 켄번즈 | 같은 `assets/scenes/<이벤트 id>` | 지금의 자수정 그라데이션 |
+| 사진 창 (`PhotoWindow`) | `PolaroidFrame` 안 4:3 자리만 교체. 프레임·기울기·캡션·크게 보기·스크린리더 라벨 전부 그대로 | `photo.image` → `assets/photos/<icon>` | 지금의 `PhotoScene`(그라데이션 + 구석 아이콘) |
+| 스티커 (`StickerBubble`) | §2.3 참조 | `assets/stickers/<캐릭터 id>_<감정>` | 아무것도 그리지 않음 |
+| 엔딩 히어로 (`EndingHero`) | 엔딩 이름 **위**, 폭 = 화면 − `screenX`×2, 3:2, 모서리 `lg`, 아래 `lg`. 티어 색은 코드가: bad = 채도↓·어둡게, hidden = 세피아, 그 밖은 원본 | `Ending.image` → 엔딩 id → 캐릭터 id → `common_solo`·`common_bad`·`common_hidden` | 지금의 기념품 레이아웃 |
+
+- **디코딩**: 전부 `BoxFit.cover` + `cacheWidth = 레이아웃 폭 × 기기 배율`(1200px 원본을 화면 폭으로 줄여 읽는다).
+- **스크린리더**: 장면 카드 `'<이벤트 제목> 장면'` + 힌트 `'크게 보기'`, 스티커 `'<이름> 스티커: 기쁨'`,
+  엔딩 히어로 `'<엔딩 이름> 엔딩 그림'`, 사진은 지금대로 `'사진: <caption>'`.
+- **동작 줄이기**: 켄번즈·팝인 전부 정지(`AppMotion` 의 context 버전만 쓴다).
+- **검증기**: `image`·`photo.image` 는 `assets/` 로 시작하는지만 본다 — **파일 존재는 검사하지 않는다**(그림 없이 테스트·CI 가 돈다).
+  `sticker` 는 화이트리스트(`<캐릭터>_joy|sulk|shy|surprise` + `daeun_blank` `sohee_call` `jeongwoo_haha` `seunghyun_sure`).
 
 ### 2.4 하루 정산 (`summary_screen.dart`)
 - **주인공**: 오늘 바뀐 수치. 변화량이 가장 크게 읽혀야 한다.
 - **배경**: 절대 수치, 하단 메타("흑역사 N개").
 - **관계 변화 카드**: 오늘 누군가와 호감 구간을 넘었으면(`GameController.todayShifts`) 맨 위에
   `RelationShiftCard` 최대 2장(사이 `listGap`, 뒤 `sectionGap`). 숫자보다 먼저 보이는 도파민 자리다(§3.2).
-- 구성: AppBar(`D+N 정산`) → [관계 변화 카드] → `StatBars(delta:)` → `sectionGap` →
+- 구성: AppBar(`D+N 정산`) → `BannerSlot(top)` → [관계 변화 카드] → `StatBars(delta:)` → `sectionGap` →
   `SectionHeader('관계 변화')` + `StatTile` 목록 → 클리프행어 카드 → `xxl`
   → 1차 버튼(`다음 날로` / `엔딩 보기`) → `sm` → 메타 한 줄.
 - 관계 변화는 문장 나열 대신 `StatTile`(라벨 / 값 / 부호+변화량) 로 정렬한다.
@@ -361,6 +476,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 ### 2.6 앨범 (`album_screen.dart`)
 - **주인공**: 수집 진행도(상단)와 카드 목록.
 - **배경**: 탭 바, 티어 라벨.
+- 구성: AppBar(`앨범`) + `TabBar` → `BannerSlot(top)` → `TabBarView`. 배너는 TabBar 아래에 고정이라
+  탭을 바꿔도 움직이지 않는다.
 - 상단에 진행도 블록: `N / 20` (`numericMedium`) + `AppProgressBar`. 문자열
   `'2 / 20'`, `'1 / 30'` 형식을 그대로 유지한다(테스트 고정).
 - 흑역사 카드: 좌측 번호 원형(`errorContainer`), 본문 `bodyMedium`, 카드 사이 `listGap`.
@@ -380,6 +497,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   `High` 로 올라가면서 같이 올렸다).
 - 회전 중에는 `dim` 상태를 불투명도 0.6 대신 **색 채도 낮춤 + 블러 없음** 으로 표현하고,
   축소 모션 설정에서는 중간 프레임 없이 결과만 보여 준다.
+- 상단 배너와 겹치지 않는다. 시트는 화면 아래에서 내용 높이만큼, 스크림이 배너를 덮는다.
+- 날짜 카드(§2.13)가 완전히 사라진 뒤에 뜬다(`Phase` 로 갈리므로 카드와 시트가 겹치지 않는다).
 
 ### 2.8 미니게임 (`minigames/*`)
 - **주인공**: `child` 로 들어오는 놀이판. 상단 제목/설명은 2줄 이내로 물러난다.
@@ -401,6 +520,8 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   하단 패널의 `시작하기` 와 `반대쪽 캐릭터 만나기`.
 - 진입: 홈의 `새 게임`(세이브가 있으면 지우기 확인 다이얼로그 뒤). "나는?" 답이 없으면 §2.11 을, 이름을 아직 안 물었으면
   §2.12 이름 단계를 먼저 거치고, 둘 다 끝났으면 곧바로 이 화면. 기본 쪽은 남자 → 여성 캐릭터, 여자 → 남성 캐릭터, 선택 안 함 → 비교 모드.
+  **첫 실행 인트로(§2.14)도 마지막 답 뒤에 이 화면을 거친다** — 그때는 대화에서 고른 쪽을 펼친 상태로 열리고,
+  `시작하기` 가 곧 새 게임의 시작이다(뒤로 가면 인트로의 마지막 질문으로 돌아간다).
   뒤로 가면 1단계(거쳐 왔다면) 또는 홈. 아무것도 바뀌지 않는다(세이브·답 그대로).
 - 구성(위→아래): 빈 `AppBar`(뒤로 가기만) → `ListView`(패딩 20/4/20/24): 헤드라인 `headlineMedium` → `xs`
   → 부제 `bodyMedium`(onSurfaceVariant; 비교 모드는 `'두 쪽을 눌러 비교해 보고 골라요'`) → `sectionGap`
@@ -491,6 +612,90 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
   누르면 같은 화면을 `push` 한다: 1차 버튼 `'저장'`, 2차 링크는 `건너뛰기` 대신 `'이름 지우기'`(이름이 있을 때만).
   저장·지우기는 설정으로 돌아온다. 진행 중인 회차에도 **다음에 그려지는 대사부터** 새 이름이 나간다.
 
+### 2.13 날짜 카드 (`day_card.dart`)
+- **주인공**: `'D+N'` 하나. 배경 파티클·빛번짐 없음.
+- 언제: `Phase.dayStart`(저장 안 함). 정산 `'다음 날로'` → (전면 광고) → `endDay()` → 카드(`next`) → 행동(룰렛),
+  새 게임 → 카드(`first`) → 행동, 아침 이어하기(`dayStarted == false`) → 카드(`resume`) → 행동. 엔딩 날·하루 도중 복귀는 카드 없음.
+  내용은 `GameController.dayCard`(`DayCard` 값 객체, 메모리 전용).
+- 바탕 `CallBackdrop`(항상 다크). 가운데 `CenteredScrollColumn`(좌우 `screenX`), 전체가 탭 대상(`Key('day-card')`).
+- 구성(위→아래): 장 pill `'N장'`/`'N장 · 제목'`(`surfaceContainerHigh` `rPill` `AppInsets.chip` `labelMedium onSurfaceVariant`,
+  제목은 config `chapterTitles` 가 있고 장 첫날일 때만) → `md` → `'D+N'`(`displayLarge` tabular `onSurface`) → `sm` →
+  `'N일째 아침 · 수요일 · 흐림'`(`titleMedium onSurfaceVariant`; `first` 는 `'{run}회차 · 첫날 · 월요일 · 맑음'`) →
+  [`xl` → `TomorrowLine`(`'오늘 ○○에게서 연락이 올 것 같다'` + 미리보기, `next` 만)] → [`sm` → 밤사이 한 줄 `bodySmall`, `next` 만]
+  → [`xl` → `PreviousRunNote`, `first` 만] → `xxxl` → `'탭해서 넘기기'`(`labelMedium onSurfaceVariant`, `ExcludeSemantics`).
+  요일 `['월','화','수','목','금','토','일'][(day-1)%7]`, 날씨 `stableSeed(seed, day, 'weather') % 100`(0–54 맑음 · 55–79 흐림 ·
+  80–99 비, 5장은 눈) — 둘 다 표현 전용, 엔진에 없다.
+- 시간: `AnimationController` **하나**(`Timer` 금지 — `pumpAndSettle` 이 통과해야 한다). 체류 `next` 1.4초 · `first` 2.2초 ·
+  `resume` 1.0초 상수(`AnimationBehavior.preserve`). 진입 바탕 페이드 `dSlow` + `D+N` 스케일 0.92→1, 퇴장 페이드 `dBase`.
+  첫 350ms 탭 무시, 그 뒤 탭은 곧바로 완료(`beginMorning`, 멱등). 동작 줄이기: 진입·퇴장 즉시, 체류 그대로.
+- 소리 `Sfx.dayStart`(light 진동) 1회, 카드가 뜰 때. 루트 `Semantics(liveRegion, button, label: 'N일째 아침, 수요일, 흐림')`.
+- 기존 고정 문구와 충돌하지 않는다: `'D+1  ·  1장'`(공백 2개)·`'D+1 정산'`·`'오늘의 운'`·`'어젯밤: '` 을 담지 않는다.
+
+### 2.14 첫 실행 인트로 (`intro_screen.dart`)
+- **주인공**: 태현에게서 온 문자 한 통. 대화 안에는 설명·기능 소개·"시작하기" 버튼이 없다.
+- 언제: `Phase.home` 이면서 `GameController.shouldShowIntro`(세이브·회차 기록이 없고 아직
+  인트로를 안 봄). 홈 대신 이 화면이 선다. 끝나면 캐스트 소개(§2.9) 한 장을 거쳐 `newGame()` →
+  날짜 카드(§2.13) — **홈을 거치지 않는다.** 두 번째 세션부터는 홈이 첫 화면이다(`introSeen`).
+- 단계: ⓪ 타이틀(§2.16, `TitleScreen`, `title-start`) → ① 잠금화면 알림(`NotificationPreview`,
+  `Sfx.msgIn` + medium 진동, 탭 또는 1.8초 뒤 열림) → ② 대답 두 개(`ChoiceButton`,
+  `intro-yes`·`intro-maybe`) → ③ 이름(대화 안 입력창 `intro-name-field` + `intro-name-submit` +
+  `intro-name-skip`, 규칙·거르개는 §2.12 와 같은 `PlayerName`·`NameInputFormatter`) → ④ "나는?"
+  (§2.11 의 문구·`GenderOptionCard` 그대로, `gender-m`·`gender-f`·`gender-none`) → [선택 안 할래요면
+  ⑤ 어느 쪽부터(`intro-side-f`·`intro-side-m`)] → 마지막 답 뒤 태현의 두 줄
+  (`'좋아. 그럼 시작이다'` · `'누가 있는지부터 보여 줄게'`) 900ms → ⑥ 캐스트 소개(§2.9, `cast-start`)
+  → 첫날. ⓪·①만 화면을 통째로 바꾸고 ②~⑤는 화면 하나에 하단 패널만 바뀐다.
+- 캐스트 소개는 인트로에서 고른 쪽을 펼친 채로 열리고, `반대쪽 캐릭터 만나기` 로 넘어가면 **보고 있는 쪽**으로
+  시작한다. 거기서 **뒤로 가면 인트로의 마지막 질문으로 돌아온다** — 마지막 답과 그 뒤 태현의 두 줄을 대화에서
+  지우고 패널을 되살린다(되돌리지 않으면 하단 패널이 빈 채로 남아 막다른 길이 된다).
+- 본문은 채팅 화면과 같은 껍데기: `AppBar`(이니셜 아바타 + `태현` + `온라인`, 뒤로 없음) →
+  `ColoredBox(tokens.chatBackground)` 안 `ChatDivider('D+1')` + `ChatBubble` 들 → `BottomPanel`.
+- 탭 수: 전부 건너뛰어도 **6탭**(타이틀 시작 · 알림 열기 · 대답 · 이름 건너뛰기 · 나는? · 캐스트 시작하기).
+  예전 4탭에서 둘이 늘었다: 앞의 하나는 "무슨 앱인지"(§2.16), 뒤의 하나는 "누구를 만나는지"(§2.9)를
+  사는 값이다. MBTI 는 여전히 묻지 않는다 — D+4 `m_mbti_chat` 대화의 `MbtiSheet`
+  (§3, `onboarding_mbti_screen.dart`).
+- 저장은 **캐스트 소개의 `시작하기`** 에서 한 번에. 그 전에 앱을 닫으면 다음 실행에 타이틀부터 다시 선다.
+- 배너는 두지 않는다(채팅 화면과 같은 이유, §2 공통).
+
+### 2.15 프로필 크게 보기 (`profile_view.dart`)
+- **주인공**: 초상화 한 장(`CharacterAvatar(avatarHero)` 200). **배경**: 이름·호칭·한 줄 매력·칩 줄.
+- 언제: 채팅 말풍선 왼쪽 아바타(§2.3)와 통화 머리줄 아바타(§2.3.1)를 탭했을 때. 진짜 메신저처럼
+  "상대 사진을 눌러 크게 본다". 화면은 `PageRouteBuilder`(투명 라우트) + `Hero` — 작은 아바타가
+  그대로 커진다. `showAppDialog` 는 `PageRoute` 가 아니라 Hero 비행이 일어나지 않으므로 쓰지 않는다.
+- 구성(위→아래, 가운데 정렬 · 안쪽 `xl` · 세로로 모자라면 스크롤): 초상화 200 → `xl` → 이름
+  `headlineMedium` → `xs` → 호칭 `bodyMedium onSurfaceVariant` → `md` → 한 줄 매력 `bodyLarge` →
+  `md` → 칩 줄(`MbtiChip` · 호감 `'♥N'` pill, `Wrap` 간격 `sm`) → `md` → `CompatRow`(내 MBTI 를
+  알 때만) → `xl` → `닫기` `FilledButton.tonalIcon`.
+- 바탕은 **`scheme.surface` 한 장**이다(스크림 아님). 문단이 들어가는 화면이라 대화가 비치면 본문
+  대비 4.5:1 을 못 넘는다(§4.2). 라우트는 투명이라 아래로 끌어내리면 그 뒤 대화가 드러난다.
+- 닫기: 화면 아무 데나 탭 · 아래로 96pt 끌거나 700px/s 로 튕기기 · `닫기` 버튼. 끌다 말면 제자리
+  (`AppMotion.base`).
+- **모르는 것은 그리지 않는다.** 올라오는 값은 전부 다른 화면이 이미 보여 준 것이다 — 이름·호칭·매력·
+  MBTI·궁합은 캐스트 소개(§2.9), 호감은 홈 사람들 줄(§2.10). 취향·지뢰·신뢰는 어디에도 없으므로 여기에도 없다.
+- 아예 열리지 않는 경우: 히든 미해금(그 회차 호감 ≤ 0, 홈과 같은 규칙) · `'모르는 번호'`·`'알 수 없는 …'` ·
+  캐스트 밖 조연(태현·엄마 — 초상화도 사실도 없어 빈 화면이 된다). 이때 아바타는 그냥 그림이고
+  스크린리더에도 버튼이 생기지 않는다.
+- 화면이 프로필을 찾는 길은 `ProfileScope`(`event_screen.dart` 가 컨트롤러를 보고 채운다). 스코프가 없는
+  화면(인트로·위젯 테스트)에서는 아무 아바타도 눌리지 않는다.
+
+### 2.16 타이틀 (`title_screen.dart`)
+- **주인공**: 앱 이름. **배경**: 밤 자취방 삽화와 `시작하기` 버튼 하나.
+- 언제: **첫 실행에만**. 인트로(§2.14)의 0단계라 `shouldShowIntro` 일 때만 선다. 이어하기가 있는
+  사람을 매번 통과시키지 않는다 — 이 화면이 하는 일("무슨 앱인지")은 한 번이면 되고, 돌아온 사람에게
+  이름을 말하는 자리는 이미 홈 헤더의 워드마크(§2.1)다. 매 콜드 스타트마다 세우면 가장 자주 지나는
+  길(열기 → 이어하기)에 탭이 하나 늘 뿐이다. ATT·광고 초기화도 그대로 인트로 뒤다(`main.dart`).
+- 바탕은 `CallBackdrop`(항상 다크, 자수정 그라데이션) + 상단 55% 에 장면 삽화 + 켄번즈. 그림은
+  `assets/scenes/title` 이 있으면 그것, 없으면 게임의 첫 삽화 `m01`(밤 책상 위 알림 불빛), 둘 다
+  없으면 그라데이션만(자리도 잡지 않는다, §2.3.2 와 같은 규칙). 알림 화면(§2.3.1)과 같은 바탕이라
+  `시작하기` → 알림 카드가 한 장면처럼 이어진다.
+- 구성(위→아래): `Expanded` 가운데 묶음(스크롤 가능) — `'100일 연애 시뮬레이션'` `labelMedium
+  onSurfaceVariant` → `sm` → `'모쏠 탈출기'` `displaySmall` → `md` → `'톡 한 줄로 썸부터 고백까지'`
+  `bodyLarge onSurfaceVariant`(App Store 부제와 같은 문장, docs/STORE_LISTING.md §1) → 하단 전폭
+  `시작하기` `FilledButton`(`Key('title-start')`, 좌우 `screenX`, 아래 `xxl`).
+- 모션: 워드마크 묶음 → 버튼 순으로 한 번만 자기 높이의 20% 상승 + 페이드(`AppMotion.dSlow` 안에서
+  `Interval` 로 겹친다). 튕김·반복 없음. 동작 줄이기면 연출 없이 완성된 화면(§1.10).
+- 배너는 두지 않는다. 앱의 첫 프레임이 광고일 수 없다(§2 공통, 00_VERDICT §3 R3).
+- 높이 예산: 320×568 · 1.3배에서 `시작하기` 하단 ≤ 568, 제목이 좌우로 잘리지 않음.
+
 ---
 
 ## 3. 공용 컴포넌트 규격
@@ -516,6 +721,13 @@ class ChatBubble extends StatelessWidget {
   /// 묶음의 마지막 줄인지. 꼬리(각진 모서리) 여부를 결정한다.
   final bool isLastOfGroup;
 
+  /// 아바타 초상화를 찾을 캐릭터 id. null 이면 이니셜(NPC).
+  final String? characterId;
+  /// 묶음 첫 줄에 아바타를 그릴지. false 면 같은 폭의 빈 칸(연속 줄).
+  final bool showAvatar;
+  /// 메타 열. null 이면 빈 칸. (time: '오후 9:14', read: true → '읽음')
+  final ChatMeta? meta;
+
   const ChatBubble({
     super.key,
     required this.line,
@@ -523,7 +735,13 @@ class ChatBubble extends StatelessWidget {
     this.accent,
     this.isFirstOfGroup = true,
     this.isLastOfGroup = true,
+    this.characterId,
+    this.showAvatar = true,
+    this.meta,
   });
+
+  /// '모르는'·'알 수 없는' 으로 시작하는 이름 → 실루엣 아바타.
+  static bool isMysteryName(String name);
 }
 
 /// 스탯 6개 막대. delta 가 있으면 값 옆에 변화량을 함께 보여 준다.
@@ -580,12 +798,17 @@ class ComboBadge extends StatelessWidget {
   });
 }
 
-/// 배너 광고 자리. 광고가 없으면 높이 0 을 유지해야 한다.
-class BannerSlot extends StatefulWidget {
-  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때).
-  final bool safeArea;
+/// 배너가 붙는 가장자리. 화면은 전부 top(§2 공통). bottom 은 예전 API 호환.
+enum BannerEdge { top, bottom }
 
-  const BannerSlot({super.key, this.safeArea = true});
+/// 배너 광고 자리. 광고가 없으면 높이 0 을 유지해야 한다. 로드되면 AnimatedSize 로 내려앉는다.
+class BannerSlot extends StatefulWidget {
+  /// false 면 SafeArea 를 감싸지 않는다(이미 SafeArea 안일 때, AppBar 아래).
+  final bool safeArea;
+  /// top 이면 경계선·바깥 여백(sm)이 아래(본문 쪽). BannerFrame 도 같은 매개변수를 받는다.
+  final BannerEdge edge; // top | bottom
+
+  const BannerSlot({super.key, this.safeArea = true, this.edge = BannerEdge.bottom});
 }
 ```
 
@@ -928,7 +1151,7 @@ class CharacterAvatar extends StatelessWidget {
   /// null 이면 tokens.neutralAccent.
   final CharacterAccent? accent;
 
-  /// 32 · 40 · 56 만 쓴다.
+  /// `AppSize.avatarSm/Md/Lg/Xl`(32 · 40 · 56 · 72)만 쓴다.
   final double size;
 
   /// 히든 미해금. 글자 대신 Icons.person_outline, 배경 surfaceContainerHigh.
@@ -1195,6 +1418,24 @@ String formatCallTime(int seconds); // 'mm:ss'
 /// notification_card.dart
 class NotificationCard     // 알림 카드 한 장. name, characterId, preview, onOpen
 class NotificationPreview  // 잠금화면 한 장 + 내려오는 연출. autoOpen = 1.8초
+
+/// 채팅(카톡형, docs/overhaul/03_chat_ui_spec.md)
+class ChatMeta { final String? time; final bool read; }                   // 말풍선 옆 시각·읽음
+class ChatDivider extends StatelessWidget { final String text; }          // sys pill 모양의 구분줄 'D+N · 제목'
+class ChatAvatarSlot extends StatelessWidget { name, characterId, accent, show } // 아바타 또는 같은 폭 빈 칸
+class TypingIndicator extends StatelessWidget { name, characterId, accent, showAvatar } // Text('…') 한 개 고정, 깜빡임 없음
+class StickerBubble extends StatelessWidget { characterId, emotion, mine; static resolve } // 에셋 없으면 빈 위젯
+abstract final class ChatClock { startSeconds(seed, day, index, total); label(seconds); timesFor(lines, start) } // event_screen.dart
+
+/// day_card.dart (컨트롤러: enum DayCardVariant { next, first, resume }, class DayCard 값 객체, beginMorning())
+class DayTransitionScreen extends StatefulWidget {
+  final GameController c;
+  static const beatNext = Duration(milliseconds: 1400);
+  static const beatFirst = Duration(milliseconds: 2200);
+  static const beatResume = Duration(milliseconds: 1000);
+  static const tapGuard = Duration(milliseconds: 350);
+  static const skipHint = '탭해서 넘기기';
+}
 ```
 
 이름 단계 컴포넌트(§2.12, `onboarding_name_screen.dart` — widgets.dart 가 아니라 화면 파일에 둔다):
@@ -1215,6 +1456,53 @@ class NamePreviewBubble extends StatelessWidget { final String text; }
 
 /// 조합 중에는 통과, 조합이 끝난 값에서 한글 완성형·자모·영문·숫자 밖의 글자를 뺀다.
 class NameInputFormatter extends TextInputFormatter {}
+```
+
+#### 3.2.1 자유 입력 (event_screen.dart 안 비공개 위젯 · 엔진 API)
+
+화면 밖에서 재사용하지 않으므로 `widgets.dart` 에 올리지 않았다. 규격은 §2.3.0.
+
+```dart
+/// 선택지 패널. 입력창·칩 접기·시트를 안에서 처리한다. 이벤트마다 `key: ValueKey('choices-<id>')`.
+class _ChoicePanel extends StatefulWidget {
+  final GameController c;
+  final ValueChanged<String> onPicked;   // 내 말풍선 문구(버튼)
+  final bool hideDecline;                // 통화 중
+  final VoidCallback? onHangUp;          // 통화 중 "끊을게" → 거절 경로
+}
+
+/// "이런 뜻이에요?" — 후보를 점수순으로. `Navigator.pop(index)` / `다시 쓰기` 는 null.
+class _PickSheet extends StatelessWidget {
+  final GameController c;
+  final MatchResult result;
+  final bool forced;                     // 되돌리기 뒤: 추천 강조 없음
+}
+
+/// 피커 한 행. OutlinedButton 이 아니다.
+class _PickRow extends StatelessWidget {
+  final String text;
+  final bool recommended;
+  final String? lockedReason;
+  final VoidCallback? onTap;             // null 이면 잠김
+}
+
+/// chance·minigame 확인. `_ConfirmAction.go` / `.other`.
+class _ConfirmSheet extends StatelessWidget {
+  final String text;                     // 친 문장
+  final String choiceText;               // 선택지 원문(이름 치환 뒤)
+  final String label;                    // '75%' | '표정 읽기'
+  final String primary;                  // '이대로' | '게임 시작'
+}
+
+// lib/engine/free_input.dart (순수 함수)
+MatchResult FreeInputMatcher.match(String text, List<ChoiceView> visible,
+    {bool inCall, bool forcePick, Map<int, ChoiceSignature>? signatures, String Function(String)? say, String? cacheKey});
+// decision: auto | confirm | locked | pick | empty | blocked | hangUp
+
+// GameController
+MatchResult chooseFree(String text);                       // 매핑만, 상태 변화 없음(전송 수·지표)
+void confirmFree(int index, {required String text, required bool auto, MatchResult? match, String via, ...});
+bool get canOfferFreeUndo;  void undoFree();  String? get playerText;  bool get canFreeInput;
 ```
 
 ### 3.3 유지하는 것
@@ -1240,7 +1528,7 @@ class NameInputFormatter extends TextInputFormatter {}
 | 하트 | 빈 하트는 `Icons.favorite_border`, 최대 개수만큼. `'다음 하트'` 를 포함한 Text 하나 |
 | 콤보 | 콤보 3 이상일 때 `'물올랐다 3'` 정확히 |
 | 클리프행어 | `'어젯밤: ...'` 를 포함한 Text |
-| 캐릭터 칩 | `'서연 ♥12 ✓0'` 형태의 단일 Text |
+| 관계 줄 칸 | `'서연 ♥12'` 형태의 단일 Text (`RelationStrip`) |
 | 앨범 진행도 | `'2 / 20'`, `'1 / 30'` 형태 단일 Text. 자물쇠 `Icons.lock_outline`, 획득 `Icons.check_circle` |
 | 미니게임 결과 | `'크리티컬!'` / `'성공'` / `'실패'` 정확히 |
 | 결과 패널 | `'크리티컬! 호감 2배'`, `'실패…'`, `'물올랐다!'`, `'성공'`, `'계속'` |
@@ -1251,6 +1539,15 @@ class NameInputFormatter extends TextInputFormatter {}
 | 룰렛 | `'오늘의 운'`, `'돌리기'`, `'시작'`, `'한 번 더 (광고)'` / 재도전권이 있으면 대신 `'재도전권 사용 (N장)'` |
 | 전화 | 수신 `'전화가 왔어요'`, `'받기'`, `'거절'`, 통화 `'통화 중'`/`'통화 종료'`, 타이머 `'00:00'` 형식 단일 Text, 대기 `'…(침묵)'`, 거절 뒤 `'부재중 전화 · 이름'` |
 | 알림 · 사진 | 알림 카드 `'지금'`, 사진 스크린리더 라벨 `'사진: {caption}'` |
+| 그림 슬롯 | 에셋이 없으면 `SceneCard`·`StickerBubble`·`EndingHero` 높이 0(그림 없는 화면과 동일), `SceneImage` 없음, 사진은 `PhotoScene` 유지. 있으면 장면 카드는 구분줄 **위** 3:2, 스티커 라벨 `'<이름> 스티커: 기쁨'`, 장면 크게 보기 버튼 `'닫기'` |
+| 채팅 헤더 | 이름 `titleLarge` + 상태 줄 `'온라인'` / `'자리 비움'` / `'부재중'` / `'온라인 · N명'`; AppBar 안에 `CharacterAvatar` 없음; 타이핑 `'…'` 정확히 한 개(`TypingIndicator` 또는 `CallTyping`) |
+| 타이틀 | `'모쏠 탈출기'` · `'100일 연애 시뮬레이션'` · `'톡 한 줄로 썸부터 고백까지'` 각각 한 개, 시작 버튼 `Key('title-start')` `'시작하기'`. 배너 없음. 첫 실행에만 뜬다 |
+| 프로필 크게 보기 | 아바타 탭 → `CharacterProfileView` 한 개, 안의 `CharacterAvatar.size == AppSize.avatarHero`, 닫기 `'닫기'`. 히든 미해금·`'모르는 번호'`·캐스트 밖 화자는 열리지 않는다 |
+| 채팅 아바타 열 | `ChatAvatarSlot` 상자 44×44(탭 대상), 그림은 `avatarMd` 40 이 상자 왼쪽 위, `ChatAvatarSlot.indent == avatarMd + sm`(48) |
+| 채팅 구분줄 | `'D+N · 제목'` 단일 Text(`ChatDivider`), 대화 첫 항목 |
+| 채팅 말풍선 | `CharacterAvatar(avatarMd)` 는 묶음 첫 줄에만, 시각 `'오후 4:12'` 는 묶음 마지막 줄에만, 읽음은 낱말 `'읽음'`(숫자 `'1'` 금지) |
+| 날짜 카드 | `Key('day-card')`, `'D+N'` 단일 Text, `'N일째'` 를 포함한 Text, 첫날 `'{run}회차 · 첫날'`, `'탭해서 넘기기'`; 카드 동안 `ActionScreen`·`RouletteSheet` 없음 |
+| 자유 입력 | 입력창 `Key('free-input')` 은 `TextField`(**`OutlinedButton` 아님**), 힌트 `'직접 쓰기…'`; 보내기 `Key('free-send')`; 피커 `'이런 뜻이에요?'` · `'다시 쓰기'` · 약하면 `'잘 못 알아들었어요 — 어느 쪽에 가까워요?'`; 시트 안 후보 행도 `OutlinedButton` 아님(선택지 버튼은 여전히 정확히 N개); 확인 `'이대로'` / `'게임 시작'` / `'다른 뜻'`; 잠김 `'아직 그 말은 안 나온다 (자존감 30↑)'`; 금칙어 `'그 말은 보내지 않기로 했다.'`; 빈 입력 `'조금만 더 써 주세요'`; 결과 캡션 `'→ "선택지 원문" 으로 알아들었어요'`(단일 Text); 무료 되돌리기 `'그런 뜻 아니었어요'`; 통화 `'전화를 끊을까요?'` · `'끊기'` · `'계속 통화'` |
 | 광고 문구 | `'광고 보고 하트 받기'`, `'광고 보고 기다리지 않기'`, `'10초 전으로 (광고)'`, `'태현에게 물어보기 (광고)'`, `'광고를 불러오지 못했어요'` |
 | 앨범 아이콘 | AppBar 액션은 `Icons.photo_album_outlined` |
 | 빈 앨범 | `'아직 흑역사가 없다'` |
@@ -1264,6 +1561,9 @@ class NameInputFormatter extends TextInputFormatter {}
 | 앨범 엔딩 필터 | 칩 `'전체'` `'여성'` `'남성'` `'공용'`. 진행도 `'N / M'` 은 필터와 무관하게 전체 기준 |
 | 이름 단계 | 제목 `'뭐라고 불러 드릴까요?'`, 입력창 `Key('name-field')`, 미리보기 `Key('name-preview')`(빈 값 `'자?'`, `민석` → `'민석아, 자?'`), 버튼 `Key('name-submit')` `'다음'`/`'저장'`, 링크 `Key('name-skip')` `'건너뛰기'` · `Key('name-clear')` `'이름 지우기'`, 카운터 `'n/6'`, 설정 행 `Key('settings-name')` `'내 이름'`(없으면 `'없음'`) |
 | 설정 | AppBar `'설정'`, 행 `'개인정보처리방침'` / `'오픈소스 라이선스'` / `'서체'` / `'앱 버전'` / `'저장 데이터 초기화'`, 확인 `'저장 데이터를 지울까요?'` → `'지우기'`, 스낵바 `'저장 데이터를 지웠어요'` |
+| 설정 토글 | `게임` 섹션에 `Key('settings-sfx')` `'효과음'` · `Key('settings-haptic')` `'진동'`. `AppListRow` + 오른쪽 `Switch`, 행 전체 탭으로도 바뀐다. 320×568 · 1.3배에서 `'개인정보처리방침'` 은 첫 화면 아래로 내려간다 |
+| 설정 배너 | AppBar 아래 `BannerSlot(top)`, 행 목록은 그 아래. `bottomNavigationBar` 없음 |
+| 배너 자리 | 홈·행동·정산·앨범·설정의 `BannerSlot` 은 `edge: top`, `safeArea: false`, `Scaffold.bottomNavigationBar == null`. `BannerFrame(top)` 은 아래 경계선 `hairline` + `margin.bottom: sm` |
 
 `test/widget/helpers.dart` 의 `wrapApp` 은 아직 자체 `ThemeData` 를 만든다. QA 단계에서
 `AppTheme.light` / `AppTheme.dark` 로 교체해야 화면이 실제 테마로 검증된다.
@@ -1289,7 +1589,9 @@ class NameInputFormatter extends TextInputFormatter {}
 - 말풍선에 삼각 꼬리를 그리지 않는다. 모서리 하나만 각지게 깎는다.
 - 특정 메신저의 시스템 문구·아이콘·레이아웃(친구 목록 탭 바, 노란 말풍선, 특유의
   읽음 표기 방식)을 흉내내지 않는다. 우리 시스템 줄은 중립 pill 이다.
-- 캐릭터 프로필 이미지 자리에는 실제 사진 대신 강조색 이니셜 원형을 쓴다.
+- 캐릭터 프로필 이미지 자리에는 실제 사진 대신 강조색 이니셜 원형을 쓴다(초상화가 있으면 그 그림).
+- 읽음 표기는 낱말 `'읽음'` 뿐이다. 숫자 배지("1")·프로필 사진 옆 시각 배치 등 특정 메신저의 읽음 표기 방식을 쓰지 않는다.
+  아바타 원형 + 이름 + 말풍선의 3열 구조는 메신저 일반 문법이라 허용한다.
 
 ---
 
@@ -1317,6 +1619,8 @@ class NameInputFormatter extends TextInputFormatter {}
 11. **화면에 보이는 한국어 문구 임의 변경** — 테스트가 문구로 위젯을 찾는다. 바꿀 근거가
     있으면 이 문서의 §4.1 을 먼저 고치고 QA 단계와 함께 처리한다.
 12. **엔진·컨트롤러·광고·스토리 데이터 수정** — 표현 계층만 손댄다.
+13. **채팅·통화·알림 화면과 시트·다이얼로그 안의 배너.** 배너는 §2 공통 자리(상단 `BannerSlot(top)`)
+    하나뿐이다. `bottomNavigationBar` 에 다시 넣지 마라.
 
 ---
 

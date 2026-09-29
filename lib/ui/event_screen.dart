@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
-import '../ads/ad_manager.dart';
 import '../analytics/analytics.dart';
+import '../audio/sfx_service.dart';
+import '../engine/effects.dart' show AppliedDelta;
 import '../engine/event_engine.dart';
+import '../engine/mbti.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import '../minigames/minigame.dart';
@@ -12,19 +15,77 @@ import '../minigames/registry.dart';
 import 'call_view.dart';
 import 'design_system.dart';
 import 'notification_card.dart';
+import 'onboarding_mbti_screen.dart';
+import 'profile_view.dart';
+import 'scene_card.dart';
+import 'scene_registry.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
 /// 전화 이벤트의 단계. docs/MOMENTS_SPEC.md §1.1.
 enum CallStage { ringing, active, declined }
 
+/// 하루 안의 가짜 시계(docs/overhaul/02_game_loop.md §3 P1). 표현 전용 — 엔진·세이브 무관.
+///
+/// 오늘 큐의 i 번째 이벤트에 시간대를 준다: 4개면 09·12·16·21, 3개면 10·15·21, 2개면 12·20,
+/// 1개면 19. 분은 `stableSeed(seed, day, 'clock$i') % 60`. 줄마다 +1분, `wait` 줄은 그 초만큼 더한다.
+/// 통화·미니게임 전후로는 흐르지 않는다.
+abstract final class ChatClock {
+  static const _slots = <int, List<int>>{
+    1: [19],
+    2: [12, 20],
+    3: [10, 15, 21],
+    4: [9, 12, 16, 21],
+  };
+
+  /// [total] 개 중 [index](0부터) 번째 이벤트의 시작 시각(자정부터 초). 5개 이상이면
+  /// 4칸 표에 비례해 얹는다.
+  static int startSeconds({
+    required int seed,
+    required int day,
+    required int index,
+    required int total,
+  }) {
+    final n = total.clamp(1, 4);
+    final table = _slots[n]!;
+    final i = total <= 4
+        ? index.clamp(0, n - 1)
+        : (index * n ~/ total).clamp(0, n - 1);
+    final minute = EventEngine.stableSeed(seed, day, 'clock$index') % 60;
+    return table[i] * 3600 + minute * 60;
+  }
+
+  /// `오후 4:12` — 한국어 12시간, 앞 0 없음.
+  static String label(int seconds) {
+    final h = (seconds ~/ 3600) % 24;
+    final m = (seconds ~/ 60) % 60;
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    final mm = m < 10 ? '0$m' : '$m';
+    return '${h < 12 ? '오전' : '오후'} $h12:$mm';
+  }
+
+  /// [lines] 각 줄의 시각(초). [start] 에서 줄마다 +60, `wait` 줄은 그 초만큼 더.
+  static List<int> timesFor(List<Line> lines, int start) {
+    final out = <int>[];
+    var t = start;
+    for (final l in lines) {
+      out.add(t);
+      t += 60;
+      if (l.isWait) t += l.wait;
+    }
+    return out;
+  }
+}
+
 /// 채팅형 이벤트 화면. 말풍선이 순서대로 나타나고, 끝나면 하단 패널이 올라온다.
 ///
-/// 규격: docs/DESIGN_SYSTEM.md §2.3.
+/// 규격: docs/DESIGN_SYSTEM.md §2.3, docs/overhaul/03_chat_ui_spec.md §1·§2.
 /// - 주인공은 말풍선 흐름이다. 대화 영역은 `tokens.chatBackground` 로 화면 바탕과
 ///   한 단 구분하고, 상단 헤더와 하단 패널은 배경으로 물러난다.
-/// - 헤더는 상대(이니셜 원형 + 이름) · 이벤트 제목 · 날짜 · 진행 막대까지
-///   한 줄로 정리한다. 진행 막대는 이 대화가 얼마나 남았는지를 알려 준다.
+/// - 헤더는 이름 + 상태 한 줄(`온라인`/`자리 비움`/`부재중`/`온라인 · N명`)과 진행 막대뿐.
+///   이벤트 제목과 D+N 은 대화 첫 항목 `ChatDivider('D+N · 제목')` 로 내려갔다.
+/// - 상대 줄은 아바타 열(묶음 첫 줄만) → 이름 + 말풍선 → 시각·읽음 메타 열. 시각은
+///   [ChatClock] 의 가짜 시계, 읽음은 낱말 하나(숫자 배지 금지).
 /// - 컨트롤러 호출과 상태 사용 방식은 이전과 같다. 표현 계층만 바뀌었다.
 ///
 /// 모먼트 변형(docs/MOMENTS_SPEC.md, DESIGN_SYSTEM §2.3):
@@ -36,24 +97,55 @@ class EventScreen extends StatefulWidget {
   final GameController c;
   const EventScreen({super.key, required this.c});
 
+  /// MBTI 를 묻는 D+4 대화의 id 앞부분(`m_mbti_chat_f` · `m_mbti_chat_m`).
+  /// 이 화면은 id 로만 알아본다 — `assets/story/events_main.json` 은 건드리지 않는다.
+  ///
+  /// TODO(2b): 그 이벤트의 대사는 "내 MBTI 를 이미 안다" 는 전제로 쓰여 있다. 글 손질 때
+  /// `m_mbti_chat_f`/`m_mbti_chat_m` 맨 앞에 상대가 묻는 줄(`them: "너 MBTI 뭐야?"`)을
+  /// 한 줄씩 넣어 주면 시트가 그 질문의 답으로 읽힌다. 지금도 동작은 한다(모름 판 대사 뒤에 시트).
+  static const mbtiEventPrefix = 'm_mbti_chat';
+
+  /// 상대 줄의 타이핑 시간. 긴 말은 오래 친다: `clamp(600 + 글자×18, 800, 2400)`ms.
+  /// 글자는 공백을 뺀 수(치는 건 글자다).
+  ///
+  /// 이 화면 밖에서도 쓴다 — 첫 실행 인트로(`intro_screen.dart`)가 태현의 답을 한 줄씩
+  /// 띄울 때 같은 식을 쓴다. 두 벌이 되면 첫 대화와 본편의 박자가 갈린다.
+  static int themDelayMs(String text) {
+    final chars = text.replaceAll(RegExp(r'\s'), '').length;
+    return (600 + chars * 18).clamp(800, 2400);
+  }
+
   @override
   State<EventScreen> createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen> {
+class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   Timer? _timer;
   int _waitLeft = 0;
   String? _eventId;
   final _scroll = ScrollController();
 
-  /// 방금 고른 선택지 문구. 결과 패널이 떠 있는 동안 내 말풍선으로 대화에 남긴다.
-  /// 표시 전용이며 컨트롤러 상태와 무관하다.
+  /// 방금 고른 선택지 문구(버튼). 결과 패널이 떠 있는 동안 내 말풍선으로 대화에 남긴다.
+  /// 자유 입력이면 컨트롤러의 [GameController.playerText](친 문장)가 먼저다 — 세이브에서도
+  /// 복원되므로 화면이 다시 만들어져도 말풍선이 남는다(07 §3.4).
   String? _picked;
+
+  String? get _myText => c.playerText ?? _picked;
 
   /// 선택 뒤 상대 반응 중 지금까지 보여 준 줄 수.
   int _replyShown = 0;
   Timer? _replyTimer;
   ChoiceOutcome? _replyFor;
+
+  /// 내 말풍선 옆 `읽음`. 보낸 뒤 500ms(실패 톤 1500ms) 지나 켜진다(04 §2.4).
+  bool _readShown = false;
+  Timer? _readTimer;
+
+  /// "쓰다 지움"(04 §2.3)을 이 이벤트에서 이미 했는지 — 이벤트당 1회.
+  bool _eraseDone = false;
+
+  /// 쓰다 지움의 빈 구간. 타이핑 표시를 페이드로 숨긴다(트리에는 남아 `'…'` 하나 유지).
+  bool _typingHidden = false;
 
   /// 전화 이벤트 단계. 채팅 이벤트에서는 쓰지 않는다.
   CallStage _callStage = CallStage.active;
@@ -66,18 +158,42 @@ class _EventScreenState extends State<EventScreen> {
   bool _previewOpen = false;
   Timer? _previewTimer;
 
+  /// 이 이벤트에서 MBTI 시트를 이미 띄웠는지(이벤트가 바뀌면 풀린다).
+  bool _mbtiSheetShown = false;
+
   /// 통화 중 대기 줄(`wait`)은 카운트다운 대신 이만큼 침묵한다. 벌점·광고 없음.
   static const callSilence = Duration(seconds: 2);
+
+  /// 쓰다 지움 박자: `…` 700ms → 사라짐 → 600ms 빈 상태 → `…` 다시 → 대사(04 §2.3).
+  static const eraseShow = Duration(milliseconds: 700);
+  static const eraseGap = Duration(milliseconds: 600);
+
+  /// `읽음` 지연. 실패 톤이면 "읽고 고민했다" 를 숫자 없이 전하려고 더 늦춘다.
+  static const readDelay = Duration(milliseconds: 500);
+  static const readDelayFail = Duration(milliseconds: 1500);
 
   /// initState 에서는 MediaQuery(동작 줄이기)를 읽을 수 없어서 첫 동기화를 미룬다.
   bool _started = false;
 
   GameController get c => widget.c;
 
+  /// 효과음·진동(docs/overhaul/05_audio_haptics.md §1). 큐는 화면 상태 전환과 한곳에 둔다.
+  SfxService get _sfx => SfxService.instance;
+
   @override
   void initState() {
     super.initState();
     c.addListener(_onChange);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// 백그라운드에서 서비스가 벨을 끊었으니, 돌아왔을 때 아직 수신 화면이면 벨만 다시 건다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (c.current?.isCall == true && _callStage == CallStage.ringing) {
+      _sfx.startRing();
+    }
   }
 
   @override
@@ -92,8 +208,11 @@ class _EventScreenState extends State<EventScreen> {
   void dispose() {
     _timer?.cancel();
     _replyTimer?.cancel();
+    _readTimer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
+    _sfx.stopRing();
+    WidgetsBinding.instance.removeObserver(this);
     c.removeListener(_onChange);
     _scroll.dispose();
     super.dispose();
@@ -103,8 +222,14 @@ class _EventScreenState extends State<EventScreen> {
     if (!mounted) return;
     if (c.lastOutcome == null) {
       _picked = null;
-      // 거절을 되돌리면(광고) 다시 울리는 화면으로.
-      if (_callStage == CallStage.declined) _callStage = CallStage.ringing;
+      // 거절을 되돌리면(광고) 다시 울리는 화면으로. 벨도 다시.
+      // 같은 이벤트일 때만이다 — `계속` 으로 다음 이벤트가 오면 여기서 켠 벨을 바로 뒤
+      // _syncEvent 가 끄고, 두 호출이 같은 틱이라 플랫폼에는 stop·stop·resume 순으로
+      // 도착해 벨이 꺼지지 않은 채 다음 이벤트까지 울렸다(04 P1-2).
+      if (_callStage == CallStage.declined && c.current?.id == _eventId) {
+        _callStage = CallStage.ringing;
+        _sfx.startRing();
+      }
     }
     _syncEvent();
     _syncReply();
@@ -135,19 +260,27 @@ class _EventScreenState extends State<EventScreen> {
     _timer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
+    // 다른 이벤트로 넘어가면 울리던 벨은 끊는다.
+    _sfx.stopRing();
     _waitLeft = 0;
     _callSeconds = 0;
     _previewOpen = false;
     _callStage = CallStage.active;
+    _eraseDone = false;
+    _typingHidden = false;
+    _mbtiSheetShown = false;
     // 처음부터 보는 이벤트일 때만 전화 수신·알림을 연출한다(복원·디버그 진입은 건너뜀).
     final fresh = ev != null && c.revealed == 0 && c.lastOutcome == null;
     if (ev != null && ev.isCall) {
       if (fresh) {
         _callStage = CallStage.ringing;
+        _sfx.startRing();
         return;
       }
       _startCallClock();
     } else if (ev != null && fresh && _previewName(ev) != null) {
+      // 문자 도착음·진동. 동작 줄이기로 알림 카드가 생략돼도 이건 낸다(04 §2.1).
+      _sfx.cue(Sfx.msgIn);
       // 동작 줄이기면 알림 없이 바로 대화가 열린다.
       if (!AppMotion.reduced(context)) {
         _previewOpen = true;
@@ -176,6 +309,26 @@ class _EventScreenState extends State<EventScreen> {
     _scheduleReveal();
   }
 
+  // ---- MBTI 를 대화 안에서 묻기(docs/review/00_VERDICT.md §3 R6) ----
+
+  /// 첫 회차 온보딩에서 MBTI 를 묻지 않았다면(`shouldAskMbti`), D+4 `m_mbti_chat` 대화의
+  /// 대사가 끝난 자리에서 [MbtiSheet] 를 한 번 올린다. 답을 고르면 기기 설정과 **이번 회차**
+  /// 에 함께 반영되고([GameController.adoptMbti]), `나도 몰라` 면 예전의 건너뛰기와 똑같이
+  /// 모름으로 굳는다(대사·궁합은 전부 모름 판으로 돌아간다 — 데이터는 그대로다).
+  ///
+  Future<void> _maybeAskMbti() async {
+    final ev = c.current;
+    if (_mbtiSheetShown || ev == null) return;
+    if (!ev.id.startsWith(EventScreen.mbtiEventPrefix)) return;
+    if (!c.shouldAskMbti || c.lastOutcome != null) return;
+    _mbtiSheetShown = true;
+    if (!mounted) return;
+    final r = await MbtiSheet.ask(context);
+    // 바깥을 눌러 닫았으면 아무것도 저장하지 않는다(설정에서 언제든 정할 수 있다).
+    if (r == null || !mounted) return;
+    await c.adoptMbti(r.type);
+  }
+
   // ---- 전화 ----
 
   /// 결과 패널이 떠서 통화가 끝났는지.
@@ -188,6 +341,7 @@ class _EventScreenState extends State<EventScreen> {
       if (!mounted) return t.cancel();
       if (_callEnded) {
         t.cancel();
+        _sfx.cue(Sfx.callEnd);
         setState(() {});
         return;
       }
@@ -196,6 +350,9 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   void _acceptCall() {
+    _sfx
+      ..stopRing()
+      ..cue(Sfx.callConnect);
     setState(() => _callStage = CallStage.active);
     _startCallClock();
     _scheduleReveal();
@@ -206,6 +363,9 @@ class _EventScreenState extends State<EventScreen> {
     final i = c.current?.declineIndex;
     if (i == null) return;
     _timer?.cancel();
+    _sfx
+      ..stopRing()
+      ..cue(Sfx.callEnd);
     setState(() => _callStage = CallStage.declined);
     _picked = null;
     c.choose(i);
@@ -217,14 +377,44 @@ class _EventScreenState extends State<EventScreen> {
     final o = c.lastOutcome;
     if (identical(o, _replyFor)) return;
     _replyFor = o;
+    // 결과가 새로 나온 순간의 성패음. 거절은 판정이 아니라 종료음(callEnd)만 낸다.
+    //
+    // 미니게임이 판정한 결과면 여기서 안 낸다 — `MinigameScaffold` 가 1.5초 전에
+    // 이미 냈고, 둘째 소리에는 새 정보가 0 이다: `_finishMinigame` 이 넘긴
+    // `minigameSuccess` 가 `game_controller.choose` → `applyChoice` 의
+    // `forcedSuccess` 로 들어가 `failed = !forcedSuccess` 가 되므로
+    // **둘째 큐의 성패는 첫째 큐가 이미 정해 둔 값**이다(다를 수가 없다).
+    // 이 저장소의 두 박자 어법은 90ms·120ms 이고, 1.5초는 그 열 배가 넘는 데다
+    // 사이에 전면 라우트 전환이 끼어 한 박자로 안 묶인다. 회차당 150판이라
+    // 가장 많이 듣는 소리가 두 배가 되고, 그건 전역 효과음 토글을 내리게 만드는
+    // 가장 빠른 길이다 — 그러면 나머지 큐 10개까지 함께 잃는다.
+    // (docs/review/13_minigame_handoff.md §2)
+    //
+    // 판별은 `minigameNote` 가 아니라 `lastChoice?.minigame` 으로 한다.
+    // `MinigameResult.message` 는 기본값이 `''` 라서 note 로 보면 조용히 샌다.
+    if (o != null &&
+        c.lastChoice?.decline != true &&
+        c.lastChoice?.minigame == null) {
+      _sfx.cue(o.success ? Sfx.choiceOk : Sfx.choiceFail);
+    }
     _replyTimer?.cancel();
+    _readTimer?.cancel();
     _replyShown = 0;
+    // 되돌리기로 결과가 사라지면 읽음도 같이 사라진다.
+    _readShown = false;
     final total = c.lastReply.length;
-    if (o == null || total == 0) return;
+    if (o == null) return;
     if (MediaQuery.of(context).disableAnimations) {
       _replyShown = total;
+      _readShown = true;
       return;
     }
+    // 읽음은 보낸 뒤 조금 있다가. 실패면 더 늦게 — "읽고 고민했다".
+    _readTimer = Timer(o.success ? readDelay : readDelayFail, () {
+      if (!mounted || !identical(c.lastOutcome, o)) return;
+      setState(() => _readShown = true);
+    });
+    if (total == 0) return;
     void step() {
       _replyTimer = Timer(const Duration(milliseconds: 750), () {
         if (!mounted || !identical(c.lastOutcome, o)) return;
@@ -248,11 +438,36 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
+  /// 이벤트 안 `them` 줄 중 가장 긴 줄인지(같은 길이면 앞쪽 하나만).
+  static bool isLongestThem(StoryEvent ev, int index) {
+    final line = ev.lines[index];
+    if (line.who != 'them') return false;
+    var best = -1;
+    for (var i = 0; i < ev.lines.length; i++) {
+      final l = ev.lines[i];
+      if (l.who == 'them' && l.text.length > best) best = l.text.length;
+    }
+    if (line.text.length != best) return false;
+    for (var i = 0; i < index; i++) {
+      final l = ev.lines[i];
+      if (l.who == 'them' && l.text.length == best) return false;
+    }
+    return true;
+  }
+
   /// 다음 줄을 자동으로 공개. 대기 줄이면 카운트다운.
+  ///
+  /// 상대 줄 앞에는 "쓰다 지움" 을 이벤트당 한 번 넣는다(04 §2.3): 가장 긴 `them` 줄이거나
+  /// 직전 줄이 `wait` 였을 때, `…` → 사라짐 → 빈 상태 → `…` → 대사. 동작 줄이기면 지연만.
   void _scheduleReveal() {
     _timer?.cancel();
+    if (_typingHidden) _typingHidden = false;
     final ev = c.current;
-    if (ev == null || c.linesDone) return;
+    if (ev == null || c.linesDone) {
+      // 대사가 끝난 자리에서만 MBTI 를 묻는다(선택지가 뜨기 직전).
+      unawaited(_maybeAskMbti());
+      return;
+    }
     final next = ev.lines[c.revealed];
     if (next.isWait && ev.isCall) {
       // 통화 중 대기 줄은 "…(침묵)" 을 바로 띄우고 잠시 멈춘다.
@@ -267,15 +482,40 @@ class _EventScreenState extends State<EventScreen> {
       _runWaitCountdown();
       return;
     }
-    final delay = switch (next.who) {
-      'me' => 450,
-      'narr' => 350,
-      _ => 800,
-    };
-    _timer = Timer(Duration(milliseconds: delay), () {
+    final delay = Duration(
+      milliseconds: switch (next.who) {
+        'me' => 450,
+        'narr' => 350,
+        'them' => EventScreen.themDelayMs(next.text),
+        _ => 800,
+      },
+    );
+    void reveal() {
       if (!mounted) return;
       c.revealNext();
       _scheduleReveal();
+    }
+
+    final afterWait = c.revealed > 0 && ev.lines[c.revealed - 1].isWait;
+    final erase =
+        next.who == 'them' &&
+        !ev.isCall &&
+        !_eraseDone &&
+        !AppMotion.reduced(context) &&
+        (afterWait || isLongestThem(ev, c.revealed));
+    if (!erase) {
+      _timer = Timer(delay, reveal);
+      return;
+    }
+    _eraseDone = true;
+    _timer = Timer(eraseShow, () {
+      if (!mounted) return;
+      setState(() => _typingHidden = true);
+      _timer = Timer(AppMotion.dFast + eraseGap, () {
+        if (!mounted) return;
+        setState(() => _typingHidden = false);
+        _timer = Timer(delay, reveal);
+      });
     });
   }
 
@@ -294,6 +534,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   void _finishWait() {
+    _sfx.cue(Sfx.waitRead);
     // 읽씹 대기는 자존감을 1 깎는다. 모쏠 체험의 핵심 감정.
     // 엔진을 거쳐야 정산 화면과 되돌리기, 세이브에 함께 잡힌다.
     c.applyWaitPenalty();
@@ -301,24 +542,22 @@ class _EventScreenState extends State<EventScreen> {
     _scheduleReveal();
   }
 
-  Future<void> _skipWait() async {
-    // 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
-    // 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
-    _timer?.cancel();
-    final ok = await AdManager.instance.showRewarded(placement: 'wait_skip');
+  /// 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
+  /// 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
+  void _pauseWait() => _timer?.cancel();
+
+  void _skipWaitEarned() {
     if (!mounted) return;
-    if (ok) {
-      _waitLeft = 0;
-      c.revealNext();
-      _scheduleReveal();
-    } else {
-      _snack('광고를 불러오지 못했어요.');
-      _runWaitCountdown();
-    }
+    setState(() => _waitLeft = 0);
+    c.revealNext();
+    _scheduleReveal();
   }
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  /// 광고를 못 받았으면 멈춰 둔 초부터 그대로 이어 센다. 안내는 버튼이 한다.
+  void _skipWaitFailed() {
+    if (!mounted) return;
+    _runWaitCountdown();
+  }
 
   /// 말풍선 묶음 기준. 같은 사람이 이어 말하면 같은 키가 나온다.
   String _speakerKey(Line l, String partner) => switch (l.who) {
@@ -328,8 +567,74 @@ class _EventScreenState extends State<EventScreen> {
     _ => 'them:${l.name ?? partner}',
   };
 
+  /// 줄의 화자 캐릭터 id(03 §1.2). 이름이 없거나 상대 이름이면 상대 본인, 캐스트 이름이면
+  /// 그 id(그룹 대화), 그 밖(태현·엄마·모르는 번호)은 NPC → null.
+  String? _speakerIdFor(Line l, StoryEvent ev) {
+    final name = l.name;
+    if (name == null) return ev.character;
+    if (ev.character != null && name == c.characterName(ev.character)) {
+      return ev.character;
+    }
+    for (final ch in c.bundle.characters) {
+      if (ch.name == name) return ch.id;
+    }
+    return null;
+  }
+
+  /// 이벤트 안 서로 다른 `them` 화자 수(그룹 대화 판정).
+  int _themSpeakers(StoryEvent ev, String partner) {
+    final names = <String>{};
+    for (final l in ev.lines) {
+      if (l.who == 'them') names.add(l.name ?? partner);
+    }
+    return names.length;
+  }
+
+  /// 광고를 기다리는 동안은 이 화면의 탭을 전부 막는다. 힌트 버튼이 무반응으로 보여
+  /// 다시 탭했을 때 그 탭이 선택지에 떨어져 원치 않은 선택이 확정됐다(01 P1-1).
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => RewardedBusyScope(
+    // 말풍선·통화 머리줄의 아바타가 자기 프로필을 찾는 곳(§2.15).
+    child: ProfileScope(resolve: _profileFor, child: _body(context)),
+  );
+
+  /// 아바타를 눌렀을 때 뜨는 프로필. **플레이어가 이미 본 것만** 담는다.
+  ///
+  /// 이름·호칭·한 줄 매력·MBTI·궁합은 새 게임마다 캐스트 소개(§2.9)가 보여 주고,
+  /// 호감은 홈 사람들 줄(§2.10)이 보여 준다. 그 밖의 값(취향·지뢰·신뢰)은 화면 어디에도
+  /// 없으므로 여기서도 내지 않는다. 히든은 홈과 같은 규칙으로 호감이 생기기 전까지
+  /// `???` 라 아예 열리지 않고, 캐스트 밖 화자(태현·엄마·모르는 번호)는 이름뿐이다.
+  CharacterProfile? _profileFor(String? id, String name) {
+    final ch = c.characterOf(id);
+    if (ch == null) {
+      return CharacterProfile(
+        name: name,
+        mystery: ChatBubble.isMysteryName(name),
+      );
+    }
+    final s = c.state;
+    // 이 회차에 나오지 않는 사람이면 호감은 이번 판의 값이 아니다 — 비운다.
+    final aff = s != null && ch.appearsIn(s.preference)
+        ? s.affectionOf(ch.id)
+        : null;
+    if (ch.hidden && (aff ?? 0) <= 0) {
+      return CharacterProfile(id: ch.id, name: name, mystery: true);
+    }
+    final mine = c.runMbti ?? c.playerMbti;
+    return CharacterProfile(
+      id: ch.id,
+      name: c.characterName(ch.id),
+      title: ch.displayTitle,
+      tagline: ch.tagline,
+      mbti: ch.mbti,
+      compat: mine == null || ch.mbti == null
+          ? null
+          : Mbti.compat(mine, ch.mbti),
+      affection: aff,
+    );
+  }
+
+  Widget _body(BuildContext context) {
     // 화면에는 이름을 치환한 사본(docs/NAME_GUIDE.md). 엔진 호출은 c.current(원본).
     final ev = c.shownEvent;
     if (ev == null) return const SizedBox.shrink();
@@ -368,29 +673,36 @@ class _EventScreenState extends State<EventScreen> {
     final replying = o != null && _replyShown < c.lastReply.length;
     Widget sub(Line l) =>
         CallSubtitle(line: l, partnerName: partner, characterId: ev.character);
-    return ActiveCallView(
-      name: partner,
-      characterId: ev.character,
-      seconds: _callSeconds,
-      ended: _callEnded,
-      scroll: _scroll,
-      subtitles: [
-        for (final l in visible) sub(l),
-        if (o != null && _picked != null) sub(Line(who: 'me', text: _picked!)),
-        if (o != null)
-          for (final l in c.lastReply.take(_replyShown)) sub(l),
-        if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
-          const CallTyping(),
-      ],
-      bottom: o != null
-          ? (replying ? null : _ResultPanel(c: c))
-          : c.linesDone
-          ? _ChoicePanel(
-              c: c,
-              hideDecline: true,
-              onPicked: (text) => _picked = text,
-            )
-          : null,
+    return SceneScope(
+      builder: (context, r) => ActiveCallView(
+        name: partner,
+        characterId: ev.character,
+        // 통화 배경 삽화(06 §1). 없으면 지금까지의 바탕 그대로.
+        image: SceneImages.forEvent(ev, registry: r),
+        seconds: _callSeconds,
+        ended: _callEnded,
+        scroll: _scroll,
+        subtitles: [
+          for (final l in visible) sub(l),
+          if (o != null && _myText != null)
+            sub(Line(who: 'me', text: _myText!)),
+          if (o != null)
+            for (final l in c.lastReply.take(_replyShown)) sub(l),
+          if (replying || (o == null && !c.linesDone && !_pendingIsWait(ev)))
+            const CallTyping(),
+        ],
+        bottom: o != null
+            ? (replying ? null : _ResultPanel(c: c))
+            : c.linesDone
+            ? _ChoicePanel(
+                key: ValueKey('choices-${ev.id}'),
+                c: c,
+                hideDecline: true,
+                onPicked: (text) => _picked = text,
+                onHangUp: _declineCall,
+              )
+            : null,
+      ),
     );
   }
 
@@ -402,6 +714,7 @@ class _EventScreenState extends State<EventScreen> {
     final s = c.state!;
     final t = context.tokens;
     final accent = t.accentFor(ev.character);
+    final o = c.lastOutcome;
     final visible = missedCall
         ? const <Line>[]
         : ev.lines.take(c.revealed).toList();
@@ -409,162 +722,240 @@ class _EventScreenState extends State<EventScreen> {
     final waiting = waitLine != null && waitLine.isWait && _waitLeft > 0;
     final total = ev.lines.length;
     final progress = total == 0 || missedCall ? 1.0 : c.revealed / total;
+    final replying = o != null && _replyShown < c.lastReply.length;
+
+    // 지금까지 공개된 줄 전부: 대사 → 내 선택 → 상대 반응. 묶음·시계·읽음은 이 순서로 센다.
+    final mine = _myText;
+    final pickedAt = o != null && mine != null ? visible.length : -1;
+    final rows = <Line>[
+      ...visible,
+      if (pickedAt >= 0) Line(who: 'me', text: mine!),
+      if (o != null) ...c.lastReply.take(_replyShown),
+    ];
+    final keys = [for (final l in rows) _speakerKey(l, partner)];
+    // 가짜 시계. 대사 줄은 큐의 시간대에서, 내 선택·반응은 그 뒤로 이어진다.
+    final times = ChatClock.timesFor(
+      rows,
+      ChatClock.startSeconds(
+        seed: s.seed,
+        day: s.day,
+        index: c.todayEventIndex,
+        total: c.todayEventTotal,
+      ),
+    );
+
+    // 다음에 칠 줄(타이핑 표시의 화자). 없으면 null.
+    final Line? upcoming = replying
+        ? c.lastReply[_replyShown]
+        : (o == null && !c.linesDone && !missedCall && !waiting)
+        ? ev.lines[c.revealed]
+        : null;
+
+    final bubbles = <Widget>[];
+    String? lastLabel;
+    for (var i = 0; i < rows.length; i++) {
+      final l = rows[i];
+      final first = i == 0 || keys[i - 1] != keys[i];
+      final last = i == rows.length - 1 || keys[i + 1] != keys[i];
+      // 시각은 묶음 마지막 줄에만. 직전 묶음과 같은 분이면 생략.
+      String? time;
+      if (last && (l.who == 'them' || l.who == 'me')) {
+        final label = ChatClock.label(times[i]);
+        if (label != lastLabel) time = label;
+        lastLabel = label;
+      }
+      // 읽음: 내 말 뒤로 상대 줄이 하나라도 공개됐을 때. 방금 보낸 말은 타이머(04 §2.4).
+      final read =
+          l.who == 'me' &&
+          (i == pickedAt
+              ? _readShown
+              : rows.skip(i + 1).any((x) => x.who == 'them'));
+      final id = _speakerIdFor(l, ev);
+      bubbles.add(
+        ChatBubble(
+          line: l,
+          partnerName: partner,
+          accent: t.accentFor(id),
+          characterId: id,
+          isFirstOfGroup: first,
+          isLastOfGroup: last,
+          showAvatar: first,
+          meta: time == null && !read ? null : ChatMeta(time: time, read: read),
+        ),
+      );
+      // 스티커는 그 대사 바로 아래 별도 줄. 상대 줄에만, 에셋이 없으면 빈 칸도 없다.
+      final sticker = l.who == 'them' ? l.sticker : null;
+      if (sticker != null) {
+        final char = Sticker.characterOf(sticker);
+        final emotion = Sticker.emotionOf(sticker);
+        if (char != null && emotion != null) {
+          bubbles.add(
+            StickerBubble(
+              characterId: char,
+              emotion: emotion,
+              name: l.name ?? partner,
+            ),
+          );
+        }
+      }
+    }
 
     return Scaffold(
-      appBar: _header(context, ev, partner, accent, s.day, progress),
+      appBar: _header(
+        context,
+        ev,
+        partner,
+        accent,
+        progress,
+        status: missedCall
+            ? '부재중'
+            : waiting
+            ? '자리 비움'
+            : switch (_themSpeakers(ev, partner)) {
+                final n when n >= 2 => '온라인 · ${n + 1}명',
+                _ => '온라인',
+              },
+      ),
       body: Column(
         children: [
           // 대화 영역만 한 단 어두운(밝은) 바탕을 깔아 패널·헤더와 분리한다.
           Expanded(
             child: ColoredBox(
               color: t.chatBackground,
-              child: ListView(
+              // 대화는 길어야 십수 줄이라 전부 그린다. 게으른 ListView 는 끝 높이를 어림해
+              // 마지막 줄(대기 블록·사진)로 스크롤이 못 미칠 때가 있다.
+              child: SingleChildScrollView(
                 controller: _scroll,
                 padding: const EdgeInsets.only(
                   top: AppSpace.sm,
                   bottom: AppSpace.lg,
                 ),
-                children: [
-                  if (missedCall) _MissedCall(name: partner),
-                  for (var i = 0; i < visible.length; i++)
-                    ChatBubble(
-                      line: visible[i],
-                      partnerName: partner,
-                      accent: accent,
-                      isFirstOfGroup:
-                          i == 0 ||
-                          _speakerKey(visible[i - 1], partner) !=
-                              _speakerKey(visible[i], partner),
-                      isLastOfGroup:
-                          i == visible.length - 1 ||
-                          _speakerKey(visible[i + 1], partner) !=
-                              _speakerKey(visible[i], partner),
-                    ),
-                  if (c.lastOutcome != null && _picked != null)
-                    ChatBubble(
-                      line: Line(who: 'me', text: _picked!),
-                      partnerName: partner,
-                      accent: accent,
-                      isFirstOfGroup:
-                          visible.isEmpty ||
-                          _speakerKey(visible.last, partner) != '#me',
-                    ),
-                  if (c.lastOutcome != null) ...[
-                    for (final (i, l) in c.lastReply.take(_replyShown).indexed)
-                      ChatBubble(
-                        line: l,
-                        partnerName: partner,
-                        accent: accent,
-                        isFirstOfGroup:
-                            i == 0 ||
-                            _speakerKey(c.lastReply[i - 1], partner) !=
-                                _speakerKey(l, partner),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 장면 삽화(06 §1). 그림이 없으면 아무것도 그리지 않는다 — 여백도 0.
+                    SceneScope(
+                      builder: (context, r) => SceneCard(
+                        path: SceneImages.forEvent(ev, registry: r),
+                        title: ev.title,
+                        bundle: r.bundle,
                       ),
-                    if (_replyShown < c.lastReply.length) const _TypingBubble(),
+                    ),
+                    // 제목은 헤더가 아니라 대화의 첫 줄이다.
+                    ChatDivider(
+                      text: ev.title.isEmpty
+                          ? 'D+${s.day}'
+                          : 'D+${s.day} · ${ev.title}',
+                    ),
+                    if (missedCall) _MissedCall(name: partner),
+                    ...bubbles,
+                    if (waiting)
+                      _WaitingBlock(
+                        secondsLeft: _waitLeft,
+                        secondsTotal: waitLine.wait,
+                        onSkipStart: _pauseWait,
+                        onSkipEarned: _skipWaitEarned,
+                        onSkipFailed: _skipWaitFailed,
+                      )
+                    else if (upcoming != null)
+                      _typing(
+                        upcoming,
+                        ev,
+                        partner,
+                        first:
+                            keys.isEmpty ||
+                            keys.last != _speakerKey(upcoming, partner),
+                      ),
                   ],
-                  if (waiting)
-                    _WaitingBlock(
-                      secondsLeft: _waitLeft,
-                      secondsTotal: waitLine.wait,
-                      onSkip: _skipWait,
-                    )
-                  else if (!c.linesDone && !missedCall)
-                    const _TypingBubble(),
-                ],
+                ),
               ),
             ),
           ),
           // 결과 패널은 상대 반응을 다 보여 준 뒤에 올린다. 대화의 끝을 먼저 읽게 한다.
-          if (c.lastOutcome != null)
-            _replyShown >= c.lastReply.length
-                ? _ResultPanel(c: c)
-                : const SizedBox.shrink()
+          if (o != null)
+            replying ? const SizedBox.shrink() : _ResultPanel(c: c)
           else if (c.linesDone)
-            _ChoicePanel(c: c, onPicked: (text) => _picked = text),
+            _ChoicePanel(
+              // 이벤트마다 새 상태(입력창 문장·전송 잠금이 다음 이벤트로 새지 않게).
+              key: ValueKey('choices-${ev.id}'),
+              c: c,
+              onPicked: (text) => _picked = text,
+            ),
         ],
       ),
     );
   }
 
-  /// 상대 · 제목 · 날짜 · 대화 진행도를 한 줄에 정리한 헤더.
+  /// 타이핑 표시. 다음 줄이 `them` 이면 그 화자의 아바타 + 말풍선 `'…'`, 지문·시스템 줄이면
+  /// 가운데 `'…'`([CallTyping]) — 지문이 "입력 중" 으로 읽히면 이상하다. 어느 쪽이든
+  /// `Text('…')` 는 정확히 하나다. 쓰다 지움의 빈 구간은 불투명도로만 숨긴다.
+  Widget _typing(
+    Line next,
+    StoryEvent ev,
+    String partner, {
+    required bool first,
+  }) {
+    if (next.who != 'them') return const CallTyping();
+    final id = _speakerIdFor(next, ev);
+    return AnimatedOpacity(
+      opacity: _typingHidden ? 0 : 1,
+      duration: AppMotion.fast(context),
+      child: TypingIndicator(
+        name: next.name ?? partner,
+        characterId: id,
+        accent: context.tokens.accentFor(id),
+        showAvatar: first,
+      ),
+    );
+  }
+
+  /// 이름 + 상태 한 줄 + 대화 진행도. 아바타·제목·D+N 은 없다(03 §2) — 제목은 [ChatDivider].
+  /// 상대 없는 독백 이벤트는 제목이 이름 자리에 오고 상태 줄이 없다.
   PreferredSizeWidget _header(
     BuildContext context,
     StoryEvent ev,
     String partner,
     CharacterAccent accent,
-    int day,
-    double progress,
-  ) {
+    double progress, {
+    required String status,
+  }) {
     final scheme = context.scheme;
     final t = context.tokens;
     final hasPartner = partner.isNotEmpty;
 
     return AppBar(
       titleSpacing: AppSpace.lg,
-      title: Row(
-        children: [
-          if (hasPartner) ...[
-            ExcludeSemantics(
-              child: CharacterAvatar(
-                name: partner,
-                characterId: ev.character,
-                accent: accent,
-                size: AppSpace.xxxl,
-              ),
-            ),
-            const SizedBox(width: AppSpace.sm),
-          ],
-          Expanded(
-            child: Text.rich(
-              TextSpan(
+      title: hasPartner
+          ? Semantics(
+              label: '$partner, $status',
+              excludeSemantics: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (hasPartner) ...[
-                    TextSpan(text: partner, style: context.text.titleLarge),
-                    // 구분점도 글자다. 대비 기준(4.5:1)을 넘는 2차색을 쓴다.
-                    TextSpan(
-                      text: '  ·  ',
-                      style: context.text.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                  Text(
+                    partner,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleLarge,
+                  ),
+                  Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
-                  ],
-                  TextSpan(
-                    text: ev.title,
-                    style: (hasPartner
-                        ? context.text.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          )
-                        : context.text.titleLarge),
                   ),
                 ],
               ),
+            )
+          : Text(
+              ev.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: context.text.titleLarge,
             ),
-          ),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpace.sm),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xs,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                borderRadius: AppRadius.rPill,
-              ),
-              child: Text(
-                'D+$day',
-                style: t.numericSmall.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ),
-          ),
-        ),
-      ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(AppSpace.xs),
         child: AppProgressBar(
@@ -579,7 +970,6 @@ class _EventScreenState extends State<EventScreen> {
   }
 }
 
-/// 상대 이니셜 원형. 사진 대신 강조색 한 글자로 누구인지 알린다(§4.3).
 /// 거절한 전화 자리 표시. 시스템 줄과 같은 중립 pill 이되 아이콘을 붙이고 글자는
 /// 본문 2차색(`onSurfaceVariant`)으로 둔다 — 이 줄은 장식이 아니라 사건이라 읽혀야 한다.
 class _MissedCall extends StatelessWidget {
@@ -623,44 +1013,6 @@ class _MissedCall extends StatelessWidget {
   }
 }
 
-/// 타이핑 중 표시. 상대 말풍선과 같은 껍데기라 "다음 줄이 오는 중" 으로 읽힌다.
-///
-/// 문구 '…' 는 고정이다(§4.1 이벤트 화면 테스트). 깜빡이는 반복 애니메이션은
-/// 넣지 않는다 — 읽는 흐름을 방해하고 동작 줄이기 설정과도 충돌한다.
-class _TypingBubble extends StatelessWidget {
-  const _TypingBubble();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.tokens;
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: AppSpace.md,
-        right: AppSpace.md,
-        top: AppSpace.sm,
-      ),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Container(
-          padding: AppInsets.bubble,
-          decoration: BoxDecoration(
-            color: t.bubbleTheirs,
-            borderRadius: AppRadius.bubble(mine: false),
-            border: Border.all(
-              color: t.bubbleBorder,
-              width: AppBorderWidth.hairline,
-            ),
-          ),
-          child: Text(
-            '…',
-            style: context.text.titleMedium?.copyWith(color: t.systemLine),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// 읽씹 대기 연출. 중립 pill 안에서 숫자가 줄고, 아래 막대가 남은 시간을 그린다.
 ///
 /// 카운트다운 문구는 숫자를 포함한 **하나의 Text** 여야 한다(테스트 고정).
@@ -668,12 +1020,18 @@ class _TypingBubble extends StatelessWidget {
 class _WaitingBlock extends StatelessWidget {
   final int secondsLeft;
   final int secondsTotal;
-  final Future<void> Function() onSkip;
+
+  /// 광고를 부르기 전(카운트다운 정지) · 보상 · 실패(카운트다운 재개).
+  final VoidCallback onSkipStart;
+  final VoidCallback onSkipEarned;
+  final VoidCallback onSkipFailed;
 
   const _WaitingBlock({
     required this.secondsLeft,
     required this.secondsTotal,
-    required this.onSkip,
+    required this.onSkipStart,
+    required this.onSkipEarned,
+    required this.onSkipFailed,
   });
 
   @override
@@ -716,10 +1074,12 @@ class _WaitingBlock extends StatelessWidget {
             fill: t.systemLine,
           ),
           const SizedBox(height: AppSpace.xs),
-          TextButton.icon(
-            onPressed: onSkip,
-            icon: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('광고 보고 기다리지 않기'),
+          RewardedButton(
+            placement: 'wait_skip',
+            label: '광고 보고 기다리지 않기',
+            beforeWatch: onSkipStart,
+            onEarned: onSkipEarned,
+            onFailed: onSkipFailed,
           ),
         ],
       ),
@@ -730,8 +1090,12 @@ class _WaitingBlock extends StatelessWidget {
 /// 선택지 패널. 대화와 같은 세계에 있되 한 단 위로 올라온 종이처럼 보인다.
 ///
 /// 선택지는 `ChoiceButton` 하나로 통일한다. 내부가 `OutlinedButton` 이고
-/// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1).
-class _ChoicePanel extends StatelessWidget {
+/// 이 영역에 다른 `OutlinedButton` 이 없어야 한다(§4.1) — 입력창·칩·시트는 전부 다른 위젯이다.
+///
+/// 자유 입력(docs/overhaul/07_free_input.md §3): 버튼 아래 한 줄 입력창 `직접 쓰기…`. 포커스가 오면
+/// 버튼은 가로 칩 한 줄로 접힌다(빈 입력창은 백지 공포 — 후보를 계속 보여 준다). 보내면 컨트롤러가
+/// 매핑하고, 결정에 따라 바로 확정 · 확인 시트 · "이런 뜻이에요?" 피커 · 잠김 안내 한 줄.
+class _ChoicePanel extends StatefulWidget {
   final GameController c;
 
   /// 선택이 확정되기 직전에 부른다. 화면이 내 말풍선을 그리는 데만 쓴다.
@@ -739,18 +1103,81 @@ class _ChoicePanel extends StatelessWidget {
 
   /// 통화 중이면 `decline` 선택지(= 거절 버튼)를 숨긴다.
   final bool hideDecline;
+
+  /// 통화 중 "끊을게" 계열 입력(07 §4 #7). 확인 뒤 거절 경로로.
+  final VoidCallback? onHangUp;
+
   const _ChoicePanel({
+    super.key,
     required this.c,
     required this.onPicked,
     this.hideDecline = false,
+    this.onHangUp,
   });
 
+  @override
+  State<_ChoicePanel> createState() => _ChoicePanelState();
+}
+
+/// 입력창 위 한 줄. 잠김·금칙어는 지문(narr) 톤, 빈 입력은 2차 글자색 안내.
+class _InlineNote {
+  final String text;
+  final bool narr;
+  const _InlineNote(this.text, {this.narr = true});
+}
+
+enum _ConfirmAction { go, other }
+
+class _ChoicePanelState extends State<_ChoicePanel> {
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  Timer? _lockTimer;
+
+  /// 보낸 뒤 [sendLock] 동안 다시 못 보낸다(연타 방지, 07 §4 #5).
+  bool _sendLocked = false;
+  _InlineNote? _note;
+  int _lastLen = 0;
+
+  static const sendLock = Duration(milliseconds: 1200);
+
+  /// 칩 문구 최대 글자. 넘으면 `…`.
+  static const chipChars = 14;
+
+  GameController get c => widget.c;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+    // 무료 되돌리기 뒤: 친 문장을 되살려 다시 고르게 한다(07 §3.3).
+    final retry = c.takeFreeRetryText();
+    if (retry != null) {
+      _ctrl.text = retry;
+      _lastLen = retry.length;
+    }
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _lockTimer?.cancel();
+    _focus.removeListener(_onFocus);
+    _focus.dispose();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
   /// 미니게임이 붙은 선택지는 먼저 게임을 돌리고 그 결과로 성패를 정한다.
-  Future<void> _pick(BuildContext context, int index) async {
+  Future<void> _pick(int index) async {
     final ev = c.current!;
     final id = ev.choices[index].minigame;
     if (id == null) {
-      onPicked(c.say(ev.choices[index].text));
+      // 보내기 슉: 누르는 순간 클릭 진동 + 전송음(04 §2.5).
+      SfxService.instance.cue(Sfx.msgOut);
+      widget.onPicked(c.say(ev.choices[index].text));
       c.choose(index);
       return;
     }
@@ -760,7 +1187,9 @@ class _ChoicePanel extends StatelessWidget {
       MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
     );
     // 미니게임 도중 컨트롤러가 갱신돼도 지워지지 않게 결과 직전에 넘긴다.
-    onPicked(c.say(ev.choices[index].text));
+    // 미니게임 선택지는 결과가 돌아온 뒤에 같은 연출.
+    SfxService.instance.cue(Sfx.msgOut);
+    widget.onPicked(c.say(ev.choices[index].text));
     c.choose(
       index,
       minigameSuccess: result.success,
@@ -768,6 +1197,173 @@ class _ChoicePanel extends StatelessWidget {
       note: result.message,
     );
   }
+
+  // ---- 자유 입력 ----
+
+  void _onChanged(String v) {
+    // 붙여넣기로 상한에 걸리면 한 번 말해 준다(07 §4 #4). maxLength 가 이미 잘랐다.
+    if (v.length >= FreeInputThresholds.maxChars && v.length - _lastLen > 20) {
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(const SnackBar(content: Text('짧게 말해 주세요')));
+    }
+    _lastLen = v.length;
+    setState(() {});
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty || _sendLocked) return;
+    final r = c.chooseFree(text);
+    _lock();
+    setState(() => _note = null);
+    switch (r.decision) {
+      case MatchDecision.auto:
+        await _confirm(r, r.top!.index, auto: true, via: 'auto');
+      case MatchDecision.confirm:
+        await _confirmSheet(r);
+      case MatchDecision.locked:
+        // 확정하지 않는다. 턴·되돌리기 소모 없음, 문장은 남긴다(07 §3.2-4).
+        setState(
+          () => _note = _InlineNote('아직 그 말은 안 나온다 (${r.top!.view.reason})'),
+        );
+      case MatchDecision.pick:
+        await _pickSheet(r);
+      case MatchDecision.empty:
+        setState(() => _note = const _InlineNote('조금만 더 써 주세요', narr: false));
+      case MatchDecision.blocked:
+        // 저장·기록·분석 없음. 문장도 지운다.
+        _ctrl.clear();
+        _lastLen = 0;
+        setState(() => _note = const _InlineNote('그 말은 보내지 않기로 했다.'));
+      case MatchDecision.hangUp:
+        await _hangUpSheet();
+    }
+  }
+
+  void _lock() {
+    _lockTimer?.cancel();
+    setState(() => _sendLocked = true);
+    _lockTimer = Timer(sendLock, () {
+      if (mounted) setState(() => _sendLocked = false);
+    });
+  }
+
+  /// 매핑 결과를 선택지 [index] 로 확정한다. [auto] 는 자동 확정(무료 되돌리기 대상). 미니게임이면
+  /// 먼저 게임 — 실력 판정은 문장으로 건너뛸 수 없다(07 §3.2-5).
+  Future<void> _confirm(
+    MatchResult r,
+    int index, {
+    required bool auto,
+    required String via,
+  }) async {
+    final ev = c.current!;
+    final choice = ev.choices[index];
+    c.noteFreeConfidence(r);
+    bool? ok;
+    bool? crit;
+    String? note;
+    final mg = choice.minigame;
+    if (mg != null) {
+      final result = await playMinigame(
+        context,
+        mg,
+        MinigameContext(state: c.state!, partner: c.characterOf(ev.character)),
+      );
+      ok = result.success;
+      crit = result.critical;
+      note = result.message;
+      auto = false;
+    }
+    if (!mounted) return;
+    _focus.unfocus();
+    SfxService.instance.cue(Sfx.msgOut);
+    widget.onPicked(r.text);
+    c.confirmFree(
+      index,
+      text: r.text,
+      auto: auto,
+      match: r,
+      via: via,
+      minigameSuccess: ok,
+      minigameCritical: crit,
+      note: note,
+    );
+  }
+
+  /// `chance`·`minigame` 이 1위: 확인 한 번(07 §3.2-5).
+  Future<void> _confirmSheet(MatchResult r) async {
+    _focus.unfocus();
+    final top = r.top!;
+    final choice = top.view.choice;
+    final mg = choice.minigame;
+    final label = mg != null
+        ? (minigameLabels[mg] ?? '미니게임')
+        : '${c.onFire ? (choice.chance! + 20).clamp(0, 100) : choice.chance}%';
+    final res = await showModalBottomSheet<_ConfirmAction>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _ConfirmSheet(
+        text: r.text,
+        choiceText: c.say(choice.text),
+        label: label,
+        primary: mg != null ? '게임 시작' : '이대로',
+      ),
+    );
+    if (!mounted || res == null) return;
+    switch (res) {
+      case _ConfirmAction.go:
+        await _confirm(r, top.index, auto: false, via: 'confirm');
+      case _ConfirmAction.other:
+        await _pickSheet(r);
+    }
+  }
+
+  /// "이런 뜻이에요?" 피커(07 §3.2-3). `다시 쓰기` 면 문장을 남긴 채 돌아온다.
+  Future<void> _pickSheet(MatchResult r) async {
+    _focus.unfocus();
+    final forced = c.freePickForced;
+    final idx = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PickSheet(c: c, result: r, forced: forced),
+    );
+    if (!mounted || idx == null) return;
+    await _confirm(r, idx, auto: false, via: forced ? 'forced' : 'picker');
+  }
+
+  Future<void> _hangUpSheet() async {
+    _focus.unfocus();
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: AppInsets.panel,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('전화를 끊을까요?', style: ctx.text.titleMedium),
+              const SizedBox(height: AppSpace.md),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('끊기'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('계속 통화'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || ok != true) return;
+    _ctrl.clear();
+    widget.onHangUp?.call();
+  }
+
+  static String _short(String t) =>
+      t.length > chipChars ? '${t.substring(0, chipChars)}…' : t;
 
   /// 우측 짧은 라벨: 미니게임 이름 또는 성공 확률. 잠긴 선택지는 이유만 보여 준다.
   String? _trailingLabel(ChoiceView v) {
@@ -791,62 +1387,358 @@ class _ChoicePanel extends StatelessWidget {
     return AppTone.neutral;
   }
 
+  Widget _buttons(List<ChoiceView> choices) => Column(
+    key: const ValueKey('choice-buttons'),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (var i = 0; i < choices.length; i++)
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
+          ),
+          child: ChoiceButton(
+            text: c.say(choices[i].choice.text),
+            onPressed: choices[i].locked ? null : () => _pick(choices[i].index),
+            lockedReason: choices[i].locked ? choices[i].reason : null,
+            leadingIcon: choices[i].locked
+                ? Icons.lock_outline
+                : choices[i].choice.minigame != null
+                ? Icons.sports_esports_outlined
+                : choices[i].choice.mbti != null
+                ? Icons.auto_awesome_outlined
+                : null,
+            trailingLabel: _trailingLabel(choices[i]),
+            trailingTone: _trailingTone(choices[i]),
+            recommended: c.hintIndex == choices[i].index,
+          ),
+        ),
+    ],
+  );
+
+  /// 키보드가 올라온 동안의 후보 칩 한 줄(07 §3.1). 칩을 누르면 버튼과 같은 경로.
+  Widget _chips(List<ChoiceView> choices) => SingleChildScrollView(
+    key: const ValueKey('choice-chips'),
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: [
+        for (final v in choices)
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpace.sm),
+            child: ActionChip(
+              avatar: v.locked
+                  ? const Icon(Icons.lock_outline, size: 16)
+                  : null,
+              label: Text(_short(c.say(v.choice.text))),
+              onPressed: v.locked ? null : () => _pick(v.index),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  Widget _inputRow(BuildContext context) {
+    final scheme = context.scheme;
+    final canSend = !_sendLocked && _ctrl.text.trim().isNotEmpty;
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            key: const Key('free-input'),
+            controller: _ctrl,
+            focusNode: _focus,
+            maxLength: FreeInputThresholds.maxChars,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _send(),
+            onChanged: _onChanged,
+            style: context.text.bodyMedium,
+            decoration: InputDecoration(
+              hintText: '직접 쓰기…',
+              counterText: '',
+              isDense: true,
+              filled: true,
+              fillColor: scheme.surfaceContainerLowest,
+              contentPadding: AppInsets.chip,
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(color: scheme.outlineVariant),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(color: scheme.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.rPill,
+                borderSide: BorderSide(
+                  color: scheme.primary,
+                  width: AppBorderWidth.emphasis,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpace.sm),
+        IconButton.filled(
+          key: const Key('free-send'),
+          tooltip: '보내기',
+          onPressed: canSend ? _send : null,
+          icon: const Icon(Icons.send_rounded, size: 18),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ev = c.current!;
+    final t = context.tokens;
     final choices = [
       for (final v in c.choices)
-        if (!(hideDecline && v.choice.decline)) v,
+        if (!(widget.hideDecline && v.choice.decline)) v,
     ];
+    final freeOn = c.canFreeInput;
+    final collapsed = freeOn && _focus.hasFocus;
+    final note = _note;
 
     return BottomPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var i = 0; i < choices.length; i++)
+          // 동작 줄이기면 0ms — 즉시 바뀐다.
+          AnimatedSwitcher(
+            duration: AppMotion.base(context),
+            switchInCurve: AppMotion.curve(context),
+            child: collapsed ? _chips(choices) : _buttons(choices),
+          ),
+          if (note != null)
             Padding(
-              padding: EdgeInsets.only(
-                bottom: i == choices.length - 1 ? 0 : AppSpace.listGap,
+              padding: const EdgeInsets.only(top: AppSpace.sm),
+              child: Text(
+                keepAll(note.text),
+                style: context.text.bodySmall?.copyWith(
+                  color: note.narr
+                      ? t.narration
+                      : context.scheme.onSurfaceVariant,
+                  fontStyle: note.narr ? FontStyle.italic : null,
+                ),
               ),
-              child: ChoiceButton(
-                text: c.say(choices[i].choice.text),
-                onPressed: choices[i].locked
-                    ? null
-                    : () => _pick(context, choices[i].index),
-                lockedReason: choices[i].locked ? choices[i].reason : null,
-                leadingIcon: choices[i].locked
-                    ? Icons.lock_outline
-                    : choices[i].choice.minigame != null
-                    ? Icons.sports_esports_outlined
-                    : choices[i].choice.mbti != null
-                    ? Icons.auto_awesome_outlined
-                    : null,
-                trailingLabel: _trailingLabel(choices[i]),
-                trailingTone: _trailingTone(choices[i]),
-                recommended: c.hintIndex == choices[i].index,
-              ),
+            ),
+          if (freeOn)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.sm),
+              child: _inputRow(context),
             ),
           // 힌트는 선택지보다 한 단 아래. 광고 제안이 선택을 밀어내지 않게 한다.
           if (ev.hint != null && c.hintIndex == null)
             Padding(
               padding: const EdgeInsets.only(top: AppSpace.xs),
               child: Center(
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final ok = await AdManager.instance.showRewarded(
-                      placement: 'hint',
-                    );
-                    if (ok) {
-                      c.analytics.log(Analytics.adHintUsed);
-                      c.revealHint();
-                    }
+                child: RewardedButton(
+                  placement: 'hint',
+                  label: '태현에게 물어보기 (광고)',
+                  icon: Icons.lightbulb_outline,
+                  onEarned: () {
+                    c.analytics.log(Analytics.adHintUsed);
+                    c.revealHint();
                   },
-                  icon: const Icon(Icons.lightbulb_outline, size: 18),
-                  label: Text(keepAll('태현에게 물어보기 (광고)')),
                 ),
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 친 문장 인용 한 줄(피커·확인 시트 공용).
+class _Quote extends StatelessWidget {
+  final String text;
+  const _Quote(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+    keepAll('"$text"'),
+    style: context.text.bodyMedium?.copyWith(
+      color: context.scheme.onSurfaceVariant,
+      fontStyle: FontStyle.italic,
+    ),
+  );
+}
+
+/// `chance`·`minigame` 확인 시트: `"선택지 원문" (75%)` [이대로] [다른 뜻].
+class _ConfirmSheet extends StatelessWidget {
+  final String text;
+  final String choiceText;
+  final String label;
+  final String primary;
+  const _ConfirmSheet({
+    required this.text,
+    required this.choiceText,
+    required this.label,
+    required this.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: AppInsets.panel,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Quote(text),
+          const SizedBox(height: AppSpace.sm),
+          Text(
+            keepAll('"$choiceText" ($label)'),
+            style: context.text.titleMedium,
+          ),
+          const SizedBox(height: AppSpace.md),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _ConfirmAction.go),
+            child: Text(primary),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, _ConfirmAction.other),
+            child: const Text('다른 뜻'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// "이런 뜻이에요?" 피커. 후보를 점수순으로, 상위 1~2개 강조(잘 못 알아들었으면 강조 없음).
+/// 행은 `OutlinedButton` 이 아니다(§4.1 — 선택지 개수만큼만 존재해야 한다).
+class _PickSheet extends StatelessWidget {
+  final GameController c;
+  final MatchResult result;
+
+  /// 무료 되돌리기 뒤 강제 피커 — 강조 없음(같은 실수를 반복하지 않게).
+  final bool forced;
+  const _PickSheet({
+    required this.c,
+    required this.result,
+    required this.forced,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final r = result;
+    final weak = r.weak || forced;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: AppInsets.panel,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('이런 뜻이에요?', style: context.text.titleMedium),
+            if (r.weak)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpace.xxs),
+                child: Text(
+                  keepAll('잘 못 알아들었어요 — 어느 쪽에 가까워요?'),
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpace.sm),
+            _Quote(r.text),
+            const SizedBox(height: AppSpace.md),
+            for (var i = 0; i < r.ranked.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.listGap),
+                child: _PickRow(
+                  text: c.say(r.ranked[i].view.choice.text),
+                  recommended:
+                      !weak &&
+                      (i == 0 ||
+                          (i == 1 &&
+                              r.margin < FreeInputThresholds.autoMargin)),
+                  lockedReason: r.ranked[i].view.locked
+                      ? r.ranked[i].view.reason
+                      : null,
+                  onTap: r.ranked[i].view.locked
+                      ? null
+                      : () => Navigator.pop(context, r.ranked[i].index),
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('다시 쓰기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickRow extends StatelessWidget {
+  final String text;
+  final bool recommended;
+  final String? lockedReason;
+  final VoidCallback? onTap;
+  const _PickRow({
+    required this.text,
+    required this.recommended,
+    required this.lockedReason,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final t = context.tokens;
+    final locked = onTap == null;
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      borderRadius: AppRadius.rMd,
+      child: InkWell(
+        borderRadius: AppRadius.rMd,
+        onTap: onTap,
+        child: Container(
+          padding: AppInsets.cardTight,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.rMd,
+            border: Border.all(
+              color: recommended ? scheme.primary : scheme.outlineVariant,
+              width: recommended
+                  ? AppBorderWidth.emphasis
+                  : AppBorderWidth.hairline,
+            ),
+          ),
+          child: Row(
+            children: [
+              if (locked) ...[
+                Icon(Icons.lock_outline, size: 18, color: t.lockedForeground),
+                const SizedBox(width: AppSpace.sm),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      keepAll(text),
+                      style: context.text.labelLarge?.copyWith(
+                        color: locked ? t.lockedForeground : scheme.onSurface,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (lockedReason != null)
+                      Text(
+                        keepAll(lockedReason!),
+                        style: context.text.bodySmall?.copyWith(
+                          color: t.lockedForeground,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -876,6 +1768,10 @@ class _ResultPanel extends StatelessWidget {
         : scheme.onSurface;
     // 전화를 거절한 건 '성공'이 아니다. 판정 없는 선택이므로 담담하게 적는다.
     final declined = c.lastChoice?.decline == true;
+    // 자유 입력이면 어느 선택지로 알아들었는지 캡션으로 — 오매핑을 스스로 알아채는 유일한 창(07 §3.2).
+    final heard = c.lastChoiceSource == ChoiceSource.freeText
+        ? c.lastChoice
+        : null;
     final headline = declined
         ? '전화를 넘겼다'
         : o.critical
@@ -899,7 +1795,9 @@ class _ResultPanel extends StatelessWidget {
     final parts = <_DeltaPart>[
       for (final e in o.delta.stats.entries)
         _DeltaPart(
-          '${Stat.label(e.key)} ${signed(e.value)}',
+          e.key == Stat.money
+              ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+              : '${Stat.label(e.key)} ${signed(e.value)}',
           good: e.key == Stat.stress ? e.value < 0 : e.value > 0,
           up: e.value > 0,
         ),
@@ -917,48 +1815,90 @@ class _ResultPanel extends StatelessWidget {
         ),
     ];
 
+    // 상대의 표정(설렘·당황·시무룩). 그림이 없거나 상대가 없으면 자리도 없다.
+    final face = declined ? null : ReactionFace.whoFor(c.current, o.delta);
+    final mood = ReactionFace.moodFor(o);
+
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: fg),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                keepAll(headline),
+                style: context.text.titleMedium?.copyWith(color: fg),
+              ),
+            ),
+            if (o.combo > 0) ...[
+              const SizedBox(width: AppSpace.sm),
+              ComboBadge(combo: o.combo, onFire: o.combo >= 3, dense: true),
+            ],
+          ],
+        ),
+        if (heard != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Text(
+              keepAll('→ "${c.say(heard.text)}" 으로 알아들었어요'),
+              style: context.text.bodySmall?.copyWith(color: fg),
+            ),
+          ),
+        if (o.comboBroken)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.xs),
+            child: Row(
+              children: [
+                Icon(Icons.trending_down, size: 14, color: fg),
+                const SizedBox(width: AppSpace.xs),
+                Text(
+                  '콤보 끊김',
+                  style: context.text.labelMedium?.copyWith(color: fg),
+                ),
+              ],
+            ),
+          ),
+        if (c.minigameNote != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpace.sm),
+            child: Text(
+              keepAll(c.minigameNote!),
+              style: context.text.bodyMedium?.copyWith(color: fg),
+            ),
+          ),
+      ],
+    );
+
     return BottomPanel(
       tone: tone,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 20, color: fg),
-              const SizedBox(width: AppSpace.sm),
-              Expanded(
-                child: Text(
-                  keepAll(headline),
-                  style: context.text.titleMedium?.copyWith(color: fg),
-                ),
-              ),
-              if (o.combo > 0) ...[
-                const SizedBox(width: AppSpace.sm),
-                ComboBadge(combo: o.combo, onFire: o.combo >= 3, dense: true),
-              ],
-            ],
-          ),
-          if (o.comboBroken)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Row(
-                children: [
-                  Icon(Icons.trending_down, size: 14, color: fg),
-                  const SizedBox(width: AppSpace.xs),
-                  Text(
-                    '콤보 끊김',
-                    style: context.text.labelMedium?.copyWith(color: fg),
-                  ),
-                ],
-              ),
-            ),
-          if (c.minigameNote != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpace.sm),
-              child: Text(
-                keepAll(c.minigameNote!),
-                style: context.text.bodyMedium?.copyWith(color: fg),
-              ),
+          if (face == null)
+            header
+          else
+            SceneScope(
+              builder: (context, r) {
+                final path = SceneImages.forExpression(face, mood, registry: r);
+                if (path == null) return header;
+                return Row(
+                  children: [
+                    ReactionFace(
+                      key: ValueKey('reaction-$face-$mood'),
+                      path: path,
+                      name: c.characterName(face),
+                      mood: mood,
+                      accent: t.accentFor(face),
+                      bundle: r.bundle,
+                    ),
+                    const SizedBox(width: AppSpace.md),
+                    Expanded(child: header),
+                  ],
+                );
+              },
             ),
           const SizedBox(height: AppSpace.md),
           // 변화량은 색 + 부호 + 화살표 3중. 한 줄 문장 나열보다 눈에 먼저 든다.
@@ -988,30 +1928,157 @@ class _ResultPanel extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpace.lg),
-          // 되돌리기(광고)는 구제책이지 주된 길이 아니다. 조용한 텍스트 버튼으로
-          // 1차 버튼 위에 두어 "계속" 을 가리거나 밀어내지 않게 한다.
-          if (c.canOfferUndo)
+          // 자유 입력 자동 확정이면 무료 되돌리기(이벤트당 1회, 광고 없음 — 07 §3.3).
+          // 광고 되돌리기와 합쳐 1회라 둘 다 뜨지 않는다.
+          if (c.canOfferFreeUndo)
             Center(
               child: TextButton.icon(
-                onPressed: () async {
-                  final ok = await AdManager.instance.showRewarded(
-                    placement: 'undo',
-                  );
-                  if (ok) c.undoChoice();
-                },
+                onPressed: c.undoFree,
                 icon: const Icon(Icons.replay, size: 18),
-                // 톤 배경 위에서도 대비를 지키기 위해 전경색만 맞춘다.
                 style: TextButton.styleFrom(foregroundColor: fg),
-                label: const Text('10초 전으로 (광고)'),
+                label: Text(keepAll('그런 뜻 아니었어요')),
+              ),
+            )
+          else if (c.canOfferUndo)
+            Center(
+              child: RewardedButton(
+                placement: 'undo',
+                label: '10초 전으로 (광고)',
+                icon: Icons.replay,
+                // 톤 배경 위에서도 대비를 지키기 위해 전경색만 맞춘다.
+                foregroundColor: fg,
+                onEarned: c.undoChoice,
               ),
             ),
-          if (c.canOfferUndo) const SizedBox(height: AppSpace.sm),
+          if (c.canOfferFreeUndo || c.canOfferUndo)
+            const SizedBox(height: AppSpace.sm),
           FilledButton(
             onPressed: c.continueAfterChoice,
             child: const Text('계속'),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 결과 패널 왼쪽의 상대 표정 한 장(원형). 선택 결과를 숫자보다 먼저 얼굴로 전한다.
+///
+/// - 성공·크리티컬 → 설렘(`flutter`), 실패 → 시무룩(`sulky`), 다만 흑역사가 남은 실패는
+///   웃픈 사고라 당황(`flustered`).
+/// - 상대는 이벤트 캐릭터, 없으면 이번에 호감이 움직인 사람이 딱 한 명일 때 그 사람.
+/// - 그림이 없으면 자리도 없다(부르는 쪽이 [SceneImages.forExpression] 으로 거른다).
+///   깨진 파일이면 접는다. 등장은 살짝 커지며(동작 줄이기면 그대로) 글을 가리지 않는다.
+class ReactionFace extends StatefulWidget {
+  final String path;
+  final String name;
+  final String mood;
+  final CharacterAccent accent;
+  final AssetBundle? bundle;
+
+  const ReactionFace({
+    super.key,
+    required this.path,
+    required this.name,
+    required this.mood,
+    required this.accent,
+    this.bundle,
+  });
+
+  /// 한 변. 채팅 아바타(40)보다 크고 캐스트 카드(56)와 같다.
+  static const double size = AppSize.avatarLg;
+
+  /// 등장 때 시작 배율.
+  static const double _popFrom = 0.85;
+
+  /// 얼굴 확대 배율과 고정점. 표정 그림(1:1 상반신)에서 얼굴은 위 1/3, 가로 가운데쯤이다.
+  static const double _faceZoom = 2;
+  static const Alignment _faceAnchor = Alignment(0.1, -0.5);
+
+  static String moodFor(ChoiceOutcome o) => o.success || o.critical
+      ? Expression.flutter
+      : o.delta.album != null
+      ? Expression.flustered
+      : Expression.sulky;
+
+  /// 표정의 주인. 모르면 null.
+  static String? whoFor(StoryEvent? ev, AppliedDelta delta) {
+    final ch = ev?.character;
+    if (ch != null) return ch;
+    final moved = delta.affection.keys.toList();
+    return moved.length == 1 ? moved.single : null;
+  }
+
+  static String moodLabel(String mood) => switch (mood) {
+    Expression.flutter => '설렘',
+    Expression.flustered => '당황',
+    _ => '시무룩',
+  };
+
+  @override
+  State<ReactionFace> createState() => _ReactionFaceState();
+}
+
+class _ReactionFaceState extends State<ReactionFace> {
+  bool _failed = false;
+
+  @override
+  void didUpdateWidget(ReactionFace old) {
+    super.didUpdateWidget(old);
+    if (old.path != widget.path) _failed = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) return const SizedBox.shrink();
+    const size = ReactionFace.size;
+    final a = widget.accent;
+    final px = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+    Widget face = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: a.container, shape: BoxShape.circle),
+      foregroundDecoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: a.base, width: AppBorderWidth.hairline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      // 표정 그림은 상반신 구도라 원 안에서는 얼굴이 작다. 얼굴이 있는 위쪽 가운데로 당겨 키운다.
+      child: Transform.scale(
+        scale: ReactionFace._faceZoom,
+        alignment: ReactionFace._faceAnchor,
+        child: Image(
+          image: SceneImage.providerFor(
+            widget.path,
+            bundle: widget.bundle,
+            cacheWidth: (px * ReactionFace._faceZoom).ceil(),
+          ),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stack) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _failed = true);
+            });
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    final d = AppMotion.fast(context);
+    if (d > Duration.zero) {
+      face = TweenAnimationBuilder<double>(
+        tween: Tween(begin: ReactionFace._popFrom, end: 1),
+        duration: d,
+        curve: AppMotion.emphasized,
+        builder: (context, v, child) => Transform.scale(scale: v, child: child),
+        child: face,
+      );
+    }
+    return Semantics(
+      image: true,
+      label: '${widget.name}의 표정: ${ReactionFace.moodLabel(widget.mood)}',
+      child: ExcludeSemantics(child: face),
     );
   }
 }

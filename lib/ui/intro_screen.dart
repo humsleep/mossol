@@ -1,478 +1,646 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../app_meta.dart';
+import '../analytics/analytics.dart';
+import '../ads/ad_manager.dart';
+import '../audio/sfx_service.dart';
 import '../engine/models.dart';
+import '../engine/player_name.dart';
+import '../engine/text_template.dart';
+import '../game_controller.dart';
 import 'design_system.dart';
+import 'event_screen.dart' show EventScreen;
 import 'keep_all.dart';
-import 'portraits.dart';
+import 'notification_card.dart';
+import 'onboarding_gender_screen.dart';
+import 'onboarding_name_screen.dart';
+import 'preference_screen.dart';
+import 'title_screen.dart';
+import 'widgets.dart';
 
-/// 앱을 새로 켤 때마다 가장 먼저 보이는 타이틀 화면.
+/// 첫 실행 화면. 규격은 docs/DESIGN_SYSTEM.md §2.14.
 ///
-/// 게임의 "대표 이미지" 자리다. 위쪽에 여성·남성 캐릭터 라인업이 서로 반대 방향으로
-/// 천천히 흐르고, 아래에 앱 이름·한 줄 소개·시작 안내가 차례로 떠오른다.
-/// 화면 어디를 눌러도 [onStart] 가 불린다. 테마(라이트·다크)와 상관없이 늘 같은
-/// 밤 장면이고, 색은 [IntroPalette] 에서 온다. 스토어 홍보 이미지 00a 와 같은 톤이라
-/// 스토어 → 첫 화면이 한 장면처럼 이어진다.
+/// 홈(세이브 카드·하트·앨범이 있는 관리 화면)은 이미 이 게임을 아는 사람의 화면이다.
+/// 처음 켠 사람에게는 **타이틀 한 장**([TitleScreen], §2.16)으로 무슨 앱인지 먼저 말하고,
+/// 그다음 설명 대신 **문자 한 통**을 준다 — 태현의 알림 카드가 내려오고
+/// (`Sfx.msgIn` + 진동), 탭해서 열면 그 대화 안에서 대답·이름·"나는?" 까지 끝난다.
+/// 대화 안에는 여전히 "시작하기" 버튼이 없다 — 마지막 답이 곧 시작 버튼이다.
+/// 근거: docs/review/00_VERDICT.md §3, docs/overhaul/01_benchmark.md §2 #5·#12.
+///
+/// 마지막 답 뒤에는 캐스트 소개([PreferenceScreen], §2.9)가 한 장 선다. 누구를 만나는지
+/// 모르고 100일에 들어가지 않게 하려고 새 게임 흐름이 원래 갖고 있던 단계인데, 인트로가
+/// `newGame` 을 직접 부르면서 첫 실행에서만 빠져 있었다. 거기서 뒤로 가면 인트로의
+/// 마지막 질문으로 돌아온다(아무것도 저장되지 않는다).
+///
+/// MBTI 는 여기서 묻지 않는다. D+4 `m_mbti_chat` 대화 안에서 받는다(R6,
+/// `GameController.shouldAskMbti` · `event_screen.dart` 의 MBTI 시트).
+///
+/// 이 화면은 아무것도 저장하지 않다가 **캐스트 소개의 `시작하기`** 에서 한 번에 저장한다 —
+/// 그 전에 앱을 닫으면 다음 실행에 타이틀부터 다시 선다.
+///
+/// **태현의 답은 한 줄씩 온다.** 예전에는 내 답과 태현의 두세 줄을 `setState` 하나로
+/// 한꺼번에 넣어서, 실기에서 말풍선 여섯 개가 동시에 쏟아졌다
+/// (docs/review/11_polish_verdict.md 8위). 이 게임의 대표 연출 — 글자 수에 비례한
+/// 타이핑 시간과 `…` 표시 — 을 **첫 대화에서 한 번도 못 보고** 본편이 시작됐다는 뜻이다.
+/// 그래서 본편과 **같은 것**을 쓴다: 시간은 [EventScreen.themDelayMs], 표시는
+/// [TypingIndicator]. 두 번째 구현을 만들지 않는다.
+///
+/// 타이핑이 끝나기 전에는 하단 패널이 비어 있다(본편에서 대사 중에 선택지가 없는 것과
+/// 같다) — 그래야 답을 두 번 누르거나 다음 질문을 미리 볼 수 없다.
+/// 동작 줄이기에서도 한 줄씩 온다: 타이핑 **시간**은 연출이 아니라 게임의 박자이고
+/// (§1.10 "박자와 모션의 구분"), 본편도 축소 설정에서 이 시간을 줄이지 않는다.
+/// 줄이는 것은 말풍선의 등장 연출이고 그건 `ChatBubble` 이 이미 처리한다.
 class IntroScreen extends StatefulWidget {
-  final List<CharacterDef> cast;
-  final VoidCallback onStart;
+  final GameController c;
+  const IntroScreen({super.key, required this.c});
 
-  const IntroScreen({super.key, required this.cast, required this.onStart});
+  /// 첫 문자를 보내는 친구. 성별 중립 조연이라 캐스트(characters.json)에 없다 —
+  /// 아바타는 이니셜로 그린다.
+  static const friendName = '태현';
 
-  /// 제목·소개 문구. 테스트와 접근성 라벨이 같은 문자열을 쓴다.
-  static const title = '모쏠 탈출기';
-  static const badge = '100일 연애 시뮬레이션';
-  static const tagline = '톡 한 줄로 썸부터 고백까지';
-  static const pitch = '100일 뒤, 이 중 누군가와\n연인이 될 수 있을까?';
-  static const startLabel = '화면을 터치해서 시작';
+  /// 알림 카드에 뜨는 한 줄. 첫 화면에서 읽히는 유일한 문장이다.
+  static const previewLine = '100일 프로젝트, 진짜 할 거야?';
+
+  static const openLines = ['야', previewLine];
+  static const yesLabel = '한다. 올해는 다르다';
+  static const maybeLabel = '…일단 해볼게';
+  static const dealReply = '오케이. 오늘부터 D+1이다';
+
+  static const nameQuestion = '그래서, 뭐라고 부르지?';
+  static const nameHint = OnboardingNameScreen.fieldHint;
+  static const nameRule = OnboardingNameScreen.rule;
+  static const nameSubmitLabel = '이걸로 불러';
+  static const nameSkipLabel = OnboardingNameScreen.skipLabel;
+  static const nameSkipReply = '알았다. 그냥 부르던 대로 부른다';
+
+  static const genderQuestion = '아 맞다, 너는?';
+  static const genderNote = OnboardingGenderScreen.note;
+
+  /// 성별을 묻는 태현의 말. 온보딩 화면의 부제(`만나게 될 사람들이 달라져요`)는
+  /// 존댓말이라 반말을 쓰는 태현의 말풍선에 그대로 넣으면 말투가 깨진다.
+  static const genderAsk = '누가 먼저 말 걸지가 달라지거든';
+  static const sideQuestion = '그럼 누구부터 소개해 줄까?';
+  static const startReply = '좋아. 그럼 시작이다';
+
+  /// 캐스트 소개로 넘어가기 직전의 한 줄. 다음 화면(`이 사람들을 만나게 돼요`)이
+  /// 대화에서 튀어나온 것이 아니라 태현이 보여 주는 것으로 읽히게 한다.
+  static const castIntro = '누가 있는지부터 보여 줄게';
+
+  /// 마지막 답 뒤 태현의 두 줄을 읽을 시간. 이만큼 뒤에 캐스트 소개가 열린다.
+  static const startDelay = Duration(milliseconds: 900);
 
   @override
   State<IntroScreen> createState() => _IntroScreenState();
 }
 
-class _IntroScreenState extends State<IntroScreen>
-    with TickerProviderStateMixin {
-  /// 등장 연출(라인업 → 배지 → 제목 → 소개 → 시작 안내). 한 번만 돈다.
-  late final AnimationController _enter = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  );
+/// 인트로의 단계. 0단계(타이틀)와 1단계(알림)만 화면을 통째로 바꾸고,
+/// 그 뒤로는 화면 하나에 하단 패널만 바뀐다.
+enum IntroStep {
+  /// 앱의 첫 프레임. 이름·부제·그림 한 장([TitleScreen]).
+  title,
 
-  /// 라인업이 한 바퀴 흐르는 시간. 느릴수록 고급스럽다.
-  late final AnimationController _drift = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 48),
-  );
+  /// 잠금화면 알림 카드(탭해서 열기).
+  notice,
 
-  /// "터치해서 시작" 의 숨쉬기.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  );
+  /// "진짜 할 거야?" 에 대한 답.
+  deal,
 
-  bool _started = false;
+  /// "뭐라고 부르지?" — 이름 입력(건너뛰기 있음).
+  name,
+
+  /// "너는?" — 남자 / 여자 / 선택 안 할래요.
+  gender,
+
+  /// "선택 안 할래요" 일 때만. 어느 쪽 캐스트부터 만날지.
+  side,
+
+  /// 답이 끝났다. 태현의 마지막 줄을 읽는 동안 캐스트 소개를 연다.
+  starting,
+}
+
+class _IntroScreenState extends State<IntroScreen> {
+  GameController get c => widget.c;
+
+  IntroStep _step = IntroStep.title;
+
+  /// 지금까지의 대화. 태현 줄·내 줄이 온 순서대로 쌓인다.
+  final List<Line> _lines = [];
+
+  /// 아직 안 뜬 태현의 줄. 한 줄씩 [_lines] 로 옮긴다(본편과 같은 박자).
+  final List<Line> _pending = [];
+
+  /// 다음 줄을 띄우는 타이머.
+  Timer? _reveal;
+
+  /// 알림 자동 열림 · 시작 지연. 화면이 내려가면 끊는다.
+  Timer? _timer;
+
+  late final TextEditingController _name = TextEditingController()
+    ..addListener(() => setState(() {}));
+
+  /// 이번 인트로에서 고른 값들. 마지막 답에서 한 번에 저장한다.
+  String? _gender;
+  String? _pickedName;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
-      _enter.value = 1;
-      _drift.stop();
-      _pulse.stop();
-    } else if (!_enter.isAnimating && _enter.value == 0) {
-      _enter.forward();
-      _drift.repeat();
-      _pulse.repeat(reverse: true);
-    }
+  void initState() {
+    super.initState();
+    c.logOnboardingStep(Analytics.stepIntro);
+  }
+
+  /// 타이틀의 `시작하기`. 여기서부터가 예전의 첫 화면이다 — 문자 도착음과 진동도
+  /// 알림 카드가 실제로 내려올 때 낸다(04 §2.1과 같은 큐). 타이틀 위에서 울리면
+  /// 화면에 없는 알림의 소리가 된다.
+  void _enterNotice() {
+    if (!mounted || _step != IntroStep.title) return;
+    SfxService.instance.cue(Sfx.msgIn);
+    setState(() => _step = IntroStep.notice);
+    _timer?.cancel();
+    _timer = Timer(NotificationPreview.autoOpen, _openChat);
   }
 
   @override
   void dispose() {
-    _enter.dispose();
-    _drift.dispose();
-    _pulse.dispose();
+    _timer?.cancel();
+    _reveal?.cancel();
+    _name.dispose();
     super.dispose();
   }
 
-  void _start() {
-    if (_started) return;
-    _started = true;
-    widget.onStart();
+  /// 알림 카드를 열어 대화를 시작한다(탭 또는 1.8초 자동). 두 번 불려도 한 번만 연다.
+  void _openChat() {
+    if (!mounted || _step != IntroStep.notice) return;
+    _timer?.cancel();
+    setState(() {
+      _lines.addAll([
+        for (final t in IntroScreen.openLines) Line(who: 'them', text: t),
+      ]);
+      _step = IntroStep.deal;
+    });
   }
 
-  /// [from]~[to] 구간(0~1)에서 0→1 로 오르는 등장 곡선.
-  Animation<double> _stage(double from, double to) => CurvedAnimation(
-    parent: _enter,
-    curve: Interval(from, to, curve: AppMotion.standard),
-  );
+  void _say(String text) => _lines.add(Line(who: 'me', text: text));
 
-  @override
-  Widget build(BuildContext context) {
-    final women = [
-      for (final c in widget.cast)
-        if (c.gender == 'f') c,
-    ];
-    final men = [
-      for (final c in widget.cast)
-        if (c.gender == 'm') c,
-    ];
-    final width = MediaQuery.sizeOf(context).width;
+  /// 태현의 줄을 **대기 줄에 넣는다.** 바로 뜨지 않고 [_scheduleReveal] 이 한 줄씩 옮긴다.
+  void _them(String text) => _pending.add(Line(who: 'them', text: text));
 
-    return Semantics(
-      button: true,
-      label: '${IntroScreen.title}. ${IntroScreen.startLabel}',
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _start,
-        child: Scaffold(
-          backgroundColor: IntroPalette.base,
-          body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.35),
-                radius: 1.1,
-                colors: [
-                  IntroPalette.glow,
-                  IntroPalette.base,
-                  IntroPalette.deep,
-                ],
-                stops: [0, 0.55, 1],
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // 제목 블록이 차지하고 남은 높이를 라인업이 쓴다. 작은 기기(SE)·큰 글꼴에서도
-                  // 제목이 잘리지 않게 카드 크기를 남은 높이에 맞추고, 너무 좁으면 라인업을 뺀다.
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, box) {
-                        final cardH =
-                            ((box.maxHeight - AppSpace.huge * 2 - AppSpace.sm) /
-                                    2)
-                                .clamp(0.0, 168.0);
-                        if (cardH < 56) return const SizedBox.shrink();
-                        return Align(
-                          alignment: const Alignment(0, 0.4),
-                          child: _lineup(cardH, width, women, men),
-                        );
-                      },
-                    ),
-                  ),
-                  _titleBlock(context),
-                  const SizedBox(height: AppSpace.xxl),
-                  _fadeUp(
-                    _stage(0.75, 1),
-                    FadeTransition(
-                      opacity: Tween(begin: 0.45, end: 1.0).animate(
-                        CurvedAnimation(
-                          parent: _pulse,
-                          curve: Curves.easeInOut,
-                        ),
-                      ),
-                      child: Text(
-                        IntroScreen.startLabel,
-                        style: context.text.titleSmall?.copyWith(
-                          color: IntroPalette.body,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpace.md),
-                  Text(
-                    'v${AppMeta.version}',
-                    style: context.text.labelSmall?.copyWith(
-                      color: IntroPalette.soft,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpace.lg),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+  /// 태현이 아직 치고 있는지. 이 동안 하단 패널은 비어 있다.
+  bool get _typing => _pending.isNotEmpty;
+
+  /// 다음 줄을 글자 수에 비례한 시간 뒤에 띄운다(본편과 같은 식 —
+  /// `clamp(600 + 글자×18, 800, 2400)ms`, [EventScreen.themDelayMs]).
+  void _scheduleReveal() {
+    _reveal?.cancel();
+    if (_pending.isEmpty) return;
+    final next = _pending.first;
+    _reveal = Timer(
+      Duration(milliseconds: EventScreen.themDelayMs(next.text)),
+      () {
+        if (!mounted || _pending.isEmpty) return;
+        setState(() => _lines.add(_pending.removeAt(0)));
+        if (_pending.isEmpty) {
+          _onTypingDone();
+        } else {
+          _scheduleReveal();
+        }
+      },
     );
   }
 
-  Widget _lineup(
-    double cardH,
-    double width,
-    List<CharacterDef> women,
-    List<CharacterDef> men,
-  ) {
-    return _fadeUp(
-      _stage(0, 0.45),
-      // 포스터처럼 살짝 기울이고, 기울어 생긴 모서리 빈틈은 넓혀서 덮는다.
-      // 아래쪽은 배경으로 녹여 제목 블록과 한 장면이 되게 한다.
-      ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (rect) => const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            IntroPalette.title,
-            IntroPalette.title,
-            IntroPalette.scrimClear,
-          ],
-          stops: [0, 0.8, 1],
-        ).createShader(rect),
-        child: SizedBox(
-          height: cardH * 2 + AppSpace.huge * 2,
-          child: ClipRect(
-            child: OverflowBox(
-              maxWidth: width * 1.4,
-              child: Transform.rotate(
-                angle: -0.06,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _LineupRow(
-                      cast: women,
-                      cardHeight: cardH,
-                      drift: _drift,
-                      reverse: false,
-                    ),
-                    const SizedBox(height: AppSpace.sm),
-                    _LineupRow(
-                      cast: men,
-                      cardHeight: cardH,
-                      drift: _drift,
-                      reverse: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      dy: -12,
+  /// 태현이 할 말을 다 한 순간. 마지막 답 뒤였으면 여기서 캐스트 소개로 넘어간다.
+  void _onTypingDone() {
+    final side = _preference;
+    if (_step != IntroStep.starting || side == null) return;
+    _timer?.cancel();
+    _timer = Timer(
+      IntroScreen.startDelay,
+      () => unawaited(_openCast(side)),
     );
   }
 
-  Widget _titleBlock(BuildContext context) {
-    final text = context.text;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.screenX),
-      child: Column(
-        children: [
-          _fadeUp(
-            _stage(0.3, 0.6),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.md,
-                vertical: AppSpace.xs,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: AppRadius.rPill,
-                border: Border.all(color: IntroPalette.pillBorder),
-              ),
-              child: Text(
-                IntroScreen.badge,
-                style: text.labelLarge?.copyWith(color: IntroPalette.body),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpace.md),
-          _fadeUp(
-            _stage(0.4, 0.75),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                IntroScreen.title,
-                style: text.displayMedium?.copyWith(
-                  color: IntroPalette.title,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -1.5,
-                  shadows: const [
-                    Shadow(color: IntroPalette.glow, blurRadius: 24),
-                  ],
-                ),
-              ),
-            ),
-            dy: 16,
-          ),
-          const SizedBox(height: AppSpace.sm),
-          _fadeUp(
-            _stage(0.5, 0.85),
-            Text(
-              IntroScreen.tagline,
-              style: text.titleMedium?.copyWith(
-                color: IntroPalette.accent,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpace.md),
-          _fadeUp(
-            _stage(0.6, 0.95),
-            Text(
-              keepAll(IntroScreen.pitch),
-              textAlign: TextAlign.center,
-              style: text.bodyLarge?.copyWith(
-                color: IntroPalette.body,
-                height: 1.55,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  /// "진짜 할 거야?" 에 대한 답. 어느 쪽이든 판은 시작된다 — 이 답이 시작 버튼이다.
+  void _answerDeal(String label) {
+    SfxService.instance.cue(Sfx.msgOut);
+    setState(() {
+      _say(label);
+      _them(IntroScreen.dealReply);
+      _them(IntroScreen.nameQuestion);
+      _step = IntroStep.name;
+    });
+    _scheduleReveal();
+    c.logOnboardingStep(Analytics.stepName);
   }
 
-  Widget _fadeUp(Animation<double> a, Widget child, {double dy = 10}) =>
-      AnimatedBuilder(
-        animation: a,
-        child: child,
-        builder: (context, child) => Opacity(
-          opacity: a.value,
-          child: Transform.translate(
-            offset: Offset(0, dy * (1 - a.value)),
-            child: child,
-          ),
-        ),
+  String? get _nameError => _composing ? null : PlayerName.validate(_name.text);
+
+  /// 한글 조합 중에는 오류를 띄우지 않는다(이름 화면과 같은 규칙).
+  bool get _composing {
+    final v = _name.value.composing;
+    return v.isValid && !v.isCollapsed;
+  }
+
+  bool get _canSubmitName =>
+      PlayerName.isValid(_name.text) && _nameError == null;
+
+  void _submitName() {
+    if (!_canSubmitName) return;
+    final n = PlayerName.normalize(_name.text);
+    SfxService.instance.cue(Sfx.msgOut);
+    _pickedName = n;
+    setState(() {
+      _say(n);
+      _them('$n. 외웠다');
+      _them(IntroScreen.genderQuestion);
+      _them(IntroScreen.genderAsk);
+      _step = IntroStep.gender;
+    });
+    _scheduleReveal();
+    c.logOnboardingStep(Analytics.stepGender);
+  }
+
+  /// 이름 없이 진행. 대사는 대체어로 나간다(docs/NAME_GUIDE.md) — 아무것도 막지 않는다.
+  void _skipName() {
+    _pickedName = null;
+    setState(() {
+      _them(IntroScreen.nameSkipReply);
+      _them(IntroScreen.genderQuestion);
+      _them(IntroScreen.genderAsk);
+      _step = IntroStep.gender;
+    });
+    _scheduleReveal();
+    c.logOnboardingStep(Analytics.stepGender);
+  }
+
+  /// "나는?" 의 답. 남자·여자면 만날 쪽이 정해지므로 여기서 캐스트 소개가 열리고,
+  /// "선택 안 할래요" 면 어느 쪽부터 볼지 한 번 더 묻는다.
+  void _answerGender(String gender, String label) {
+    _markCastReturn();
+    SfxService.instance.cue(Sfx.msgOut);
+    _gender = gender;
+    final side = PlayerGender.sideFor(gender);
+    if (side != null) {
+      setState(() => _say(label));
+      _finish(side);
+      return;
+    }
+    setState(() {
+      _say(label);
+      _them(IntroScreen.sideQuestion);
+      _step = IntroStep.side;
+    });
+    _scheduleReveal();
+  }
+
+  void _answerSide(String preference) {
+    _markCastReturn();
+    SfxService.instance.cue(Sfx.msgOut);
+    setState(() => _say(Preference.label(preference)));
+    _finish(preference);
+  }
+
+  /// 캐스트 소개에서 뒤로 왔을 때 돌아갈 자리. 마지막 답 **직전**의 대화 길이와 단계다.
+  int? _castReturnLines;
+  IntroStep? _castReturnStep;
+
+  void _markCastReturn() {
+    _castReturnLines = _lines.length;
+    _castReturnStep = _step;
+  }
+
+  /// 마지막 답으로 정해진 쪽. 태현의 마지막 두 줄이 다 뜬 뒤 캐스트 소개를 여는 데 쓴다.
+  String? _preference;
+
+  /// 마지막 답. 태현의 두 줄이 **한 줄씩 뜨고 나서** 그 두 줄을 읽을 시간
+  /// ([IntroScreen.startDelay])이 지나면 캐스트 소개가 열린다([_onTypingDone]).
+  /// 저장은 아직 안 한다 — 캐스트 소개에서 뒤로 가면 이 대화로 돌아오고 아무것도
+  /// 남지 않아야 한다.
+  void _finish(String preference) {
+    _preference = preference;
+    setState(() {
+      _them(IntroScreen.startReply);
+      _them(IntroScreen.castIntro);
+      _step = IntroStep.starting;
+    });
+    _timer?.cancel();
+    _scheduleReveal();
+  }
+
+  /// 캐스트 소개(§2.9). 인트로에서 고른 쪽을 먼저 펼치고, 거기서 반대쪽으로 넘어가면
+  /// 실제로 시작하는 쪽은 **보고 있던 쪽**이다(홈에서 여는 새 게임과 같은 규칙).
+  Future<void> _openCast(String side) async {
+    if (!mounted) return;
+    // 이름·MBTI 는 아직 저장 전이다. 캐스트 카드의 첫 메시지가 `{name}` 을 그대로
+    // 드러내지 않도록 잠깐만 올려 둔다(onboarding_gender_screen 의 `cast` 와 같은 처리).
+    final savedName = TextTemplate.currentName;
+    final savedMbti = TextTemplate.currentMbti;
+    TextTemplate.currentName = _pickedName;
+    TextTemplate.currentMbti = c.playerMbti;
+    final String? picked;
+    try {
+      picked = await PreferenceScreen.show(
+        context,
+        c.bundle,
+        side: side,
+        playerMbti: c.playerMbti,
       );
-}
-
-/// 한 줄 라인업. 카드들을 두 벌 이어 붙이고 한 벌 길이만큼 흘려 끊김 없이 돈다.
-class _LineupRow extends StatelessWidget {
-  final List<CharacterDef> cast;
-  final double cardHeight;
-  final Animation<double> drift;
-  final bool reverse;
-
-  const _LineupRow({
-    required this.cast,
-    required this.cardHeight,
-    required this.drift,
-    required this.reverse,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (cast.isEmpty) return const SizedBox.shrink();
-    final cardW = cardHeight * 0.78;
-    const gap = AppSpace.md;
-    final loop = cast.length * (cardW + gap);
-    final cards = [
-      for (var i = 0; i < 2; i++)
-        for (final c in cast) ...[
-          _LineupCard(c: c, width: cardW, height: cardHeight),
-          const SizedBox(width: gap),
-        ],
-    ];
-    return SizedBox(
-      height: cardHeight + AppSpace.md,
-      child: ClipRect(
-        child: AnimatedBuilder(
-          animation: drift,
-          builder: (context, child) {
-            final t = reverse ? 1 - drift.value : drift.value;
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(left: -t * loop, top: AppSpace.xs, child: child!),
-              ],
-            );
-          },
-          child: Row(mainAxisSize: MainAxisSize.min, children: cards),
-        ),
-      ),
-    );
+    } finally {
+      TextTemplate.currentName = savedName;
+      TextTemplate.currentMbti = savedMbti;
+    }
+    if (!mounted) return;
+    if (picked == null) {
+      _revertToLastQuestion();
+      return;
+    }
+    await _start(picked);
   }
-}
 
-/// 라인업 카드 한 장: 초상화 + 이름 띠. 히든 캐릭터에는 '히든' 배지가 붙는다.
-class _LineupCard extends StatelessWidget {
-  final CharacterDef c;
-  final double width;
-  final double height;
+  /// 캐스트 소개에서 뒤로 온 경우. 마지막 답과 그 뒤 태현의 줄을 지우고 질문으로
+  /// 되돌린다. 이 화면에는 다른 출구가 없으므로 되돌리지 않으면 막다른 길이 된다.
+  void _revertToLastQuestion() {
+    final n = _castReturnLines;
+    final step = _castReturnStep;
+    if (n == null || step == null || n > _lines.length) return;
+    _reveal?.cancel();
+    _preference = null;
+    setState(() {
+      _lines.removeRange(n, _lines.length);
+      // 아직 안 뜬 줄도 없던 일이 된다. 남겨 두면 질문으로 돌아온 화면에서
+      // 태현이 계속 치고 있는 것처럼 보인다.
+      _pending.clear();
+      _step = step;
+    });
+  }
 
-  const _LineupCard({
-    required this.c,
-    required this.width,
-    required this.height,
-  });
+  /// 고른 값을 한 번에 저장하고 첫날을 연다. 여기서 홈을 거치지 않는다 —
+  /// 캐스트 소개 다음 화면은 D+1 날짜 카드다.
+  Future<void> _start(String preference) async {
+    if (!mounted) return;
+    final g = _gender;
+    if (g != null) await c.setPlayerGender(g);
+    // 이름 단계는 거쳤다 — 건너뛰었어도 다음 새 게임에서 다시 묻지 않는다.
+    final n = _pickedName;
+    n == null ? await c.skipPlayerName() : await c.setPlayerName(n);
+    await c.markIntroSeen();
+    // 이제야 ATT·동의 폼을 띄운다(main 이 첫 실행에서는 미뤄 뒀다).
+    unawaited(AdManager.instance.init());
+    // MBTI 는 D+4 대화에서 묻는다(mbtiAsked 를 여기서 세우지 않는다).
+    c.logOnboardingDone(
+      preference: preference,
+      mbtiSource: Analytics.mbtiLater,
+    );
+    await c.newGame(preference: preference);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final registry = PortraitRegistry.current;
-    final path = registry.pathFor(c.id);
-    final labelH = math.max(26.0, height * 0.2);
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: IntroPalette.card,
-        borderRadius: AppRadius.rLg,
-        boxShadow: const [
-          BoxShadow(
-            color: IntroPalette.cardShadow,
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    if (_step == IntroStep.title) {
+      return TitleScreen(onStart: _enterNotice);
+    }
+    if (_step == IntroStep.notice) {
+      return NotificationPreview(
+        name: IntroScreen.friendName,
+        characterId: null,
+        preview: IntroScreen.previewLine,
+        day: 1,
+        onOpen: _openChat,
+      );
+    }
+    final t = context.tokens;
+    return Scaffold(
+      appBar: _header(context),
+      body: Column(
         children: [
           Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (path != null)
-                  Image.asset(
-                    path,
-                    bundle: registry.bundle,
-                    scale: 1,
-                    cacheWidth: (width * dpr * 1.2).ceil(),
-                    fit: BoxFit.cover,
-                    alignment: const Alignment(0, -0.4),
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (_, _, _) => _initial(context),
-                  )
-                else
-                  _initial(context),
-                if (c.hidden)
-                  Positioned(
-                    top: AppSpace.xs,
-                    right: AppSpace.xs,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.sm,
-                        vertical: 2,
+            child: ColoredBox(
+              color: t.chatBackground,
+              child: SingleChildScrollView(
+                reverse: true,
+                padding: const EdgeInsets.only(
+                  top: AppSpace.sm,
+                  bottom: AppSpace.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const ChatDivider(text: 'D+1'),
+                    for (final (i, l) in _lines.indexed)
+                      ChatBubble(
+                        line: l,
+                        partnerName: IntroScreen.friendName,
+                        isFirstOfGroup: i == 0 || _lines[i - 1].who != l.who,
+                        isLastOfGroup:
+                            i == _lines.length - 1 ||
+                            _lines[i + 1].who != l.who,
                       ),
-                      decoration: BoxDecoration(
-                        color: IntroPalette.hiddenBadge,
-                        borderRadius: AppRadius.rPill,
+                    // 태현이 치는 동안 `…` 하나(§4.1: 화면에 정확히 한 개).
+                    // 직전 줄이 이미 태현이면 아바타 자리는 비운다(묶음 규칙).
+                    if (_typing)
+                      TypingIndicator(
+                        name: IntroScreen.friendName,
+                        showAvatar:
+                            _lines.isEmpty || _lines.last.who != 'them',
                       ),
-                      child: Text(
-                        '히든',
-                        style: context.text.labelSmall?.copyWith(
-                          color: IntroPalette.hiddenBadgeText,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: labelH,
-            child: Center(
-              child: Text(
-                c.name,
-                style: context.text.labelLarge?.copyWith(
-                  color: IntroPalette.cardText,
-                  fontWeight: FontWeight.w700,
+                  ],
                 ),
               ),
             ),
           ),
+          _panel(context),
         ],
       ),
     );
   }
 
-  Widget _initial(BuildContext context) {
-    final accent = context.tokens.accentFor(c.id);
-    return ColoredBox(
-      color: accent.container,
-      child: Center(
+  /// 채팅 화면과 같은 머리줄: 이름 + 상태 한 줄. 뒤로 갈 곳이 없으므로 뒤로 버튼은 없다.
+  PreferredSizeWidget _header(BuildContext context) => AppBar(
+    automaticallyImplyLeading: false,
+    titleSpacing: AppSpace.screenX,
+    title: Row(
+      children: [
+        const CharacterAvatar(
+          name: IntroScreen.friendName,
+          size: AppSize.avatarSm,
+        ),
+        const SizedBox(width: AppSpace.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(IntroScreen.friendName, style: context.text.titleMedium),
+              Text(
+                '온라인',
+                style: context.text.labelSmall?.copyWith(
+                  color: context.scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  /// 하단 패널. 태현이 치고 있는 동안은 **비어 있다** — 본편에서 대사가 흐르는 중에
+  /// 선택지가 없는 것과 같은 규칙이다. 답을 두 번 누르거나 다음 질문을 미리 볼 수 없다.
+  Widget _panel(BuildContext context) => _typing
+      ? const SizedBox.shrink()
+      : _panelFor(context);
+
+  Widget _panelFor(BuildContext context) => switch (_step) {
+    IntroStep.deal => BottomPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ChoiceButton(
+            key: const Key('intro-yes'),
+            text: IntroScreen.yesLabel,
+            onPressed: () => _answerDeal(IntroScreen.yesLabel),
+          ),
+          const SizedBox(height: AppSpace.listGap),
+          ChoiceButton(
+            key: const Key('intro-maybe'),
+            text: IntroScreen.maybeLabel,
+            onPressed: () => _answerDeal(IntroScreen.maybeLabel),
+          ),
+        ],
+      ),
+    ),
+    IntroStep.name => BottomPanel(child: _nameField(context)),
+    IntroStep.gender => BottomPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, (g, icon, label, hint))
+              in OnboardingGenderScreen.options.indexed) ...[
+            if (i > 0) const SizedBox(height: AppSpace.listGap),
+            GenderOptionCard(
+              key: Key('gender-$g'),
+              icon: icon,
+              label: label,
+              hint: hint,
+              onTap: () => _answerGender(g, label),
+            ),
+          ],
+          const SizedBox(height: AppSpace.md),
+          _note(context, IntroScreen.genderNote),
+        ],
+      ),
+    ),
+    IntroStep.side => BottomPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (i, p) in Preference.genders.indexed) ...[
+            if (i > 0) const SizedBox(height: AppSpace.listGap),
+            ChoiceButton(
+              key: Key('intro-side-$p'),
+              text: Preference.label(p),
+              onPressed: () => _answerSide(p),
+            ),
+          ],
+        ],
+      ),
+    ),
+    _ => const SizedBox.shrink(),
+  };
+
+  Widget _nameField(BuildContext context) {
+    final scheme = context.scheme;
+    OutlineInputBorder border(Color color, double w) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderSide: BorderSide(color: color, width: w),
+    );
+    final error = _nameError;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const Key('intro-name-field'),
+          controller: _name,
+          autofocus: false,
+          autocorrect: false,
+          enableSuggestions: false,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submitName(),
+          style: context.text.titleMedium,
+          // 이름 규칙·거르개는 이름 화면과 같은 것을 쓴다(docs/NAME_GUIDE.md).
+          maxLength: PlayerName.maxLength,
+          maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
+          inputFormatters: [NameInputFormatter()],
+          buildCounter:
+              (
+                context, {
+                required currentLength,
+                required isFocused,
+                maxLength,
+              }) => null,
+          decoration: InputDecoration(
+            hintText: IntroScreen.nameHint,
+            helperText: IntroScreen.nameRule,
+            helperStyle: context.text.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+            helperMaxLines: 2,
+            errorText: error,
+            errorMaxLines: 2,
+            filled: true,
+            fillColor: scheme.surfaceContainerLowest,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg,
+              vertical: AppSpace.md,
+            ),
+            border: border(scheme.outline, AppBorderWidth.hairline),
+            enabledBorder: border(scheme.outline, AppBorderWidth.hairline),
+            focusedBorder: border(scheme.primary, AppBorderWidth.emphasis),
+            errorBorder: border(scheme.error, AppBorderWidth.hairline),
+            focusedErrorBorder: border(scheme.error, AppBorderWidth.emphasis),
+          ),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        FilledButton(
+          key: const Key('intro-name-submit'),
+          onPressed: _canSubmitName ? _submitName : null,
+          child: const Text(IntroScreen.nameSubmitLabel),
+        ),
+        const SizedBox(height: AppSpace.xs),
+        TextButton(
+          key: const Key('intro-name-skip'),
+          onPressed: _skipName,
+          style: TextButton.styleFrom(
+            foregroundColor: scheme.onSurfaceVariant,
+          ),
+          child: const Text(IntroScreen.nameSkipLabel),
+        ),
+      ],
+    );
+  }
+
+  Widget _note(BuildContext context, String text) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(top: AppSpace.xxs),
+        child: Icon(
+          Icons.lock_outline,
+          size: 16,
+          color: context.scheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(width: AppSpace.sm),
+      Expanded(
         child: Text(
-          c.name.characters.first,
-          style: context.text.headlineMedium?.copyWith(
-            color: accent.onContainer,
+          keepAll(text),
+          style: context.text.bodySmall?.copyWith(
+            color: context.scheme.onSurfaceVariant,
           ),
         ),
       ),
-    );
-  }
+    ],
+  );
 }

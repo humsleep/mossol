@@ -24,12 +24,23 @@ class DrinkLimitGame extends StatefulWidget {
 }
 
 class _DrinkLimitGameState extends State<DrinkLimitGame> {
+  /// (판이 벌어진 자리, 지금 멈추면 남는 말). 판마다 다른 자리에서 벌어진다 —
+  /// 규칙은 같아도 무대가 같으면 두 번째부터는 버튼만 누르는 화면이 된다.
+  static const _scenes = [
+    ('동아리 뒤풀이. 드립 세 개가 연달아 터졌다.', '지금 멈추면 분위기를 맞춘 것으로 끝난다'),
+    ('단톡방이 오랜만에 살아났다. 내 드립에 ㅋㅋ 가 붙는다.', '지금 멈추면 재밌는 사람으로 남는다'),
+    ('회식 2차. 부장님이 내 말에 처음 웃었다.', '지금 멈추면 눈치 있는 사람으로 남는다'),
+    ('통화가 40분째다. 상대가 계속 웃고 있다.', '지금 끊으면 오늘 통화는 성공이다'),
+    ('첫 만남 카페. 어색함이 방금 깨졌다.', '지금 멈추면 첫인상은 여기서 굳는다'),
+  ];
+
+  late final (String, String) _scene =
+      widget.ctx.vary.one('drink_limit', _scenes);
+
   /// 지금까지 친 드립 수.
   int _jokes = 0;
   MinigameResult? _result;
-  late final Random _rng = Random(
-    widget.ctx.state.seed ^ widget.ctx.state.day ^ 7,
-  );
+  late final Random _rng = widget.ctx.vary.rng('drink_limit_roll');
 
   /// 자존감이 높을수록 어디까지가 선인지 잘 안다.
   int get _bustPercent {
@@ -40,11 +51,15 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
   void _joke() {
     if (_result != null) return;
     if (_rng.nextInt(100) < _bustPercent) {
+      // 결과 큐는 스캐폴드가 낸다(실패 = choiceFail + heavy).
       setState(() {
         _result = const MinigameResult.miss('선을 넘었다. 방금 그 드립은 흑역사가 됐다.');
       });
       return;
     }
+    // 한 발 더 갔고 아직 살아 있다. 이 게임은 "한 번 더" 를 누르는 사이의
+    // 정적이 전부라 그 정적에 한 박자가 필요하다.
+    MinigameSfx.step();
     setState(() => _jokes++);
     if (_jokes >= 5) _stop();
   }
@@ -80,7 +95,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
     return MinigameScaffold(
       title: '선 지키기',
       badge: '${Stat.label(Stat.esteem)} ${widget.ctx.stat(Stat.esteem)}',
-      instruction: '분위기가 좋을 때 드립을 몇 번까지 칠지 고른다. '
+      instruction: '${_scene.$1} 몇 번까지 칠지 고른다. '
           '언제 멈춰도 성공이고, 선을 넘으면 흑역사다. 확률은 화면에 그대로 보인다.',
       result: _result,
       onFinished: () => widget.done(_result!),
@@ -143,7 +158,7 @@ class _DrinkLimitGameState extends State<DrinkLimitGame> {
             style: t.numericLarge,
           ),
           const SizedBox(height: AppSpace.xs),
-          Text(keepAll('지금 멈추면 분위기를 맞춘 것으로 끝난다'),
+          Text(keepAll(_scene.$2),
             textAlign: TextAlign.center,
             style: context.text.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
@@ -205,23 +220,50 @@ class WordOrderGame extends StatefulWidget {
 
 class _WordOrderGameState extends State<WordOrderGame> {
   /// (3장 문장, 4장 문장). 화술 50 이상이면 4장으로 더 좋은 문장을 만들 수 있다.
+  ///
+  /// **한 가지 순서로만 말이 되는 문장만 쓴다.** 예전 3장 세트
+  /// `오늘 / 고마웠어 / 진짜` 는 "오늘 고마웠어 진짜" 도 "오늘 진짜 고마웠어" 도
+  /// 자연스러운데 한쪽만 정답으로 쳐서, 맞게 말한 플레이어가 틀렸다는 표시를
+  /// 받았다(09 §1). 조사·어미로 자리가 고정되는 문장으로 갈았다.
   static const _sets = [
-    (['오늘', '고마웠어', '진짜'], ['오늘', '진짜', '고마웠어', '덕분에']),
-    (['다음에', '또', '보자'], ['다음에는', '내가', '먼저', '연락할게']),
+    (['내가', '먼저', '연락할게'], ['다음에는', '내가', '먼저', '연락할게']),
     (['그때', '말한', '거기'], ['그때', '네가', '말한', '거기']),
+    (['나', '지금', '나갈게'], ['나', '지금', '바로', '나갈게']),
+    (['오늘', '잘', '들어갔어?'], ['오늘', '집에', '잘', '들어갔어?']),
+    (['너랑', '있으면', '편해'], ['너랑', '있으면', '이상하게', '편해']),
+    (['생각보다', '많이', '웃었어'], ['오늘', '생각보다', '많이', '웃었어']),
+    (['내일', '시간', '괜찮아?'], ['내일', '저녁', '시간', '괜찮아?']),
+    (['답장', '늦어서', '미안'], ['답장', '이렇게', '늦어서', '미안']),
   ];
+
+  /// 틀린 뒤 몇 번째부터 다음 카드를 짚어 줄지. 두 번 헤매면 길을 알려 준다.
+  static const _hintAfter = 2;
 
   late final bool _long = widget.ctx.stat(Stat.talk) >= 50;
   late final List<String> _answer = () {
-    final s = _sets[widget.ctx.state.day % _sets.length];
+    final s = widget.ctx.vary.one('word_order', _sets);
     return _long ? s.$2 : s.$1;
   }();
-  late final List<String> _pool = List.of(_answer)
-    ..shuffle(Random(widget.ctx.state.seed ^ widget.ctx.state.day));
+  late final List<String> _pool =
+      widget.ctx.vary.shuffled('word_order_pool', _answer);
+
+  /// 허용하는 실수 횟수. **여기를 넘기면 진다.**
+  ///
+  /// 예전에는 실패가 없었다(`success: true` 고정). 19번 등장하는 게임이 질 수
+  /// 없으면 그건 게임이 아니라 "탭 앞에 붙은 지연" 이다(11 §1-3위).
+  /// 카드 수 + 1 로 잡는다: 두 번 틀리면 다음 카드를 브랜드색 테두리 + 화살표로
+  /// 짚어 주므로([_hintAfter]), 이 한도에 닿으려면 **짚어 준 카드를 두 번 이상
+  /// 무시해야** 한다. 헤매다 지는 게 아니라 안 보고 눌러야 지는 값이다.
+  late final int _mistakeLimit = _answer.length + 1;
 
   final _built = <String>[];
   int _mistakes = 0;
   MinigameResult? _result;
+
+  /// 지금 눌러야 할 카드. 힌트 조건을 넘겼을 때만 값이 있다.
+  String? get _hint => _mistakes >= _hintAfter && _built.length < _answer.length
+      ? _answer[_built.length]
+      : null;
 
   /// 방금 잘못 누른 카드. 표시용이며 판정(`_mistakes`)과 별개다.
   /// 틀렸다는 사실이 화면 아래 배지에만 있으면 어느 카드가 틀렸는지 모른다.
@@ -246,12 +288,17 @@ class _WordOrderGameState extends State<WordOrderGame> {
         _mistakes++;
         _wrong = w;
       });
+      if (_mistakes >= _mistakeLimit) return _fail();
+      // 틀렸지만 판은 살아 있다. 실패음이 아니라 진동 한 번으로만 말한다.
+      MinigameSfx.nudge();
       _wrongTimer?.cancel();
       _wrongTimer = Timer(_wrongHold, () {
         if (mounted) setState(() => _wrong = null);
       });
       return;
     }
+    // 맞는 카드. 한 장씩 밝은 확인음이 붙어야 문장이 쌓이는 게 손에 남는다.
+    MinigameSfx.step();
     setState(() {
       _built.add(w);
       _wrong = null;
@@ -274,6 +321,18 @@ class _WordOrderGameState extends State<WordOrderGame> {
     });
   }
 
+  /// 실수 한도를 넘겼다. 보낼 문장이 끝까지 안 만들어진 채로 끝난다.
+  void _fail() {
+    _wrongTimer?.cancel();
+    setState(() {
+      _result = MinigameResult(
+        success: false,
+        score: _built.length / _answer.length,
+        message: '$_mistakes번 엉켰다. 쓰다 만 문장을 결국 지웠다.',
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -283,8 +342,10 @@ class _WordOrderGameState extends State<WordOrderGame> {
       title: '문장 만들기',
       badge: '${Stat.label(Stat.talk)} ${widget.ctx.stat(Stat.talk)}',
       instruction: _long
-          ? '화술 50 이상이라 카드가 4장이다. 순서대로 눌러 문장을 만든다.'
-          : '카드를 순서대로 눌러 문장을 만든다. 화술 50이 넘으면 카드가 늘어난다.',
+          ? '화술 50 이상이라 카드가 4장이다. 순서대로 눌러 문장을 만든다. '
+                '$_mistakeLimit번 틀리면 문장을 못 보낸다.'
+          : '카드를 순서대로 눌러 문장을 만든다. $_mistakeLimit번 틀리면 실패다. '
+                '화술 50이 넘으면 카드가 늘어난다.',
       result: _result,
       onFinished: () => widget.done(_result!),
       child: CenteredScrollColumn(
@@ -323,6 +384,7 @@ class _WordOrderGameState extends State<WordOrderGame> {
                   word: w,
                   used: _built.contains(w),
                   wrong: _wrong == w,
+                  hinted: _hint == w,
                   onTap: () => _tap(w),
                 ),
             ],
@@ -333,7 +395,11 @@ class _WordOrderGameState extends State<WordOrderGame> {
               alignment: Alignment.center,
               child: ResultBadge(
                 tone: AppTone.danger,
-                label: '$_mistakes번 잘못 골랐다',
+                // 남은 기회를 숫자로 보여 준다. 실패가 있는 게임이 되었으므로
+                // 몇 번 남았는지가 화면에 없으면 지는 이유를 모른다.
+                label: _hint == null
+                    ? '잘못 고름 $_mistakes / $_mistakeLimit'
+                    : '잘못 고름 $_mistakes / $_mistakeLimit · 다음은 테두리 친 카드',
               ),
             ),
           ],
@@ -345,16 +411,19 @@ class _WordOrderGameState extends State<WordOrderGame> {
 
 /// 문장 카드 한 장. 쓴 카드는 흐려지는 대신 2차 글자색 + 체크로 물러나고,
 /// 방금 잘못 누른 카드는 위험색 배경 + 굵은 테두리 + × 세 가지로 말한다.
+/// [hinted] 는 두 번 헤맨 뒤 짚어 주는 다음 카드다(브랜드색 테두리 + 화살표).
 class _WordCard extends StatelessWidget {
   final String word;
   final bool used;
   final bool wrong;
+  final bool hinted;
   final VoidCallback onTap;
   const _WordCard({
     required this.word,
     required this.used,
     required this.wrong,
     required this.onTap,
+    this.hinted = false,
   });
 
   @override
@@ -366,14 +435,28 @@ class _WordCard extends StatelessWidget {
         ? t.dangerContainer
         : used
         ? scheme.surfaceContainer
+        : hinted
+        ? scheme.primaryContainer
         : scheme.surfaceContainerLowest;
     final fg = wrong
         ? t.onDangerContainer
         : used
         ? t.lockedForeground
+        : hinted
+        ? scheme.onPrimaryContainer
         : scheme.onSurface;
-    final line = wrong ? t.danger : scheme.outlineVariant;
-    final mark = wrong ? Icons.close : (used ? Icons.check : null);
+    final line = wrong
+        ? t.danger
+        : hinted
+        ? scheme.primary
+        : scheme.outlineVariant;
+    final mark = wrong
+        ? Icons.close
+        : used
+        ? Icons.check
+        : hinted
+        ? Icons.arrow_forward
+        : null;
 
     return Material(
       color: bg,
@@ -382,7 +465,9 @@ class _WordCard extends StatelessWidget {
         borderRadius: AppRadius.rMd,
         side: BorderSide(
           color: line,
-          width: wrong ? AppBorderWidth.emphasis : AppBorderWidth.hairline,
+          width: wrong || hinted
+              ? AppBorderWidth.emphasis
+              : AppBorderWidth.hairline,
         ),
       ),
       child: InkWell(
@@ -396,7 +481,7 @@ class _WordCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (mark != null) ...[
-                  Icon(mark, size: 16, color: wrong ? t.danger : fg),
+                  Icon(mark, size: 16, color: wrong || hinted ? line : fg),
                   const SizedBox(width: AppSpace.xs),
                 ],
                 Text(

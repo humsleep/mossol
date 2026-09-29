@@ -2,18 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../ads/ad_manager.dart';
 import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'home_screen.dart' show OvernightNote;
+import 'keep_all.dart';
 import 'relation_sheet.dart';
 import 'retention_widgets.dart';
 import 'stat_guide.dart';
 import 'roulette_sheet.dart';
+import 'scene_card.dart' show SceneImage;
+import 'scene_registry.dart';
+import 'stat_guide.dart';
 import 'widgets.dart';
-import 'keep_all.dart';
 
 /// 아침 행동 선택 화면. 하트 1개를 쓰고 하루를 시작한다.
 ///
@@ -106,88 +108,104 @@ class _ActionScreenState extends State<ActionScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.screenX,
-          AppSpace.screenY,
-          AppSpace.screenX,
-          AppSpace.xxl,
-        ),
+      // 배너는 AppBar 바로 아래(DESIGN_SYSTEM §2 공통). 광고가 없으면 높이 0.
+      body: Column(
         children: [
-          // 1. 자원 줄. 폭이 모자라면 콤보 배지가 아랫줄로 내려간다.
-          Wrap(
-            spacing: AppSpace.sm,
-            runSpacing: AppSpace.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              HeartsRow(
-                hearts: c.hearts,
-                max: c.config.maxHearts,
-                nextIn: c.nextHeartIn,
+          const BannerSlot(edge: BannerEdge.top, safeArea: false),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.screenX,
+                AppSpace.screenY,
+                AppSpace.screenX,
+                AppSpace.xxl,
               ),
-              if (c.combo > 0) ComboBadge(combo: c.combo, onFire: c.onFire),
-            ],
-          ),
+              children: [
+                // 1. 자원 줄. 폭이 모자라면 콤보 배지가 아랫줄로 내려간다.
+                Wrap(
+                  spacing: AppSpace.sm,
+                  runSpacing: AppSpace.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    HeartsRow(
+                      hearts: c.hearts,
+                      max: c.config.maxHearts,
+                      nextIn: c.nextHeartIn,
+                    ),
+                    if (c.combo > 0)
+                      ComboBadge(combo: c.combo, onFire: c.onFire),
+                  ],
+                ),
 
-          // 1-1. 지난 판 요약. 첫날의 조용한 한 줄.
-          if (previous != null) ...[
-            const SizedBox(height: AppSpace.md),
-            PreviousRunNote(text: previous),
-          ],
+                // 1-1. 지난 판 요약. 첫날의 조용한 한 줄.
+                if (previous != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  PreviousRunNote(text: previous),
+                ],
 
-          // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
-          if (cliffhanger != null) ...[
-            const SizedBox(height: AppSpace.md),
-            CliffhangerCard(text: '어젯밤: $cliffhanger'),
-          ],
+                // 2. 어젯밤의 예고. 어제와 오늘을 잇는 감정선이라 결정 바로 위에 둔다.
+                if (cliffhanger != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  CliffhangerCard(text: '어젯밤: $cliffhanger'),
+                ],
 
-          // 2-1. 밤사이 멀어진 사람. 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려갔을
-          // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
-          for (final e in c.overnightShifts.entries) ...[
-            const SizedBox(height: AppSpace.sm),
-            OvernightNote(id: e.key, text: c.say(e.value)),
-          ],
+                // 2-1. 밤사이 멀어진 사람. 어젯밤 마감(연락 없음 −1)으로 호감 구간이 내려갔을
+                // 때만 조용한 한 줄. 숫자 대신 서사 신호의 하강 문장을 쓴다.
+                for (final e in c.overnightShifts.entries) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  OvernightNote(id: e.key, text: c.say(e.value)),
+                ],
 
-          // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다. 무엇에 쓰이는지는 설명 시트로.
-          const SizedBox(height: AppSpace.lg),
-          SectionHeader(
-            title: '내 스탯',
-            trailing: TextButton.icon(
-              key: const Key('stat-guide'),
-              onPressed: () => StatGuideSheet.show(context),
-              icon: const Icon(Icons.help_outline, size: 18),
-              label: const Text('스탯 설명'),
+                // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다. 머리줄의 `스탯 설명`
+                // 이나 막대 자체를 누르면 스탯마다 무엇이고 어디에 쓰이는지가 뜬다.
+                const SizedBox(height: AppSpace.lg),
+                SectionHeader(
+                  title: '내 스탯',
+                  trailing: TextButton.icon(
+                    key: const Key('stat-guide'),
+                    onPressed: () => _openStatGuide(context),
+                    icon: const Icon(Icons.help_outline, size: 18),
+                    label: const Text('스탯 설명'),
+                  ),
+                ),
+                Semantics(
+                  hint: '스탯 설명 열기',
+                  child: InkWell(
+                    borderRadius: AppRadius.rMd,
+                    onTap: () => _openStatGuide(context),
+                    child: StatBars(state: s, compact: true),
+                  ),
+                ),
+
+                // 4. 관계. 사람 수와 상관없이 한 줄, 누르면 상세.
+                if (cast.isNotEmpty) ...[
+                  const SizedBox(height: AppSpace.sectionGap),
+                  const SectionHeader(title: '관계', trailingText: '눌러서 자세히'),
+                  RelationStrip(c: c, cast: cast),
+                ],
+
+                // 5. 오늘의 결정. 화면의 주인공.
+                const SizedBox(height: AppSpace.sectionGap),
+                const SectionHeader(title: '오늘 뭘 할까'),
+                for (var i = 0; i < c.config.actions.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpace.listGap),
+                  AppListRow(
+                    title: c.config.actions[i].name,
+                    subtitle: c.config.actions[i].desc,
+                    leading: _ActionThumb(id: c.config.actions[i].id),
+                    onTap: () => _start(context, c.config.actions[i]),
+                  ),
+                ],
+              ],
             ),
           ),
-          InkWell(
-            onTap: () => StatGuideSheet.show(context),
-            child: StatBars(state: s, compact: true),
-          ),
-
-          // 4. 관계. 사람 수와 상관없이 한 줄, 누르면 상세.
-          if (cast.isNotEmpty) ...[
-            const SizedBox(height: AppSpace.sectionGap),
-            const SectionHeader(title: '관계', trailingText: '눌러서 자세히'),
-            RelationStrip(c: c, cast: cast),
-          ],
-
-          // 5. 오늘의 결정. 화면의 주인공.
-          const SizedBox(height: AppSpace.sectionGap),
-          const SectionHeader(title: '오늘 뭘 할까'),
-          for (var i = 0; i < c.config.actions.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpace.listGap),
-            AppListRow(
-              title: c.config.actions[i].name,
-              subtitle: c.config.actions[i].desc,
-              leading: _ActionGlyph(id: c.config.actions[i].id),
-              onTap: () => _start(context, c.config.actions[i]),
-            ),
-          ],
         ],
       ),
-      bottomNavigationBar: const BannerSlot(),
     );
   }
+
+  Future<void> _openStatGuide(BuildContext context) =>
+      StatGuideSheet.show(context, actions: c.config.actions);
 
   Future<void> _start(BuildContext context, DayAction action) async {
     final ok = await c.startDay(action);
@@ -195,35 +213,31 @@ class _ActionScreenState extends State<ActionScreen> {
     // 하트가 비었다. 다그치지 않고 "오늘은 여기까지" 로 쉬어 가게 한다. 1차 동작은
     // 기다리기이고 광고는 조용한 2차 선택지다 — 광고를 저절로 띄우지 않는다.
     // 측정(heart_empty)은 컨트롤러 startDay 가 남긴다.
-    final watch = await showAppDialog<bool>(
+    // 광고는 다이얼로그를 닫기 전에 부른다 — 닫고 나서 부르면 그 8초 동안 행동 목록이
+    // 살아 있어 다른 행동이 눌린다. 대기 중에는 스피너 + 기다릴게요 잠금, 실패하면
+    // 다이얼로그 안에 한 줄(모달 위에서는 스낵바가 가린다).
+    final watched = await showAppDialog<bool>(
       context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(heartEmptyTitle),
-        content: Text(keepAll(heartEmptyBody(c.secondsToNextHeart))),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.play_circle_outline, size: 18),
-            label: const Text('광고 보고 하트 받기'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('기다릴게요'),
-          ),
-        ],
+      builder: (ctx) => RewardedBusyScope(
+        child: AlertDialog(
+          title: const Text(heartEmptyTitle),
+          content: Text(keepAll(heartEmptyBody(c.secondsToNextHeart))),
+          actions: [
+            RewardedButton(
+              placement: 'heart_action',
+              label: '광고 보고 하트 받기',
+              inline: true,
+              onEarned: () => Navigator.pop(ctx, true),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('기다릴게요'),
+            ),
+          ],
+        ),
       ),
     );
-    if (watch != true) return;
-    final earned = await AdManager.instance.showRewarded(
-      placement: 'heart_action',
-    );
-    if (earned) {
-      await c.grantHeart();
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(keepAll('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))),
-      );
-    }
+    if (watched == true) await c.grantHeart();
   }
 }
 
@@ -234,6 +248,80 @@ const heartEmptyTitle = '오늘은 여기까지';
 String heartEmptyBody(int seconds) {
   final when = seconds <= 0 ? '곧' : '${(seconds + 59) ~/ 60}분 뒤';
   return '하트는 $when 1개 찬다. 쉬었다 와도 이야기는 그대로 기다리고 있어요.';
+}
+
+/// 행동 목록 왼쪽의 장소 썸네일. 그림(`assets/scenes/<행동 id>`, 3:2, 인물 없음)이 있으면
+/// 둥근 3:2 사진 위 왼쪽 아래에 작은 아이콘 배지를 얹고, 없거나 못 읽으면 아이콘 원
+/// ([_ActionGlyph]) 그대로다. 배지가 남아 있어서 그림만으로 뜻을 전하지 않는다.
+class _ActionThumb extends StatelessWidget {
+  final String id;
+  const _ActionThumb({required this.id});
+
+  /// 썸네일 폭. 높이는 3:2 로 48 — 행 최소 높이 64 안에 여백 8 씩 들어간다.
+  static const double width = 72;
+
+  @override
+  Widget build(BuildContext context) => SceneScope(
+    builder: (context, registry) {
+      final path = SceneImages.forAction(id, registry: registry);
+      if (path == null) return _ActionGlyph(id: id);
+      final scheme = context.scheme;
+      return ExcludeSemantics(
+        child: SizedBox(
+          width: width,
+          height: width / AppSize.sceneAspect,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  borderRadius: AppRadius.rSm,
+                ),
+                child: ClipRRect(
+                  borderRadius: AppRadius.rSm,
+                  child: SceneImage(
+                    path: path,
+                    width: width,
+                    bundle: registry.bundle,
+                    fallback: (_) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+              // 그림 가장자리가 행 배경에 번지지 않게 머리카락 테두리.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.rSm,
+                  border: Border.all(
+                    color: scheme.outlineVariant,
+                    width: AppBorderWidth.hairline,
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: AppSpace.xs,
+                bottom: AppSpace.xs,
+                child: Container(
+                  width: AppSpace.xl,
+                  height: AppSpace.xl,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _ActionGlyph.iconOf(id),
+                    size: AppSpace.md,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// 행동 목록 왼쪽의 아이콘 원. 여섯 줄이 글자만으로 늘어서지 않게 잡아 준다.
@@ -251,6 +339,8 @@ class _ActionGlyph extends StatelessWidget {
     'friends': Icons.groups_outlined,
   };
 
+  static IconData iconOf(String id) => _icons[id] ?? Icons.wb_twilight;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
@@ -263,7 +353,7 @@ class _ActionGlyph extends StatelessWidget {
         borderRadius: AppRadius.rPill,
       ),
       child: Icon(
-        _icons[id] ?? Icons.wb_twilight,
+        iconOf(id),
         size: AppSpace.xl,
         color: scheme.onSurfaceVariant,
       ),

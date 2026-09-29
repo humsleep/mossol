@@ -39,6 +39,9 @@ Map<String, dynamic> legacySave({int day = 12, int hearts = 3, int? lastHeartMs}
     'rouletteDay',
     'combo',
     'lastCliffhanger',
+    // 반복 감쇠(GameConfig.repeatWeightPercent)의 '본 횟수'. 없으면 감쇠가 꺼진
+    // 것과 같아 예전 세이브가 그대로 굴러간다(test/engine_fixes_test.dart G).
+    'seenCount',
   ]) {
     j.remove(k);
   }
@@ -147,6 +150,46 @@ void main() {
         s.endings.add('x');
       },
     );
+
+    test('freeInputs: 없으면 빈 목록, 왕복 안정, 틀린 항목 건너뜀, 최근 30건만', () {
+      // 예전 세이브(키 없음) → 빈 목록. 다시 저장하면 빈 배열이 붙는다(추가만).
+      final legacy = GameState.fromJson(legacySave());
+      expect(legacy.freeInputs, isEmpty);
+      expect(legacy.toJson()['freeInputs'], isEmpty);
+
+      final s = GameState.fromJson(legacySave());
+      for (var i = 0; i < 35; i++) {
+        s.addFreeInput(
+          FreeInputEntry(eventId: 'ev$i', choiceIndex: i % 3, text: '문장 $i', day: 1 + i, auto: i.isEven),
+        );
+      }
+      expect(s.freeInputs.length, GameState.maxFreeInputs);
+      expect(s.freeInputs.first.eventId, 'ev5', reason: '오래된 것부터 버린다');
+      final j = s.toJson();
+      expect(j['freeInputs'], isA<List>());
+      expect((j['freeInputs'] as List).first, {'e': 'ev5', 'i': 2, 't': '문장 5', 'd': 6, 'a': 0});
+      final again = GameState.fromJson(jsonDecode(jsonEncode(j)) as Map<String, dynamic>);
+      expect(again.toJson(), j);
+      expect(again.freeInputs.last.text, '문장 34');
+      expect(again.freeInputs.last.auto, isTrue);
+
+      // 형식이 틀린 항목은 건너뛰고 나머지는 읽는다. 80자 넘는 원문은 자른다.
+      final mixed = GameState.fromJson(
+        legacySave()
+          ..['freeInputs'] = [
+            {'e': 'a', 'i': 0, 't': 'x', 'd': 1, 'a': 1},
+            {'e': 3, 'i': 0, 't': 'x'},
+            'junk',
+            null,
+            {'e': 'b', 'i': 1.0, 't': '가' * 100, 'a': true},
+          ],
+      );
+      expect(mixed.freeInputs.length, 2);
+      expect(mixed.freeInputs[0].auto, isTrue);
+      expect(mixed.freeInputs[1].day, 0);
+      expect(mixed.freeInputs[1].auto, isTrue);
+      expect(mixed.freeInputs[1].text.length, FreeInputEntry.maxChars);
+    });
 
     test('dayDelta 안의 null 값·빈 맵은 빈 정산으로 읽힌다', () {
       final s = GameState.fromJson(
@@ -348,6 +391,7 @@ void main() {
         mbti: 'ENTP',
         mbtiAsked: true,
         lastEndingId: 'forever_solo',
+        freeInputSends: 7,
       );
       await MetaService().save(m);
       final r = await MetaService().load();
@@ -364,6 +408,101 @@ void main() {
         expect(r.streak, 1, reason: bad);
         expect(m.lastCheckInDate, '2026-09-18');
       }
+    });
+  });
+
+  // 스토리 JSON 의 그림 필드(docs/overhaul/06_scene_plan.md §4)는 **추가만** 한다.
+  // 예전 JSON(필드 없음)이 지금과 똑같이 읽히고, 새 필드는 그대로 왕복해야 한다.
+  group('스토리 JSON: 그림 필드는 추가만', () {
+    Map<String, dynamic> eventJson({bool withImages = false}) => {
+      'id': 'mo_seoyeon_call_eleven',
+      'layer': 'route',
+      'character': 'seoyeon',
+      'format': 'call',
+      'title': '11시의 전화',
+      if (withImages) 'image': 'assets/scenes/공유.webp',
+      'lines': [
+        {
+          'who': 'them',
+          'text': '자, 아야?',
+          if (withImages) 'sticker': 'seoyeon_shy',
+        },
+        {
+          'who': 'them',
+          'photo': {
+            'icon': 'night',
+            'caption': '창밖 야경',
+            if (withImages) 'image': 'assets/photos/mo_x_0.webp',
+          },
+        },
+      ],
+      'choices': [
+        {'text': '응', 'decline': true},
+      ],
+    };
+
+    test('없으면 null — 지금까지의 이벤트·줄·사진과 같다', () {
+      final ev = StoryEvent.fromJson(eventJson());
+      expect(ev.image, isNull);
+      expect(ev.lines.first.sticker, isNull);
+      expect(ev.lines.last.photo!.image, isNull);
+      // 나머지는 그대로 읽힌다.
+      expect(ev.title, '11시의 전화');
+      expect(ev.isCall, isTrue);
+      expect(ev.lines.last.photo!.icon, 'night');
+      expect(ev.lines.last.photo!.caption, '창밖 야경');
+    });
+
+    test('있으면 그대로 읽고, 이름 치환·MBTI 거르기를 거쳐도 남는다', () {
+      final ev = StoryEvent.fromJson(eventJson(withImages: true));
+      expect(ev.image, 'assets/scenes/공유.webp');
+      expect(ev.lines.first.sticker, 'seoyeon_shy');
+      expect(ev.lines.last.photo!.image, 'assets/photos/mo_x_0.webp');
+
+      // mapText(이름 치환)는 글자만 바꾼다.
+      final shown = ev.mapText((t) => t.replaceAll('아야', '이름'));
+      expect(shown.image, ev.image);
+      expect(shown.lines.first.sticker, 'seoyeon_shy');
+      expect(shown.lines.last.photo!.image, 'assets/photos/mo_x_0.webp');
+      expect(shown.lines.first.text, '자, 이름?');
+
+      // withContent(MBTI 거르기)도 그림을 잃지 않는다.
+      final filtered = shown.withContent(
+        lines: shown.lines,
+        choices: shown.choices,
+        hint: null,
+      );
+      expect(filtered.image, ev.image);
+    });
+
+    test('엔딩: image 는 선택, 없으면 null', () {
+      const base = {'id': 'e1', 'name': '엔딩', 'tier': 'bad'};
+      expect(Ending.fromJson({...base}).image, isNull);
+      expect(
+        Ending.fromJson({...base, 'image': 'assets/endings/x.webp'}).image,
+        'assets/endings/x.webp',
+      );
+    });
+
+    test('실제 스토리 JSON 의 그림 필드는 행동 장면의 장소 배경뿐이다', () {
+      final b = testBundle();
+      // 행동 장면(events_action.json)만 `assets/scenes/<행동 id>` 를 적는다 —
+      // 그 아침 장면이 장소 그림으로 열린다. 나머지는 규약 경로(`<이벤트 id>`)를 쓴다.
+      for (final e in b.events) {
+        if (e.trigger.action.isEmpty) {
+          expect(e.image, isNull, reason: e.id);
+        } else {
+          expect(e.image, 'assets/scenes/${e.trigger.action.first}');
+        }
+      }
+      expect(b.endings.every((e) => e.image == null), isTrue);
+    });
+
+    test('세이브에는 아무것도 추가되지 않는다', () {
+      final b = testBundle();
+      final s = GameState.fresh(b.config, b.characters, seed: 1, nowMs: 0);
+      expect(s.toJson().keys.where((k) => k.contains('image')), isEmpty);
+      expect(s.toJson().keys.where((k) => k.contains('sticker')), isEmpty);
     });
   });
 }

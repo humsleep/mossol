@@ -182,6 +182,35 @@ abstract final class AppSpace {
   static const double minTouch = 44;
 }
 
+/// 4 배수 고정 치수. 간격([AppSpace])이 아니라 요소의 크기다(DESIGN_SYSTEM §1.11).
+/// `CharacterAvatar.size` 는 `avatar*` 네 값만 받는다.
+abstract final class AppSize {
+  /// 홈 신호 줄.
+  static const double avatarSm = 32;
+
+  /// 채팅 아바타, 알림 카드, 통화 헤더.
+  static const double avatarMd = 40;
+
+  /// 캐스트 카드(320pt).
+  static const double avatarLg = 56;
+
+  /// 캐스트 카드.
+  static const double avatarXl = 72;
+
+  /// 프로필 크게 보기(§2.15). 아바타를 눌렀을 때 Hero 가 날아가 앉는 크기다.
+  /// 320pt 화면에서도 좌우 여백 20 을 두고 들어간다(200 + 40 + 40 = 280).
+  static const double avatarHero = 200;
+
+  /// 채팅 스티커 한 변.
+  static const double sticker = 120;
+
+  /// 장면 삽화·엔딩 히어로의 가로세로비(3:2, 06 §1).
+  static const double sceneAspect = 3 / 2;
+
+  /// AdSize.banner 높이.
+  static const double banner = 50;
+}
+
 /// 자주 쓰는 EdgeInsets 묶음.
 abstract final class AppInsets {
   static const screen = EdgeInsets.symmetric(
@@ -273,6 +302,17 @@ abstract final class AppMotion {
   static const Duration dSlow = Duration(milliseconds: 320);
   static const Duration dSheet = Duration(milliseconds: 380);
 
+  /// 장면 삽화 켄번즈(06 §1). 8초에 걸쳐 아주 천천히 확대한다 — 눈에 띄면 실패다.
+  static const Duration dScene = Duration(seconds: 8);
+
+  /// 진행 막대([AppProgressBar])가 한 칸 흐르는 데 쓸 수 있는 최대 시간.
+  ///
+  /// 막대는 값이 바뀐 **간격만큼** 흐른다 — 100ms 마다 밀면 100ms 동안, 1초마다 밀면
+  /// 1초 동안. 그래서 어느 박자로 밀든 이음매가 없고, 부모가 이미 프레임마다 값을
+  /// 밀고 있으면(간격이 한 프레임 이하) 그대로 따라간다. 이 상한은 "한참 뒤에 한 번"
+  /// 바뀌는 막대(앨범 수집률)가 몇 초에 걸쳐 기어가지 않게 막는 뚜껑이다.
+  static const Duration dGaugeMax = Duration(milliseconds: 1000);
+
   /// 기본 진입·퇴장.
   static const Curve standard = Curves.easeOutCubic;
 
@@ -294,6 +334,9 @@ abstract final class AppMotion {
   static Duration base(BuildContext context) => _scaled(context, dBase);
   static Duration slow(BuildContext context) => _scaled(context, dSlow);
   static Duration sheet(BuildContext context) => _scaled(context, dSheet);
+
+  /// 켄번즈. 동작 줄이기면 0 — 그림이 정지한다.
+  static Duration scene(BuildContext context) => _scaled(context, dScene);
 
   /// 반복 애니메이션(룰렛 회전, 스윕바)은 축소 설정에서 멈춰야 한다.
   /// 게임 판정에 필요한 연출은 멈추지 말고 커브만 단순하게 바꾼다.
@@ -333,6 +376,27 @@ abstract final class AppTypography {
   /// 표·타이머·스탯처럼 자리수가 고정돼야 하는 숫자.
   static TextStyle tabular(TextStyle base) =>
       base.copyWith(fontFeatures: _tab);
+
+  /// 워드마크(앱 이름) 전용. **타이틀 화면(§2.16) 한 곳에서만** 쓴다.
+  ///
+  /// 왜 별도 스타일인가: 타이틀의 `모쏠 탈출기` 가 `displaySmall` 이었다 —
+  /// 본문·홈 헤더와 **같은 서체·같은 굵기·같은 자간**이라 "글자를 크게 키운 UI 텍스트"
+  /// 로 읽혔다(docs/review/11_polish_verdict.md 7위: "로고 타이포도, 레터링도, 어떤
+  /// 처리도 없다"). 굵기는 더 못 늘리고(§6 — 800/900 금지) 로고 이미지는 없으니,
+  /// 쓸 수 있는 수단은 **크기 · 자간 · 행간** 셋이다:
+  /// - 52 — 앱에서 가장 큰 글자(그다음이 날짜 카드 `displayLarge` 40)라 이 한 낱말이
+  ///   화면의 주인공이 된다.
+  /// - 자간 −3.0 — §1.7 "큰 글자는 자간을 좁힌다" 를 로고 수준까지 끌고 간다.
+  ///   `displayLarge` 의 −1.0 은 문장용이고, 낱말 하나는 더 붙어야 한 덩어리로 보인다.
+  /// - 행간 1.0 — 한 줄짜리 낱말에 1.15 의 위아래 여백이 붙으면 묶음이 떠 보인다.
+  ///
+  /// 색은 넘기는 [base] 를 따른다(대비는 §4.2 그대로).
+  static TextStyle wordmark(TextStyle base) => base.copyWith(
+    fontSize: 52,
+    height: 1.0,
+    letterSpacing: -3.0,
+    fontWeight: FontWeight.w700,
+  );
 
   static TextTheme textTheme(ColorScheme scheme) {
     final onSurface = scheme.onSurface;

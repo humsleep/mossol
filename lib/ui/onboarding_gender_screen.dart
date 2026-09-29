@@ -320,7 +320,7 @@ class _TypingTeaser extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-      const CharacterAvatar(name: '', mystery: true, size: 56),
+      const CharacterAvatar(name: '', mystery: true, size: AppSize.avatarLg),
       const SizedBox(width: AppSpace.sm),
       Container(
         padding: AppInsets.bubble,

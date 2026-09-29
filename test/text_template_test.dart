@@ -1,11 +1,73 @@
 // 이름 자리표시자와 한국어 조사. 규격: lib/engine/text_template.dart, docs/NAME_GUIDE.md.
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/player_name.dart';
+import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/engine/text_template.dart';
 import 'package:mossol/ui/keep_all.dart';
 
 String f(String s, [String? name]) => TextTemplate.fill(s, name: name);
+
+/// `{top}` 해소 규칙을 보는 최소 번들. 실제 스토리 데이터에 기대지 않는다.
+/// 서연·다은은 characters.json 순서대로 들어가고(동점 규칙 확인용), 정우는 남성 쪽이다.
+StoryBundle _topBundle() => StoryBundle.fromJsonStrings(
+  config: jsonEncode(const {
+    'totalDays': 10,
+    'initialStats': {'charm': 10},
+    'actions': [
+      {
+        'id': 'act',
+        'name': '행동',
+        'effects': {
+          'stats': {'charm': 1},
+        },
+      },
+    ],
+  }),
+  characters: jsonEncode(const [
+    {'id': 'seoyeon', 'name': '서연', 'gender': 'f', 'role': 'senior'},
+    {'id': 'daeun', 'name': '다은', 'gender': 'f', 'role': 'parttime'},
+    {'id': 'jeongwoo', 'name': '정우', 'gender': 'm', 'role': 'senior'},
+  ]),
+  events: [
+    jsonEncode(const [
+      {
+        'id': 'd_date',
+        'layer': 'daily',
+        'title': '데이트',
+        'choices': [
+          {
+            'text': '간다',
+            'effects': {
+              'affection': {'@top': 1},
+            },
+          },
+        ],
+      },
+      {
+        'id': 'daeun_r00',
+        'layer': 'route',
+        'character': 'daeun',
+        'title': '알바 첫날',
+        'choices': [
+          {
+            'text': '인사한다',
+            'effects': {
+              'affection': {'*': 1},
+            },
+          },
+        ],
+      },
+    ]),
+  ],
+  endings: jsonEncode(const [
+    {'id': 'def', 'name': '기본', 'priority': 0, 'default': true, 'when': {}},
+  ]),
+);
 
 void main() {
   group('받침 유무', () {
@@ -250,5 +312,126 @@ void main() {
   test('말줄임 바로 뒤 호격이 빠지면 빈칸 없이 붙인다', () {
     expect(TextTemplate.fill('…{name|아야}, 자?'), '…자?');
     expect(TextTemplate.fill('…{name|아야}, 자?', name: '민석'), '…민석아, 자?');
+  });
+
+  // -------------------------------------------------------------------------
+  // {top} — 호감 1위 이름. 규칙 전문은 lib/engine/text_template.dart 의 해소 규칙.
+  group('{top} 자리표시자', () {
+    late StoryBundle bundle;
+    late EventEngine engine;
+
+    setUpAll(() {
+      bundle = _topBundle();
+      engine = EventEngine(bundle);
+    });
+
+    GameState fresh() =>
+        GameState.fresh(bundle.config, bundle.characters, seed: 1, nowMs: 0);
+
+    String fillFor(String text, GameState s, {StoryEvent? event}) =>
+        TextTemplate.fill(text, name: '민수', top: engine.topNameFor(s, event: event));
+
+    StoryEvent ev(String id) => bundle.eventById[id]!;
+
+    test('조사·대체어 규칙은 {name} 과 같다', () {
+      String t(String s, [String? top]) => TextTemplate.fill(s, top: top);
+      expect(t('{top}', '다은'), '다은');
+      expect(t('{top|이랑랑} 저녁', '다은'), '다은이랑 저녁');
+      expect(t('{top|이랑랑} 저녁', '서연'), '서연이랑 저녁');
+      expect(t('{top|은는} 답이 없다', '다은'), '다은은 답이 없다');
+      expect(t('{top|아야}, 자?', '정우'), '정우야, 자?');
+      expect(t('{top|에게}', '다은'), '{top|에게}', reason: '모르는 조사는 그대로 둔다');
+      // 세 번째 칸은 1위가 없을 때 쓸 말.
+      expect(t('{top|아야|자기}'), '자기야');
+      expect(t('{top|아야|자기}', '다은'), '다은아');
+    });
+
+    test('보통: 호감 1위 이름이 들어간다', () {
+      final s = fresh();
+      s.rel('daeun').affection = 12;
+      s.rel('seoyeon').affection = 7;
+      expect(engine.topNameFor(s), '다은');
+      expect(
+        fillFor('{top|과와} 저녁을 먹었다', s, event: ev('d_date')),
+        '다은과 저녁을 먹었다',
+      );
+      // 1위가 바뀌면 이름도 따라 바뀐다.
+      s.rel('seoyeon').affection = 20;
+      expect(fillFor('{top|과와} 저녁을 먹었다', s), '서연과 저녁을 먹었다');
+    });
+
+    test('동점: `@top` 효과가 고르는 사람과 같은 사람', () {
+      final s = fresh();
+      s.rel('seoyeon').affection = 9;
+      s.rel('daeun').affection = 9;
+      // 화면(`{top}`)과 효과(`@top`)가 엇갈리면 안 된다 — 같은 함수를 쓰는지 확인한다.
+      final byEffect = engine.topCharacter(s);
+      expect(byEffect, 'seoyeon', reason: 'characters.json 에서 앞선 쪽');
+      expect(engine.topNameFor(s), bundle.characterById[byEffect]!.name);
+      expect(fillFor('{top|이랑랑} 있었다', s), '서연이랑 있었다');
+    });
+
+    test('D+1 호감 0: 그 이벤트가 지목한 캐릭터 → 없으면 중립 명사', () {
+      final s = fresh();
+      expect(s.day, 1);
+      expect(engine.topCharacter(s), isNull, reason: '전원 호감 0');
+      // 상대가 정해진 이벤트(루트·모먼트)는 그 상대.
+      expect(engine.topNameFor(s, event: ev('daeun_r00')), '다은');
+      expect(fillFor('{top|과와} 마주쳤다', s, event: ev('daeun_r00')), '다은과 마주쳤다');
+      // 캐릭터가 없는 일상이면 중립 명사. 파일 첫 번째 캐릭터(서연)를 넣지 않는다.
+      expect(engine.topNameFor(s, event: ev('d_date')), isNull);
+      final line = fillFor('{top|과와} 마주쳤다', s, event: ev('d_date'));
+      expect(line, '${TextTemplate.topFallback}과 마주쳤다');
+      expect(line, isNot(contains('서연')));
+      // 호격은 부를 이름이 없으므로 통째로 지운다({name|아야} 와 같다).
+      expect(TextTemplate.fill('{top|아야}, 자?'), '자?');
+    });
+
+    test('모르는 캐릭터: id 를 화면에 내지 않고 다음 단계로 내려간다', () {
+      final s = fresh();
+      // characters.json 에 없는 사람(예: 대본에만 있는 준호)의 호감이 1위가 된 경우.
+      s.rel('junho').affection = 30;
+      expect(s.relations['junho']!.affection, 30);
+      expect(engine.topCharacter(s), 'junho');
+      expect(engine.topNameFor(s), isNull, reason: 'id 를 그대로 쓰지 않는다');
+      expect(fillFor('{top|과와} 저녁', s, event: ev('d_date')), '그 사람과 저녁');
+      expect(engine.topNameFor(s, event: ev('daeun_r00')), '다은');
+    });
+
+    test('말풍선 머리 이름도 치환된다 — 토큰이 그대로 찍히지 않는다', () {
+      // 지문은 "다은이한테" 라고 하면서 말풍선 머리에는 {top} 이 찍히던 버그.
+      const line = Line(who: 'them', name: '{top}', text: '{top|아야}, 자?');
+      final ev = StoryEvent(
+        id: 'x',
+        title: '{top|이가} 부른다',
+        layer: EventLayer.daily,
+        lines: const [line],
+        choices: const [Choice(text: '응')],
+      );
+      // ① 치환을 돌릴지 정하는 검사가 name 만 있는 줄도 본다.
+      final nameOnly = StoryEvent(
+        id: 'y',
+        title: '전화',
+        layer: EventLayer.daily,
+        lines: const [Line(who: 'them', name: '{top}', text: '어디야')],
+        choices: const [Choice(text: '응')],
+      );
+      final texts = nameOnly.displayTexts.map((e) => e.$2).join('\n');
+      expect(TextTemplate.hasToken(texts), isTrue);
+
+      // ② 실제 치환.
+      final out = ev.mapText((t) => TextTemplate.fill(t, top: '다은'));
+      expect(out.lines.first.name, '다은');
+      expect(out.lines.first.text, '다은아, 자?');
+      expect(out.title, '다은이 부른다');
+      expect(out.lines.first.name, isNot(contains('{')));
+    });
+
+    test('길이 검사(maxLength)가 {top} 의 최악을 본다', () {
+      // 1위 없음('그 사람', 4글자)이 세 글자 이름보다 길다.
+      expect(TextTemplate.maxLength('{top}'), TextTemplate.topFallback.length);
+      expect(TextTemplate.problems('{top|이랑랑}'), isEmpty);
+      expect(TextTemplate.problems('{top|몰라}'), isNotEmpty);
+    });
   });
 }

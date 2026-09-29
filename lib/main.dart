@@ -1,12 +1,19 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart'
-    show LicenseEntryWithLineBreaks, LicenseRegistry, kDebugMode, kReleaseMode;
+    show
+        LicenseEntryWithLineBreaks,
+        LicenseRegistry,
+        kDebugMode,
+        kIsWeb,
+        kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'ads/ad_manager.dart';
 import 'analytics/analytics.dart';
+import 'audio/sfx_service.dart';
 import 'debug/debug_gallery.dart';
 import 'engine/meta_service.dart';
 import 'engine/save_service.dart';
@@ -15,29 +22,36 @@ import 'game_controller.dart';
 import 'minigames/minigame.dart';
 import 'minigames/registry.dart';
 import 'ui/action_screen.dart';
+import 'ui/day_card.dart';
 import 'ui/design_system.dart';
 import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/intro_screen.dart';
 import 'ui/portraits.dart';
+import 'ui/scene_registry.dart';
 import 'ui/summary_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
   registerPretendardLicense();
+  registerSfxLicense();
   registerMinigames();
+  installSfxService();
   try {
     // 측정. GoogleService-Info.plist 가 없으면(Firebase 프로젝트를 아직 안 만들었으면)
     // 조용히 디버그 백엔드로 남는다 — 던지지 않는다. 스토리 읽기와 나란히 돈다.
     final analytics = Analytics.init();
     // 초상화 목록(AssetManifest)은 스토리와 나란히 읽는다. 실패해도 던지지 않는다(이니셜로 대체).
     final portraits = PortraitRegistry.load();
+    // 장면 삽화·사진·스티커·엔딩 목록도 같은 매니페스트에서. 없으면 그림 없는 화면 그대로.
+    final scenes = SceneRegistry.load();
     final bundle = await StoryBundle.loadFromAssets(
       knownMinigames: minigameIds,
     );
     await portraits;
+    await scenes;
     await analytics;
     if (kDebugMode && kDebugGallery) {
       // QA 용. `--dart-define=MOSSOL_DEBUG_GALLERY=true` 로 미니게임·엔딩 갤러리에서 시작.
@@ -47,8 +61,11 @@ Future<void> main() async {
     }
     final controller = GameController(bundle: bundle, save: SaveService());
     await controller.init();
-    unawaited(AdManager.instance.init());
-    runApp(MossolApp(controller: controller, intro: true));
+    // 첫 실행이면 광고·ATT 를 인트로가 끝난 뒤에 켠다. 앱을 열자마자 추적 동의 팝업이
+    // 태현의 첫 문자를 덮으면 연출이 죽고, 무슨 앱인지도 모르는 채 답하게 된다.
+    // 인트로 동안에는 광고가 한 장도 안 나오므로 미뤄도 잃는 것이 없다.
+    if (!controller.shouldShowIntro) unawaited(AdManager.instance.init());
+    runApp(MossolApp(controller: controller));
   } catch (e, stack) {
     // 여기서 죽으면 유저는 흰 화면만 본다. 이유를 보여 주고 빠져나갈 길을 준다.
     debugPrint('시작 실패: $e\n$stack');
@@ -65,6 +82,24 @@ void registerPretendardLicense() {
     );
     yield LicenseEntryWithLineBreaks(const ['Pretendard'], text);
   });
+}
+
+/// 효과음 출처(assets/sfx/LICENSES.md)를 같은 라이선스 페이지에 올린다.
+void registerSfxLicense() {
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString('assets/sfx/LICENSES.md');
+    yield LicenseEntryWithLineBreaks(const ['효과음'], text);
+  });
+}
+
+/// 실기기(iOS·Android)에서만 audioplayers 구현을 끼운다. 웹·테스트는 [NoopSfxService]
+/// 그대로. 컨트롤러 init 이 메타의 토글을 여기에 밀어 넣으므로 그보다 먼저 부른다.
+void installSfxService() {
+  if (kIsWeb || !(Platform.isIOS || Platform.isAndroid)) return;
+  final service = AudioSfxService();
+  SfxService.instance = service;
+  // 프리로드는 스토리 읽기와 나란히. 실패해도 던지지 않는다(소리만 없다).
+  unawaited(service.init());
 }
 
 /// 처리되지 않은 오류가 조용히 사라지지 않게 한다.
@@ -160,6 +195,43 @@ class _MossolAppState extends State<MossolApp> {
   late bool _showIntro = widget.intro;
 
   @override
+  State<MossolApp> createState() => _MossolAppState();
+}
+
+class _MossolAppState extends State<MossolApp> {
+  GameController get controller => widget.controller;
+  Phase? _lastPhase;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastPhase = controller.phase;
+    controller.addListener(_onPhase);
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(_onPhase);
+    super.dispose();
+  }
+
+  /// 정산·엔딩 진입음. SummaryScreen 이 Stateless 라 화면이 아니라 phase 변화를 듣는다
+  /// (docs/overhaul/05_audio_haptics.md §1 #10·#11). 엔딩은 다른 소리를 전부 멈춘다.
+  void _onPhase() {
+    final phase = controller.phase;
+    if (phase == _lastPhase) return;
+    _lastPhase = phase;
+    switch (phase) {
+      case Phase.summary:
+        SfxService.instance.cue(Sfx.summary);
+      case Phase.ending:
+        SfxService.instance.cue(Sfx.ending);
+      default:
+        break;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
     return MaterialApp(
@@ -170,28 +242,21 @@ class _MossolAppState extends State<MossolApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: Builder(
-        builder: (context) => AnimatedSwitcher(
-          duration: AppMotion.sheet(context),
-          switchInCurve: AppMotion.standard,
-          child: _showIntro
-              ? IntroScreen(
-                  key: const ValueKey('intro'),
-                  cast: controller.bundle.characters,
-                  onStart: () => setState(() => _showIntro = false),
-                )
-              : ListenableBuilder(
-                  key: const ValueKey('game'),
-                  listenable: controller,
-                  builder: (context, _) => switch (controller.phase) {
-                    Phase.home => HomeScreen(c: controller),
-                    Phase.action => ActionScreen(c: controller),
-                    Phase.event => EventScreen(c: controller),
-                    Phase.summary => SummaryScreen(c: controller),
-                    Phase.ending => EndingScreen(c: controller),
-                  },
-                ),
-        ),
+      home: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => switch (controller.phase) {
+          // 첫 실행에는 홈 대신 인트로(태현의 첫 문자)를 세운다. 인트로가 끝나면
+          // 곧바로 첫날이라 홈은 두 번째 세션부터 보인다(00_VERDICT §3).
+          Phase.home when controller.shouldShowIntro => IntroScreen(
+            c: controller,
+          ),
+          Phase.home => HomeScreen(c: controller),
+          Phase.dayStart => DayTransitionScreen(c: controller),
+          Phase.action => ActionScreen(c: controller),
+          Phase.event => EventScreen(c: controller),
+          Phase.summary => SummaryScreen(c: controller),
+          Phase.ending => EndingScreen(c: controller),
+        },
       ),
     );
   }

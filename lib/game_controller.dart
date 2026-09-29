@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import 'analytics/analytics.dart';
+import 'audio/sfx_service.dart';
 import 'engine/attendance.dart';
 import 'engine/effects.dart';
 import 'engine/ending_resolver.dart';
 import 'engine/event_engine.dart';
+import 'engine/free_input.dart';
 import 'engine/mbti.dart';
 import 'engine/meta_service.dart';
 import 'engine/models.dart';
@@ -20,8 +22,77 @@ import 'engine/text_template.dart';
 export 'engine/attendance.dart' show CheckInResult, Attendance;
 export 'engine/signals.dart' show RelationShift;
 export 'engine/retention.dart' show NextRunSuggestion, TomorrowHint;
+export 'engine/free_input.dart'
+    show MatchResult, MatchDecision, ChoiceScore, FreeInputThresholds;
 
-enum Phase { home, action, event, summary, ending }
+/// 선택이 버튼에서 왔는지 자유 입력에서 왔는지(docs/overhaul/07_free_input.md §3.3).
+enum ChoiceSource { button, freeText }
+
+/// [dayStart] 는 날짜 전환 카드(docs/overhaul/02_game_loop.md §2). 저장하지 않는다 —
+/// 카드 도중 앱이 죽어도 세이브는 이미 마감 뒤 상태라 다음 실행이 `resume` 카드로 같은 아침을 낸다.
+enum Phase { home, dayStart, action, event, summary, ending }
+
+/// 날짜 카드 변형. `next` 는 정산 → 다음 날, `first` 는 새 회차 첫날, `resume` 은 이어하기.
+enum DayCardVariant { next, first, resume }
+
+/// 날짜 전환 카드가 담는 것(메모리 전용, 세이브 무관). 요일·날씨는 표현 전용이라 엔진에 없다.
+/// 규격: docs/overhaul/02_game_loop.md §2.2.
+@immutable
+class DayCard {
+  final DayCardVariant variant;
+  final int day;
+  final int run;
+  final int chapter;
+
+  /// 장의 첫날에만, config `chapterTitles` 가 있을 때. 아니면 null.
+  final String? chapterTitle;
+
+  /// '수요일' 처럼 "요일" 까지 붙은 문자열.
+  final String weekday;
+
+  /// '맑음' · '흐림' · '비' · '눈'.
+  final String weather;
+
+  /// 예고(정산의 `tomorrowHint` 를 마감 전에 옮겨 둔 것). 없으면 셋 다 null.
+  final String? hintCharacterId;
+  final String? hintName;
+  final String? hintPreview;
+
+  /// 밤사이 멀어진 사람 한 줄(이름 치환 끝). 없으면 null.
+  final String? overnight;
+
+  /// 새 회차 첫날의 "지난 판엔 …으로 끝났다". `first` 에만.
+  final String? previousRunLine;
+
+  const DayCard({
+    required this.variant,
+    required this.day,
+    required this.run,
+    required this.chapter,
+    required this.weekday,
+    required this.weather,
+    this.chapterTitle,
+    this.hintCharacterId,
+    this.hintName,
+    this.hintPreview,
+    this.overnight,
+    this.previousRunLine,
+  });
+
+  static const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+  /// 요일은 표현 전용: `(day - 1) % 7`. 1일째가 월요일.
+  static String weekdayFor(int day) => '${weekdays[(day - 1) % 7]}요일';
+
+  /// 날씨도 표현 전용: `stableSeed(seed, day, 'weather') % 100` → 0–54 맑음, 55–79 흐림,
+  /// 80–99 비. 5장(81일~)은 비 자리에 눈.
+  static String weatherFor(int seed, int day, int chapter) {
+    final r = EventEngine.stableSeed(seed, day, 'weather') % 100;
+    if (r < 55) return '맑음';
+    if (r < 80) return '흐림';
+    return chapter >= 5 ? '눈' : '비';
+  }
+}
 
 /// 홈이 세이브를 복원하지 않고도 그릴 수 있게 세이브 파일에서 뽑은 요약.
 /// 규격은 docs/HOME_REDESIGN.md §0.2. [GameController.saveSummary] 로 읽는다.
@@ -53,6 +124,9 @@ class SaveSummary {
   /// 캐릭터 id → 호감. [affectionOf] 로 읽는다. 이 회차에 등장하는 사람만 담긴다.
   final Map<String, int> affection;
 
+  /// 카운트다운 분기점(`config.countdownMilestones`). [countdownMilestone] 이 본다.
+  final List<int> countdownMilestones;
+
   /// 이 회차의 선호([Preference]). 홈 카드의 "1회차 · 여성 캐릭터" 와 사람들 줄이 쓴다.
   final String preference;
 
@@ -69,6 +143,7 @@ class SaveSummary {
     this.topSignal,
     this.overnight = const {},
     required this.affection,
+    this.countdownMilestones = GameConfig.defaultCountdownMilestones,
   });
 
   factory SaveSummary.fromState(
@@ -101,10 +176,26 @@ class SaveSummary {
       topSignal: best == null ? null : signals.todaySignal(s, best),
       overnight: Map.unmodifiable(overnightOf(s, characters)),
       affection: Map.unmodifiable(aff),
+      countdownMilestones: config.countdownMilestones,
     );
   }
 
   int affectionOf(String id) => affection[id] ?? 0;
+
+  /// 오늘 이후로 남은 날 수. 화면이 `D-{daysLeft}` 로 찍으면 대본(`m_week1` 의 "오늘로
+  /// D-93")과 어긋나지 않는다. 계산 근거는 [GameState.daysLeft] 의 주석에 있다.
+  ///
+  /// 왜 요약에까지 두는가: 정산·홈 화면은 [GameState] 를 받지 않고 이 요약만 받는다.
+  /// 100일 게임이 자기가 며칠째인지 100일 중 4~5번만 말한다는 실측
+  /// (docs/review/11_story_verdict.md §4-3)에 대한 엔진 쪽 답이 이 두 줄이다.
+  int get daysLeft {
+    final left = totalDays - day;
+    return left < 0 ? 0 : left;
+  }
+
+  /// 오늘이 카운트다운 분기점인지([GameConfig.countdownMilestones]).
+  /// 화면이 평소보다 세게(크게·색으로) 보여 줄 날을 고르는 데 쓴다.
+  bool get countdownMilestone => countdownMilestones.contains(daysLeft);
 
   /// [GameState.overnightShifts] 를 characters.json 순서로. 선호 밖 캐릭터는 뺀다.
   static Map<String, String> overnightOf(
@@ -155,6 +246,9 @@ class GameController extends ChangeNotifier {
 
   Phase phase = Phase.home;
   GameState? state;
+
+  /// [Phase.dayStart] 동안 화면이 읽는 카드. [endDay]·[newGame]·[continueGame] 이 채운다.
+  DayCard? dayCard;
   bool hasSave = false;
   List<String> endingAlbum = [];
 
@@ -262,10 +356,268 @@ class GameController extends ChangeNotifier {
 
   String? cliffhanger;
 
+  /// [cliffhanger] 를 남긴 이벤트의 층 순위([cliffhangerRank]). 아직 없으면 [_noCliffRank].
+  int _cliffRank = _noCliffRank;
+  static const _noCliffRank = 1 << 20;
+
+  /// 오늘의 클리프행어가 어느 층에서 왔는지(작을수록 센 층). 테스트·디버그용.
+  int get cliffhangerRank => _cliffRank;
+
+  /// 층 우선순위: 메인 > 위기 > 히든 > 루트 > 일상.
+  ///
+  /// 왜: 하루 큐가 메인 → 일상 → 루트 순이라 `if (ev.cliffhanger != null)` 로 덮어쓰면
+  /// **메인 줄기의 클리프행어를 뒤에 온 일상이 지운다**. 다음 날 아침 카드와 예고가
+  /// 보는 "어젯밤"은 그날 마지막 이벤트의 것뿐이었다(docs/review/07_story_flow.md (c)#12, S7).
+  /// 이제 가장 센 층의 것을 남기고, 같은 층이면 예전처럼 나중 것이 이긴다.
+  static int cliffhangerRankOf(EventLayer l) => switch (l) {
+    EventLayer.main => 0,
+    EventLayer.crisis => 1,
+    EventLayer.hidden => 2,
+    EventLayer.route => 3,
+    EventLayer.daily => 4,
+  };
+
+  /// [ev] 의 클리프행어를 오늘의 것으로 삼을지 정한다. 같은 층이면 나중 것이 이긴다.
+  void _noteCliffhanger(StoryEvent ev) {
+    if (ev.cliffhanger == null) return;
+    final rank = cliffhangerRankOf(ev.layer);
+    if (rank > _cliffRank) return;
+    cliffhanger = ev.cliffhanger;
+    _cliffRank = rank;
+  }
+
   /// 되돌리기용 스냅샷. 선택 직전 상태와 그 시점의 하루 합계.
   Map<String, dynamic>? _undoSnapshot;
   AppliedDelta? _undoDayDelta;
   bool undoUsedThisEvent = false;
+
+  // ---- 자유 입력(docs/overhaul/07_free_input.md §3) ----
+
+  final FreeInputMatcher _matcher = FreeInputMatcher();
+
+  /// 방금 선택이 어디서 왔는지. 결과가 없으면 의미 없다.
+  ChoiceSource lastChoiceSource = ChoiceSource.button;
+
+  /// 자유 입력이 자동 확정이었는지(피커·확인을 안 거침). 무료 되돌리기의 조건.
+  bool _lastFreeAuto = false;
+
+  /// 자유 입력으로 고른 뒤 내 말풍선에 남길 문장(메모리).
+  String? _playerText;
+
+  /// 이번 이벤트에서 보낸 자유 입력 수. [maxFreeSendsPerEvent] 에 닿으면 버튼만 남긴다(07 §4 #5).
+  int freeSendsThisEvent = 0;
+
+  /// 금칙어에 연속으로 걸린 횟수. [maxBlockedStreak] 이면 이 이벤트는 버튼만(07 §4 #2).
+  int _blockedStreak = 0;
+
+  /// 무료 되돌리기 뒤 재시도 — 자동 확정 금지(되돌리기 루프 방지, 07 §3.3).
+  bool _forcePickThisEvent = false;
+
+  /// 무료 되돌리기 뒤 입력창에 되살릴 문장. 화면이 한 번 읽고 [takeFreeRetryText] 로 비운다.
+  String? _freeRetryText;
+
+  static const maxFreeSendsPerEvent = 5;
+  static const maxBlockedStreak = 3;
+
+  /// 이번 이벤트에서 자유 입력을 더 받는지(전송 상한·금칙어 연속 제한).
+  bool get canFreeInput =>
+      current != null &&
+      freeSendsThisEvent < maxFreeSendsPerEvent &&
+      _blockedStreak < maxBlockedStreak;
+
+  /// 결과가 떠 있는 동안 내 말풍선에 쓸 문장. 자유 입력이면 친 문장, 버튼이면 null(화면이 선택지
+  /// 원문을 쓴다). 메모리 값이 없으면(화면 재생성·복원) 세이브의 [GameState.freeInputs] 에서
+  /// 같은 이벤트·같은 날 기록을 찾는다 — 07 §3.4.
+  String? get playerText {
+    if (lastOutcome == null) return null;
+    final t = _playerText;
+    if (t != null) return t;
+    final s = state;
+    final ev = current;
+    if (s == null || ev == null) return null;
+    for (final e in s.freeInputs.reversed) {
+      if (e.eventId == ev.id && e.day == s.day) return e.text;
+    }
+    return null;
+  }
+
+  /// 무료 되돌리기 뒤라 이번 이벤트는 피커만(자동 확정 금지). 지표 `via=forced` 의 근거.
+  bool get freePickForced => _forcePickThisEvent;
+
+  /// 무료 되돌리기 뒤 입력창에 되살릴 문장. 한 번 읽으면 비운다.
+  String? takeFreeRetryText() {
+    final t = _freeRetryText;
+    _freeRetryText = null;
+    return t;
+  }
+
+  /// 친 문장을 지금 보이는 선택지에 매핑한다(07 §1). 상태를 바꾸지 않는다 — 확정은 [confirmFree].
+  /// 전송 수·금칙어 연속·지표만 갱신한다. `empty` 는 전송으로 세지 않는다.
+  MatchResult chooseFree(String text) {
+    final ev = current!;
+    final visible = choices;
+    final r = _matcher.match(
+      text,
+      visible,
+      inCall: ev.isCall,
+      forcePick: _forcePickThisEvent,
+      say: say,
+      cacheKey: '${ev.id}|${visible.map((v) => v.index).join(',')}|$playerName|$runMbti',
+    );
+    switch (r.decision) {
+      case MatchDecision.empty:
+        analytics.freeInputBlock(
+          r.input == null || r.input!.text.compact.isEmpty && text.trim().isNotEmpty
+              ? 'emoji'
+              : 'empty',
+        );
+      case MatchDecision.blocked:
+        _blockedStreak++;
+        analytics.freeInputBlock('profanity');
+      default:
+        _blockedStreak = 0;
+        freeSendsThisEvent++;
+        _countFreeSend();
+        final top = r.top;
+        final i = r.input!;
+        analytics.freeInputSend(
+          layer: ev.layer.name,
+          ev: ev.id,
+          nCh: r.ranked.length,
+          lenB: i.lenBucket,
+          polite: i.polite,
+          q: i.question,
+          emo: _emoBits(i.emo),
+          confB: (r.s1 * 10).round(),
+          marginB: (r.margin * 10).round(),
+          topI: top?.index ?? -1,
+          topKind: top == null
+              ? 'none'
+              : top.view.locked
+              ? 'locked'
+              : top.view.choice.minigame != null
+              ? 'mg'
+              : top.view.choice.chance != null
+              ? 'chance'
+              : 'plain',
+          result: switch (r.decision) {
+            MatchDecision.auto => 'auto',
+            MatchDecision.confirm => 'confirm',
+            MatchDecision.locked => 'locked',
+            MatchDecision.hangUp => 'hangup',
+            _ => 'picker',
+          },
+        );
+        if (r.decision == MatchDecision.locked && top != null) {
+          analytics.freeInputLock(ev: ev.id, topI: top.index);
+        }
+    }
+    notifyListeners();
+    return r;
+  }
+
+  static int _emoBits(Set<String> emo) =>
+      (emo.contains('joke') ? 1 : 0) +
+      (emo.contains('sad') ? 2 : 0) +
+      (emo.contains('excited') ? 4 : 0) +
+      (emo.contains('hesitant') ? 8 : 0) +
+      (emo.contains('love') ? 16 : 0);
+
+  /// 누적 전송 횟수(메타) → user property. 저장은 fire-and-forget.
+  void _countFreeSend() {
+    final m = meta;
+    if (m == null) return;
+    final before = m.freeInputSends;
+    m.freeInputSends = before + 1;
+    // 구간이 바뀔 때만 보낸다(0→1, 5→6).
+    if (before == 0 || before == 5) analytics.freeInputUsage(m.freeInputSends);
+    metaService.save(m);
+  }
+
+  /// 자유 입력을 선택지 [index] 로 확정한다. [text] 는 내 말풍선에 남길 친 문장, [auto] 는 자동
+  /// 확정이었는지(무료 되돌리기 대상). [match] 를 주면 피커 지표(순위)를 남긴다. 미니게임·기타 인자는
+  /// [choose] 와 같다.
+  void confirmFree(
+    int index, {
+    required String text,
+    required bool auto,
+    MatchResult? match,
+    String via = 'picker',
+    bool? minigameSuccess,
+    bool? minigameCritical,
+    String? note,
+  }) {
+    final s = state!;
+    final ev = current!;
+    final t = text.trim();
+    final kept = t.length > FreeInputEntry.maxChars
+        ? t.substring(0, FreeInputEntry.maxChars)
+        : t;
+    s.addFreeInput(
+      FreeInputEntry(
+        eventId: ev.id,
+        choiceIndex: index,
+        text: kept,
+        day: s.day,
+        auto: auto,
+      ),
+    );
+    if (!auto && match != null) {
+      analytics.freeInputPick(
+        ev: ev.id,
+        topI: match.top?.index ?? -1,
+        pickI: index,
+        rank: match.rankOf(index),
+        via: via,
+      );
+    }
+    _apply(
+      index,
+      minigameSuccess: minigameSuccess,
+      minigameCritical: minigameCritical,
+      note: note,
+      source: ChoiceSource.freeText,
+      playerText: kept,
+      freeAuto: auto,
+    );
+  }
+
+  /// 무료 되돌리기(07 §3.3): 자유 입력 **자동 확정**이었고, 아직 되돌리기를 안 썼고, 하드코어가 아닐 때.
+  /// 결과의 좋고 나쁨과 무관하다 — 문제는 결과가 아니라 이해라서. 광고 되돌리기와 합쳐 이벤트당 1회.
+  bool get canOfferFreeUndo {
+    final s = state;
+    if (s == null || lastOutcome == null) return false;
+    if (lastChoiceSource != ChoiceSource.freeText || !_lastFreeAuto) return false;
+    if (undoUsedThisEvent || _undoSnapshot == null) return false;
+    return !s.flags.contains('hardcore');
+  }
+
+  /// "그런 뜻 아니었어요". [undoChoice] 그대로 + 문장을 입력창에 되살리고 이번엔 피커를 강제한다.
+  void undoFree() {
+    if (!canOfferFreeUndo) return;
+    final ev = current!;
+    final text = _playerText;
+    final idx = lastChoiceIndex;
+    analytics.freeInputUndone(
+      ev: ev.id,
+      topI: idx ?? -1,
+      reI: -1,
+      confB: _lastFreeConfB,
+    );
+    undoChoice();
+    _freeRetryText = text;
+    _forcePickThisEvent = true;
+    notifyListeners();
+  }
+
+  /// 방금 고른 선택지의 index(결과가 없으면 null).
+  int? lastChoiceIndex;
+
+  /// 자동 확정 때의 점수×10(지표용).
+  int _lastFreeConfB = 0;
+
+  /// 자유 입력 자동 확정의 신뢰도를 기억해 둔다(되돌리기 지표). [confirmFree] 전에 화면이 부른다.
+  void noteFreeConfidence(MatchResult r) => _lastFreeConfB = (r.s1 * 10).round();
 
   /// 오늘 아직 볼 이벤트 id. 테스트·디버그용 읽기 전용 뷰.
   List<String> get queuedEventIds => [for (final e in _queue) e.id];
@@ -332,6 +684,10 @@ class GameController extends ChangeNotifier {
     meta = m;
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
+    TextTemplate.currentTop = null;
+    // 컨트롤러를 받지 않는 화면(캐스트 소개·자유 입력 미리보기)이 볼 `{char:<id>}` 이름표.
+    TextTemplate.currentChars = bundle.charNames;
+    _applySfxPrefs(m);
     analytics.mbtiKnown(m.mbti != null);
     // 세이브가 있으면 파일만 읽어 요약을 만든다. 상태 복원은 여전히 continueGame 의 몫.
     _peek = hasSave ? await save.load() : null;
@@ -347,6 +703,8 @@ class GameController extends ChangeNotifier {
   /// 메모리의 dayDelta 가 비어 있으므로 세이브에 있던 값을 건드리지 않는다.
   Future<void> _save(GameState s) {
     if (identical(s, state)) {
+      // 컨트롤러를 받지 않는 화면(StoryBundle.firstLineOf)이 볼 `{top}` 이름.
+      TextTemplate.currentTop = topName;
       // 하루 도중 끊겨도 이어서 할 수 있게, 아직 끝나지 않은 이벤트(선택 전의 현재 이벤트 포함)를 남긴다.
       s.dayQueue = [
         if (current != null && lastOutcome == null) current!.id,
@@ -389,11 +747,15 @@ class GameController extends ChangeNotifier {
     await save.clear();
     await save.clearEndings();
     await metaService.clear();
-    final m = PlayerMeta(firstLaunchMs: nowMs());
+    // 인트로는 다시 세우지 않는다. 이 버튼은 설정 안에 있고, 설정에 닿았다는 건 인트로를
+    // 이미 지났다는 뜻이다 — 회차를 지운 사람에게 첫 문자를 다시 보내는 건 되돌아가기다.
+    final m = PlayerMeta(firstLaunchMs: nowMs(), introSeen: true);
     await metaService.save(m);
     meta = m;
     TextTemplate.currentName = null;
     TextTemplate.currentMbti = null;
+    TextTemplate.currentTop = null;
+    _applySfxPrefs(m);
     state = null;
     _peek = null;
     hasSave = false;
@@ -455,6 +817,24 @@ class GameController extends ChangeNotifier {
 
   /// 아직 세이브에 얹히지 않은 출석 하트. 세이브 없이 출석했을 때만 0 보다 크다.
   int get pendingHearts => meta?.pendingHearts ?? 0;
+
+  /// 첫 실행이면 홈 대신 인트로(`lib/ui/intro_screen.dart`)를 세운다.
+  ///
+  /// 첫 실행 = 이 기기에서 아직 한 판도 시작하지 않았고(세이브·회차 기록 없음) 인트로를
+  /// 끝까지 본 적도 없을 때. 홈은 세이브 카드·하트·앨범이 있는 **관리 화면**이라 게임을
+  /// 처음 여는 사람에게는 읽을 것이 못 된다(00_VERDICT §3, 03_game_design §1.1).
+  /// 설정의 저장 데이터 초기화는 이 값을 되살리지 않는다([resetAllData] 주석).
+  bool get shouldShowIntro =>
+      meta != null && !meta!.introSeen && !hasSave && totalRuns == 0;
+
+  /// 인트로를 끝까지 봤다(또는 건너뛰었다). 다음부터는 홈이 첫 화면이다.
+  Future<void> markIntroSeen() async {
+    final m = meta;
+    if (m == null || m.introSeen) return;
+    m.introSeen = true;
+    await metaService.save(m);
+    notifyListeners();
+  }
 
   /// 온보딩 "나는?" 의 답. 아직 안 물었으면 null([PlayerGender]).
   String? get playerGender => meta?.playerGender;
@@ -541,6 +921,22 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// D+4 `m_mbti_chat` 대화 안에서 MBTI 를 처음 답했다(온보딩에서 묻지 않은 첫 회차).
+  /// 기기 설정에 저장하고, **진행 중인 회차에도 바로 반영한다** — 그러지 않으면 방금 답한
+  /// 값이 이번 판에서 아무것도 바꾸지 않는다(docs/review/00_VERDICT.md §3 R6).
+  ///
+  /// 이미 공개된 줄은 다시 거르지 않는다(지금 이벤트는 '모름' 판으로 끝나고, 다음 이벤트부터
+  /// MBTI 판이 나온다). [mbti] 가 null 이면 모름으로 굳힌다([skipPlayerMbti] 와 같다).
+  Future<void> adoptMbti(String? mbti) async {
+    await (mbti == null ? skipPlayerMbti() : setPlayerMbti(mbti));
+    final s = state;
+    if (s == null || mbti == null || s.mbti != null) return;
+    s.mbti = Mbti.parse(mbti);
+    await _save(s);
+    _syncSummary();
+    notifyListeners();
+  }
+
   /// MBTI 단계를 건너뛰었다. 값은 그대로(없음) 두고 다음 새 게임에서 다시 묻지 않는다.
   Future<void> skipPlayerMbti() async {
     final m = meta;
@@ -550,16 +946,69 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- 효과음·진동 (docs/overhaul/05_audio_haptics.md §4) ----
+
+  /// 설정의 효과음 토글. 기기 메타에만 저장하고 서비스에 바로 반영한다.
+  bool get sfxOn => meta?.sfxOn ?? true;
+
+  /// 설정의 진동 토글.
+  bool get hapticOn => meta?.hapticOn ?? true;
+
+  Future<void> setSfxOn(bool on) async {
+    final m = meta;
+    if (m == null || m.sfxOn == on) return;
+    m.sfxOn = on;
+    _applySfxPrefs(m);
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  Future<void> setHapticOn(bool on) async {
+    final m = meta;
+    if (m == null || m.hapticOn == on) return;
+    m.hapticOn = on;
+    _applySfxPrefs(m);
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  /// 메타의 토글을 서비스에 밀어 넣는다. 시작·초기화·변경 때마다.
+  void _applySfxPrefs(PlayerMeta m) {
+    SfxService.instance
+      ..sfxOn = m.sfxOn
+      ..hapticOn = m.hapticOn;
+  }
+
   /// 엔딩 [e] 의 에필로그. 이 회차 기질 문단(`epilogueMbti`)을 덧붙인 원문(치환 전).
   /// [mbti] 를 주지 않으면 [runMbti].
   String epilogueOf(Ending e, {String? mbti}) =>
       e.epilogueForTemperament(Mbti.temperament(mbti ?? runMbti));
 
+  /// 지금 화면의 `{top}` 에 들어갈 이름. 지금 이벤트([current])를 함께 넘겨 1위가 아직
+  /// 없는 날(D+1)에는 그 이벤트의 상대 이름으로 내려간다(lib/engine/text_template.dart).
+  /// 회차가 없으면 null → 화면에는 `그 사람`.
+  String? get topName {
+    final s = state;
+    return s == null ? null : engine.topNameFor(s, event: current);
+  }
+
   /// 대사 문자열의 자리표시자(`{name|아야}` 등)를 지금 이름으로 바꾼다. 화면에 내기
   /// 직전에 부르고, `keepAll` 은 그 결과에 씌운다. 저장·비교에는 원문을 쓴다.
-  /// `{mbti}` 는 이 회차 MBTI([runMbti]).
-  String say(String text) =>
-      TextTemplate.fill(text, name: playerName, mbti: runMbti);
+  /// `{mbti}` 는 이 회차 MBTI([runMbti]), `{top}` 은 지금 호감 1위([topName]).
+  String say(String text) => TextTemplate.fill(
+    text,
+    name: playerName,
+    mbti: runMbti,
+    top: topName,
+    chars: runCharNames,
+  );
+
+  /// `{char:<id>}` 가 볼 이름표. 회차가 있으면 **그 회차에 등장하는 사람만** —
+  /// 선호 밖 캐릭터를 부르는 대사는 이름 대신 중립 명사로 떨어진다.
+  Map<String, String> get runCharNames {
+    final s = state ?? _peek;
+    return s == null ? bundle.charNames : bundle.charNamesFor(s.preference);
+  }
 
   /// [say] 의 null 허용판.
   String? sayOrNull(String? text) => text == null ? null : say(text);
@@ -569,7 +1018,7 @@ class GameController extends ChangeNotifier {
   StoryEvent? get shownEvent {
     final ev = current;
     if (ev == null) return null;
-    final key = '$playerName|$runMbti';
+    final key = '$playerName|$runMbti|$topName';
     final cached = _shown;
     if (cached != null && identical(cached.$1, ev) && cached.$2 == key) {
       return cached.$3;
@@ -697,7 +1146,8 @@ class GameController extends ChangeNotifier {
     state = s;
     ending = null;
     _resetDay();
-    phase = Phase.action;
+    dayCard = _dayCardFor(DayCardVariant.first);
+    phase = Phase.dayStart;
     final m = meta;
     if (m != null) {
       m.totalRuns += 1;
@@ -726,14 +1176,16 @@ class GameController extends ChangeNotifier {
     }
     if (s.dayStarted) {
       // 하트를 이미 쓴 날: 남은 이벤트부터(없으면 정산으로). 다시 행동을 고르게 하지 않는다.
-      _queue.addAll([
-        for (final id in s.dayQueue) ?engine.byId(id),
-      ]);
+      // 카드 없이 — 하루 도중 복귀다.
+      _queue.addAll([for (final id in s.dayQueue) ?engine.byId(id)]);
+      _dayTotal = _queue.length;
       _syncSummary();
       _nextEvent();
       return true;
     }
-    phase = Phase.action;
+    // 아직 시작 안 한 아침: `resume` 카드(예고·밤사이 줄 없음 — 행동 화면이 어젯밤 줄을 보여 준다).
+    dayCard = _dayCardFor(DayCardVariant.resume);
+    phase = Phase.dayStart;
     if (pendingHearts > 0) await _save(s);
     _syncSummary();
     notifyListeners();
@@ -744,6 +1196,51 @@ class GameController extends ChangeNotifier {
     phase = Phase.home;
     _syncSummary();
     notifyListeners();
+  }
+
+  /// 날짜 카드가 끝났다(자동 진행·탭). [Phase.dayStart] 일 때만 행동 화면으로 넘어간다 —
+  /// 타이머와 탭이 같이 불러도 두 번 넘어가지 않는다(멱등).
+  void beginMorning() {
+    if (phase != Phase.dayStart) return;
+    phase = Phase.action;
+    notifyListeners();
+  }
+
+  /// 오늘 계획된 이벤트 수. 하루 도중 복원하면 남은 것(현재 포함)만 센다 — 시계 라벨 전용.
+  int _dayTotal = 0;
+
+  /// 오늘 몇 개의 이벤트가 계획됐는지(현재 포함). 시계 시간대(02 §3 P1) 표시 전용.
+  int get todayEventTotal => _dayTotal;
+
+  /// 현재 이벤트가 오늘의 몇 번째인지(0부터). 시계 시간대 표시 전용.
+  int get todayEventIndex =>
+      (_dayTotal - _queue.length - (current == null ? 0 : 1)).clamp(
+        0,
+        _dayTotal == 0 ? 0 : _dayTotal - 1,
+      );
+
+  /// 지금 상태로 날짜 카드를 만든다. [hint] 는 마감 **전에** 읽어 둔 예고.
+  DayCard _dayCardFor(DayCardVariant variant, {TomorrowHint? hint}) {
+    final s = state!;
+    final chapter = s.chapter(config);
+    final firstOfChapter = (s.day - 1) % config.chapterLength == 0;
+    final overnight = overnightShifts.values.firstOrNull;
+    return DayCard(
+      variant: variant,
+      day: s.day,
+      run: s.run,
+      chapter: chapter,
+      chapterTitle: firstOfChapter ? config.chapterTitleFor(chapter) : null,
+      weekday: DayCard.weekdayFor(s.day),
+      weather: DayCard.weatherFor(s.seed, s.day, chapter),
+      hintCharacterId: hint?.characterId,
+      hintName: hint == null ? null : characterName(hint.characterId),
+      hintPreview: sayOrNull(hint?.preview),
+      overnight: variant == DayCardVariant.next && overnight != null
+          ? say(overnight)
+          : null,
+      previousRunLine: variant == DayCardVariant.first ? previousRunLine : null,
+    );
   }
 
   // ---- 하트 ----
@@ -805,6 +1302,7 @@ class GameController extends ChangeNotifier {
   void _resetDay() {
     dayDelta.clear();
     cliffhanger = null;
+    _cliffRank = _noCliffRank;
     rouletteSlot = null;
     rouletteRerolled = false;
     _queue.clear();
@@ -816,6 +1314,20 @@ class GameController extends ChangeNotifier {
     _undoSnapshot = null;
     _undoDayDelta = null;
     undoUsedThisEvent = false;
+    _resetFreeInput();
+  }
+
+  /// 이벤트 단위 자유 입력 상태를 비운다.
+  void _resetFreeInput() {
+    _playerText = null;
+    lastChoiceSource = ChoiceSource.button;
+    _lastFreeAuto = false;
+    lastChoiceIndex = null;
+    freeSendsThisEvent = 0;
+    _blockedStreak = 0;
+    _forcePickThisEvent = false;
+    _freeRetryText = null;
+    _lastFreeConfB = 0;
   }
 
   /// 리워드 광고 보상: 하트 1개.
@@ -830,23 +1342,35 @@ class GameController extends ChangeNotifier {
 
   // ---- 하루 진행 ----
 
-  /// 아침 행동 선택. 하트 1개를 쓰고 그날의 이벤트를 계획한다.
+  /// 이 아침이 하트를 쓰지 않는 날인지. 1회차 오프닝(config `firstRunFreeHeartDays`, 기본 0)
+  /// 에만 참이다 — 첫 세션이 첫 모먼트를 보기 전에 하트로 끊기던 문제(00_VERDICT §3 R4).
+  /// 2회차부터, 그리고 값이 0인 데이터에서는 예전 그대로 하루에 하트 하나다.
+  bool get freeHeartToday {
+    final s = state;
+    return s != null && s.run == 1 && s.day <= config.firstRunFreeHeartDays;
+  }
+
+  /// 아침 행동 선택. 하트 1개를 쓰고 그날의 이벤트를 계획한다([freeHeartToday] 면 안 쓴다).
   Future<bool> startDay(DayAction action) async {
     final s = state!;
     _regenHearts();
-    if (s.hearts <= 0) {
+    final free = freeHeartToday;
+    if (!free && s.hearts <= 0) {
       analytics.log(Analytics.heartEmpty, {'day': s.day});
       notifyListeners();
       return false;
     }
-    s.hearts -= 1;
+    if (!free) s.hearts -= 1;
     s.dayStarted = true;
+    // 계획보다 먼저 — planDay 가 이 행동으로 첫 장면(행동 장면)과 일상 가중치를 정한다.
     s.todayAction = action.id;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;
+    _cliffRank = _noCliffRank;
     _queue
       ..clear()
       ..addAll(engine.planDay(s));
+    _dayTotal = _queue.length;
     // 하트를 쓴 시점을 저장한다. 여기서 끊기면 하트만 사라지고 하루는 안 시작된 게 된다.
     await _save(s);
     _nextEvent();
@@ -860,6 +1384,7 @@ class GameController extends ChangeNotifier {
     undoUsedThisEvent = false;
     _undoSnapshot = null;
     _undoDayDelta = null;
+    _resetFreeInput();
     if (_queue.isEmpty) {
       current = null;
       revealed = 0;
@@ -902,6 +1427,22 @@ class GameController extends ChangeNotifier {
     bool? minigameSuccess,
     bool? minigameCritical,
     String? note,
+  }) => _apply(
+    index,
+    minigameSuccess: minigameSuccess,
+    minigameCritical: minigameCritical,
+    note: note,
+    source: ChoiceSource.button,
+  );
+
+  void _apply(
+    int index, {
+    bool? minigameSuccess,
+    bool? minigameCritical,
+    String? note,
+    required ChoiceSource source,
+    String? playerText,
+    bool freeAuto = false,
   }) {
     final s = state!;
     final ev = current!;
@@ -912,6 +1453,10 @@ class GameController extends ChangeNotifier {
       _undoSnapshot = s.toJson();
       _undoDayDelta = dayDelta.copy();
     }
+    lastChoiceSource = source;
+    _playerText = playerText;
+    _lastFreeAuto = freeAuto;
+    lastChoiceIndex = index;
     final outcome = engine.applyChoice(
       s,
       ev,
@@ -923,7 +1468,7 @@ class GameController extends ChangeNotifier {
     lastOutcome = outcome;
     _lastChoice = ev.choices[index];
     dayDelta.merge(outcome.delta);
-    if (ev.cliffhanger != null) cliffhanger = ev.cliffhanger;
+    _noteCliffhanger(ev);
     final next = outcome.nextEventId == null
         ? null
         : engine.byId(outcome.nextEventId!);
@@ -967,6 +1512,13 @@ class GameController extends ChangeNotifier {
       ..flags.addAll(restored.flags)
       ..seen.clear()
       ..seen.addAll(restored.seen)
+      // 일상 냉각 기록도 `seen` 과 짝이다 — 되돌리면 같이 되돌아간다.
+      ..dailySeenDay.clear()
+      ..dailySeenDay.addAll(restored.dailySeenDay)
+      // 본 횟수(반복 감쇠의 지수)도 짝이다. 안 되돌리면 되돌린 장면이 '한 번 본 것'으로
+      // 남아 다음 추첨에서 부당하게 뒤로 밀린다.
+      ..seenCount.clear()
+      ..seenCount.addAll(restored.seenCount)
       ..album.clear()
       ..album.addAll(restored.album)
       ..combo = restored.combo
@@ -983,6 +1535,18 @@ class GameController extends ChangeNotifier {
         _queue.first.id == o!.nextEventId) {
       _queue.removeAt(0);
     }
+    // 자유 입력 기록도 선택과 함께 없던 일이 된다(되돌린 뒤 버튼으로 고르면 말풍선이 옛 문장이 되지 않게).
+    if (lastChoiceSource == ChoiceSource.freeText) {
+      final ev = current;
+      final i = s.freeInputs.lastIndexWhere(
+        (e) => ev != null && e.eventId == ev.id && e.day == s.day,
+      );
+      if (i >= 0) s.freeInputs.removeAt(i);
+    }
+    _playerText = null;
+    lastChoiceSource = ChoiceSource.button;
+    _lastFreeAuto = false;
+    lastChoiceIndex = null;
     lastOutcome = null;
     minigameNote = null;
     undoUsedThisEvent = true;
@@ -1007,6 +1571,9 @@ class GameController extends ChangeNotifier {
   /// 오늘 아침 홈 카드 문장으로 고정하고 반복 방지 기록에 넣는다([SignalBook.rollover]).
   Future<void> endDay() async {
     final s = state!;
+    // 예고는 마감 **전에** 읽는다 — 사본으로 내일을 미리 보는 값이라 마감 뒤에 읽으면
+    // 모레가 된다. _resetDay 가 캐시를 지우기 전에 카드로 옮겨 둔다.
+    final hint = tomorrowHint;
     final shown = todayShifts;
     final cast = roster;
     final before = {for (final ch in cast) ch.id: s.affectionOf(ch.id)};
@@ -1033,7 +1600,9 @@ class GameController extends ChangeNotifier {
       await _finish(resolver.resolve(s));
       return;
     }
-    phase = Phase.action;
+    // 엔딩이 아니면 행동 화면 대신 날짜 카드. 카드가 끝나면 beginMorning → action.
+    dayCard = _dayCardFor(DayCardVariant.next, hint: hint);
+    phase = Phase.dayStart;
     await _save(s);
     notifyListeners();
   }
@@ -1137,8 +1706,7 @@ class GameController extends ChangeNotifier {
   (String, TomorrowHint?)? _tomorrow;
 
   /// "지난 판엔 서연과 대등한 연인으로 끝났다". 끝난 회차가 없으면 null.
-  String? get previousRunLine =>
-      previousRunLineFor(bundle, meta?.lastEndingId);
+  String? get previousRunLine => previousRunLineFor(bundle, meta?.lastEndingId);
 
   String characterName(String? id) =>
       id == null ? '' : (bundle.characterById[id]?.name ?? id);
