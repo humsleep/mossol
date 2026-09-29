@@ -42,6 +42,10 @@ flutter:
     - assets/photos/
     - assets/stickers/
     - assets/endings/
+    # 표정(12명 × 설렘·당황·삐짐)·홈 키 아트·흑역사 도장(docs/image_prompts/03_scenes_and_more.md).
+    - assets/expressions/
+    - assets/keyart/
+    - assets/stamps/
     # 효과음(docs/overhaul/05_audio_haptics.md). 큐 id 와 파일명 1:1. LICENSES.md 도 같이 번들해
     # 설정 › 오픈소스 라이선스에서 읽어 준다. 지금은 tool/make_placeholder_sfx.py 가 합성한 자리표시자.
     - assets/sfx/
