@@ -11,6 +11,8 @@ extension TriggerMatch on Trigger {
   /// MBTI(docs/MBTI_SPEC.md §1.3): `mbti` 는 [GameState.mbti] 에 글자가 모두 있어야,
   /// `noMbti` 는 [GameState.mbti] 가 null 이어야 참. `compat` 은 [self] 캐릭터의 MBTI
   /// [selfMbti] 와의 궁합 점수 범위다([self] 가 없으면 거짓).
+  ///
+  /// `action` 은 [GameState.todayAction] 이 목록 안에 있어야 참(행동 장면).
   bool matches(
     GameState s, {
     String? self,
@@ -28,6 +30,8 @@ extension TriggerMatch on Trigger {
     }
     final fc = flagsAtLeast;
     if (fc != null && fc.of.where(s.flags.contains).length < fc.n) return false;
+    // 행동 장면: 오늘 아침 행동이 목록 안에 있어야 한다(고르기 전 null 이면 거짓).
+    if (action.isNotEmpty && !action.contains(s.todayAction)) return false;
     if (day != null && !day!.contains(s.day)) return false;
     if (run != null && !run!.contains(s.run)) return false;
     for (final e in stats.entries) {

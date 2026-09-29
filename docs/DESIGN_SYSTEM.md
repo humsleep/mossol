@@ -300,11 +300,15 @@ elevation 은 다크에서 0, 라이트에서 1 이다. 그림자를 두 겹 이
 
 ### 2.2 행동 선택 (`action_screen.dart`)
 - **주인공**: "오늘 뭘 할까" 아래 행동 카드 목록.
-- **배경**: 하트/콤보 줄, 스탯 막대, 관계 칩.
+- **배경**: 하트/콤보 줄, 스탯 막대, 관계 줄.
 - 구성(위→아래): AppBar(`D+N  ·  N장`) → `BannerSlot(top)` → 상태 줄(`HeartsRow` + `ComboBadge`) → `md`
-  → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `StatBars(compact: true)`
-  → `sectionGap` → `SectionHeader('관계')` + 캐릭터 칩 Wrap → `sectionGap`
-  → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`).
+  → 클리프행어 카드(있을 때만, `tertiaryContainer`) → `lg` → `SectionHeader('내 스탯')` + [스탯 설명]
+  → `StatBars(compact: true)`(눌러도 `StatGuideSheet`) → `sectionGap`
+  → `SectionHeader('관계')` + `RelationStrip`(한 줄 가로 스크롤, 초상화 56 + 호감 고리 + `'서연 ♥12'` 단일 Text,
+  누르면 `RelationDetailSheet`: 지금 표정 · 평소/설렘/당황/삐짐 · 호감/신뢰 · 끌리는 것 · 조심) → `sectionGap`
+  → `SectionHeader('오늘 뭘 할까')` + 행동 `AppListRow` 목록(사이 `listGap`). 행동 행 왼쪽은 장소 그림
+  썸네일 72×48(3:2, `SceneImages.forAction`) + 아이콘 배지, 그림이 없으면 예전 아이콘 원.
+- 이 화면의 세로 스크롤은 `ListView` 하나뿐이다(관계 줄은 `SingleChildScrollView` + `Row`).
 - `StatBars` 의 돈 행은 막대 없이 숫자(`numericMedium`)만, 맨 아래에 구분선 위로 둔다
   (HOME_REDESIGN §4). `Stat.maxOf` 는 손대지 않는다.
 - 행동 행은 높이 최소 64, 제목 `titleSmall`, 설명 `bodySmall` 2줄까지, 우측 `chevron_right`.
@@ -1524,7 +1528,7 @@ bool get canOfferFreeUndo;  void undoFree();  String? get playerText;  bool get 
 | 하트 | 빈 하트는 `Icons.favorite_border`, 최대 개수만큼. `'다음 하트'` 를 포함한 Text 하나 |
 | 콤보 | 콤보 3 이상일 때 `'물올랐다 3'` 정확히 |
 | 클리프행어 | `'어젯밤: ...'` 를 포함한 Text |
-| 캐릭터 칩 | `'서연 ♥12 ✓0'` 형태의 단일 Text |
+| 관계 줄 칸 | `'서연 ♥12'` 형태의 단일 Text (`RelationStrip`) |
 | 앨범 진행도 | `'2 / 20'`, `'1 / 30'` 형태 단일 Text. 자물쇠 `Icons.lock_outline`, 획득 `Icons.check_circle` |
 | 미니게임 결과 | `'크리티컬!'` / `'성공'` / `'실패'` 정확히 |
 | 결과 패널 | `'크리티컬! 호감 2배'`, `'실패…'`, `'물올랐다!'`, `'성공'`, `'계속'` |

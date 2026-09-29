@@ -318,6 +318,11 @@ class Trigger {
   /// [FlagCount.of] 중 [FlagCount.n]개 이상 플래그.
   final FlagCount? flagsAtLeast;
 
+  /// 아침 행동 id 목록(`"gym"`, `"work"` …). 있으면 오늘 고른 행동([GameState.todayAction])이
+  /// 이 안에 있을 때만 열린다. 행동 장면(assets/story/events_action.json)이 쓴다.
+  /// 행동을 고르기 전(null)에는 거짓.
+  final List<String> action;
+
   const Trigger({
     this.day,
     this.run,
@@ -332,6 +337,7 @@ class Trigger {
     this.noMbti = false,
     this.compat,
     this.flagsAtLeast,
+    this.action = const [],
   });
 
   static const always = Trigger();
@@ -358,6 +364,7 @@ class Trigger {
       noMbti: j['noMbti'] == true,
       compat: Range.parse(j['compat']),
       flagsAtLeast: FlagCount.parse(j['flagsAtLeast']),
+      action: _strList(j['action']),
     );
   }
 }
@@ -1211,18 +1218,29 @@ class DayAction {
   final String desc;
   final Effects effects;
 
+  /// 이 행동과 어울리는 일상 이벤트 id 접두어(`"d_work_"`). 이 행동을 고른 날
+  /// 일상 추첨에서 가중치가 [affinityBoost]배가 된다. 행동과 하루가 따로 놀지 않게.
+  final List<String> affinity;
+
+  static const affinityBoost = 4;
+
   const DayAction({
     required this.id,
     required this.name,
     this.desc = '',
     this.effects = Effects.none,
+    this.affinity = const [],
   });
+
+  /// [eventId] 가 이 행동과 어울리는 일상인지([affinity] 접두어).
+  bool fits(String eventId) => affinity.any(eventId.startsWith);
 
   factory DayAction.fromJson(Map<String, dynamic> j) => DayAction(
     id: j['id'] as String,
     name: j['name'] as String,
     desc: (j['desc'] as String?) ?? '',
     effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
+    affinity: _strList(j['affinity']),
   );
 }
 
@@ -1579,6 +1597,10 @@ class GameState {
   /// 오늘 남은 이벤트 id(진행 중이던 이벤트가 맨 앞). [dayStarted] 일 때만 의미가 있다.
   List<String> dayQueue;
 
+  /// 오늘 아침에 고른 행동 id. [dayStarted] 동안만 의미가 있고 마감에서 비운다.
+  /// `trigger.action` 판정과 하루 계획(행동 장면·일상 가중치)에 쓴다. 예전 세이브는 null.
+  String? todayAction;
+
   GameState({
     this.day = 1,
     this.run = 1,
@@ -1599,6 +1621,7 @@ class GameState {
     this.lastMomentDay = 0,
     this.dayStarted = false,
     List<String>? dayQueue,
+    this.todayAction,
   }) : dayQueue = dayQueue ?? [],
        flags = flags ?? {},
        seen = seen ?? {},
@@ -1660,6 +1683,7 @@ class GameState {
     'lastMomentDay': lastMomentDay,
     'dayStarted': dayStarted,
     'dayQueue': dayQueue,
+    'todayAction': todayAction,
     'signalHistory': signalHistory.map((k, v) => MapEntry(k, List.of(v))),
     'signalPins': signalPins.map((k, v) => MapEntry(k, List.of(v))),
     'overnightShifts': Map.of(overnightShifts),
@@ -1696,6 +1720,7 @@ class GameState {
           lastMomentDay: ((j['lastMomentDay'] as num?) ?? 0).toInt(),
           dayStarted: j['dayStarted'] == true,
           dayQueue: [..._strList(j['dayQueue'])],
+          todayAction: j['todayAction'] as String?,
         )
         ..signalHistory.addAll(_intListMap(j['signalHistory']))
         ..signalPins.addAll(_intListMap(j['signalPins']))

@@ -112,6 +112,9 @@ IconData _statIcon(String key) {
   }
 }
 
+/// [_statIcon] 의 공개판. 스탯 설명 시트(stat_guide.dart)가 막대와 같은 아이콘을 쓴다.
+IconData statIcon(String key) => _statIcon(key);
+
 /// 부호 붙인 정수. '+3' / '-2' / '0'.
 String signed(int v) => v > 0 ? '+$v' : '$v';
 

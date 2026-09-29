@@ -7,10 +7,14 @@ import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
 import 'home_screen.dart' show OvernightNote;
+import 'keep_all.dart';
+import 'relation_sheet.dart';
 import 'retention_widgets.dart';
 import 'roulette_sheet.dart';
+import 'scene_card.dart' show SceneImage;
+import 'scene_registry.dart';
+import 'stat_guide.dart';
 import 'widgets.dart';
-import 'keep_all.dart';
 
 /// 아침 행동 선택 화면. 하트 1개를 쓰고 하루를 시작한다.
 ///
@@ -151,27 +155,32 @@ class _ActionScreenState extends State<ActionScreen> {
                   OvernightNote(id: e.key, text: c.say(e.value)),
                 ],
 
-                // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다.
+                // 3. 스탯. 결정의 근거이므로 축약해서 보여 준다. 머리줄의 `스탯 설명`
+                // 이나 막대 자체를 누르면 스탯마다 무엇이고 어디에 쓰이는지가 뜬다.
                 const SizedBox(height: AppSpace.lg),
-                StatBars(state: s, compact: true),
+                SectionHeader(
+                  title: '내 스탯',
+                  trailing: TextButton.icon(
+                    key: const Key('stat-guide'),
+                    onPressed: () => _openStatGuide(context),
+                    icon: const Icon(Icons.help_outline, size: 18),
+                    label: const Text('스탯 설명'),
+                  ),
+                ),
+                Semantics(
+                  hint: '스탯 설명 열기',
+                  child: InkWell(
+                    borderRadius: AppRadius.rMd,
+                    onTap: () => _openStatGuide(context),
+                    child: StatBars(state: s, compact: true),
+                  ),
+                ),
 
-                // 4. 관계.
+                // 4. 관계. 사람 수와 상관없이 한 줄, 누르면 상세.
                 if (cast.isNotEmpty) ...[
                   const SizedBox(height: AppSpace.sectionGap),
-                  const SectionHeader(title: '관계'),
-                  Wrap(
-                    spacing: AppSpace.sm,
-                    runSpacing: AppSpace.sm,
-                    children: [
-                      for (final ch in cast)
-                        CharacterChip(
-                          name: ch.name,
-                          affection: s.affectionOf(ch.id),
-                          trust: s.trustOf(ch.id),
-                          accent: context.tokens.accentFor(ch.id),
-                        ),
-                    ],
-                  ),
+                  const SectionHeader(title: '관계', trailingText: '눌러서 자세히'),
+                  RelationStrip(c: c, cast: cast),
                 ],
 
                 // 5. 오늘의 결정. 화면의 주인공.
@@ -182,7 +191,7 @@ class _ActionScreenState extends State<ActionScreen> {
                   AppListRow(
                     title: c.config.actions[i].name,
                     subtitle: c.config.actions[i].desc,
-                    leading: _ActionGlyph(id: c.config.actions[i].id),
+                    leading: _ActionThumb(id: c.config.actions[i].id),
                     onTap: () => _start(context, c.config.actions[i]),
                   ),
                 ],
@@ -193,6 +202,9 @@ class _ActionScreenState extends State<ActionScreen> {
       ),
     );
   }
+
+  Future<void> _openStatGuide(BuildContext context) =>
+      StatGuideSheet.show(context, actions: c.config.actions);
 
   Future<void> _start(BuildContext context, DayAction action) async {
     final ok = await c.startDay(action);
@@ -237,6 +249,80 @@ String heartEmptyBody(int seconds) {
   return '하트는 $when 1개 찬다. 쉬었다 와도 이야기는 그대로 기다리고 있어요.';
 }
 
+/// 행동 목록 왼쪽의 장소 썸네일. 그림(`assets/scenes/<행동 id>`, 3:2, 인물 없음)이 있으면
+/// 둥근 3:2 사진 위 왼쪽 아래에 작은 아이콘 배지를 얹고, 없거나 못 읽으면 아이콘 원
+/// ([_ActionGlyph]) 그대로다. 배지가 남아 있어서 그림만으로 뜻을 전하지 않는다.
+class _ActionThumb extends StatelessWidget {
+  final String id;
+  const _ActionThumb({required this.id});
+
+  /// 썸네일 폭. 높이는 3:2 로 48 — 행 최소 높이 64 안에 여백 8 씩 들어간다.
+  static const double width = 72;
+
+  @override
+  Widget build(BuildContext context) => SceneScope(
+    builder: (context, registry) {
+      final path = SceneImages.forAction(id, registry: registry);
+      if (path == null) return _ActionGlyph(id: id);
+      final scheme = context.scheme;
+      return ExcludeSemantics(
+        child: SizedBox(
+          width: width,
+          height: width / AppSize.sceneAspect,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  borderRadius: AppRadius.rSm,
+                ),
+                child: ClipRRect(
+                  borderRadius: AppRadius.rSm,
+                  child: SceneImage(
+                    path: path,
+                    width: width,
+                    bundle: registry.bundle,
+                    fallback: (_) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+              // 그림 가장자리가 행 배경에 번지지 않게 머리카락 테두리.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.rSm,
+                  border: Border.all(
+                    color: scheme.outlineVariant,
+                    width: AppBorderWidth.hairline,
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: AppSpace.xs,
+                bottom: AppSpace.xs,
+                child: Container(
+                  width: AppSpace.xl,
+                  height: AppSpace.xl,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _ActionGlyph.iconOf(id),
+                    size: AppSpace.md,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 /// 행동 목록 왼쪽의 아이콘 원. 여섯 줄이 글자만으로 늘어서지 않게 잡아 준다.
 /// 색으로 뜻을 전하지 않으므로 전부 같은 중립색을 쓴다(구분은 아이콘 모양).
 class _ActionGlyph extends StatelessWidget {
@@ -252,6 +338,8 @@ class _ActionGlyph extends StatelessWidget {
     'friends': Icons.groups_outlined,
   };
 
+  static IconData iconOf(String id) => _icons[id] ?? Icons.wb_twilight;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
@@ -264,7 +352,7 @@ class _ActionGlyph extends StatelessWidget {
         borderRadius: AppRadius.rPill,
       ),
       child: Icon(
-        _icons[id] ?? Icons.wb_twilight,
+        iconOf(id),
         size: AppSpace.xl,
         color: scheme.onSurfaceVariant,
       ),

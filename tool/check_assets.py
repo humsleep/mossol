@@ -9,7 +9,11 @@
   python3 tool/check_assets.py --json     # 기계용
 
 기대 목록은 SCENE_PROMPTS 본문에 적힌 `assets/<폴더>/<이름>.webp` 를 그대로 긁는다
-(§0.3 규약표의 `<event id>` 같은 자리표시자 줄은 뺀다). 표준 라이브러리만 쓴다.
+(§0.3 규약표의 `<event id>` 같은 자리표시자 줄은 뺀다). 여기에 두 가지를 더한다:
+- 2차 그림 세트(docs/image_prompts/*.md, 엔딩·표정·키 아트·도장·행동 배경·위기 컷).
+  위기 컷(`assets/events/<id>`)은 장면 자리 `scenes/` 로 들어간다(tool/import_generated_art.py).
+- 대본이 `image`·`photo.image` 로 가리키는 파일 전부(전용 사진 `<이벤트 id>_<n>` 이 여기서 잡힌다).
+표준 라이브러리만 쓴다.
 
 나가는 값: 없는 파일이 있으면 1, 규약을 어긴(이름이 틀린·형식이 다른) 파일이 있어도 1,
 전부 맞으면 0. "남는 파일(extra)" 은 경고일 뿐 실패가 아니다 — 작가가 변형을 더 넣고
@@ -28,7 +32,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC = os.path.join(ROOT, 'docs', 'SCENE_PROMPTS.md')
 ASSETS = os.path.join(ROOT, 'assets')
 
-DIRS = ('scenes', 'photos', 'stickers', 'endings')
+DIRS = ('scenes', 'photos', 'stickers', 'endings', 'expressions', 'keyart', 'stamps')
+PROMPTS2 = os.path.join(ROOT, 'docs', 'image_prompts')
+STORY = os.path.join(ASSETS, 'story')
 
 # lib/ui/scene_registry.dart 의 extensions 와 같은 순서.
 EXTENSIONS = ('png', 'jpg', 'jpeg', 'webp')
@@ -39,11 +45,17 @@ PATH_RE = re.compile(r'assets/(%s)/([a-z0-9_]+)\.webp' % '|'.join(DIRS))
 # 크기 기준(§0.4). 파일 크기(바이트)가 이 선을 크게 넘으면 변환을 건너뛴 것이다.
 # 한 장당 상한(webp q90 기준). 이 크기를 넘으면 해상도나 품질이 과한 것이다 —
 # 가장 큰 아이폰이 쓰는 픽셀은 장면·엔딩 1176px, 사진 792px 뿐이다(tool/convert_art.py).
+#
+# 2차 세트(docs/image_prompts)는 소유자 결정으로 원본 해상도(1024~1536px)를 유지한다 —
+# WebP q90 에서 한 장 150~300KB. 그래서 그 폴더들의 상한은 이 크기에 맞춘다.
 SIZE_BUDGET = {
-    'scenes': 160 * 1024,
-    'endings': 160 * 1024,
-    'photos': 100 * 1024,
+    'scenes': 320 * 1024,
+    'endings': 360 * 1024,
+    'photos': 320 * 1024,
     'stickers': 60 * 1024,
+    'expressions': 360 * 1024,
+    'keyart': 360 * 1024,
+    'stamps': 420 * 1024,
 }
 
 
@@ -57,6 +69,29 @@ def expected(doc_path: str) -> dict[str, set[str]]:
     out: dict[str, set[str]] = {d: set() for d in DIRS}
     for folder, name in PATH_RE.findall(text):
         out[folder].add(f'{name}.webp')
+    # 2차 세트: 문서 제목의 `<이름>.png`(사진은 아래 대본 참조로 잡는다).
+    if os.path.isdir(PROMPTS2):
+        prefix = {'01_endings.md': 'endings'}
+        for md in sorted(os.listdir(PROMPTS2)):
+            if not md.endswith('.md') or md.startswith('02_photos'):
+                continue
+            with open(os.path.join(PROMPTS2, md), encoding='utf-8') as f:
+                for m in re.finditer(r'^#{3,4} .*?`([^`]+)\.png`', f.read(), re.M):
+                    name = m.group(1)
+                    if name.startswith('assets/'):
+                        folder, name = name.split('/')[1], name.split('/')[2]
+                        folder = 'scenes' if folder == 'events' else folder
+                    else:
+                        folder = prefix.get(md)
+                    if folder in out:
+                        out[folder].add(f'{name}.webp')
+    # 대본이 가리키는 그림.
+    ref = re.compile(r'"image":\s*"assets/(%s)/([a-z0-9_]+)(?:\.\w+)?"' % '|'.join(DIRS))
+    for name in sorted(os.listdir(STORY)) if os.path.isdir(STORY) else []:
+        if name.endswith('.json'):
+            with open(os.path.join(STORY, name), encoding='utf-8') as f:
+                for folder, key in ref.findall(f.read()):
+                    out[folder].add(f'{key}.webp')
     return out
 
 

@@ -141,6 +141,8 @@ class StoryBundle {
     'events_route_a.json',
     'events_route_b.json',
     'events_daily.json',
+    // 아침 행동(config.actions)마다 그날 첫 장면. `trigger.action` 으로 거른다.
+    'events_action.json',
     'events_special.json',
     'route_jeongwoo.json',
     'route_daeun.json',
@@ -343,6 +345,7 @@ class StoryBundle {
       _checkMbti(e);
       _checkMoment(e);
       _checkImage(e.image, '${e.id}.image');
+      _checkActionScene(e);
       _checkLines(e.lines, '${e.id}.lines');
       _checkVariants(e);
       for (var i = 0; i < e.choices.length; i++) {
@@ -475,9 +478,13 @@ class StoryBundle {
   /// [pref] 회차에서 **반복될 수 있는** 일상(`once: false`) 이벤트.
   /// `once: true` 는 한 번 보면 후보에서 사라지므로([EventEngine] 의 `_available`),
   /// 100일 후반의 일상 칸은 결국 이 목록 안에서만 돌아간다.
+  ///
+  /// 행동 장면(`trigger.action`)은 일상 칸이 아니라 하루 첫 장면 자리에서만 뽑히므로
+  /// 세지 않는다([EventEngine.dailyPool] 도 뺀다) — 세면 소프트락 방지선이 부풀려진다.
   List<StoryEvent> repeatableDaily(String pref) => [
     for (final e in events)
       if (e.layer == EventLayer.daily &&
+          e.trigger.action.isEmpty &&
           !e.once &&
           _drawable(e) &&
           eventInPreference(e, pref))
@@ -861,6 +868,22 @@ class StoryBundle {
         throw StateError(
           'photo caption ${Photo.maxCaption}자 초과: $where[$i] ($n)',
         );
+      }
+    }
+  }
+
+  /// 행동 장면(`trigger.action`)은 일상층이고, 아는 아침 행동만 가리킨다.
+  /// 오타 난 행동 id 는 조용히 영영 안 열리는 장면이 되므로 여기서 막는다.
+  void _checkActionScene(StoryEvent e) {
+    final acts = e.trigger.action;
+    if (acts.isEmpty) return;
+    if (e.layer != EventLayer.daily) {
+      throw StateError('trigger.action 은 daily 이벤트에만: ${e.id}');
+    }
+    final known = {for (final a in config.actions) a.id};
+    for (final a in acts) {
+      if (!known.contains(a)) {
+        throw StateError('없는 아침 행동: ${e.id}.trigger.action -> $a');
       }
     }
   }

@@ -51,7 +51,7 @@ void main() {
 
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 12);
-      expect(baseEvents().length, 403);
+      expect(baseEvents().length, 458); // + 아침 행동 장면(events_action.json) 55
       expect(bundle.endings.length, 60);
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
@@ -123,7 +123,9 @@ void main() {
         EventLayer.route: 189,
         // 117 + 오프닝 플래그 후속 2편(d_fu_pact·d_fu_taehyun) — 세워만 두고
         // 아무도 안 읽던 플래그를 읽는 쪽.
-        EventLayer.daily: 119,
+        // + 아침 행동 장면 55(events_action.json, trigger.action) — 일상층이지만
+        // 일상 칸이 아니라 하루 첫 장면 자리에서만 뽑힌다(EventEngine.actionScenePool).
+        EventLayer.daily: 174,
         EventLayer.crisis: 16,
         EventLayer.hidden: 16, // h_* 15 + 유나 첫 만남(yuna_r00)
       });

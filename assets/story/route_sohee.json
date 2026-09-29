@@ -2729,7 +2729,8 @@
     "who": "them",
     "photo": {
      "icon": "music",
-     "caption": "녹음 부스 속 마이크"
+     "caption": "녹음 부스 속 마이크",
+     "image": "assets/photos/mo_sohee_photo_mic_0"
     },
     "text": "오늘 한 줄 녹음함 ㅋㅋ"
    },
@@ -2781,7 +2782,8 @@
       "who": "me",
       "photo": {
        "icon": "book",
-       "caption": "한 줄 쓴 자기소개서"
+       "caption": "한 줄 쓴 자기소개서",
+       "image": "assets/photos/mo_sohee_photo_mic_1"
       },
       "text": "나는 이거"
      },
@@ -3140,7 +3142,8 @@
     "who": "them",
     "photo": {
      "icon": "street",
-     "caption": "야시장 꼬치 두 개"
+     "caption": "야시장 꼬치 두 개",
+     "image": "assets/photos/mo_sohee_photo_skewer_0"
     },
     "text": "대기 20분 컷"
    },
@@ -3180,7 +3183,8 @@
       "who": "me",
       "photo": {
        "icon": "ticket",
-       "caption": "토요일 칸에 \"꼬치\""
+       "caption": "토요일 칸에 \"꼬치\"",
+       "image": "assets/photos/mo_sohee_photo_skewer_1"
       },
       "text": "적어 뒀어"
      },

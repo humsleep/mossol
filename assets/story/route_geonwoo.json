@@ -414,7 +414,8 @@
     "text": "야 이거 봐라 ㅋㅋ",
     "photo": {
      "icon": "book",
-     "caption": "5학년 2반 롤링페이퍼"
+     "caption": "5학년 2반 롤링페이퍼",
+     "image": "assets/photos/geonwoo_r03_0"
     }
    },
    {
@@ -722,7 +723,8 @@
     "text": "13년 늦은 우유. 이자까지.",
     "photo": {
      "icon": "food",
-     "caption": "편의점 흰 우유 두 개"
+     "caption": "편의점 흰 우유 두 개",
+     "image": "assets/photos/geonwoo_r05_0"
     }
    },
    {
@@ -942,7 +944,8 @@
     "text": "체육대회 사진 올라옴",
     "photo": {
      "icon": "gym",
-     "caption": "넘어진 아이와 선생님"
+     "caption": "넘어진 아이와 선생님",
+     "image": "assets/photos/geonwoo_r06_0"
     }
    },
    {
@@ -1405,7 +1408,8 @@
     "text": "이거 버려?",
     "photo": {
      "icon": "book",
-     "caption": "파란 필통, 6학년 3반"
+     "caption": "파란 필통, 6학년 3반",
+     "image": "assets/photos/geonwoo_r08_0"
     }
    },
    {
@@ -2712,7 +2716,8 @@
     "text": "애들이 칠판을 다 채웠어",
     "photo": {
      "icon": "book",
-     "caption": "칠판 가득 '민서야 안녕'"
+     "caption": "칠판 가득 '민서야 안녕'",
+     "image": "assets/photos/geonwoo_r15_0"
     }
    },
    {
@@ -2836,7 +2841,8 @@
     "text": "우리 반 급훈 바꿈 ㅋㅋ",
     "photo": {
      "icon": "book",
-     "caption": "오늘의 한 줄: 인사는 제대로"
+     "caption": "오늘의 한 줄: 인사는 제대로",
+     "image": "assets/photos/mo_geonwoo_photo_board_0"
     }
    },
    {
@@ -3084,7 +3090,8 @@
     "who": "me",
     "photo": {
      "icon": "book",
-     "caption": "6학년 2학기"
+     "caption": "6학년 2학기",
+     "image": "assets/photos/mo_geonwoo_photo_note_0"
     },
     "text": "이거"
    },
@@ -3160,7 +3167,8 @@
       "who": "me",
       "photo": {
        "icon": "book",
-       "caption": "답장, 13년 뒤"
+       "caption": "답장, 13년 뒤",
+       "image": "assets/photos/mo_geonwoo_photo_note_1"
       },
       "text": "답장"
      },

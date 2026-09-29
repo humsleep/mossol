@@ -127,6 +127,19 @@ App Store Connect → 앱 → 버전 정보(한국어)에 그대로 붙여 넣�
 다시 만들기 `python3 tool/store_images/make.py`.
 최대 10장, 앞의 3장이 검색 결과에 바로 보이므로 가장 강한 장면을 앞에 둔다.
 
+**캐릭터 라인업(2026-09-28 추가).** 초상화 원본(`assets/portraits/*.jpg`)을 그대로 카드에 넣은 3장을 맨 앞에 둔다.
+`python3 tool/store_images/lineup.py` 로 `promo/`·`promo65/` 에 `00a_lineup`, `00b_women`, `00c_men` 을,
+`social/lineup_1200x630.png`(카톡·인스타 링크 미리보기)를 만든다.
+
+| 파일 | 헤드라인 | 보조 |
+|---|---|---|
+| 00a_lineup (남녀 12명, 밤 배경) | 이 중 한 명과 / 100일 뒤 연인이 된다 | 당신의 첫 연애 상대는? · 톡 한 줄로 썸부터 고백까지 |
+| 00b_women (여성 6명 + 태그라인) | 누가 먼저 / 말을 걸어올까 | 그녀들과의 100일, 톡 한 줄로 시작돼요 |
+| 00c_men (남성 6명 + 태그라인) | 오늘 밤, / 누구 톡을 기다릴래? | 그들과의 100일, 고백까지 가 볼까요 |
+
+추천 순서: **00a → 00b → 00c → 02 → 04 → 05 → 06 → 07 → 08** (9장). 01·03(캐스트 화면 캡처)은 라인업과 겹쳐 뺀다.
+히든 캐릭터(유나·도윤)는 "히든" 배지만 달고 얼굴은 보여 준다 — 궁금증을 남기는 장치.
+
 **문구 얹기.** 캡션은 주인 선택 도구(Figma, Canva, Screenshots.pro 등)로 위쪽에 얹는다. 배경은 브랜드 핑크 `#C2295A` 또는
 paper `#FFFAF9`, 글씨는 Pretendard Bold(앱 번들 폰트). 헤드라인 14자 이내, 보조 20자 이내.
 캡처 전 준비: 상태바 시각 9:41로 맞추기(`xcrun simctl status_bar booted override --time 9:41 --batteryState charged --batteryLevel 100`),

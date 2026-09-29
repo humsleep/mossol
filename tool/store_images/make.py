@@ -9,6 +9,7 @@ HTML 한 장을 만들어 Chrome headless 로 찍는다(추가 설치 없음).
 
 import html
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -16,7 +17,25 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW = os.path.join(ROOT, "docs", "store_screenshots", "raw")
 OUT = os.path.join(ROOT, "docs", "store_screenshots", "promo")
-CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+
+def find_chrome():
+    """macOS 기본 Chrome, 없으면 $CHROME 또는 리눅스 Chrome/Chromium(Playwright 포함)을 찾는다."""
+    import glob
+    import shutil
+    cands = [os.environ.get("CHROME", ""), "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+    # 리눅스: Playwright 의 headless_shell 이 창 크기 = 화면 크기라 가장 정확하다(새 headless 는 아래 ~87px 가 잘린다).
+    cands += sorted(glob.glob("/opt/pw-browsers/chromium_headless_shell-*/chrome-linux*/headless_shell"), reverse=True)
+    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"):
+        cands.append(shutil.which(name) or "")
+    cands += sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"), reverse=True)
+    for c in cands:
+        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    raise SystemExit("Chrome/Chromium 을 찾지 못했습니다. CHROME=/경로/chrome 으로 지정하세요.")
+
+
+CHROME = find_chrome()
 
 # App Store 스크린샷 규격. 기본은 6.9형 한 벌(작은 기기는 Apple 이 줄여서 쓴다).
 # 6.5형 칸만 보이는 화면이면 `python3 make.py --65` 로 1284×2778 한 벌을 따로 만든다.
@@ -64,6 +83,26 @@ TEMPLATE = """<!doctype html><html lang="ko"><head><meta charset="utf-8">
 </body></html>"""
 
 
+def shoot(html_path, out, w, h):
+    """HTML 파일을 w×h PNG 로 찍는다."""
+    profile = tempfile.mkdtemp()
+    if os.path.exists(out):
+        os.unlink(out)
+    # Chrome 은 스크린샷을 쓴 뒤에도 종료되지 않는 경우가 있어, 파일이 생기면 직접 끝낸다.
+    proc = subprocess.Popen([CHROME, "--headless=new", f"--user-data-dir={profile}", "--disable-gpu",
+                             "--no-sandbox", "--hide-scrollbars", "--allow-file-access-from-files",
+                             "--force-device-scale-factor=1", f"--window-size={w},{h}",
+                             "--virtual-time-budget=4000", f"--screenshot={out}", f"file://{html_path}"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(600):
+        if proc.poll() is not None or (os.path.exists(out) and os.path.getsize(out) > 0):
+            break
+        time.sleep(0.1)
+    time.sleep(0.5)
+    proc.kill()
+    shutil.rmtree(profile, ignore_errors=True)
+
+
 def render(name, src, headline, subline, theme, mask_from=None):
     """mask_from: 원본 픽셀 y 이후를 앱 배경색으로 덮는다(테스트 광고 배너 가리기)."""
     img = os.path.join(RAW, src)
@@ -79,21 +118,7 @@ def render(name, src, headline, subline, theme, mask_from=None):
         f.write(page)
         path = f.name
     out = os.path.join(OUT, f"{name}.png")
-    profile = tempfile.mkdtemp()
-    if os.path.exists(out):
-        os.unlink(out)
-    # Chrome 은 스크린샷을 쓴 뒤에도 종료되지 않는 경우가 있어, 파일이 생기면 직접 끝낸다.
-    proc = subprocess.Popen([CHROME, "--headless=new", f"--user-data-dir={profile}", "--disable-gpu",
-                             "--hide-scrollbars", "--allow-file-access-from-files",
-                             "--force-device-scale-factor=1", f"--window-size={W},{H}",
-                             "--virtual-time-budget=4000", f"--screenshot={out}", f"file://{path}"],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    for _ in range(600):
-        if proc.poll() is not None or (os.path.exists(out) and os.path.getsize(out) > 0):
-            break
-        time.sleep(0.1)
-    time.sleep(0.5)
-    proc.kill()
+    shoot(path, out, W, H)
     os.unlink(path)
     print("만듦", out)
 

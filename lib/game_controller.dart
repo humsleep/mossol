@@ -1362,6 +1362,8 @@ class GameController extends ChangeNotifier {
     }
     if (!free) s.hearts -= 1;
     s.dayStarted = true;
+    // 계획보다 먼저 — planDay 가 이 행동으로 첫 장면(행동 장면)과 일상 가중치를 정한다.
+    s.todayAction = action.id;
     dayDelta.merge(engine.applyAction(s, action));
     cliffhanger = null;
     _cliffRank = _noCliffRank;
@@ -1585,6 +1587,7 @@ class GameController extends ChangeNotifier {
     _resetDay();
     s.dayStarted = false;
     s.dayQueue = [];
+    s.todayAction = null;
     _tomorrow = null;
     analytics.dayReach(s.day);
     await _recordBestDay(s.day);

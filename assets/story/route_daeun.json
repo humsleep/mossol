@@ -808,7 +808,8 @@
     "who": "them",
     "photo": {
      "icon": "pet",
-     "caption": "눈이 네모난 픽셀 강아지"
+     "caption": "눈이 네모난 픽셀 강아지",
+     "image": "assets/photos/daeun_r05_0"
     }
    },
    {
@@ -2614,7 +2615,8 @@
       "who": "me",
       "photo": {
        "icon": "cafe",
-       "caption": "삐뚤빼뚤한 앞치마 끈"
+       "caption": "삐뚤빼뚤한 앞치마 끈",
+       "image": "assets/photos/daeun_r15_0"
       },
       "text": "네 거"
      },
@@ -2658,7 +2660,8 @@
     "who": "them",
     "photo": {
      "icon": "cafe",
-     "caption": "컵 세 번 떨어뜨린 사람"
+     "caption": "컵 세 번 떨어뜨린 사람",
+     "image": "assets/photos/mo_daeun_photo_receipt_0"
     },
     "text": "오늘 거."
    },
@@ -2727,7 +2730,8 @@
       "who": "me",
       "photo": {
        "icon": "cafe",
-       "caption": "막대 인간과 앞치마"
+       "caption": "막대 인간과 앞치마",
+       "image": "assets/photos/mo_daeun_photo_receipt_1"
       },
       "text": "답장이에요"
      },
@@ -2892,7 +2896,8 @@
       "who": "me",
       "photo": {
        "icon": "selfie",
-       "caption": "거울에 비친 뒤통수"
+       "caption": "거울에 비친 뒤통수",
+       "image": "assets/photos/mo_daeun_preview_hair_0"
       },
       "text": "이거요?"
      },
@@ -3095,7 +3100,8 @@
     "who": "them",
     "photo": {
      "icon": "book",
-     "caption": "포장도 안 뜯은 빈 캔버스"
+     "caption": "포장도 안 뜯은 빈 캔버스",
+     "image": "assets/photos/mo_daeun_photo_canvas_0"
     },
     "text": "오랜만에 샀어."
    },

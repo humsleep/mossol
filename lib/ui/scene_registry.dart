@@ -27,10 +27,28 @@ class SceneRegistry {
   /// 스티커(1:1 투명). `<캐릭터 id>_<감정>`.
   static const stickerDir = 'assets/stickers/';
 
-  /// 엔딩 히어로(3:2). `<캐릭터 id>` · `common_<tier>`.
+  /// 엔딩 히어로(3:2). `<캐릭터 id>` · `common_<tier>`. 엔딩마다 전용 그림(`<엔딩 id>`,
+  /// 세로 2:3)이 있으면 그것이 먼저다(docs/image_prompts/01_endings.md).
   static const endingDir = 'assets/endings/';
 
-  static const dirs = [sceneDir, photoDir, stickerDir, endingDir];
+  /// 캐릭터 표정(1:1, 초상화와 같은 구도). `<캐릭터 id>_<flutter|flustered|sulky>`.
+  static const expressionDir = 'assets/expressions/';
+
+  /// 홈 키 아트(3:2). `home`.
+  static const keyartDir = 'assets/keyart/';
+
+  /// 흑역사 도장(1:1 투명). `<종류>` — [ShameStamp.kinds].
+  static const stampDir = 'assets/stamps/';
+
+  static const dirs = [
+    sceneDir,
+    photoDir,
+    stickerDir,
+    endingDir,
+    expressionDir,
+    keyartDir,
+    stampDir,
+  ];
 
   /// 같은 이름으로 여러 형식이 있으면 앞쪽을 쓴다. 초상화와 같은 순서다
   /// (webp 가 규약 형식이지만, png 를 임시로 넣어 봐도 뜨게 둔다).
@@ -109,6 +127,15 @@ class SceneRegistry {
 
   /// 엔딩 히어로(`assets/endings/<key>`).
   String? ending(String? key) => pathIn(endingDir, key);
+
+  /// 표정(`assets/expressions/<key>`).
+  String? expression(String? key) => pathIn(expressionDir, key);
+
+  /// 키 아트(`assets/keyart/<key>`).
+  String? keyart(String? key) => pathIn(keyartDir, key);
+
+  /// 흑역사 도장(`assets/stamps/<key>`).
+  String? stamp(String? key) => pathIn(stampDir, key);
 
   /// JSON 이 적어 준 경로. 네 폴더 안에 **실제로 있는** 파일일 때만 돌려준다
   /// (없는 파일을 그리면 깨진 상자가 되므로 애초에 그리지 않는다).
@@ -215,4 +242,29 @@ abstract final class SceneImages {
   /// 화이트리스트 밖 이름은 찾지 않는다.
   static String? forSticker(String? key, {SceneRegistry? registry}) =>
       key != null && Sticker.isValid(key) ? _r(registry).sticker(key) : null;
+
+  /// 캐릭터 표정. [mood] 는 [Expression] 의 상수 중 하나.
+  static String? forExpression(
+    String? characterId,
+    String mood, {
+    SceneRegistry? registry,
+  }) => characterId == null
+      ? null
+      : _r(registry).expression('${characterId}_$mood');
+
+  /// 아침 행동 장소 배경(3:2, 인물 없음). `assets/scenes/<행동 id>`.
+  static String? forAction(String actionId, {SceneRegistry? registry}) =>
+      _r(registry).scene(actionId);
+
+  /// 홈 키 아트.
+  static String? homeKeyart({SceneRegistry? registry}) =>
+      _r(registry).keyart('home');
+}
+
+/// 캐릭터 표정 이름. 파일은 `assets/expressions/<캐릭터 id>_<표정>`.
+abstract final class Expression {
+  static const flutter = 'flutter';
+  static const flustered = 'flustered';
+  static const sulky = 'sulky';
+  static const all = [flutter, flustered, sulky];
 }

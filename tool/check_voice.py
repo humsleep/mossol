@@ -22,7 +22,7 @@ STORY = ROOT / 'assets' / 'story'
 RULES = json.loads((Path(__file__).resolve().parent / 'voice_rules.json').read_text(encoding='utf-8'))
 
 EVENT_FILES = [
-    'events_daily.json', 'events_main.json', 'events_moments.json',
+    'events_daily.json', 'events_action.json', 'events_main.json', 'events_moments.json',
     'events_route_a.json', 'events_route_b.json', 'events_special.json',
     'route_daeun.json', 'route_geonwoo.json', 'route_jeongwoo.json',
     'route_seunghyun.json', 'route_sohee.json', 'route_yuna.json',
