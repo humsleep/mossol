@@ -2533,7 +2533,8 @@
     "who": "them",
     "photo": {
      "icon": "pet",
-     "caption": "담요 속 새끼 고양이 셋"
+     "caption": "담요 속 새끼 고양이 셋",
+     "image": "assets/photos/mo_seunghyun_photo_kitten_0"
     },
     "text": "오늘 입원한 아이들이에요."
    },
@@ -2920,7 +2921,8 @@
     "who": "them",
     "photo": {
      "icon": "book",
-     "caption": "메모장 '같이 가고 싶은 곳 23'"
+     "caption": "메모장 '같이 가고 싶은 곳 23'",
+     "image": "assets/photos/mo_seunghyun_photo_list_0"
     },
     "text": "제 메모장이에요."
    },

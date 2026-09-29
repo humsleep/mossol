@@ -1,0 +1,242 @@
+<title>모쏠 탈출기 그림 작업실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#FFF8F6; --surface:#FFFFFF; --surface2:#FBEFF1; --ink:#2A1A20; --soft:#6F5A61; --line:#EAD9DD;
+  --rose:#C2295A; --rose-ink:#FFFFFF; --rose-soft:#FBE3EA; --done:#2F7A4D; --done-soft:#DDF1E4;
+  --shadow:0 1px 2px rgba(60,20,35,.06),0 4px 16px rgba(60,20,35,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#161014; --surface:#211A1E; --surface2:#2A2126; --ink:#F2E5E7; --soft:#C3AEB4; --line:#3A2E33;
+    --rose:#FF8CA8; --rose-ink:#2A0714; --rose-soft:#3A1E28; --done:#79D29A; --done-soft:#17372A;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#161014; --surface:#211A1E; --surface2:#2A2126; --ink:#F2E5E7; --soft:#C3AEB4; --line:#3A2E33;
+  --rose:#FF8CA8; --rose-ink:#2A0714; --rose-soft:#3A1E28; --done:#79D29A; --done-soft:#17372A;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 "IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",sans-serif;word-break:keep-all;padding-inline:16px}
+.wrap{max-width:860px;margin:0 auto;padding-block:20px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 4px;text-wrap:balance;letter-spacing:-.3px}
+h2{font-size:17px;margin:0}
+.lead{color:var(--soft);margin:0}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;font-weight:600}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+button.primary{background:var(--rose);color:var(--rose-ink);border-color:var(--rose)}
+button.small{padding:5px 10px;font-size:13px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13.5px}
+
+/* 진행 막대 */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.meter{flex:1 1 200px;height:10px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--rose);width:0;transition:width .3s}
+.count{font-variant-numeric:tabular-nums;font-weight:700}
+label.toggle{display:flex;gap:6px;align-items:center;color:var(--soft);font-size:14px}
+
+/* 하는 법 */
+.how{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin:18px 0 26px}
+.how ol{margin:10px 0 0;padding-left:22px;display:grid;gap:8px}
+.how b{color:var(--rose)}
+.fix{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.fix p{margin:0 0 8px;color:var(--soft);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+
+/* 묶음 */
+.batch{border:1px solid var(--line);border-radius:16px;background:var(--surface);margin-bottom:14px;box-shadow:var(--shadow)}
+.batch>summary{list-style:none;display:flex;gap:14px;align-items:center;padding:14px 16px;cursor:pointer}
+.batch>summary::-webkit-details-marker{display:none}
+.num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--rose-soft);color:var(--rose);display:grid;place-items:center;font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.batch.complete .num{background:var(--done-soft);color:var(--done)}
+.face{flex:none;width:52px;height:52px;border-radius:12px;object-fit:cover;object-position:50% 20%;background:var(--surface2)}
+.btitle{flex:1;min-width:0}
+.btitle small{display:block;color:var(--soft);font-size:13px}
+.bcount{font-variant-numeric:tabular-nums;color:var(--soft);font-size:14px;white-space:nowrap}
+.batch.complete .bcount{color:var(--done);font-weight:700}
+.chev{transition:transform .2s;color:var(--soft)}
+.batch[open] .chev{transform:rotate(90deg)}
+.inner{padding:0 16px 16px;display:grid;gap:12px}
+.attach{display:flex;gap:14px;align-items:center;background:var(--rose-soft);border-radius:12px;padding:12px}
+.attach img{width:96px;height:96px;border-radius:10px;object-fit:cover;cursor:grab}
+.attach p{margin:0;font-size:14px}
+.note{margin:0;color:var(--soft);font-size:14px}
+
+/* 카드 */
+.card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:10px;background:var(--bg)}
+.card.done{background:var(--done-soft);border-color:transparent}
+.card.done .ttl{text-decoration:line-through;text-decoration-color:var(--done)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ttl{font-weight:600;flex:1;min-width:0}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--surface2);color:var(--soft);white-space:nowrap}
+.tag.att{background:var(--rose-soft);color:var(--rose)}
+.fname{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:var(--soft);font-size:13px}
+.fname .mono{color:var(--ink);background:var(--surface2);padding:2px 8px;border-radius:6px}
+details.prompt>summary{color:var(--soft);font-size:13px;cursor:pointer;width:max-content}
+details.prompt pre{white-space:pre-wrap;margin:8px 0 0;font:13px/1.65 "IBM Plex Sans KR",sans-serif;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-height:280px;overflow:auto}
+.check{display:flex;gap:6px;align-items:center;font-weight:600;font-size:14px;margin-left:auto}
+.check input{width:20px;height:20px;accent-color:var(--done)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-weight:600;transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:520px){.attach img{width:72px;height:72px}.face{width:44px;height:44px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <h1>모쏠 탈출기 그림 작업실</h1>
+  <p class="lead">ChatGPT로 게임 그림 183장을 만드는 작업판. 위에서부터 묶음 하나씩 끝내면 됩니다.</p>
+
+  <div class="bar">
+    <span class="count" id="count">0 / 183</span>
+    <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+    <label class="toggle"><input type="checkbox" id="hideDone"> 끝난 것 숨기기</label>
+  </div>
+
+  <section class="how" aria-labelledby="how-h">
+    <h2 id="how-h">이렇게 하세요</h2>
+    <ol>
+      <li>아래 <b>묶음 하나</b>를 펼치고, ChatGPT에서 <b>새 대화</b>를 엽니다. 묶음 하나 = 대화 하나.</li>
+      <li>캐릭터 묶음이면 분홍 칸의 <b>초상화를 ChatGPT 입력창으로 끌어다 놓아</b> 첨부합니다. (끌기가 안 되면 따로 보내 드린 초상화 파일을 첨부)</li>
+      <li>카드의 <b>[프롬프트 복사]</b> → ChatGPT에 붙여 넣고 보내기. 그림이 나오면 다운로드합니다.</li>
+      <li><b>[이름 복사]</b>를 눌러 받은 파일 이름을 그대로 바꾸고, <b>완료</b>에 체크. 다음 카드로.</li>
+    </ol>
+    <div class="fix">
+      <p>그림이 마음에 안 들면 같은 대화에 이 문장을 보내세요.</p>
+      <div class="chips" id="fixes"></div>
+    </div>
+  </section>
+
+  <div id="list"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = /*DATA*/null;
+const FIXES = [
+  ["얼굴이 초상화와 달라요","첨부한 인물의 얼굴형·눈매·머리 모양을 그대로 유지해서 다시 그려 주세요. 표정과 장면만 바꿉니다."],
+  ["주인공 얼굴이 나왔어요","주인공의 얼굴이 보이면 안 됩니다. 1인칭 시점으로 손과 소매만 보이게 다시 그려 주세요."],
+  ["글자가 생겼어요","그림 안의 글자·숫자·로고를 모두 지우고 흐린 무늬로 바꿔 주세요."],
+  ["너무 어두워요","전체를 한 단계 밝게, 파스텔 톤으로. 그림자는 부드럽게."],
+  ["사진처럼 나와요","사진처럼 말고 웹툰 일러스트로. 외곽선을 가늘게 살려 주세요."],
+  ["인물이 너무 작아요","인물을 더 가깝게, 허리 위 상반신이 화면의 절반을 차지하게."],
+  ["표정 위치가 어긋나요","표정은 이대로 두고, 첨부한 초상화와 얼굴 위치·크기·어깨선·배경색이 정확히 겹치게 다시 그려 주세요."],
+];
+const KEY = "mossol-image-studio-done";
+let done = {};
+try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { done = {}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+
+const toastEl = document.getElementById("toast");
+let toastT;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(()=>toastEl.classList.remove("show"), 1600); }
+function copy(text, msg, fallbackEl){
+  const ok = () => toast(msg);
+  const fail = () => {
+    if (fallbackEl) {
+      const r = document.createRange(); r.selectNodeContents(fallbackEl);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast("복사가 막혀 있어요. 선택된 글자를 직접 복사하세요");
+    } else toast("복사가 막혀 있어요");
+  };
+  try { navigator.clipboard.writeText(text).then(ok, fail); } catch (e) { fail(); }
+}
+function el(tag, attrs = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+}
+
+const fixes = document.getElementById("fixes");
+for (const [label, text] of FIXES) fixes.append(el("button", {class:"small", onclick:()=>copy(text, "수정 문장을 복사했어요")}, label));
+
+const list = document.getElementById("list");
+const total = DATA.batches.reduce((a, b) => a + b.items.filter(i => !i.alt).length, 0);
+const batchEls = [];
+
+DATA.batches.forEach((b, bi) => {
+  const counter = el("span", {class:"bcount"});
+  const head = el("summary", {},
+    el("span", {class:"num"}, String(bi + 1)),
+    b.who ? el("img", {class:"face", src: DATA.portraits[b.who], alt:""}) : null,
+    el("span", {class:"btitle"}, el("h2", {}, b.title), el("small", {}, kindsOf(b))),
+    counter,
+    el("span", {class:"chev", "aria-hidden":"true"}, "›"));
+  const inner = el("div", {class:"inner"});
+  if (b.who) {
+    inner.append(el("div", {class:"attach"},
+      el("img", {src: DATA.portraits[b.who], alt: DATA.names[b.who] + " 초상화", draggable:"true"}),
+      el("p", {}, el("b", {}, DATA.names[b.who] + " 초상화"), " — 이 그림을 ChatGPT 입력창으로 끌어다 놓아 첨부하세요. 파일 이름은 ", el("span", {class:"mono"}, b.who + ".jpg"), " 입니다.")));
+  }
+  inner.append(el("p", {class:"note"}, b.note));
+  const cards = b.items.map(it => card(it, () => refresh()));
+  cards.forEach(c => inner.append(c.node));
+  const box = el("details", {class:"batch", id:"b" + (bi + 1)}, head, inner);
+  list.append(box);
+  batchEls.push({box, counter, cards, items: b.items});
+});
+
+function kindsOf(b){
+  const c = {};
+  for (const i of b.items) c[i.kind] = (c[i.kind] || 0) + 1;
+  return Object.entries(c).map(([k, n]) => `${k} ${n}`).join(" · ");
+}
+
+function card(it, onChange){
+  const pre = el("pre", {}, it.prompt);
+  const cb = el("input", {type:"checkbox", id:"c-" + it.key.replace(/[^a-z0-9]/gi, "-")});
+  cb.checked = !!done[it.key];
+  const node = el("div", {class:"card"},
+    el("div", {class:"row"},
+      el("span", {class:"ttl"}, it.title),
+      el("span", {class:"tag"}, it.kind),
+      it.attach ? el("span", {class:"tag att"}, DATA.names[it.attach] + " 첨부") : null),
+    el("div", {class:"fname"}, "저장 이름",
+      el("span", {class:"mono"}, it.file),
+      el("button", {class:"small", onclick:()=>copy(it.file.replace(/\.png$/, ""), "파일 이름을 복사했어요 (.png 앞부분)")}, "이름 복사"),
+      el("span", {}, "폴더 " + it.path.slice(0, it.path.lastIndexOf("/") + 1))),
+    el("div", {class:"row"},
+      el("button", {class:"primary", onclick:()=>copy(it.prompt, "프롬프트를 복사했어요. ChatGPT에 붙여 넣으세요", pre)}, "프롬프트 복사"),
+      el("label", {class:"check", for: cb.id}, cb, "완료")),
+    el("details", {class:"prompt"}, el("summary", {}, "프롬프트 내용 보기"), pre));
+  cb.addEventListener("change", () => { if (cb.checked) done[it.key] = 1; else delete done[it.key]; save(); onChange(); });
+  return {node, cb, it};
+}
+
+const hide = document.getElementById("hideDone");
+try { hide.checked = localStorage.getItem(KEY + "-hide") === "1"; } catch (e) {}
+hide.addEventListener("change", () => { try { localStorage.setItem(KEY + "-hide", hide.checked ? "1" : "0"); } catch (e) {} refresh(); });
+
+function refresh(){
+  let n = 0;
+  let firstOpen = null;
+  for (const b of batchEls) {
+    const real = b.items.filter(i => !i.alt);
+    const d = real.filter(i => done[i.key]).length;
+    n += d;
+    b.counter.textContent = `${d} / ${real.length}`;
+    const complete = d === real.length;
+    b.box.classList.toggle("complete", complete);
+    if (!complete && firstOpen === null) firstOpen = b;
+    for (const c of b.cards) {
+      const isDone = !!done[c.it.key];
+      c.node.classList.toggle("done", isDone);
+      c.node.hidden = hide.checked && isDone;
+    }
+    b.box.hidden = hide.checked && complete;
+  }
+  document.getElementById("count").textContent = `${n} / ${total}`;
+  document.getElementById("meter").style.width = (n / total * 100) + "%";
+  return firstOpen;
+}
+const first = refresh();
+if (first) first.box.open = true;
+</script>

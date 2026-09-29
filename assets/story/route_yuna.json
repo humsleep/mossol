@@ -2281,7 +2281,8 @@
     "text": "떡볶이 2인분 대기 중!!",
     "photo": {
      "icon": "food",
-     "caption": "혼자 아님. 기다리는 중"
+     "caption": "혼자 아님. 기다리는 중",
+     "image": "assets/photos/mo_yuna_photo_tteok_0"
     }
    },
    {
@@ -2325,7 +2326,8 @@
       "text": "도착!",
       "photo": {
        "icon": "street",
-       "caption": "분식집 앞 도착"
+       "caption": "분식집 앞 도착",
+       "image": "assets/photos/mo_yuna_photo_tteok_1"
       }
      },
      "ㅋㅋㅋ 4분 컷!! 뛰는 폼 좋았어요",
@@ -2344,7 +2346,8 @@
       "text": "도착!",
       "photo": {
        "icon": "street",
-       "caption": "분식집 앞 도착"
+       "caption": "분식집 앞 도착",
+       "image": "assets/photos/mo_yuna_photo_tteok_2"
       }
      },
      {
@@ -2668,7 +2671,8 @@
       "text": "벌써 닫았어 ㅋㅋ",
       "photo": {
        "icon": "night",
-       "caption": "셔터 내린 분식집"
+       "caption": "셔터 내린 분식집",
+       "image": "assets/photos/mo_yuna_call_offer_0"
       }
      },
      "요즘 안 가서 몰랐네. 몇 시에 닫는지도"
@@ -2708,7 +2712,8 @@
     "text": "이번 주 전부 8점 이상 ㅋㅋ",
     "photo": {
      "icon": "gym",
-     "caption": "스티커로 꽉 찬 일지"
+     "caption": "스티커로 꽉 찬 일지",
+     "image": "assets/photos/mo_yuna_photo_journal_0"
     }
    },
    {
@@ -2748,7 +2753,8 @@
       "text": "나도 전부 8점",
       "photo": {
        "icon": "book",
-       "caption": "내 일지, 이번 주"
+       "caption": "내 일지, 이번 주",
+       "image": "assets/photos/mo_yuna_photo_journal_1"
       }
      },
      "ㅋㅋ 이유 칸에 내 이름 너무 많은데?",

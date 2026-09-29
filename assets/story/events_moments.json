@@ -88,7 +88,8 @@
       "who": "me",
       "photo": {
        "icon": "sky",
-       "caption": "자취방 창밖 달"
+       "caption": "자취방 창밖 달",
+       "image": "assets/photos/mo_seoyeon_photo_night_1"
       },
       "text": "여기도 나름 괜찮아요"
      },
@@ -100,7 +101,8 @@
       "who": "me",
       "photo": {
        "icon": "sky",
-       "caption": "흔들린 천장 조명"
+       "caption": "흔들린 천장 조명",
+       "image": "assets/photos/mo_seoyeon_photo_night_3"
       },
       "text": "여기도 나름 괜찮아요"
      },
@@ -112,7 +114,8 @@
       "who": "me",
       "photo": {
        "icon": "sky",
-       "caption": "자취방 창밖 달"
+       "caption": "자취방 창밖 달",
+       "image": "assets/photos/mo_seoyeon_photo_night_2"
       },
       "text": "여기도 나름 괜찮아요"
      },
@@ -670,7 +673,8 @@
       "who": "me",
       "photo": {
        "icon": "food",
-       "caption": "불어 터진 컵라면"
+       "caption": "불어 터진 컵라면",
+       "image": "assets/photos/mo_haneul_photo_sandwich_1"
       },
       "text": "교환 조건 이거"
      },
@@ -1077,7 +1081,8 @@
       "who": "me",
       "photo": {
        "icon": "selfie",
-       "caption": "같은 사진, 내 프사"
+       "caption": "같은 사진, 내 프사",
+       "image": "assets/photos/mo_haneul_photo_profile_1"
       },
       "text": "바꿨다"
      },
@@ -1351,7 +1356,8 @@
       "who": "me",
       "photo": {
        "icon": "food",
-       "caption": "직접 만든 계란볶음밥"
+       "caption": "직접 만든 계란볶음밥",
+       "image": "assets/photos/mo_jiwoo_photo_dinner_1"
       },
       "text": "오늘 제가 만든 거"
      },
@@ -1760,7 +1766,8 @@
       "who": "me",
       "photo": {
        "icon": "food",
-       "caption": "먹다 남은 떡볶이"
+       "caption": "먹다 남은 떡볶이",
+       "image": "assets/photos/mo_minjae_photo_ramen_1"
       },
       "text": "나는 이거"
      },
@@ -2167,7 +2174,8 @@
       "who": "me",
       "photo": {
        "icon": "street",
-       "caption": "같은 그림자, 내 프사"
+       "caption": "같은 그림자, 내 프사",
+       "image": "assets/photos/mo_minjae_photo_shadow_1"
       },
       "text": "바꿨어"
      },
@@ -2358,7 +2366,8 @@
       "who": "them",
       "photo": {
        "icon": "selfie",
-       "caption": "국물 묻은 열두 살 둘"
+       "caption": "국물 묻은 열두 살 둘",
+       "image": "assets/photos/mo_yeeun_photo_snackbar_1"
       },
       "text": "있지 ㅋㅋ"
      },
@@ -2597,7 +2606,8 @@
       "who": "me",
       "photo": {
        "icon": "selfie",
-       "caption": "지난주 산책길 둘"
+       "caption": "지난주 산책길 둘",
+       "image": "assets/photos/mo_yeeun_photo_picnic_1"
       },
       "text": "요즘 버전"
      },
@@ -2863,7 +2873,8 @@
       "who": "me",
       "photo": {
        "icon": "street",
-       "caption": "집 앞 골목, 운동화"
+       "caption": "집 앞 골목, 운동화",
+       "image": "assets/photos/mo_doyun_photo_run_1"
       },
       "text": "나왔어요"
      },
@@ -2886,7 +2897,8 @@
       "who": "me",
       "photo": {
        "icon": "street",
-       "caption": "집 앞 골목, 운동화"
+       "caption": "집 앞 골목, 운동화",
+       "image": "assets/photos/mo_doyun_photo_run_2"
       },
       "text": "나왔어요"
      },
@@ -3212,7 +3224,8 @@
       "who": "them",
       "photo": {
        "icon": "gym",
-       "caption": "불 꺼진 헬스장 거울"
+       "caption": "불 꺼진 헬스장 거울",
+       "image": "assets/photos/mo_doyun_call_mirror_0"
       },
       "text": "이거요"
      },
@@ -3291,7 +3304,8 @@
       "who": "me",
       "photo": {
        "icon": "book",
-       "caption": "내 일지, 새 목표 한 줄"
+       "caption": "내 일지, 새 목표 한 줄",
+       "image": "assets/photos/mo_doyun_photo_journal_1"
       },
       "text": "저도 써 봤어요"
      },
@@ -3418,7 +3432,8 @@
       "who": "me",
       "photo": {
        "icon": "food",
-       "caption": "반찬 올린 밥상"
+       "caption": "반찬 올린 밥상",
+       "image": "assets/photos/mo_daily_mom_banchan_1"
       },
       "text": "벌써 먹는 중"
      },
@@ -3464,7 +3479,8 @@
       "who": "me",
       "photo": {
        "icon": "food",
-       "caption": "텅 빈 냉장고"
+       "caption": "텅 빈 냉장고",
+       "image": "assets/photos/mo_daily_mom_banchan_2"
       },
       "text": "그래서 딱 좋아"
      },
@@ -4120,7 +4136,8 @@
       "who": "me",
       "photo": {
        "icon": "cafe",
-       "caption": "커피 한 잔, 창밖"
+       "caption": "커피 한 잔, 창밖",
+       "image": "assets/photos/mo_daily_taehyun_story_1"
       },
       "text": "스토리 올림"
      },
@@ -4216,7 +4233,8 @@
       "who": "me",
       "photo": {
        "icon": "sky",
-       "caption": "자취방 옥상 노을"
+       "caption": "자취방 옥상 노을",
+       "image": "assets/photos/mo_daily_dad_sky_1"
       },
       "text": "여기도 노을"
      },
