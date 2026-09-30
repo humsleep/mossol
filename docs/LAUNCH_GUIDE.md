@@ -16,7 +16,7 @@
 3. 🙋 그 앱에 **광고 단위 3개** 만들기:
    | 형식 | 이름(예) | 쓰는 곳 |
    |---|---|---|
-   | 전면(Interstitial) | mossol_ios_interstitial | 3일차 이후 가끔 |
+   | 전면(Interstitial) | mossol_ios_interstitial | 게임 속 하루 5번마다 한 번 |
    | 보상형(Rewarded) | mossol_ios_rewarded | 하트 충전·힌트·되돌리기 |
    | 배너(Banner) | mossol_ios_banner | 화면 하단 |
 4. 🙋 **차단 관리(Blocking controls) → 콘텐츠 등급 → 최대 광고 콘텐츠 등급 T(청소년)** 저장(코드도 T 로 요청한다). 아동 대상 아님.

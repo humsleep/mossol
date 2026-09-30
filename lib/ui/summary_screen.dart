@@ -156,7 +156,6 @@ class SummaryScreen extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () async {
                       await AdManager.instance.showInterstitial(
-                        day: s.day,
                         // 이 버튼이 "엔딩 보기" 인 날 — 광고는 안 나간다.
                         isLastDay: s.day >= c.config.totalDays,
                       );

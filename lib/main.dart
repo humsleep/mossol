@@ -28,6 +28,7 @@ import 'ui/ending_screen.dart';
 import 'ui/event_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/intro_screen.dart';
+import 'ui/launch_title_screen.dart';
 import 'ui/portraits.dart';
 import 'ui/scene_registry.dart';
 import 'ui/summary_screen.dart';
@@ -65,7 +66,7 @@ Future<void> main() async {
     // 태현의 첫 문자를 덮으면 연출이 죽고, 무슨 앱인지도 모르는 채 답하게 된다.
     // 인트로 동안에는 광고가 한 장도 안 나오므로 미뤄도 잃는 것이 없다.
     if (!controller.shouldShowIntro) unawaited(AdManager.instance.init());
-    runApp(MossolApp(controller: controller));
+    runApp(MossolApp(controller: controller, launchTitle: true));
   } catch (e, stack) {
     // 여기서 죽으면 유저는 흰 화면만 본다. 이유를 보여 주고 빠져나갈 길을 준다.
     debugPrint('시작 실패: $e\n$stack');
@@ -179,7 +180,16 @@ class StartupFailureApp extends StatelessWidget {
 
 class MossolApp extends StatefulWidget {
   final GameController controller;
-  const MossolApp({super.key, required this.controller});
+
+  /// 켤 때 라인업 타이틀([LaunchTitleScreen])부터 보여 줄지. 실제 실행(main)은 true —
+  /// 앱을 완전히 껐다 켤 때마다 나온다. 위젯 테스트는 기본값 false 로 바로 게임에서 시작한다.
+  final bool launchTitle;
+
+  const MossolApp({
+    super.key,
+    required this.controller,
+    this.launchTitle = false,
+  });
 
   @override
   State<MossolApp> createState() => _MossolAppState();
@@ -188,6 +198,9 @@ class MossolApp extends StatefulWidget {
 class _MossolAppState extends State<MossolApp> {
   GameController get controller => widget.controller;
   Phase? _lastPhase;
+
+  /// 앱 프로세스가 살아 있는 동안 한 번만 true.
+  late bool _showLaunchTitle = widget.launchTitle;
 
   @override
   void initState() {
@@ -228,21 +241,36 @@ class _MossolAppState extends State<MossolApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => switch (controller.phase) {
-          // 첫 실행에는 홈 대신 인트로(태현의 첫 문자)를 세운다. 인트로가 끝나면
-          // 곧바로 첫날이라 홈은 두 번째 세션부터 보인다(00_VERDICT §3).
-          Phase.home when controller.shouldShowIntro => IntroScreen(
-            c: controller,
-          ),
-          Phase.home => HomeScreen(c: controller),
-          Phase.dayStart => DayTransitionScreen(c: controller),
-          Phase.action => ActionScreen(c: controller),
-          Phase.event => EventScreen(c: controller),
-          Phase.summary => SummaryScreen(c: controller),
-          Phase.ending => EndingScreen(c: controller),
-        },
+      home: Builder(
+        builder: (context) => AnimatedSwitcher(
+          duration: AppMotion.sheet(context),
+          switchInCurve: AppMotion.standard,
+          child: _showLaunchTitle
+              ? LaunchTitleScreen(
+                  key: const ValueKey('launch-title'),
+                  cast: controller.bundle.characters,
+                  onStart: () => setState(() => _showLaunchTitle = false),
+                )
+              : ListenableBuilder(
+                  key: const ValueKey('game'),
+                  listenable: controller,
+                  builder: (context, _) => switch (controller.phase) {
+                    // 첫 실행에는 홈 대신 인트로(태현의 첫 문자)를 세운다. 인트로가 끝나면
+                    // 곧바로 첫날이라 홈은 두 번째 세션부터 보인다(00_VERDICT §3).
+                    // 라인업 타이틀을 지나왔으면 인트로의 타이틀 단계는 건너뛴다.
+                    Phase.home when controller.shouldShowIntro => IntroScreen(
+                      c: controller,
+                      skipTitle: widget.launchTitle,
+                    ),
+                    Phase.home => HomeScreen(c: controller),
+                    Phase.dayStart => DayTransitionScreen(c: controller),
+                    Phase.action => ActionScreen(c: controller),
+                    Phase.event => EventScreen(c: controller),
+                    Phase.summary => SummaryScreen(c: controller),
+                    Phase.ending => EndingScreen(c: controller),
+                  },
+                ),
+        ),
       ),
     );
   }

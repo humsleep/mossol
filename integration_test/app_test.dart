@@ -582,9 +582,8 @@ void main() {
     await c.newGame(preference: Preference.female);
     await pumpFor(tester, const Duration(seconds: 2));
     if (findText('오늘의 운').evaluate().isNotEmpty) await spinRouletteUi(tester);
-    // 1일차는 전면 광고 정책(3일차 이후) 밖이라 흐름이 막히지 않는다.
-    expect(AdManager.instance.canShowInterstitial(1), isFalse);
-    expect(AdManager.instance.canShowInterstitial(2), isFalse);
+    // 켜자마자는 전면 광고 정책(하루 5번 마칠 때마다) 밖이라 흐름이 막히지 않는다.
+    expect(AdManager.instance.canShowInterstitial(), isFalse);
     c.goHome();
     await pumpFor(tester, const Duration(seconds: 6));
     note('banner on home loaded: ${find.byType(BannerFrame).evaluate().isNotEmpty}');

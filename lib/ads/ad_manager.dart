@@ -71,15 +71,16 @@ class AdManager with WidgetsBindingObserver {
     );
   }
 
-  /// 전면 광고 정책. 설계서 07 항목과 같다.
-  /// `interstitialMinDay` 는 게임 내 일차(day), 나머지는 실제 시각 기준이다.
+  /// 전면 광고 정책.
   ///
-  /// 왜 이 값인가(docs/review/00_VERDICT.md §3 R1): 게임 내 하루가 약 2분이라
-  /// 최소 간격 2분은 "하루에 한 번" 과 같았고, D+3 은 첫 세션(약 10분) 안이었다.
-  /// 벤치마크에서 별점을 떨어뜨린 1순위가 광고 빈도다 — 첫 세션은 광고 없이 끝낸다.
-  static const interstitialMinDay = 7;
-  static const interstitialMinInterval = Duration(minutes: 6);
-  static const interstitialMaxPerDay = 6;
+  /// 앱을 켠 뒤 게임 속 하루를 [interstitialEveryDays] 번 마칠 때마다 정산의 `다음 날로`
+  /// 에서 한 번 나간다(유저 피드백 2026-09-30: "day 를 연속으로 3개 할 경우 광고가 한 번씩" → 5일로 조정, 약 10분에 한 번).
+  /// 예전 규칙(D+7 이후 · 6분 간격)은 하루가 약 2분인 이 게임에서 광고가 거의 안 보였다.
+  /// 광고가 준비되지 않았으면 세던 날을 버리지 않고 다음 날 끝에 다시 시도한다.
+  /// 나머지 둘은 안전장치다: 잇달아 두 번 뜨는 사고를 막는 최소 간격, 달력 하루 상한.
+  static const interstitialEveryDays = 5;
+  static const interstitialMinInterval = Duration(minutes: 1);
+  static const interstitialMaxPerDay = 15;
 
   /// 로드된 전면·리워드 광고는 약 1시간 뒤 만료된다(Google 안내). 여유를 두고 갈아 끼운다.
   static const _adMaxAge = Duration(minutes: 50);
@@ -137,6 +138,10 @@ class AdManager with WidgetsBindingObserver {
 
   DateTime? _lastInterstitialAt;
   int _interstitialsShown = 0;
+
+  /// 이번 앱 실행에서 마지막 전면 광고 뒤로 마친 게임 속 날 수.
+  int _daysSinceInterstitial = 0;
+  int get daysSinceInterstitial => _daysSinceInterstitial;
   /// 캡을 세는 달력 날짜(yyyymmdd, 로컬). 게임 내 일차가 아니라 실제 날짜로 센다.
   int _countedCalendarDay = -1;
 
@@ -372,15 +377,28 @@ class AdManager with WidgetsBindingObserver {
   ///
   /// [isLastDay] 는 100일째 정산이다. 그 버튼은 "엔딩 보기" 이고, 100일을 걸어온
   /// 사람에게 엔딩 직전에 광고를 끼우지 않는다 — 별점이 깎이는 자리가 여기다.
-  bool canShowInterstitial(int day, {bool isLastDay = false}) {
+  bool canShowInterstitial({bool isLastDay = false}) {
     if (isLastDay) return false;
-    if (day < interstitialMinDay) return false;
+    if (_daysSinceInterstitial < interstitialEveryDays) return false;
     final now = DateTime.now();
     final shownToday = _countedCalendarDay == _calendarDay(now) ? _interstitialsShown : 0;
     if (shownToday >= interstitialMaxPerDay) return false;
     final last = _lastInterstitialAt;
     if (last != null && now.difference(last) < interstitialMinInterval) return false;
     return true;
+  }
+
+  /// 게임 속 하루를 마쳤다. [showInterstitial] 이 부르며, 테스트도 쓴다.
+  @visibleForTesting
+  void recordDayEnd() => _daysSinceInterstitial++;
+
+  /// 테스트용 초기화.
+  @visibleForTesting
+  void resetInterstitialPolicy() {
+    _daysSinceInterstitial = 0;
+    _interstitialsShown = 0;
+    _countedCalendarDay = -1;
+    _lastInterstitialAt = null;
   }
 
   void _countInterstitial(DateTime now) {
@@ -391,15 +409,15 @@ class AdManager with WidgetsBindingObserver {
     }
     _interstitialsShown++;
     _lastInterstitialAt = now;
+    _daysSinceInterstitial = 0;
   }
 
   /// 전면 광고. 정책에 걸리거나 로드가 안 됐으면 즉시 false 로 끝나 흐름을 막지 않는다.
-  Future<bool> showInterstitial({
-    required int day,
-    bool isLastDay = false,
-  }) async {
+  /// 정산의 `다음 날로` 마다 부른다 — 하루를 세고, 세 번째 날이면 광고를 띄운다.
+  Future<bool> showInterstitial({bool isLastDay = false}) async {
+    recordDayEnd();
     if (!supported || !_sdkInitialized || _fullScreenBusy) return false;
-    if (!canShowInterstitial(day, isLastDay: isLastDay)) return false;
+    if (!canShowInterstitial(isLastDay: isLastDay)) return false;
     if (_interstitial.isStale(_adMaxAge)) _interstitial.discard();
     final ad = _interstitial.take();
     if (ad == null) {
