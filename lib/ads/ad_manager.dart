@@ -61,11 +61,11 @@ class AdManager with WidgetsBindingObserver {
   /// 전면 광고 정책.
   ///
   /// 앱을 켠 뒤 게임 속 하루를 [interstitialEveryDays] 번 마칠 때마다 정산의 `다음 날로`
-  /// 에서 한 번 나간다(유저 피드백 2026-09-30: "day 를 연속으로 3개 할 경우 광고가 한 번씩").
+  /// 에서 한 번 나간다(유저 피드백 2026-09-30: "day 를 연속으로 3개 할 경우 광고가 한 번씩" → 5일로 조정, 약 10분에 한 번).
   /// 예전 규칙(D+7 이후 · 6분 간격)은 하루가 약 2분인 이 게임에서 광고가 거의 안 보였다.
   /// 광고가 준비되지 않았으면 세던 날을 버리지 않고 다음 날 끝에 다시 시도한다.
   /// 나머지 둘은 안전장치다: 잇달아 두 번 뜨는 사고를 막는 최소 간격, 달력 하루 상한.
-  static const interstitialEveryDays = 3;
+  static const interstitialEveryDays = 5;
   static const interstitialMinInterval = Duration(minutes: 1);
   static const interstitialMaxPerDay = 15;
 

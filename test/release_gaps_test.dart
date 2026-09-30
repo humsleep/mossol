@@ -232,14 +232,15 @@ void main() {
       );
     });
 
-    test('전면 광고: 앱을 켠 뒤 하루를 3번 마칠 때마다 한 번, 엔딩 직전은 제외', () {
+    test('전면 광고: 앱을 켠 뒤 하루를 5번 마칠 때마다 한 번, 엔딩 직전은 제외', () {
       final ads = AdManager.instance..resetInterstitialPolicy();
       expect(ads.canShowInterstitial(), isFalse, reason: '켜자마자는 안 된다');
+      for (var i = 0; i < 4; i++) {
+        ads.recordDayEnd();
+      }
+      expect(ads.canShowInterstitial(), isFalse, reason: '나흘째까지는 안 된다');
       ads.recordDayEnd();
-      ads.recordDayEnd();
-      expect(ads.canShowInterstitial(), isFalse, reason: '이틀째까지는 안 된다');
-      ads.recordDayEnd();
-      expect(ads.canShowInterstitial(), isTrue, reason: '세 번째 날 끝에 나간다');
+      expect(ads.canShowInterstitial(), isTrue, reason: '다섯 번째 날 끝에 나간다');
       // 광고가 준비 안 돼 못 나갔으면 다음 날 끝에도 여전히 나갈 수 있다.
       ads.recordDayEnd();
       expect(ads.canShowInterstitial(), isTrue);
@@ -250,7 +251,7 @@ void main() {
         isFalse,
         reason: '엔딩 직전에는 전면 광고 금지',
       );
-      expect(AdManager.interstitialEveryDays, 3);
+      expect(AdManager.interstitialEveryDays, 5);
       expect(AdManager.interstitialMinInterval, const Duration(minutes: 1));
       expect(AdManager.interstitialMaxPerDay, 15);
       ads.resetInterstitialPolicy();
