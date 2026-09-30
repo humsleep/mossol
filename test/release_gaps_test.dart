@@ -232,23 +232,28 @@ void main() {
       );
     });
 
-    test('전면 광고: 첫 세션(D+6까지)은 안 되고 7일부터(처음 켠 상태), 상수는 설계서대로', () {
-      final ads = AdManager.instance;
-      expect(ads.canShowInterstitial(1), isFalse);
-      expect(ads.canShowInterstitial(3), isFalse, reason: '첫 세션 안에서 전면 광고 금지');
-      expect(ads.canShowInterstitial(6), isFalse);
-      expect(ads.canShowInterstitial(7), isTrue);
-      expect(ads.canShowInterstitial(100), isTrue);
+    test('전면 광고: 앱을 켠 뒤 하루를 3번 마칠 때마다 한 번, 엔딩 직전은 제외', () {
+      final ads = AdManager.instance..resetInterstitialPolicy();
+      expect(ads.canShowInterstitial(), isFalse, reason: '켜자마자는 안 된다');
+      ads.recordDayEnd();
+      ads.recordDayEnd();
+      expect(ads.canShowInterstitial(), isFalse, reason: '이틀째까지는 안 된다');
+      ads.recordDayEnd();
+      expect(ads.canShowInterstitial(), isTrue, reason: '세 번째 날 끝에 나간다');
+      // 광고가 준비 안 돼 못 나갔으면 다음 날 끝에도 여전히 나갈 수 있다.
+      ads.recordDayEnd();
+      expect(ads.canShowInterstitial(), isTrue);
       // 마지막 날 정산 버튼은 "엔딩 보기" 다. 100일을 걸어온 사람에게
       // 엔딩 직전 전면 광고를 끼우지 않는다(11_polish_verdict §9).
       expect(
-        ads.canShowInterstitial(100, isLastDay: true),
+        ads.canShowInterstitial(isLastDay: true),
         isFalse,
         reason: '엔딩 직전에는 전면 광고 금지',
       );
-      expect(AdManager.interstitialMinDay, 7);
-      expect(AdManager.interstitialMinInterval, const Duration(minutes: 6));
-      expect(AdManager.interstitialMaxPerDay, 6);
+      expect(AdManager.interstitialEveryDays, 3);
+      expect(AdManager.interstitialMinInterval, const Duration(minutes: 1));
+      expect(AdManager.interstitialMaxPerDay, 15);
+      ads.resetInterstitialPolicy();
     });
 
     test('광고 단위 표: 종류 3개, 서로 다른 단위, 실제·테스트가 섞이지 않는다', () {

@@ -41,10 +41,9 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 - 보상형 광고 단위의 **보상 설정**: 수량 `1`, 항목 `reward`, 서버 측 확인(SSV) 끔. 앱은 AdMob 의 보상 값을 쓰지 않고
   "보상 콜백이 왔는가"만 보고 하트·힌트 등을 앱이 정한 만큼 준다.
 - **전면 광고 빈도 정책**(`AdManager`, 상수 3개 · `test/release_gaps_test.dart` 가 고정):
-  `interstitialMinDay = 7` · `interstitialMinInterval = 6분` · `interstitialMaxPerDay = 6`.
-  게임 내 하루가 약 2분이라 예전 값(3일 · 2분 · 12회)은 "D+3부터 매일 광고" 였고 첫 세션(약 10분)
-  안에 전면 광고가 들어갔다. 광고 빈도는 이 장르에서 별점을 떨어뜨리는 1순위다
-  (docs/overhaul/01_benchmark.md §2 #10, docs/review/00_VERDICT.md §3 R1). **첫 세션은 전면 광고 없이 끝난다.**
+  `interstitialEveryDays = 3` · `interstitialMinInterval = 1분` · `interstitialMaxPerDay = 15`.
+  앱을 켠 뒤 게임 속 하루를 3번 마칠 때마다 정산 `다음 날로` 에서 한 번(100일째 `엔딩 보기` 는 제외).
+  예전 값(D+7 이후 · 6분 간격 · 하루 6회)은 광고가 거의 보이지 않아 2026-09-30 유저 요청으로 바꿨다.
   배너는 채팅·통화·알림 화면에 두지 않고, 다른 화면에서는 AppBar(홈은 제목 줄) 아래에 둔다.
 
 ---

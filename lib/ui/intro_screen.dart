@@ -54,7 +54,12 @@ import 'widgets.dart';
 /// 줄이는 것은 말풍선의 등장 연출이고 그건 `ChatBubble` 이 이미 처리한다.
 class IntroScreen extends StatefulWidget {
   final GameController c;
-  const IntroScreen({super.key, required this.c});
+
+  /// 콜드 스타트 타이틀(`LaunchTitleScreen`)을 방금 지나왔으면 true — 같은 앱 이름을
+  /// 두 번 보여 주지 않고 태현의 알림부터 시작한다.
+  final bool skipTitle;
+
+  const IntroScreen({super.key, required this.c, this.skipTitle = false});
 
   /// 첫 문자를 보내는 친구. 성별 중립 조연이라 캐스트(characters.json)에 없다 —
   /// 아바타는 이니셜로 그린다.
@@ -148,6 +153,12 @@ class _IntroScreenState extends State<IntroScreen> {
   void initState() {
     super.initState();
     c.logOnboardingStep(Analytics.stepIntro);
+    // 타이틀을 건너뛰면 첫 프레임부터 알림 카드다(타이틀이 한 프레임 번쩍이지 않게).
+    if (widget.skipTitle) {
+      SfxService.instance.cue(Sfx.msgIn);
+      _step = IntroStep.notice;
+      _timer = Timer(NotificationPreview.autoOpen, _openChat);
+    }
   }
 
   /// 타이틀의 `시작하기`. 여기서부터가 예전의 첫 화면이다 — 문자 도착음과 진동도
