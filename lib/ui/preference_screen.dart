@@ -342,22 +342,15 @@ class _CastList extends StatelessWidget {
       side,
       playerMbti: playerMbti,
     );
+    // 소개할 캐릭터가 없으면 자리 표시 문구 대신 섹션 자체를 숨긴다.
+    if (intros.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SectionHeader(
           title: Preference.label(side),
-          trailingText: intros.isEmpty
-              ? null
-              : PreferenceScreen.countOf(bundle, side),
+          trailingText: PreferenceScreen.countOf(bundle, side),
         ),
-        if (intros.isEmpty)
-          Text(
-            '준비 중',
-            style: context.text.bodyMedium?.copyWith(
-              color: context.scheme.onSurfaceVariant,
-            ),
-          ),
         for (final (i, e) in intros.indexed) ...[
           if (i > 0) const SizedBox(height: AppSpace.sm),
           CastIntroCard(key: Key('cast-${e.id}'), intro: e),

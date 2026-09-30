@@ -1,6 +1,6 @@
 # 출시 전 체크리스트 — 모쏠 탈출기 (com.hyukahn.mossol)
 
-작성 기준일: 2026-09-15. AdMob/Apple/Google 정책은 자주 바뀌므로 제출 직전에 각 링크를 다시 확인할 것.
+작성 기준일: 2026-09-15 (§3·§5·§6·§7 은 2026-09-29 Apple 최신 규칙 기준으로 고침 — `APP_STORE_CONNECT_GUIDE.md` §0-1). AdMob/Apple/Google 정책은 자주 바뀌므로 제출 직전에 각 링크를 다시 확인할 것.
 
 ---
 
@@ -50,6 +50,9 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 
 ## 2. AdMob 콘솔 설정
 
+- [ ] **AdMob 콘솔 → 차단 관리(Blocking controls) → 콘텐츠 등급(최대 광고 콘텐츠 등급) → T(청소년)** 로 저장했다.
+  코드도 `lib/ads/ad_manager.dart` 에서 `maxAdContentRating: MaxAdContentRating.t` 로 요청하지만, 콘솔 설정이 계정 쪽 기본값이라 둘 다 맞춘다.
+  App Store 연령 등급 13+ 와 짝이다(심사 노트에도 "max ad content rating T" 라고 썼다).
 - **최대 광고 콘텐츠 등급(Max Ad Content Rating)**: 앱 설정에서 **T(Teen)** 로 지정한다. 연애 시뮬레이션
   소재이지만 노출·도박·과도한 폭력 묘사가 없으므로 T가 적절하다.
   (Google Ads Policy Center → 앱 → Content ratings.
@@ -69,27 +72,20 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 ## 3. App Store Connect — 개인정보 라벨(Privacy Nutrition Label)
 
 `ios/Runner/PrivacyInfo.xcprivacy`에 이미 선언된 내용과 Google이 공식 문서에서 밝힌 AdMob SDK 수집
-항목(https://developers.google.com/admob/ios/privacy/data-disclosure)이 일치하도록 아래처럼 입력한다.
+항목(https://developers.google.com/admob/ios/privacy/data-disclosure)이 일치하도록 입력한다.
 앱 자체 코드가 서버로 보내는 것은 **Firebase Analytics 게임 진행 이벤트뿐**이다(§3.1, 켰을 때만).
 나머지는 "Google Mobile Ads SDK가 수집" 기준이다. App Store Connect 는 같은 데이터 유형에 여러 SDK 의
 답을 합쳐 한 줄로 받으므로, 같은 칸이면 더 넓은 쪽(AdMob) 답을 그대로 두고 용도에 "분석"이 들어 있는지만 확인한다.
 
-| App Store Connect 카테고리 | 세부 항목 | 사용자 추적에 사용 | 사용자 계정에 연결 | 용도 |
-|---|---|---|---|---|
-| 식별자(Identifiers) | 기기 ID(광고 식별자/IDFA) | ATT 허용 시 예 | 예 | 타사 광고, 자사 광고, 분석 |
-| 위치(Location) | 대략적 위치(IP 기반) | 아니요 | 예 | 타사 광고, 자사 광고, 분석 |
-| 사용 데이터(Usage Data) | 광고 데이터(노출/클릭) | 아니요 | 예 | 타사 광고, 자사 광고, 분석 |
-| 사용 데이터(Usage Data) | 제품 상호작용 | 아니요 | 예 | 타사 광고, 자사 광고, 분석 |
-| 진단(Diagnostics) | 성능 데이터 | 아니요 | 아니요 | 타사 광고, 자사 광고, 분석 |
-| 진단(Diagnostics) | 충돌 데이터 | 아니요 | 아니요 | 분석 |
-| 진단(Diagnostics) | 기타 진단 데이터 | 아니요 | 아니요 | 타사 광고, 자사 광고, 분석 |
-| 사용 데이터(Usage Data) | 제품 상호작용 — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
-| 사용 데이터(Usage Data) | 기타 사용 데이터 — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
-| 식별자(Identifiers) | 기기 ID(앱 인스턴스 ID) — **Firebase Analytics** | 아니요 | 아니요 | 분석 |
+**입력할 값은 `APP_STORE_CONNECT_GUIDE.md` §5 가 유일한 기준(single source of truth)이다.** 여기에는 표를 두지 않는다
+(두 곳에 두었다가 "기기 ID 추적 여부"가 서로 달라진 적이 있다 — 2026-09-29 정리). 요약만 적으면:
 
-- Firebase 세 줄도 답한다(2026-09-22 Firebase 켜짐). 앞의 AdMob 줄과 같은 칸("제품 상호작용",
-  "기기 ID")은 App Store Connect 에서 한 번만 답하므로 AdMob 답(연결 예, 용도에 분석 포함)이 이긴다.
-  새로 생기는 칸은 **기타 사용 데이터**(연결 안 됨 · 추적 안 함 · 분석) 하나다 — PrivacyInfo 에 이미 넣었다.
+- 수집 유형 8개: 기기 ID · 대략적 위치 · 제품 상호 작용 · 광고 데이터 · 기타 사용 데이터 · 충돌 데이터 · 성능 데이터 · 기타 진단 데이터.
+- **추적에 사용: 기기 ID 하나만 "예"**(ATT 허용 시 IDFA 로 맞춤 광고). 나머지는 전부 "아니요".
+- 사용자 신원에 연결: 기기 ID · 대략적 위치 · 제품 상호 작용 · 광고 데이터 = 예, 나머지 = 아니요.
+- AdMob 과 Firebase 가 같은 유형을 모으면 App Store Connect 는 한 줄로 받으므로 더 넓은 쪽(AdMob) 답이 이긴다.
+  근거: AdMob https://developers.google.com/admob/ios/privacy/data-disclosure , Firebase 공식 데이터 공개 문서.
+
 - Firebase Analytics 는 `Info.plist` 의 `GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED=false` 로 IDFA 를
   모으지 않는다. 보내는 이벤트에 이름·자유 입력·MBTI 원문 같은 개인 데이터는 없다(`lib/analytics/analytics.dart`).
 - "추적에 사용" 전체 여부: **예**(ATT를 허용한 사용자에 한해 IDFA 기반 맞춤 광고를 하므로 앱 전체
@@ -116,7 +112,7 @@ Android 때를 위한 절차다. plist 가 없으면 `Firebase.initializeApp()` 
    `main.dart` 의 `Analytics.init()` 이 이미 한다. (`flutterfire configure` 도 안 써도 된다.)
 5. 확인: 실기기/시뮬레이터에서 Xcode Scheme → Run → Arguments 에 `-FIRDebugEnabled` 를 넣고 실행 →
    Firebase 콘솔 **DebugView** 에 `run_started` 등이 뜨면 끝. 확인 뒤 인자는 뺀다.
-6. 위 §3 표의 Firebase 세 줄을 App Store Connect 개인정보 라벨에 반영하고, §8 개인정보처리방침에
+6. `APP_STORE_CONNECT_GUIDE.md` §5 대로 App Store Connect 개인정보 라벨을 입력하고(Firebase 몫은 이미 합쳐져 있다), §8 개인정보처리방침에
    Firebase(Google LLC)를 처리자로 추가한다.
 7. **Android 를 낼 때만**: 같은 프로젝트에 Android 앱(패키지 `com.hyukahn.mossol`) 추가 →
    `google-services.json` 을 `android/app/` 에 → `android/settings.gradle.kts` 의 plugins 에
@@ -167,62 +163,41 @@ AdMob 공식 고지(https://developers.google.com/admob/android/privacy/play-dat
 
 ## 5. App Store 연령 등급 설문 답변
 
-게임 내용(연애 시뮬레이션, 실제 음주·도박·성적 묘사 없음, 갈등/스트레스 이벤트 존재)에 맞춘 답변:
+**입력 순서·답은 `APP_STORE_CONNECT_GUIDE.md` §3, 근거와 등급 대응표는 `STORE_LISTING.md` §7** (2026-09-29 현재 설문 기준으로 다시 매김).
 
-- 알코올, 담배, 마약 사용 또는 참조: **Infrequent/Mild**
-- 시뮬레이션 도박: **None**
-- 성적인 콘텐츠 또는 누드: **None**
-- 성숙하거나 부적절한 주제: **Infrequent/Mild**
-- 폭력(사실적/만화적), 공포/스릴러 요소: **None**
-- 사용자 생성 콘텐츠/소셜 기능: **없음**(1인용, 서버 통신 없음)
-
-주의: Apple이 2025년 7월 연령 등급 체계를 4+/9+에서 4+/9+/13+/16+/18+ 5단계로, 설문에 소셜 기능 관련
-문항을 추가하는 방향으로 개편했다
-(https://developer.apple.com/news/?id=ks775ehf). 2026-01-31 이후 업데이트부터는 새 설문 응답이
-필수이므로, 제출 시점에 App Store Connect에 실제로 표시되는 문항 문구와 등급 구간이 위 표와 다를 수
-있다 — **이 표는 추정이며, 제출 화면에서 실제 문항을 한 번 더 확인해야 한다.**
+- 새 체계: 4+/9+/13+/16+/18+ 5단계, 새 문항(앱 내 제어·기능·의료/웰니스·폭력 테마). 2026-01-31부터 답하지 않으면 제출 불가
+  (https://developer.apple.com/news/?id=ks775ehf , 대응표 https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions/).
+- 핵심 답: 선정적 테마·비속어 **드물게**(각 9+), 알코올·담배 언급 **드물게**(**13+**), 광고 **예**(4+),
+  사용자 생성 콘텐츠·메시지/채팅·소셜 미디어 **아니요**(자유 입력은 기기 안에서만, 사람 간 대화 없음), 도박·모의 도박·루트 박스 없음.
+- **예상 결과: 13+.** AdMob 최대 광고 등급 T 와 맞다(§2).
 
 ---
 
 ## 6. 심사 노트 (App Review Notes)
 
-App Store Connect "App Review Information → Notes"에 아래 내용을 영어로 작성해 제출한다
-(데이팅/소셜 앱으로 오분류되어 추가 심사 요구를 받는 것을 예방하기 위함 — 앱 이름과 아이콘,
-스토어 설명에 "연애", "썸", "채팅" 같은 단어가 들어가면 리뷰어가 실제 매칭 서비스로 오해하는 사례가
-흔하다):
+App Store Connect "App Review Information → Notes"에 영어로 넣는다
+(데이팅/소셜 앱으로 오분류되는 것을 막기 위함 — 이름·설명에 "연애", "썸", "채팅"이 있으면 실제 매칭 서비스로 오해받기 쉽다).
 
-```
-This is a single-player narrative/story simulation game. All characters, chats, and
-"dating" scenarios are pre-written fictional content — there is no real-time matching,
-no user accounts, no login, and no messaging between real users. Game progress is stored
-only on the device. Please do not classify this as a dating or social-networking app.
-
-Network use: Google AdMob serves ads (production ad units) and the Google UMP consent
-form; the App Tracking Transparency prompt is shown only after the consent flow.
-Firebase Analytics receives anonymous gameplay events (e.g. day reached, ending reached);
-it does not collect the IDFA, and the player's name/MBTI are never sent.
-
-No in-app purchases. Rewarded ads are optional (refill hearts, hints); the game can be
-played without watching them.
-```
+**문구는 `APP_STORE_CONNECT_GUIDE.md` §6-10 의 영어 블록이 유일한 기준이다**(여기 두 벌이 있던 것을 2026-09-29 하나로 합침).
+그 블록에 들어 있는 것: 1인용 가상 스토리(데이팅·소셜 앱 아님) · 자유 입력('직접 쓰기')은 기기 안에서 미리 쓴 선택지에 맞춰지고
+원문은 전송 안 함(AI/LLM·서버 없음, Analytics 에는 횟수 등 비내용 지표만) · ATT 는 첫 실행 인트로 직후에 뜨며 가는 방법과
+"앱의 추적 요청 허용" 설정 조건 · 광고 콘텐츠 최대 등급 T · 인앱 결제 없음 · 로그인 없음.
 
 - LSApplicationCategoryType은 이미 `public.app-category.games`로 지정돼 있음 — 스토어 카테고리도
   Games로 유지할 것 (Social Networking/Lifestyle로 등록하면 오분류 리스크가 커진다).
-- 심사용 빌드(릴리스)는 실제 광고 단위를 쓴다. 출시 직후 광고 채움률이 낮을 수 있는데 정상이다. ATT/UMP 폼이 첫 실행 시 뜨는지 TestFlight에서 확인해 둘 것.
+- 심사용 빌드(릴리스)는 실제 광고 단위를 쓴다. 출시 직후 광고 채움률이 낮을 수 있는데 정상이다. ATT/UMP 폼이 첫 실행 **인트로가 끝난 직후**(캐스트 소개의 "시작하기" 다음) 뜨는지 TestFlight에서 확인해 둘 것.
 
 ---
 
-## 7. 스크린샷 규격 (2026년 기준)
+## 7. 스크린샷 규격 (2026-09-29 Apple 문서 재확인)
 
-앱이 Universal(`TARGETED_DEVICE_FAMILY = "1,2"`, 세로 고정)이므로 iPhone·iPad 스크린샷을 모두 준비한다.
-Apple은 각 기기군에서 가장 큰 화면 하나만 있으면 나머지 크기로 자동 축소해준다.
+**iPhone 전용(`TARGETED_DEVICE_FAMILY = 1`, `ios/Runner.xcodeproj`), iPad 스크린샷 불필요.** 세로 고정.
 
-- iPhone 6.9" (예: iPhone 17 Pro Max급): **1320 × 2868px** 세로 (1290×2796, 1260×2736도 허용)
-- iPad 13" (M4 iPad Pro급): **2064 × 2752px** 세로 (2048×2732의 12.9" iPad Pro 크기도 허용)
-- 모두 세로(portrait) 방향, 알파 채널 없는 PNG/JPEG.
-
-(정확한 최신 크기는 제출 시점에 App Store Connect 업로드 화면에서 다시 확인 — 스크린샷 요구 크기는
-Apple이 신모델 출시 때마다 바뀐다.)
+- iPhone 6.9형: **1320 × 2868px** 세로(1290×2796, 1260×2736도 허용) → `docs/store_screenshots/promo/`
+- 6.9형이 없으면 6.5형(**1284 × 2778px**, 1242×2688도 허용)이 필수 → `docs/store_screenshots/promo65/` 에 같은 한 벌이 있다.
+- 1~10장, PNG/JPEG, 알파 채널 없음. 작은 기종(6.3·6.1형 등)은 자동 축소.
+- 올리는 순서(9장): `00a` → `02` → `01` → `04` → `05` → `03` → `06` → `07` → `08` (`00b`·`00c` 는 올리지 않음).
+- 출처: https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/
 
 ---
 

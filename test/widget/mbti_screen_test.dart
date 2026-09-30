@@ -392,6 +392,14 @@ void main() {
     late GameController c;
     setUp(() async => c = await makeController());
 
+    testWidgets('설정 하단에 MBTI 상표 고지가 있다', (tester) async {
+      await tester.pumpWidget(wrapApp(SettingsScreen(c: c)));
+      final notice = find.byKey(const Key('settings-mbti-notice'));
+      await tester.scrollUntilVisible(notice, 200);
+      expect(notice, findsOneWidget);
+      expect(SettingsScreen.mbtiNotice, contains('The Myers-Briggs Company'));
+    });
+
     testWidgets('모름 → 고르기 → 저장 → 지우기, 진행 중 회차는 그대로', (tester) async {
       await c.newGame(seed: 1);
       await tester.pumpWidget(wrapApp(SettingsScreen(c: c)));

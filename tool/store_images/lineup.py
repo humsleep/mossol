@@ -95,7 +95,7 @@ HERO_CSS = """
         padding:40px 60px 10px; }
 .kicker { display:inline-block; font-size:40px; font-weight:600; color:#FFD9E4; letter-spacing:-.5px;
           padding:12px 30px; border:2px solid rgba(255,217,228,.45); border-radius:999px; margin-bottom:40px; }
-h1 { font-size:118px; font-weight:700; line-height:1.16; letter-spacing:-4px; white-space:pre-line; }
+h1 { font-size:108px; font-weight:700; line-height:1.14; letter-spacing:-4px; white-space:pre-line; }
 h1 em { font-style:normal; color:#FF7FA6; }
 .sub { margin-top:34px; font-size:50px; font-weight:600; color:#E9DDFF; letter-spacing:-1px; }
 .group { padding:0 56px; }
@@ -129,7 +129,7 @@ def slide_lineup(chars):
     inner = f"""
 <div class="head">
   <div class="kicker">당신의 첫 연애 상대는?</div>
-  <h1>이 중 한 명과\n<em>100일 뒤</em> 연인이 된다</h1>
+  <h1>이 중 한 명과\n<em>100일 뒤,</em>\n연인이 될 수 있을까?</h1>
   <div class="sub">톡 한 줄로 썸부터 고백까지</div>
 </div>
 <div class="group"><div class="label">그녀들 <span>여성 캐릭터 6명</span></div><div class="grid">{women}</div></div>
@@ -198,7 +198,7 @@ SOCIAL_CSS = """
 .kicker { font-size:22px; font-weight:600; color:#FFD9E4; letter-spacing:-.3px; }
 .app { margin-top:14px; font-size:66px; font-weight:700; letter-spacing:-2.5px; line-height:1.05; }
 .appsub { margin-top:10px; font-size:24px; font-weight:600; color:#CDBBF2; letter-spacing:-.5px; }
-.hook { margin-top:34px; font-size:36px; font-weight:700; line-height:1.28; letter-spacing:-1.2px; white-space:pre-line; }
+.hook { margin-top:30px; font-size:34px; font-weight:700; line-height:1.28; letter-spacing:-1.2px; white-space:pre-line; }
 .hook em { font-style:normal; color:#FF7FA6; }
 .cta { display:inline-block; margin-top:30px; padding:12px 26px; border-radius:999px; background:#C2295A;
        font-size:22px; font-weight:700; letter-spacing:-.3px; box-shadow:0 10px 24px rgba(194,41,90,.45); }
@@ -224,7 +224,7 @@ def slide_social(chars):
   <div class="kicker">당신의 첫 연애 상대는?</div>
   <div class="app">{e(APP_NAME)}</div>
   <div class="appsub">{e(APP_SUB)}</div>
-  <div class="hook">이 중 한 명과\n<em>100일 뒤</em> 연인이 된다</div>
+  <div class="hook">이 중 한 명과 <em>100일 뒤,</em>\n연인이 될 수 있을까?</div>
   <div class="cta">톡 한 줄로 썸부터 고백까지</div>
 </div>
 <div class="right">

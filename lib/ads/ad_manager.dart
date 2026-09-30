@@ -58,6 +58,19 @@ class AdManager with WidgetsBindingObserver {
   /// 디버그 빌드에서만 적용되며 릴리스 빌드에는 절대 들어가지 않는다.
   static const List<String> _debugTestDeviceIds = <String>[];
 
+  /// 모든 빌드에 광고 등급 상한 T(13+)를 적용한다. 테스트 기기 ID 는 디버그에서만.
+  /// 아동 대상/동의 연령 태그는 지정하지 않는다(SDK 기본값 = unspecified).
+  @visibleForTesting
+  static RequestConfiguration requestConfigurationFor({
+    required bool debug,
+    List<String> testDeviceIds = _debugTestDeviceIds,
+  }) {
+    return RequestConfiguration(
+      maxAdContentRating: MaxAdContentRating.t,
+      testDeviceIds: debug && testDeviceIds.isNotEmpty ? testDeviceIds : null,
+    );
+  }
+
   /// 전면 광고 정책.
   ///
   /// 앱을 켠 뒤 게임 속 하루를 [interstitialEveryDays] 번 마칠 때마다 정산의 `다음 날로`
@@ -251,11 +264,10 @@ class AdManager with WidgetsBindingObserver {
     }
     _initializing = true;
     try {
-      if (kDebugMode && _debugTestDeviceIds.isNotEmpty) {
-        await MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(testDeviceIds: _debugTestDeviceIds),
-        );
-      }
+      // 13+ 앱이므로 릴리스에서도 광고 등급 상한(T)을 첫 요청 전에 건다.
+      await MobileAds.instance.updateRequestConfiguration(
+        requestConfigurationFor(debug: kDebugMode),
+      );
       await MobileAds.instance.initialize();
       _sdkInitialized = true;
       _loadInterstitial();

@@ -20,6 +20,10 @@ class SettingsScreen extends StatefulWidget {
   final GameController c;
   const SettingsScreen({super.key, required this.c});
 
+  /// 앱 안에서 MBTI 상표 고지. 심사·법무 대응용 문구라 한 곳에서 관리한다.
+  static const mbtiNotice =
+      'MBTI는 The Myers-Briggs Company의 상표이며, 이 게임은 해당 회사와 관련이 없습니다.';
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -195,6 +199,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: AppSpace.xxl),
                 Text(
                   '© 2026 모쏠 탈출기',
+                  textAlign: TextAlign.center,
+                  style: context.text.bodySmall,
+                ),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  SettingsScreen.mbtiNotice,
+                  key: const Key('settings-mbti-notice'),
                   textAlign: TextAlign.center,
                   style: context.text.bodySmall,
                 ),
