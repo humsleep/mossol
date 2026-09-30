@@ -89,7 +89,9 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 - Firebase Analytics 는 `Info.plist` 의 `GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED=false` 로 IDFA 를
   모으지 않는다. 보내는 이벤트에 이름·자유 입력·MBTI 원문 같은 개인 데이터는 없다(`lib/analytics/analytics.dart`).
 - "추적에 사용" 전체 여부: **예**(ATT를 허용한 사용자에 한해 IDFA 기반 맞춤 광고를 하므로 앱 전체
-  추적 플래그는 켜야 한다 — `NSPrivacyTracking = true`로 이미 선언되어 있음).
+  추적 여부는 "예"로 답한다. 단 `PrivacyInfo.xcprivacy` 의 `NSPrivacyTracking` 은 **false**로 둔다 —
+  true 면 `NSPrivacyTrackingDomains` 를 1개 이상 적어야 해서(빈 배열이면 ITMS-91064 로 바이너리 거절, 빌드 8)
+  적은 도메인이 ATT 미허용 사용자에게 차단된다. 추적 신고는 DeviceID 항목의 Tracking=true 로 한다).
 - 게임 자체는 로그인·회원가입·서버 통신이 없으므로 연락처, 건강, 금융, 사용자 콘텐츠, 검색/브라우징
   기록 등은 전부 "수집 안 함"으로 둔다.
 - 만 14세(국내 기준)/13세(COPPA 기준) 미만 아동 대상이 아니므로 "아동 대상 앱" 태그는 끄고, AdMob
