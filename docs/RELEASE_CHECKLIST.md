@@ -89,9 +89,18 @@ AdMob 앱 이름 **Mossol**, 앱 ID `ca-app-pub-4073994600346533~6518695864`.
 - Firebase Analytics 는 `Info.plist` 의 `GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED=false` 로 IDFA 를
   모으지 않는다. 보내는 이벤트에 이름·자유 입력·MBTI 원문 같은 개인 데이터는 없다(`lib/analytics/analytics.dart`).
 - "추적에 사용" 전체 여부: **예**(ATT를 허용한 사용자에 한해 IDFA 기반 맞춤 광고를 하므로 앱 전체
-  추적 여부는 "예"로 답한다. 단 `PrivacyInfo.xcprivacy` 의 `NSPrivacyTracking` 은 **false**로 둔다 —
-  true 면 `NSPrivacyTrackingDomains` 를 1개 이상 적어야 해서(빈 배열이면 ITMS-91064 로 바이너리 거절, 빌드 8)
-  적은 도메인이 ATT 미허용 사용자에게 차단된다. 추적 신고는 DeviceID 항목의 Tracking=true 로 한다).
+  추적 여부는 "예"로 답한다. 단 `PrivacyInfo.xcprivacy` 의 `NSPrivacyTracking` 은 **false**로 두고
+  `NSPrivacyTrackingDomains` 키는 **아예 넣지 않는다**(Google Mobile Ads SDK 매니페스트와 같은 모양).
+  추적 신고는 DeviceID 항목의 Tracking=true 와 App Store Connect 라벨("추적에 사용: 기기 ID")로 한다).
+  - ITMS-91064 이력: 빌드 8(`true` + 빈 배열) 거절, 빌드 9(`false` + 빈 배열 `<array/>`)도 같은 메시지로
+    거절 — Apple 검사기는 배열이 비었는지가 아니라 키가 있는지를 보는 것으로 보인다. 빌드 10부터 키를
+    빼고, 파일 안 XML 주석도 없앴다(설명은 여기 둔다).
+  - true 로 두려면 도메인을 1개 이상 적어야 하고, 적은 도메인은 ATT 미허용 사용자에게 OS 가 통신을 막는다.
+    Google 광고 도메인을 적으면 ATT 거부 사용자는 비맞춤 광고조차 못 받으므로 true 로 두지 않는다.
+  - `NSPrivacyAccessedAPITypes` 는 Flutter 엔진·shared_preferences 가 쓰는 UserDefaults(CA92.1)·
+    파일 타임스탬프(C617.1) API 를 앱 번들 차원에서도 선언해 둔 것이다.
+  - 제출 전 확인: IPA 를 풀어 `plutil -p Payload/Runner.app/PrivacyInfo.xcprivacy` 에
+    `NSPrivacyTrackingDomains` 가 없어야 한다.
 - 게임 자체는 로그인·회원가입·서버 통신이 없으므로 연락처, 건강, 금융, 사용자 콘텐츠, 검색/브라우징
   기록 등은 전부 "수집 안 함"으로 둔다.
 - 만 14세(국내 기준)/13세(COPPA 기준) 미만 아동 대상이 아니므로 "아동 대상 앱" 태그는 끄고, AdMob
