@@ -9,15 +9,17 @@ import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
+import 'story_files.dart';
 
 StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
   config: File('assets/story/config.json').readAsStringSync(),
   characters: File('assets/story/characters.json').readAsStringSync(),
   events: [
     for (final f in StoryBundle.eventFiles)
-      File('assets/story/$f').readAsStringSync(),
+      readStoryFile(f),
   ],
   endings: File('assets/story/endings.json').readAsStringSync(),
+  starts: readStartsFile(),
   signals: File('assets/story/signals.json').existsSync()
       ? File('assets/story/signals.json').readAsStringSync()
       : null,
@@ -44,15 +46,24 @@ void main() {
     // 모먼트(events_moments.json, id 접두사 mo_)는 작가가 계속 채우는 파일이라
     // 분량 고정 검사에서 뺀다. 모먼트 규칙은 test/moments_test.dart 가 본다.
     bool isMomentFile(StoryEvent e) => e.id.startsWith('mo_');
+    // 개편 2(시작 스토리·소문·의뢰) 콘텐츠도 분량 고정 검사에서 뺀다 — 그쪽 분량은
+    // test/start_scenario_test.dart 가 본다.
+    final overhaul2 = overhaul2FileEventIds();
     List<StoryEvent> baseEvents() => [
       for (final e in bundle.events)
-        if (!isMomentFile(e)) e,
+        if (!isMomentFile(e) &&
+            !overhaul2.contains(e.id) &&
+            !e.id.startsWith(overhaul2HustlePrefix))
+          e,
     ];
 
     test('스토리 파일 전체가 검증을 통과한다', () {
       expect(bundle.characters.length, 12);
       expect(baseEvents().length, 458); // + 아침 행동 장면(events_action.json) 55
-      expect(bundle.endings.length, 60);
+      expect(
+        bundle.endings.where((e) => !overhaul2EndingIds.contains(e.id)).length,
+        60,
+      );
       expect(bundle.endings.where((e) => e.isDefault).length, 1);
     });
 
@@ -83,6 +94,7 @@ void main() {
         config: bundle.config,
         characters: bundle.characters,
         events: bundle.events,
+        starts: bundle.starts,
         endings: [
           for (final e in bundle.endings)
             e.id == 'forever_solo'

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mossol/engine/album_index.dart';
 import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
+import 'story_files.dart';
 
 StoryBundle _bundle() {
   String read(String f) {
@@ -20,6 +21,7 @@ StoryBundle _bundle() {
     characters: read('characters.json'),
     events: [for (final f in StoryBundle.eventFiles) read(f)],
     endings: read('endings.json'),
+    starts: readStartsFile(),
   );
 }
 

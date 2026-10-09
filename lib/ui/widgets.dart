@@ -107,6 +107,8 @@ IconData _statIcon(String key) {
       return Icons.payments_outlined;
     case Stat.stress:
       return Icons.bolt;
+    case Stat.heat:
+      return Icons.campaign_outlined;
     default:
       return Icons.circle_outlined;
   }
@@ -269,11 +271,7 @@ class DeadlineBand extends StatelessWidget {
   /// 회차 전체 길이(`config.totalDays`, 100).
   final int totalDays;
 
-  const DeadlineBand({
-    super.key,
-    required this.day,
-    required this.totalDays,
-  });
+  const DeadlineBand({super.key, required this.day, required this.totalDays});
 
   /// 내기의 이름. 대본이 부르는 이름과 같다(`m01`, `d_open_bet`).
   static const title = '100일 프로젝트';
@@ -364,8 +362,8 @@ class StatBars extends StatelessWidget {
     this.keys,
   });
 
-  /// 값이 오르면 좋은 스탯인지. 스트레스만 반대다.
-  static bool _isGood(String key, int d) => key == Stat.stress ? d < 0 : d > 0;
+  /// 값이 오르면 좋은 스탯인지. 스트레스·소문은 반대다([Stat.lowerIsBetter]).
+  static bool _isGood(String key, int d) => Stat.isGood(key, d);
 
   TextStyle? _labelStyle(BuildContext context) =>
       (compact ? context.text.labelSmall : context.text.labelMedium)?.copyWith(
@@ -409,30 +407,47 @@ class StatBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final show = keys ?? _defaultOrder;
-    final labelW = _labelWidth(context, show);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < show.length; i++) ...[
-          // 막대 다섯 줄과 "잔고 한 줄" 은 다른 종류다. 돈 위에만 구분선.
-          if (show[i] == Stat.money && i > 0)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpace.xs),
-              child: Divider(),
-            ),
-          _row(context, show[i], labelW),
-        ],
-      ],
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        var labelW = _labelWidth(context, show);
+        // 값('42')과 변화량('+3')이 나란히 들어갈 폭. 1.3배 글꼴까지 배율을 곱한다.
+        var valueW = scaler.scale(compact ? 40.0 : 88.0).clamp(36.0, 160.0);
+        // 좁은 화면 · 큰 글자: 이름 칸과 값 칸이 막대 자리까지 먹으면 줄이 넘쳤다(320pt · 1.6배에서
+        // 15px, 2.0배에서 54px, r2_bugs 범위 밖 3). 막대 최소 폭을 남기고 두 칸을 같은 비율로 줄인다.
+        if (box.hasBoundedWidth) {
+          final room = box.maxWidth - 2 * AppSpace.sm - _minBar;
+          if (labelW + valueW > room && room > 0) {
+            final f = room / (labelW + valueW);
+            labelW = (labelW * f).clamp(_minLabel, labelW);
+            valueW = valueW * f;
+          }
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < show.length; i++) ...[
+              // 막대 다섯 줄과 "잔고 한 줄" 은 다른 종류다. 돈 위에만 구분선.
+              if (show[i] == Stat.money && i > 0)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpace.xs),
+                  child: Divider(),
+                ),
+              _row(context, show[i], labelW, valueW),
+            ],
+          ],
+        );
+      },
     );
   }
 
-  Widget _row(BuildContext context, String k, double labelW) {
+  /// 좁은 화면에서도 남길 막대 폭과 이름 칸 최소 폭(아이콘 + 한 글자).
+  static const double _minBar = 24;
+  static const double _minLabel = 32;
+
+  Widget _row(BuildContext context, String k, double labelW, double valueW) {
     final t = context.tokens;
     final scheme = context.scheme;
-    final scaler = MediaQuery.textScalerOf(context);
-
-    // 값('42')과 변화량('+3')이 나란히 들어갈 폭. 1.3배 글꼴까지 배율을 곱한다.
-    final valueW = scaler.scale(compact ? 40.0 : 88.0).clamp(36.0, 160.0);
 
     if (k == Stat.money) return _moneyRow(context, labelW, valueW);
 
@@ -505,8 +520,12 @@ class StatBars extends StatelessWidget {
               const SizedBox(width: AppSpace.sm),
               SizedBox(
                 width: valueW,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                // 칸이 좁아져도 숫자를 자르지 않고 작게 맞춘다.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // 변화량이 주인공이다. 화살표는 실제 증감 방향, 색은 좋고 나쁨.
                     if (hasDelta) ...[
@@ -516,14 +535,11 @@ class StatBars extends StatelessWidget {
                         color: t.deltaColor(good: good),
                       ),
                       const SizedBox(width: AppSpace.xxs),
-                      Flexible(
-                        child: Text(
-                          signed(d),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.numericMedium.copyWith(
-                            color: t.deltaColor(good: good),
-                          ),
+                      Text(
+                        signed(d),
+                        maxLines: 1,
+                        style: t.numericMedium.copyWith(
+                          color: t.deltaColor(good: good),
                         ),
                       ),
                       const SizedBox(width: AppSpace.sm),
@@ -539,6 +555,7 @@ class StatBars extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             ],
@@ -597,8 +614,11 @@ extension _MoneyRow on StatBars {
               // 막대 자리는 비운다. 트랙도 그리지 않는다 — 대신 그 폭을 숫자가 쓴다.
               // "72,000원" 은 다른 스탯의 valueW(40~88)에 들어가지 않는다.
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasDelta) ...[
                       Icon(
@@ -607,14 +627,11 @@ extension _MoneyRow on StatBars {
                         color: t.deltaColor(good: good),
                       ),
                       const SizedBox(width: AppSpace.xxs),
-                      Flexible(
-                        child: Text(
-                          Stat.wonDelta(d),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.numericMedium.copyWith(
-                            color: t.deltaColor(good: good),
-                          ),
+                      Text(
+                        Stat.wonDelta(d),
+                        maxLines: 1,
+                        style: t.numericMedium.copyWith(
+                          color: t.deltaColor(good: good),
                         ),
                       ),
                       const SizedBox(width: AppSpace.sm),
@@ -631,6 +648,7 @@ extension _MoneyRow on StatBars {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             ],
@@ -1030,9 +1048,50 @@ class BannerFrame extends StatelessWidget {
 class ChatMeta {
   final String? time;
   final bool read;
-  const ChatMeta({this.time, this.read = false});
 
-  bool get isEmpty => time == null && !read;
+  /// 이전 회차에서 본 장면 안의 처음 보는 파급 줄(r1_meeting D5). [NewDot] 을 붙인다.
+  final bool isNew;
+  const ChatMeta({this.time, this.read = false, this.isNew = false});
+
+  bool get isEmpty => time == null && !read && !isNew;
+}
+
+/// "NEW" 점(r1_meeting D5). 이전 회차에서 본 장면에서 이번에 처음 보는 파급 줄·선택지 옆에 붙는다 —
+/// 다른 시작을 골랐을 때 세상이 달라진 곳이 빠르게 스크롤되며 묻히지 않게. 색만으로 말하지 않도록
+/// 글자 "NEW" 를 함께 쓴다.
+class NewDot extends StatelessWidget {
+  const NewDot({super.key});
+
+  static const label = 'NEW';
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    return Semantics(
+      label: '처음 보는 줄',
+      child: ExcludeSemantics(
+        child: Container(
+          key: const Key('new-dot'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.xs,
+            vertical: 1,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.primary,
+            borderRadius: AppRadius.rPill,
+          ),
+          child: Text(
+            label,
+            style: context.text.labelSmall?.copyWith(
+              color: scheme.onPrimary,
+              fontSize: 10,
+              height: 1.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// 채팅 한 줄. `who` 에 따라 네 가지 위계로 갈린다(DESIGN_SYSTEM §2.3).
@@ -1121,13 +1180,27 @@ class ChatBubble extends StatelessWidget {
               ),
             ),
           ),
-          child: Text(
-            keepAll(line.text),
-            style: context.text.bodyMedium?.copyWith(
-              color: t.narration,
-              fontStyle: FontStyle.italic,
-              height: 1.6,
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  keepAll(line.text),
+                  style: context.text.bodyMedium?.copyWith(
+                    color: t.narration,
+                    fontStyle: FontStyle.italic,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+              if (meta?.isNew ?? false) ...[
+                const SizedBox(width: AppSpace.xs),
+                const Padding(
+                  padding: EdgeInsets.only(top: AppSpace.xxs),
+                  child: NewDot(),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -1158,7 +1231,7 @@ class ChatBubble extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ).withNewDot(meta?.isNew ?? false);
   }
 
   Widget _bubble(BuildContext context) {
@@ -1354,6 +1427,10 @@ class _MetaColumn extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
+        if (meta.isNew) ...[
+          const NewDot(),
+          const SizedBox(height: AppSpace.xxs),
+        ],
         // 대비 4.5:1 을 지키려고 systemLine 이 아니라 onSurfaceVariant(§4.2).
         if (meta.read)
           Text(
@@ -1434,8 +1511,10 @@ class StickerBubble extends StatelessWidget {
   });
 
   /// 스티커 에셋 경로. 없으면 null. 기본값은 시작할 때 읽은 매니페스트 목록이다.
-  static String? Function(String characterId, String emotion) resolve =
-      (id, emotion) => SceneImages.forSticker('${id}_$emotion');
+  static String? Function(String characterId, String emotion) resolve = (
+    id,
+    emotion,
+  ) => SceneImages.forSticker('${id}_$emotion');
 
   /// 말풍선 왼쪽 선. 아바타 열 + 간격([ChatAvatarSlot.indent] 48), 바깥 여백 md 는
   /// [ChatBubble] 과 같다.
@@ -1887,7 +1966,17 @@ class AppListRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (tail != null) ...[const SizedBox(width: AppSpace.sm), tail],
+              // 꼬리(버전 글자 등)는 폭의 40% 까지만. 그 이상이면 줄을 바꾼다 — 320pt · 1.8배에서
+              // "앱 버전" 줄이 넘쳤다(r2_bugs 범위 밖 4).
+              if (tail != null) ...[
+                const SizedBox(width: AppSpace.sm),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+                  ),
+                  child: tail,
+                ),
+              ],
             ],
           ),
         ),
@@ -2213,6 +2302,9 @@ class ChoiceButton extends StatelessWidget {
   final bool recommended;
   final AppTone trailingTone;
 
+  /// 이전 회차에서 본 장면의 처음 보는 선택지(r1_meeting D5). 글 앞에 [NewDot].
+  final bool isNew;
+
   const ChoiceButton({
     super.key,
     required this.text,
@@ -2222,6 +2314,7 @@ class ChoiceButton extends StatelessWidget {
     this.leadingIcon,
     this.recommended = false,
     this.trailingTone = AppTone.neutral,
+    this.isNew = false,
   });
 
   @override
@@ -2257,6 +2350,7 @@ class ChoiceButton extends StatelessWidget {
               ),
               const SizedBox(width: AppSpace.sm),
             ],
+            if (isNew) ...[const NewDot(), const SizedBox(width: AppSpace.sm)],
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2621,37 +2715,40 @@ class ContinueCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // 회차 줄 + 날짜. 320pt · 글자 2.0배에서는 날짜("D+1 / 100")만으로 한 줄이 차서
+          // 34px 넘쳤다(r1_bugs "범위 밖"). 모자라면 날짜가 다음 줄로 내려간다.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.xxs,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      _placeholder ? '저장된 회차' : '$run회차 · $chapter장',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelMedium,
+                    ),
+                  ),
+                  // 선호는 회차 줄 꼬리. 좁으면 이쪽이 먼저 말줄임된다.
+                  if (!_placeholder && preferenceLabel != null)
                     Flexible(
                       child: Text(
-                        _placeholder ? '저장된 회차' : '$run회차 · $chapter장',
+                        ' · $preferenceLabel',
+                        key: const Key('continue-preference'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.text.labelMedium,
+                        style: context.text.labelSmall,
                       ),
                     ),
-                    // 선호는 회차 줄 꼬리. 좁으면 이쪽이 먼저 말줄임된다.
-                    if (!_placeholder && preferenceLabel != null)
-                      Flexible(
-                        child: Text(
-                          ' · $preferenceLabel',
-                          key: const Key('continue-preference'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.labelSmall,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              if (!_placeholder) ...[
-                const SizedBox(width: AppSpace.sm),
+              if (!_placeholder)
                 Text(keepAll('D+$day / $totalDays'), style: t.numericMedium),
-              ],
             ],
           ),
           const SizedBox(height: AppSpace.sm),
@@ -2974,8 +3071,14 @@ class CastIntro {
   /// 플레이어와의 궁합 점수(0~4). null 이면(플레이어 MBTI 모름) 궁합 줄을 그리지 않는다.
   final int? compat;
 
+  /// 이 회차 시작이 "먼저 다가오는 사람" 으로 정한 캐릭터(시작 보정 호감). 맨 앞에 두고 표시한다.
+  final bool comesFirst;
+
   /// 히든 캐릭터의 MBTI 칩 글자.
   static const hiddenMbti = '????';
+
+  /// [comesFirst] 표시 글.
+  static const comesFirstLabel = '먼저 다가오는 사람';
 
   const CastIntro({
     required this.id,
@@ -2986,6 +3089,7 @@ class CastIntro {
     this.mystery = false,
     this.mbti,
     this.compat,
+    this.comesFirst = false,
   });
 }
 
@@ -3143,6 +3247,24 @@ class CastIntroCard extends StatelessWidget {
               ),
           ],
         ),
+        if (e.comesFirst) ...[
+          const SizedBox(height: AppSpace.xxs),
+          Row(
+            key: Key('cast-first-${e.id}'),
+            children: [
+              Icon(Icons.favorite_border, size: 14, color: scheme.primary),
+              const SizedBox(width: AppSpace.xxs),
+              Flexible(
+                child: Text(
+                  CastIntro.comesFirstLabel,
+                  style: context.text.labelMedium?.copyWith(
+                    color: scheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         if (e.compat != null) ...[
           const SizedBox(height: AppSpace.xxs),
           CompatRow(key: Key('compat-${e.id}'), score: e.compat!),
@@ -3801,4 +3923,20 @@ class _RewardedBusyScopeState extends State<RewardedBusyScope> {
   @override
   Widget build(BuildContext context) =>
       AbsorbPointer(absorbing: _busy > 0, child: widget.child);
+}
+
+extension on Widget {
+  /// 가운데 정렬 줄(시스템 pill) 위에 NEW 점을 얹는다.
+  Widget withNewDot(bool on) => on
+      ? Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: AppSpace.xs),
+              child: NewDot(),
+            ),
+            this,
+          ],
+        )
+      : this;
 }

@@ -1,0 +1,140 @@
+// R3: 100-day random sim for every start × both prefs with invariants. Throwaway.
+// Invariants: no exception, no empty event, at least one open choice, ending resolves by D100,
+// day clock never runs backwards (incl. across mid-day relaunches and undo), queue has no dupes,
+// a `once` event is never seen twice in a run.
+// ignore_for_file: avoid_print
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/event_screen.dart' show ChatClock;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+const _seeds = int.fromEnvironment('SEEDS', defaultValue: 20);
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test('100-day random sim, all starts × prefs', () async {
+    final b = testBundle();
+    final problems = <String>[];
+    final endings = <String, Map<String, int>>{};
+    var runs = 0, days = 0, events = 0, relaunches = 0, undos = 0, clockBack = 0;
+    final maxDay = <String, int>{};
+    for (final st in b.starts) {
+      for (final pref in Preference.genders) {
+        for (var seed = 0; seed < _seeds; seed++) {
+          final tag = '${st.id}/$pref/s$seed';
+          SharedPreferences.setMockInitialValues({});
+          var c = GameController(bundle: b, save: SaveService());
+          await c.init();
+          await c.markIntroSeen();
+          final rnd = Random(seed * 31 + pref.hashCode);
+          try {
+            await c.newGame(start: st.id, preference: pref, seed: seed * 7 + 1);
+            if (b.startOf(st.id) != null && c.engine.startIdOf(c.state!) != st.id) {
+              problems.add('$tag startIdOf=${c.engine.startIdOf(c.state!)}');
+            }
+            final onceSeen = <String>{};
+            for (var d = 0; d < 140 && c.ending == null; d++) {
+              if (c.phase == Phase.dayStart) c.beginMorning();
+              if (c.phase != Phase.action) {
+                problems.add('$tag D${c.state!.day} phase=${c.phase} at morning');
+                break;
+              }
+              c.state!.hearts = b.config.maxHearts;
+              final acts = b.config.actions;
+              await c.startDay(acts[rnd.nextInt(acts.length)]);
+              days++;
+              final q = c.queuedEventIds;
+              if (q.toSet().length != q.length) problems.add('$tag D${c.state!.day} dup queue $q');
+              var guard = 0;
+              while (c.phase == Phase.event && guard++ < 40) {
+                final ev = c.current!;
+                final s = c.state!;
+                events++;
+                if (ev.lines.isEmpty && ev.choices.isEmpty) {
+                  problems.add('$tag D${s.day} empty ${ev.id}');
+                }
+                if (ev.once) {
+                  if (!onceSeen.add(ev.id)) problems.add('$tag D${s.day} once twice ${ev.id}');
+                }
+                final prevEnd = c.dayClockEnd;
+                if (!ev.isCall) {
+                  final start = c.clockStartFor(
+                    ev,
+                    ChatClock.startSeconds(
+                      seed: s.seed,
+                      day: s.day,
+                      index: c.todayEventIndex,
+                      total: c.todayEventTotal,
+                    ),
+                  );
+                  if (prevEnd != null && start <= prevEnd) {
+                    clockBack++;
+                    if (clockBack < 6) {
+                      problems.add('$tag D${s.day} clock back ${ev.id} '
+                          '${ChatClock.label(start)} <= ${ChatClock.label(prevEnd)}');
+                    }
+                  }
+                }
+                final open = [for (final v in c.choices) if (!v.locked) v.index];
+                if (open.isEmpty) {
+                  problems.add('$tag D${s.day} no open choice ${ev.id}');
+                  break;
+                }
+                final i = open[rnd.nextInt(open.length)];
+                final mg = ev.choices[i].minigame != null;
+                c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+                // sometimes undo and pick again
+                if (rnd.nextInt(15) == 0 && !s.flags.contains('hardcore')) {
+                  c.undoChoice();
+                  undos++;
+                  if (ev.once) onceSeen.remove(ev.id);
+                  final open2 = [for (final v in c.choices) if (!v.locked) v.index];
+                  final j = open2[rnd.nextInt(open2.length)];
+                  c.choose(j, minigameSuccess: ev.choices[j].minigame != null ? rnd.nextBool() : null);
+                }
+                c.continueAfterChoice();
+                // sometimes relaunch the app mid-day
+                if (rnd.nextInt(12) == 0 && c.phase == Phase.event) {
+                  await Future<void>.delayed(Duration.zero);
+                  c = GameController(bundle: b, save: SaveService());
+                  await c.init();
+                  final ok = await c.continueGame();
+                  relaunches++;
+                  if (!ok) problems.add('$tag relaunch failed');
+                }
+              }
+              if (guard >= 40) problems.add('$tag D${c.state!.day} event loop');
+              if (c.phase == Phase.summary) await c.endDay();
+            }
+            final e = c.ending;
+            if (e == null) {
+              problems.add('$tag no ending (day ${c.state?.day})');
+            } else {
+              runs++;
+              endings.putIfAbsent(st.id, () => {}).update(e.id, (v) => v + 1, ifAbsent: () => 1);
+              final dd = c.state!.day;
+              maxDay[st.id] = max(maxDay[st.id] ?? 0, dd);
+            }
+          } catch (e, stack) {
+            problems.add('$tag EXCEPTION $e\n${stack.toString().split('\n').take(6).join('\n')}');
+          }
+        }
+      }
+    }
+    print('runs=$runs days=$days events=$events relaunches=$relaunches undos=$undos clockBack=$clockBack');
+    print('maxDay=$maxDay');
+    for (final e in endings.entries) {
+      final top = e.value.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      print('${e.key}: ${top.take(8).map((x) => '${x.key}:${x.value}').join(' ')}');
+    }
+    problems.take(40).forEach(print);
+    print('problems=${problems.length}');
+    expect(problems, isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 20)));
+}

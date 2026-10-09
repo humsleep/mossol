@@ -65,6 +65,38 @@ class PlayerMeta {
   /// `totalRuns > 0` 이라 인트로가 다시 뜨지 않는다([GameController.shouldShowIntro]).
   bool introSeen;
 
+  /// 가장 최근에 시작한 회차의 시작 스토리 id(docs/overhaul2/01_design.md §4.3 "운명 뽑기").
+  /// 운명 뽑기가 바로 전 시작을 빼는 데만 쓴다. 없던 예전 메타는 null(추가만, 세이브 호환).
+  String? lastStart;
+
+  /// "새로 열림" 배지를 이미 보여 준 시작 id. 한 번 보인 뒤에는 배지를 달지 않는다(추가만).
+  List<String> announcedStarts;
+
+  /// 이번 새 게임 흐름에서 뽑은 운명(시작 id). 뽑는 순간 저장하고 [GameController.newGame] 이
+  /// 지운다(r1_meeting D10) — 시트를 닫거나 뒤로 가거나 앱을 껐다 켜도 다시 뽑을 수 없다.
+  /// 없던 예전 메타는 null(추가만).
+  String? pendingFate;
+
+  /// 엔딩까지 간 시작 id(처음 끝낸 순서, 중복 없음). 새 게임이 `done_<id>`·`veteran` 플래그를
+  /// 세우고, 시작 카드가 "본 적 있음"·기본 선택에 쓴다(D7). 없던 예전 메타는 빈 목록.
+  List<String> completedStarts;
+
+  /// 시작 id → 그 시작으로 본 서로 다른 엔딩 id. 카드의 엔딩 도장 개수(D7, R1-7). 추가만.
+  Map<String, List<String>> startEndings;
+
+  /// 회차를 넘어 쌓이는 "본 장면" id(D5). 회차가 끝나거나 새 게임으로 버려질 때 그 회차의
+  /// `seen` 을 합친다. 그래서 여기 있는 장면은 **이전 회차에서** 본 것이다 — 그 장면의 대기 줄은
+  /// 무료로 건너뛸 수 있다. 없던 예전 메타는 빈 목록.
+  List<String> seenEvents;
+
+  /// 이미 본 파급 줄·선택지 키(`이벤트 id|L|글 해시`·`|C|`). 이전 회차에서 본 장면 안의 처음 보는
+  /// 파급 줄·선택지에 NEW 점을 찍는 데 쓴다(D5). 플래그 조건이 붙은 줄·선택지만 담는다.
+  List<String> seenRipples;
+
+  /// 설정 "읽은 장면 빨리 감기"(D5). 켜져 있으면 이전 회차에서 본 장면의 대기 줄을 광고 없이
+  /// 건너뛸 수 있다. 기본 켬 — 없던 예전 메타는 true.
+  bool fastForwardSeen;
+
   PlayerMeta({
     this.lastCheckInDate,
     this.streakDays = 0,
@@ -85,7 +117,19 @@ class PlayerMeta {
     this.hapticOn = true,
     this.freeInputSends = 0,
     this.introSeen = false,
-  });
+    this.lastStart,
+    List<String>? announcedStarts,
+    this.pendingFate,
+    List<String>? completedStarts,
+    Map<String, List<String>>? startEndings,
+    List<String>? seenEvents,
+    List<String>? seenRipples,
+    this.fastForwardSeen = true,
+  }) : announcedStarts = announcedStarts ?? [],
+       completedStarts = completedStarts ?? [],
+       startEndings = startEndings ?? {},
+       seenEvents = seenEvents ?? [],
+       seenRipples = seenRipples ?? [];
 
   Map<String, dynamic> toJson() => {
     'lastCheckInDate': lastCheckInDate,
@@ -107,7 +151,21 @@ class PlayerMeta {
     'hapticOn': hapticOn,
     'freeInputSends': freeInputSends,
     'introSeen': introSeen,
+    'lastStart': lastStart,
+    'announcedStarts': announcedStarts,
+    'pendingFate': pendingFate,
+    'completedStarts': completedStarts,
+    'startEndings': startEndings,
+    'seenEvents': seenEvents,
+    'seenRipples': seenRipples,
+    'fastForwardSeen': fastForwardSeen,
   };
+
+  static List<String> _strs(Object? v) => [
+    if (v is List)
+      for (final x in v)
+        if (x is String && x.isNotEmpty) x,
+  ];
 
   static int _int(Object? v) => v is num ? v.toInt() : 0;
 
@@ -140,6 +198,25 @@ class PlayerMeta {
       hapticOn: j['hapticOn'] != false,
       freeInputSends: _int(j['freeInputSends']),
       introSeen: j['introSeen'] == true,
+      lastStart: switch (j['lastStart']) {
+        final String v when v.isNotEmpty => v,
+        _ => null,
+      },
+      // 형식이 틀려도 이 칸만 비운다 — 캐스트에 실패하면 load() 가 메타 전체를 지운다(r2_bugs R2-6).
+      announcedStarts: _strs(j['announcedStarts']),
+      pendingFate: switch (j['pendingFate']) {
+        final String v when v.isNotEmpty => v,
+        _ => null,
+      },
+      completedStarts: _strs(j['completedStarts']),
+      startEndings: {
+        if (j['startEndings'] case final Map m)
+          for (final e in m.entries)
+            if (e.key is String) e.key as String: _strs(e.value),
+      },
+      seenEvents: _strs(j['seenEvents']),
+      seenRipples: _strs(j['seenRipples']),
+      fastForwardSeen: j['fastForwardSeen'] != false,
     );
   }
 }

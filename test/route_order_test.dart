@@ -810,6 +810,9 @@ void main() {
     const successOnly = {
       'stranger_laugh', // 모르는 사람이 웃어 줬다 — 지면 안 웃은 것이다
       'seoyeon_banmal', // 반말하기로 했다 — 지면 서연이 안 받아 준 것이다
+      // "AI 합성이에요" 가 먹혔다(개편 2 sc_clip_d1). 지면 다들 알아챈 것이다 —
+      // 그 갈래의 위기(c_clip_truth)는 거짓말이 통했을 때만 온다.
+      'sc_clip_deny',
     };
     final required = bundle.events.expand((e) => e.trigger.flags).toSet();
     final bad = <String>[];

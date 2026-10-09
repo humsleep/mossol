@@ -1,0 +1,97 @@
+// R1: legacy saves continue as classic without leaking new-start content.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+Map<String, dynamic> legacySave({required int day, required String pref, List<String> seen = const []}) {
+  final b = testBundle();
+  final s = GameState.fresh(b.config, b.characters, seed: 42 + day, nowMs: 0)..day = day;
+  s.seen.addAll(seen);
+  final j = s.toJson();
+  for (final k in const [
+    'preference', 'mbti', 'lastMomentDay', 'signalHistory', 'signalPins',
+    'overnightShifts', 'dayDelta', 'rouletteDay', 'combo', 'lastCliffhanger', 'seenCount',
+  ]) {
+    j.remove(k);
+  }
+  (j['stats'] as Map).remove('heat');
+  if (pref != 'none') j['preference'] = pref;
+  return j;
+}
+
+void main() {
+  final startIds = {
+    for (final e in jsonDecode(File('assets/story/events_start.json').readAsStringSync()) as List)
+      (e as Map)['id'] as String,
+  };
+
+  test('legacy day 50 → 100 classic only', () async {
+    final b = testBundle();
+    final problems = <String>[];
+    final heatSources = <String, int>{};
+    for (final pref in ['none', 'f', 'm']) {
+      for (var seed = 0; seed < 20; seed++) {
+        for (final startDay in [2, 50]) {
+          final seen = startDay == 2 ? ['m01', 'd_open_bet', 'd_open_bet_2'] : <String>[];
+          await Future<void>.delayed(const Duration(milliseconds: 2));
+          final raw = jsonEncode(legacySave(day: startDay, pref: pref, seen: seen)..['seed'] = seed);
+          SharedPreferences.setMockInitialValues({
+            'mossol_save_v1': raw,
+          });
+          final c = GameController(bundle: b, save: SaveService());
+          await c.init();
+          await c.markIntroSeen();
+          expect(await c.continueGame(), isTrue);
+          final rnd = Random(seed);
+          var bets = 0;
+          for (var d = 0; d < 110 && c.ending == null; d++) {
+            final day = c.state!.day;
+            c.beginMorning();
+            c.state!.hearts = b.config.maxHearts;
+            final a = b.config.actions[rnd.nextInt(b.config.actions.length)];
+            final h0 = c.state!.stat(Stat.heat);
+            await c.startDay(a);
+            final h1 = c.state!.stat(Stat.heat);
+            if (h1 > h0) heatSources.update('action:${a.id}', (v) => v + 1, ifAbsent: () => 1);
+            while (c.phase == Phase.event && c.current != null) {
+              final ev = c.current!;
+              if (startIds.contains(ev.id)) problems.add('$pref/s$seed D$day leak ${ev.id}');
+              if (ev.id == 'd_open_bet') bets++;
+              if (ev.lines.isEmpty) problems.add('${ev.id} 0 lines');
+              for (final l in ev.lines) {
+                if (l.ifFlags.any((f) => f.startsWith('sc_') || f == 'start_alt')) {
+                  problems.add('${ev.id} shows alt-start line ${l.text}');
+                }
+              }
+              final open = [for (final v in c.choices) if (!v.locked) v.index];
+              final i = open[rnd.nextInt(open.length)];
+              final mg = ev.choices[i].minigame != null;
+              final before = c.state!.stat(Stat.heat);
+              c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+              if (c.state!.stat(Stat.heat) > before) {
+                heatSources.update(ev.id, (v) => v + 1, ifAbsent: () => 1);
+              }
+              c.continueAfterChoice();
+            }
+            if (c.phase == Phase.summary) await c.endDay();
+          }
+          if (c.ending == null) problems.add('$pref/s$seed no ending');
+          if (startDay == 50 && bets > 0) problems.add('$pref/s$seed/$startDay bet reappeared $bets');
+          if (startDay == 2 && bets > 0) problems.add('$pref/s$seed/$startDay bet reappeared after seen $bets');
+        }
+      }
+    }
+    print('HEAT SOURCES $heatSources');
+    problems.toSet().take(60).forEach(print);
+    expect(problems, isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 10)));
+}

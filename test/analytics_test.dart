@@ -45,8 +45,8 @@ void main() {
     await c.newGame(seed: 1, preference: Preference.female);
     await c.newGame(seed: 2, preference: Preference.male);
     expect(rec.paramsOf(Analytics.runStarted).toList(), [
-      {'run': 1, 'pref': 'f', 'n': 1},
-      {'run': 1, 'pref': 'm', 'n': 2},
+      {'run': 1, 'pref': 'f', 'n': 1, 'start': 'classic', 'fate': 0},
+      {'run': 1, 'pref': 'm', 'n': 2, 'start': 'classic', 'fate': 0},
     ]);
     expect(rec.userProperties['pref'], 'm');
   });
@@ -130,6 +130,7 @@ void main() {
     await tester.pump();
     await tester.tap(findText('새 게임'));
     await tester.pumpAndSettle();
+    await pickStart(tester);
     await tester.tap(find.byKey(Key('gender-${PlayerGender.male}')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('name-skip')));
@@ -149,7 +150,8 @@ void main() {
 
     expect(
       [for (final p in rec.paramsOf(Analytics.onboardingStep)) p['step']],
-      ['gender', 'name', 'mbti', 'cast'],
+      // 시작 카드 시트가 첫 단계다(r1_bugs R1-6).
+      ['start', 'gender', 'name', 'mbti', 'cast'],
     );
     expect(rec.paramsOf(Analytics.onboardingDone).single, {
       'pref': 'f',

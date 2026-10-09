@@ -198,6 +198,7 @@ void main() {
       await tester.pump();
       await tester.tap(findText('새 게임'));
       await tester.pumpAndSettle();
+      await pickStart(tester);
     }
 
     testWidgets('나는? → 이름 → MBTI → 캐스트(칩·궁합) → 시작: 회차와 메타에 MBTI', (
@@ -251,6 +252,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(findText('시작'));
       await tester.pumpAndSettle();
+      await pickStart(tester);
       expect(find.byType(OnboardingGenderScreen), findsNothing);
       expect(find.byType(OnboardingMbtiScreen), findsNothing);
       expect(find.byType(PreferenceScreen), findsOneWidget);

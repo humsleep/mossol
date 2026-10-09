@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -130,8 +131,12 @@ class SaveSummary {
   /// 이 회차의 선호([Preference]). 홈 카드의 "1회차 · 여성 캐릭터" 와 사람들 줄이 쓴다.
   final String preference;
 
+  /// 소문 지수([Stat.heat]). 0 이면 홈에 게이지를 그리지 않는다.
+  final int heat;
+
   const SaveSummary({
     this.preference = Preference.all,
+    this.heat = 0,
     required this.run,
     required this.day,
     required this.totalDays,
@@ -165,6 +170,7 @@ class SaveSummary {
     }
     return SaveSummary(
       preference: s.preference,
+      heat: s.stat(Stat.heat),
       run: s.run,
       day: s.day,
       totalDays: config.totalDays,
@@ -378,13 +384,72 @@ class GameController extends ChangeNotifier {
   };
 
   /// [ev] 의 클리프행어를 오늘의 것으로 삼을지 정한다. 같은 층이면 나중 것이 이긴다.
+  ///
+  /// `next` 로 이어진 갈래 이벤트는 **사슬 부모의 층 순위를 물려받는다**(r1_meeting D6). 그래서
+  /// main → (선택) → daily 갈래로 이어진 사슬에서는 갈래의 클리프행어가 부모 main 의 것을 이긴다
+  /// — 플레이어가 고른 갈래의 예고가 "어젯밤" 이 된다. 사슬 밖의 일상은 예전처럼 main 을 못 이긴다.
   void _noteCliffhanger(StoryEvent ev) {
+    final inherited = _chainRank[ev.id];
+    final own = cliffhangerRankOf(ev.layer);
+    final rank = inherited == null ? own : min(own, inherited);
     if (ev.cliffhanger == null) return;
-    final rank = cliffhangerRankOf(ev.layer);
     if (rank > _cliffRank) return;
     cliffhanger = ev.cliffhanger;
     _cliffRank = rank;
   }
+
+  /// `next` 로 끼워 넣은 이벤트 → 사슬 부모(들) 중 가장 센 층 순위. 하루 단위, 메모리 전용.
+  final Map<String, int> _chainRank = {};
+
+  /// 되돌리기용 하루 상태 사본([_apply] 가 찍고 [undoChoice] 가 되살린다).
+  ({
+    List<StoryEvent> queue,
+    Map<String, int> chain,
+    String? cliff,
+    int rank,
+    int? clockEnd,
+  })?
+  _undoDay;
+
+  // ---- 하루 안 가짜 시계(r2_meeting E7) ----
+
+  /// 오늘 마지막으로 끝난 장면의 시각(자정부터 초). 없으면 null(첫 장면).
+  int? _clockEnd;
+
+  /// 오늘 장면별 시작 시각(한 장면 동안 고정).
+  final Map<String, int> _clockStart = {};
+
+  /// [ev] 의 말풍선 시계 시작 시각. [slot] 은 하루 안 순서로 정한 시각(`ChatClock.startSeconds`).
+  /// 장면이 정한 시각(`clock`)이 있으면 그것이 먼저다. 다만 **같은 날 시계는 거꾸로 가지 않는다** —
+  /// 앞 장면이 끝난 시각보다 이르면 그 다음 분으로 민다(r2_bugs R2-3). 한 장면 안에서는 같은 값.
+  int clockStartFor(StoryEvent ev, int slot) {
+    final had = _clockStart[ev.id];
+    if (had != null) return had;
+    var start = ev.clockSeconds ?? slot;
+    final end = _clockEnd;
+    if (end != null && start <= end) start = end + 60;
+    return _clockStart[ev.id] = start;
+  }
+
+  /// 오늘 마지막으로 끝난 장면의 시각. 테스트·디버그용.
+  int? get dayClockEnd => _clockEnd;
+
+  /// [ev] 가 끝난 시각을 적는다. 화면의 줄 시각 규칙(`ChatClock.timesFor`)과 같다: 대사 줄마다 +1분,
+  /// 대기 줄은 그 초만큼 더, 그다음 내 말 1줄과 반응 줄마다 +1분.
+  void _noteClockEnd(StoryEvent ev, Choice picked, ChoiceOutcome o) {
+    final start = _clockStart[ev.id];
+    if (start == null) return; // 화면이 시계를 그린 적 없는 장면(테스트·통화)은 건너뛴다.
+    var t = start;
+    for (final l in ev.lines) {
+      t += 60;
+      if (l.isWait) t += l.wait;
+    }
+    t += 60 * (1 + picked.replyFor(success: o.success, critical: o.critical).length);
+    _clockEnd = max(_clockEnd ?? 0, t);
+  }
+
+  /// 오늘 선택까지 마친 이벤트 id(메모리). 같은 장면이 `next` 로 하루에 두 번 끼어드는 것을 막는다.
+  final Set<String> _doneToday = {};
 
   /// 되돌리기용 스냅샷. 선택 직전 상태와 그 시점의 하루 합계.
   Map<String, dynamic>? _undoSnapshot;
@@ -462,12 +527,18 @@ class GameController extends ChangeNotifier {
       inCall: ev.isCall,
       forcePick: _forcePickThisEvent,
       say: say,
-      cacheKey: '${ev.id}|${visible.map((v) => v.index).join(',')}|$playerName|$runMbti',
+      // 보이는 선택지는 플래그(파급 줄)·목소리 조건으로 갈린다. 인덱스만으로는 같은 인덱스에
+      // 다른 문구가 오는 경우를 못 가르므로 문구 해시와 플래그 수까지 키에 넣는다.
+      cacheKey:
+          '${ev.id}|${visible.map((v) => v.index).join(',')}|'
+          '${Object.hashAll(visible.map((v) => v.choice.text))}|'
+          '${Object.hashAllUnordered(state!.flags)}|$playerName|$runMbti',
     );
     switch (r.decision) {
       case MatchDecision.empty:
         analytics.freeInputBlock(
-          r.input == null || r.input!.text.compact.isEmpty && text.trim().isNotEmpty
+          r.input == null ||
+                  r.input!.text.compact.isEmpty && text.trim().isNotEmpty
               ? 'emoji'
               : 'empty',
         );
@@ -587,7 +658,9 @@ class GameController extends ChangeNotifier {
   bool get canOfferFreeUndo {
     final s = state;
     if (s == null || lastOutcome == null) return false;
-    if (lastChoiceSource != ChoiceSource.freeText || !_lastFreeAuto) return false;
+    if (lastChoiceSource != ChoiceSource.freeText || !_lastFreeAuto) {
+      return false;
+    }
     if (undoUsedThisEvent || _undoSnapshot == null) return false;
     return !s.flags.contains('hardcore');
   }
@@ -617,7 +690,8 @@ class GameController extends ChangeNotifier {
   int _lastFreeConfB = 0;
 
   /// 자유 입력 자동 확정의 신뢰도를 기억해 둔다(되돌리기 지표). [confirmFree] 전에 화면이 부른다.
-  void noteFreeConfidence(MatchResult r) => _lastFreeConfB = (r.s1 * 10).round();
+  void noteFreeConfidence(MatchResult r) =>
+      _lastFreeConfB = (r.s1 * 10).round();
 
   /// 오늘 아직 볼 이벤트 id. 테스트·디버그용 읽기 전용 뷰.
   List<String> get queuedEventIds => [for (final e in _queue) e.id];
@@ -682,6 +756,8 @@ class GameController extends ChangeNotifier {
       await metaService.save(m);
     }
     meta = m;
+    _seenEventsCache = null;
+    _seenRipplesCache = null;
     TextTemplate.currentName = m.playerName;
     TextTemplate.currentMbti = m.mbti;
     TextTemplate.currentTop = null;
@@ -693,9 +769,34 @@ class GameController extends ChangeNotifier {
     _peek = hasSave ? await save.load() : null;
     // 세이브 키는 있었지만 깨져서 load 가 지웠다면 이어하기를 보여 주지 않는다.
     if (_peek == null) hasSave = false;
+    await _migrateLiveMeta(m);
     if (_peek != null) engine.regenHearts(_peek!, nowMs: nowMs());
     _syncSummary();
     notifyListeners();
+  }
+
+  /// 출시판(시작 스토리 이전) 사용자의 메타를 한 번 채운다(r2_meeting E6, r2_bugs R2-1). 추가만, 멱등.
+  ///
+  /// - 출시판에는 시작이 클래식뿐이었으므로 앨범의 엔딩은 전부 클래식으로 본 것이다 →
+  ///   `completedStarts = [classic]`, `startEndings.classic = 앨범`. 그러면 `done_classic`·`veteran`
+  ///   이 서고 카드가 클래식 대신 안 해 본 시작을 권한다.
+  /// - 이미 회차를 둘 이상 시작한 기기라면 지금 세이브의 본 장면은 예전 회차에서도 본 것으로
+  ///   보고 `seenEvents` 를 시드한다(빨리 감기). 한 판뿐인 기기는 그 판이 곧 지금 판이라 건너뛴다.
+  /// 두 칸 모두 비어 있을 때만 채우므로 다시 돌아도 바뀌지 않는다.
+  Future<void> _migrateLiveMeta(PlayerMeta m) async {
+    var changed = false;
+    if (m.completedStarts.isEmpty && endingAlbum.isNotEmpty) {
+      m.completedStarts.add(StartScenario.classic);
+      m.startEndings[StartScenario.classic] = endingAlbum.toSet().toList();
+      changed = true;
+    }
+    final p = _peek;
+    if (m.seenEvents.isEmpty && m.totalRuns > 1 && p != null) {
+      m.seenEvents.addAll(p.seen.toSet());
+      _seenEventsCache = null;
+      changed = p.seen.isNotEmpty || changed;
+    }
+    if (changed) await metaService.save(m);
   }
 
   /// 세이브. 진행 중인 회차면 오늘의 변화([dayDelta])를 함께 남겨, 하루 도중 앱을
@@ -710,6 +811,14 @@ class GameController extends ChangeNotifier {
         if (current != null && lastOutcome == null) current!.id,
         for (final e in _queue) e.id,
       ];
+      // 하루 도중 재시작해도 오늘의 예고 규칙(S7·D6)과 시계(E7)가 이어지게(r2_bugs 범위 밖 1).
+      s
+        ..todayCliffhanger = cliffhanger
+        ..todayCliffRank = _cliffRank == _noCliffRank ? null : _cliffRank
+        ..dayClockEnd = _clockEnd;
+      s.chainRank
+        ..clear()
+        ..addAll(_chainRank);
       s.dayDelta
         ..clear()
         ..addAll({
@@ -752,6 +861,8 @@ class GameController extends ChangeNotifier {
     final m = PlayerMeta(firstLaunchMs: nowMs(), introSeen: true);
     await metaService.save(m);
     meta = m;
+    _seenEventsCache = null;
+    _seenRipplesCache = null;
     TextTemplate.currentName = null;
     TextTemplate.currentMbti = null;
     TextTemplate.currentTop = null;
@@ -1125,11 +1236,23 @@ class GameController extends ChangeNotifier {
 
   /// 새 회차. [preference] 는 선택 화면(`PreferenceScreen`)이 고른 값이다.
   /// 기본값 [Preference.all] 은 예전 호출부(테스트·디버그)를 위한 것이고 UI 는 늘 고른다.
+  ///
+  /// [start] 는 시작 스토리 id(`starts.json`, docs/overhaul2/01_design.md §3). 그 보정
+  /// (`effects`)을 교차 회차 보너스 **다음에** 한 번 적용한다 — 크리티컬·초반 가속·앨범 없이.
+  /// 시작은 보정이 세우는 플래그(`start_alt`·`sc_*`)로만 남고 세이브에 새 칸은 없다.
+  /// 모르는 id 는 클래식으로 본다.
   Future<void> newGame({
     String preference = Preference.all,
     int? seed,
     int run = 1,
+    String start = StartScenario.classic,
   }) async {
+    // 버려지는 회차(세이브가 남은 채 새 게임)도 본 장면은 본 장면이다(D5).
+    final abandoned = state ?? _peek;
+    final m0 = meta;
+    if (m0 != null && abandoned != null && ending == null) {
+      _absorbSeen(m0, abandoned);
+    }
     final s = GameState.fresh(
       config,
       bundle.characters,
@@ -1143,17 +1266,39 @@ class GameController extends ChangeNotifier {
     );
     runBonus = crossRunBonus(endingAlbum.length);
     applyCrossRunBonus(s, runBonus);
+    final scenario = bundle.startOf(start);
+    final startId = scenario?.id ?? StartScenario.classic;
+    if (scenario != null) {
+      applyEffects(s, scenario.effects, absent: engine.absentFor(s));
+    }
+    // 회차 간 연결(r1_meeting §3·D7): 엔딩까지 간 시작마다 `done_<id>`, 하나라도 있으면 `veteran`.
+    // 대본은 `trigger.flags` 로 읽기만 한다(카메오). 시작 보정 다음에 세운다.
+    final done = meta?.completedStarts ?? const <String>[];
+    for (final id in done) {
+      s.flags.add(StartScenario.doneFlag(id));
+    }
+    if (done.isNotEmpty) s.flags.add(StartScenario.veteranFlag);
     state = s;
     ending = null;
     _resetDay();
     dayCard = _dayCardFor(DayCardVariant.first);
     phase = Phase.dayStart;
     final m = meta;
+    final fate = m?.pendingFate == startId;
     if (m != null) {
       m.totalRuns += 1;
+      m.lastStart = startId;
+      // 뽑은 운명은 여기서 지우지 않는다(r2_meeting E8). 그 운명으로 시작한 회차가 엔딩에 닿을 때
+      // [_finish] 가 지운다 — 다른 카드로 시작하거나 판을 버려도 운명은 남는다(버리는 판으로 다시 뽑기 방지).
       await metaService.save(m);
     }
-    analytics.runStart(run: run, pref: s.preference, n: totalRuns);
+    analytics.runStart(
+      run: run,
+      pref: s.preference,
+      n: totalRuns,
+      start: startId,
+      fate: fate,
+    );
     await _applyPendingHearts(s);
     await _save(s);
     hasSave = true;
@@ -1175,6 +1320,10 @@ class GameController extends ChangeNotifier {
       await _applyPendingHearts(s);
     }
     if (s.dayStarted) {
+      cliffhanger = s.todayCliffhanger;
+      _cliffRank = s.todayCliffRank ?? _noCliffRank;
+      _chainRank.addAll(s.chainRank);
+      _clockEnd = s.dayClockEnd;
       // 하트를 이미 쓴 날: 남은 이벤트부터(없으면 정산으로). 다시 행동을 고르게 하지 않는다.
       // 카드 없이 — 하루 도중 복귀다.
       _queue.addAll([for (final id in s.dayQueue) ?engine.byId(id)]);
@@ -1303,6 +1452,11 @@ class GameController extends ChangeNotifier {
     dayDelta.clear();
     cliffhanger = null;
     _cliffRank = _noCliffRank;
+    _chainRank.clear();
+    _doneToday.clear();
+    _clockEnd = null;
+    _clockStart.clear();
+    _undoDay = null;
     rouletteSlot = null;
     rouletteRerolled = false;
     _queue.clear();
@@ -1452,6 +1606,15 @@ class GameController extends ChangeNotifier {
     if (!undoUsedThisEvent) {
       _undoSnapshot = s.toJson();
       _undoDayDelta = dayDelta.copy();
+      // 하루 큐·사슬 순위·클리프행어·시계도 선택 직전으로(되돌리기가 계획된 이벤트를 떨어뜨리거나
+      // 되돌린 선택의 예고가 남던 문제, r2_bugs 범위 밖 2).
+      _undoDay = (
+        queue: List.of(_queue),
+        chain: Map.of(_chainRank),
+        cliff: cliffhanger,
+        rank: _cliffRank,
+        clockEnd: _clockEnd,
+      );
     }
     lastChoiceSource = source;
     _playerText = playerText;
@@ -1469,18 +1632,50 @@ class GameController extends ChangeNotifier {
     _lastChoice = ev.choices[index];
     dayDelta.merge(outcome.delta);
     _noteCliffhanger(ev);
+    _doneToday.add(ev.id);
+    _noteRipples(ev);
+    _noteClockEnd(ev, ev.choices[index], outcome);
     final next = outcome.nextEventId == null
         ? null
         : engine.byId(outcome.nextEventId!);
-    if (next != null) {
+    // 오늘 이미 본 장면은 `next` 로 다시 끼우지 않는다. 일상 네 곳의 `failNext` 가 같은 모먼트
+    // (`mo_fail_drunk_replay`)로 이어져 하루에 두 번 나오던 문제(r1_bugs "범위 밖"). 일상은 세이브의
+    // 본 날 기록으로도 본다 — 하루 도중 앱을 다시 켜도 같다.
+    if (next != null && !_seenToday(s, next)) {
       // 오늘 계획에 이미 잡혀 있던 이벤트면 앞으로 당길 뿐 두 번 보여 주지 않는다.
       _queue.removeWhere((e) => e.id == next.id);
-      _queue.insert(0, next);
+      _queue.insert(_nextSlot(next), next);
+      final parent = min(
+        cliffhangerRankOf(ev.layer),
+        _chainRank[ev.id] ?? _noCliffRank,
+      );
+      final had = _chainRank[next.id];
+      _chainRank[next.id] = had == null ? parent : min(had, parent);
     }
     // 선택은 되돌릴 수 없는 진행이다. 여기서 끊겨도 결과가 남아야 한다.
     _save(s);
     notifyListeners();
   }
+
+  /// `next` 로 이어질 [next] 를 끼울 자리. 보통은 맨 앞(바로 다음)이다.
+  ///
+  /// 단, 시각을 정하지 않은 사슬 장면은 큐 맨 앞에 줄 선 **새벽·아침 고정 장면**(정오 전 `clock`,
+  /// [EventEngine.orderByClock])을 앞지르지 않는다(r3_meeting F2). 그러지 않으면 "새벽 1시" 메인 →
+  /// 낮 시각의 사슬(`d_brief_alt`) → "아침 7시" 장면 순서가 되어, 시계가 거꾸로 못 가는 탓에 아침 장면이
+  /// 오후로 찍혔다(r3_script R3-3 `sc_swap_trainer`·`sc_clip_open_2`). 사슬은 여전히 다른 모든 장면보다 앞이다.
+  int _nextSlot(StoryEvent next) {
+    if (next.clockSeconds != null) return 0;
+    var at = 0;
+    while (at < _queue.length &&
+        (_queue[at].clockSeconds ?? EventEngine.clockNoon) < EventEngine.clockNoon) {
+      at++;
+    }
+    return at;
+  }
+
+  /// [e] 를 오늘 이미 봤는지(선택까지 마침).
+  bool _seenToday(GameState s, StoryEvent e) =>
+      _doneToday.contains(e.id) || s.dailySeenDay[e.id] == s.day;
 
   /// 선택 결과가 나쁠 때 되돌리기 제안 여부. 호감도가 떨어졌고 아직 안 썼을 때.
   bool get canOfferUndo {
@@ -1525,16 +1720,29 @@ class GameController extends ChangeNotifier {
       ..dayQueue = restored.dayQueue
       // 저장용 하루 합계 사본도 선택 직전으로(메모리의 dayDelta 는 아래에서 되돌린다).
       ..dayDelta.clear()
-      ..dayDelta.addAll(restored.dayDelta);
+      ..dayDelta.addAll(restored.dayDelta)
+      // 저장용 하루 도중 상태(예고·사슬·시계)도 선택 직전으로.
+      ..todayCliffhanger = restored.todayCliffhanger
+      ..todayCliffRank = restored.todayCliffRank
+      ..dayClockEnd = restored.dayClockEnd
+      ..chainRank.clear()
+      ..chainRank.addAll(restored.chainRank);
     dayDelta
       ..clear()
       ..merge(dayBefore);
-    final o = lastOutcome;
-    if (o?.nextEventId != null &&
-        _queue.isNotEmpty &&
-        _queue.first.id == o!.nextEventId) {
-      _queue.removeAt(0);
+    final day = _undoDay;
+    if (day != null) {
+      _queue
+        ..clear()
+        ..addAll(day.queue);
+      _chainRank
+        ..clear()
+        ..addAll(day.chain);
+      cliffhanger = day.cliff;
+      _cliffRank = day.rank;
+      _clockEnd = day.clockEnd;
     }
+    _undoDay = null;
     // 자유 입력 기록도 선택과 함께 없던 일이 된다(되돌린 뒤 버튼으로 고르면 말풍선이 옛 문장이 되지 않게).
     if (lastChoiceSource == ChoiceSource.freeText) {
       final ev = current;
@@ -1552,6 +1760,8 @@ class GameController extends ChangeNotifier {
     undoUsedThisEvent = true;
     _undoSnapshot = null;
     _undoDayDelta = null;
+    // 되돌린 상태도 저장한다. 안 하면 광고로 되돌린 뒤 앱이 죽었을 때 선택 후 상태로 되살아난다(r3_bugs R3-1).
+    _save(s);
     notifyListeners();
   }
 
@@ -1621,6 +1831,16 @@ class GameController extends ChangeNotifier {
     final m = meta;
     if (m != null) {
       m.lastEndingId = e.id;
+      if (s != null) {
+        // 시작별 기록(D7): 끝낸 시작과 그 시작으로 본 엔딩. 본 장면도 회차를 넘어 쌓는다(D5).
+        final start = engine.startIdOf(s);
+        if (!m.completedStarts.contains(start)) m.completedStarts.add(start);
+        // 운명으로 고른 시작을 끝까지 했다 → 운명을 썼다(E8). 다음 흐름은 새로 뽑는다.
+        if (m.pendingFate == start) m.pendingFate = null;
+        final got = m.startEndings.putIfAbsent(start, () => []);
+        if (!got.contains(e.id)) got.add(e.id);
+        _absorbSeen(m, s);
+      }
       await metaService.save(m);
     }
     await _recordBestDay(state?.day ?? 0);
@@ -1637,12 +1857,224 @@ class GameController extends ChangeNotifier {
   /// 엔딩 후 다음 회차. run 이 올라가 히든 조건이 열린다. 선호는 이번 회차 것을 잇는다
   /// (바꾸려면 홈의 새 게임에서 다시 고른다). [preference] 를 주면 그 쪽으로 — 엔딩 화면
   /// "반대쪽 캐릭터도 만나 보기" 가 캐스트 소개에서 고른 쪽을 넘긴다.
-  Future<void> nextRun({String? preference}) async {
+  ///
+  /// [start] 는 시작 카드에서 고른 시작 스토리(없으면 클래식).
+  Future<void> nextRun({String? preference, String? start}) async {
     final prevRun = state?.run ?? 1;
     await newGame(
       preference: preference ?? state?.preference ?? Preference.all,
       run: prevRun + 1,
+      start: start ?? StartScenario.classic,
     );
+  }
+
+  // ---- 시작 스토리(docs/overhaul2/01_design.md §3·§4) ----
+
+  /// 앨범의 서로 다른 엔딩 수. 시작 카드의 해금(`unlockEndings`)이 이것을 본다.
+  int get distinctEndingCount => endingAlbum.toSet().length;
+
+  /// 바로 전 회차의 시작. 운명 뽑기가 뺀다. 기록이 없으면 null.
+  String? get lastStart => meta?.lastStart;
+
+  /// 엔딩으로 열렸지만 아직 "새로 열림" 배지를 보여 주지 않은 시작.
+  Set<String> get newlyUnlockedStarts {
+    final seen = meta?.announcedStarts.toSet() ?? const <String>{};
+    final n = distinctEndingCount;
+    return {
+      for (final s in bundle.starts)
+        if (s.unlockEndings > 0 && s.unlockedBy(n) && !seen.contains(s.id))
+          s.id,
+    };
+  }
+
+  /// "새로 열림" 배지를 보여 줬다고 적는다.
+  Future<void> markStartsAnnounced(Iterable<String> ids) async {
+    final m = meta;
+    if (m == null) return;
+    final add = ids.where((id) => !m.announcedStarts.contains(id)).toList();
+    if (add.isEmpty) return;
+    m.announcedStarts.addAll(add);
+    await metaService.save(m);
+  }
+
+  /// 엔딩까지 간 시작 id(메타). 새 게임이 `done_<id>` 플래그를 세운다.
+  List<String> get completedStarts => meta?.completedStarts ?? const [];
+
+  /// 시작 [id] 로 본 서로 다른 엔딩 수. 카드의 "본 적 있음(엔딩 n개)".
+  int startEndingCount(String id) => meta?.startEndings[id]?.length ?? 0;
+
+  /// 시작 카드의 기본 선택(D7·D9). 첫 회차면 `recommended` 시작(없으면 클래식), 그 뒤로는
+  /// 열려 있는 시작 중 **아직 끝내 보지 않은 첫 번째**. 전부 끝냈으면 null(기본 없음).
+  String? get suggestedStart {
+    final starts = bundle.starts;
+    if (starts.length <= 1) return null;
+    if (isFirstOnboarding) {
+      for (final s in starts) {
+        if (s.recommended) return s.id;
+      }
+      return StartScenario.classic;
+    }
+    final done = completedStarts.toSet();
+    final n = distinctEndingCount;
+    for (final s in starts) {
+      if (s.unlockedBy(n) && !done.contains(s.id)) return s.id;
+    }
+    return null;
+  }
+
+  /// 이미 뽑은 운명(D10). 없거나 지금 데이터에 없는 시작이면 null.
+  /// 그 운명으로 시작한 회차가 엔딩에 닿을 때 [_finish] 가 지운다(E8).
+  String? get pendingFate {
+    final id = meta?.pendingFate;
+    return id != null && bundle.startOf(id) != null ? id : null;
+  }
+
+  /// 운명 뽑기 결과를 메타에 남긴다. 이미 뽑은 것이 있으면 바꾸지 않는다 — 시트를 닫거나
+  /// 뒤로 가거나 앱을 다시 켜도 재추첨할 수 없다(인트로·홈·엔딩 공통).
+  Future<void> rememberFate(String id) async {
+    final m = meta;
+    if (m == null || pendingFate != null) return;
+    m.pendingFate = id;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  // ---- 읽은 장면 빨리 감기 · NEW 점 (r1_meeting D5) ----
+
+  /// 설정 "읽은 장면 빨리 감기". 기본 켬.
+  bool get fastForwardSeen => meta?.fastForwardSeen ?? true;
+
+  Future<void> setFastForwardSeen(bool on) async {
+    final m = meta;
+    if (m == null || m.fastForwardSeen == on) return;
+    m.fastForwardSeen = on;
+    await metaService.save(m);
+    notifyListeners();
+  }
+
+  Set<String>? _seenEventsCache;
+  Set<String>? _seenRipplesCache;
+
+  Set<String> get _seenEvents =>
+      _seenEventsCache ??= (meta?.seenEvents ?? const <String>[]).toSet();
+  Set<String> get _seenRipples =>
+      _seenRipplesCache ??= (meta?.seenRipples ?? const <String>[]).toSet();
+
+  /// [id] 장면을 **이전 회차에서** 본 적이 있는지(메타 `seenEvents`).
+  bool seenInEarlierRun(String id) => _seenEvents.contains(id);
+
+  /// 지금 장면의 대기 줄을 광고 없이 건너뛸 수 있는지. 토글이 켜져 있고 이전 회차에서 본 장면일 때.
+  /// 처음 보는 장면의 대기는 예전처럼 광고로만 건너뛴다.
+  ///
+  /// 이벤트 id 만으로는 모자라다(r2_bugs R2-2): 이번에 처음 보는 변형 대사나 파급 줄(NEW)이 들어 있으면
+  /// 그 장면은 "본 장면" 이 아니다 — 무료 건너뛰기도 빨리 감기도 하지 않는다(E5).
+  bool get canFreeSkipWait => canFastForward;
+
+  /// 이전 회차에서 본 장면이라 줄 연출을 생략하고 한 번에 보여 줄지(r2_meeting E5). 설정 토글을 같이 쓴다.
+  bool get canFastForward {
+    final ev = current;
+    final s = state;
+    if (ev == null || s == null || !fastForwardSeen) return false;
+    if (!seenInEarlierRun(ev.id)) return false;
+    if (newRippleLines.isNotEmpty) return false;
+    final orig = bundle.eventById[ev.id];
+    if (orig != null && orig.variants.isNotEmpty) {
+      final i = engine.variantIndexOf(s, orig);
+      if (!_seenEvents.contains(variantKey(ev.id, i))) return false;
+    }
+    return true;
+  }
+
+  /// 변형 대사 묶음 [index] 를 본 기록의 키(`id#번호`, 재방송 계측과 같은 규칙).
+  static String variantKey(String id, int index) => '$id#$index';
+
+  /// 무료 건너뛰기를 썼다(측정: 광고 `wait_skip` 이 줄어든 몫을 본다).
+  void logWaitSkipFree() => analytics.log(Analytics.waitSkipFree, {
+    'day': state?.day ?? 0,
+    'ev': current?.id ?? '',
+  });
+
+  /// 회차의 `seen` 을 메타 `seenEvents` 에 합친다(저장은 부르는 쪽).
+  ///
+  /// 변형 대사가 있는 장면은 이 회차에 실제로 본 묶음 번호도 적는다(`id#번호`). 회전 규칙
+  /// ([EventEngine.variantIndexOf])이 (시드, 본 횟수)로만 정해지므로 세이브에서 되짚을 수 있다.
+  void _absorbSeen(PlayerMeta m, GameState s) {
+    final have = m.seenEvents.toSet();
+    void add(String k) {
+      if (have.add(k)) m.seenEvents.add(k);
+    }
+
+    for (final id in s.seen) {
+      add(id);
+      final e = bundle.eventById[id];
+      if (e == null || e.variants.isEmpty) continue;
+      final n = e.variants.length + 1;
+      final start = EventEngine.stableSeed(s.seed, 0, 'variant:$id') % n;
+      final views = s.viewsOf(id).clamp(1, n);
+      for (var k = 0; k < views; k++) {
+        add(variantKey(id, (start + k) % n));
+      }
+    }
+    _seenEventsCache = null;
+  }
+
+  /// 파급 줄·선택지 키. 원문(치환 전) 글의 FNV 해시라 이름을 바꿔도 같다.
+  static String rippleKey(String eventId, String kind, String text) =>
+      '$eventId|$kind|${EventEngine.stableSeed(0, 0, text).toRadixString(16)}';
+
+  /// 지금 장면에서 NEW 점을 찍을 대사 줄 번호([current] 의 `lines` 기준). 이전 회차에서 본 장면
+  /// 안의, 처음 보는 파급 줄(`ifFlags`·`ifNotFlags`)만. 처음 보는 장면은 전부 새것이라 찍지 않는다.
+  Set<int> get newRippleLines => _ripples().$1;
+
+  /// [newRippleLines] 의 선택지판([current] 의 `choices` 번호 = [ChoiceView.index]).
+  Set<int> get newRippleChoices => _ripples().$2;
+
+  (StoryEvent, Set<int>, Set<int>)? _rippleCache;
+
+  (Set<int>, Set<int>) _ripples() {
+    final ev = current;
+    if (ev == null || !seenInEarlierRun(ev.id)) return (const {}, const {});
+    final cached = _rippleCache;
+    if (cached != null && identical(cached.$1, ev)) {
+      return (cached.$2, cached.$3);
+    }
+    final seen = _seenRipples;
+    final lines = <int>{
+      for (var i = 0; i < ev.lines.length; i++)
+        if (ev.lines[i].isFlagGated &&
+            !seen.contains(rippleKey(ev.id, 'L', ev.lines[i].text)))
+          i,
+    };
+    final choices = <int>{
+      for (var i = 0; i < ev.choices.length; i++)
+        if (ev.choices[i].isFlagGated &&
+            !seen.contains(rippleKey(ev.id, 'C', ev.choices[i].text)))
+          i,
+    };
+    _rippleCache = (ev, lines, choices);
+    return (lines, choices);
+  }
+
+  /// 지금 장면에서 보인 파급 줄·선택지를 본 것으로 적는다. 새로 적은 것이 있을 때만 저장한다.
+  void _noteRipples(StoryEvent ev) {
+    final m = meta;
+    if (m == null) return;
+    final keys = [
+      for (final l in ev.lines)
+        if (l.isFlagGated) rippleKey(ev.id, 'L', l.text),
+      for (final c in ev.choices)
+        if (c.isFlagGated) rippleKey(ev.id, 'C', c.text),
+    ];
+    if (keys.isEmpty) return;
+    final have = _seenRipples;
+    var added = false;
+    for (final k in keys) {
+      if (have.add(k)) {
+        m.seenRipples.add(k);
+        added = true;
+      }
+    }
+    if (added) unawaited(metaService.save(m));
   }
 
   // ---- 측정: 온보딩 ----

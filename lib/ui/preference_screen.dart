@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../engine/mbti.dart';
 import '../engine/models.dart';
 import '../engine/story_repository.dart';
+import '../engine/text_template.dart';
 import 'design_system.dart';
 import 'keep_all.dart';
 import 'widgets.dart';
@@ -33,12 +34,17 @@ class PreferenceScreen extends StatefulWidget {
   /// 플레이어 MBTI. 있으면 카드마다 궁합 줄(하트 5칸 + 라벨)을 그린다(docs/MBTI_SPEC.md §2.2).
   final String? playerMbti;
 
+  /// 이번 새 게임의 시작 스토리 id. 있으면 그 시작의 "먼저 다가오는 사람" 을 맨 앞에 두고
+  /// 표시하며, 시작이 정한 첫 메시지(`castLines`)를 쓴다(r1_playtest P2-4).
+  final String? start;
+
   const PreferenceScreen({
     super.key,
     required this.bundle,
     this.side,
     this.onPicked,
     this.playerMbti,
+    this.start,
   });
 
   static const title = '이 사람들을 만나게 돼요';
@@ -55,10 +61,15 @@ class PreferenceScreen extends StatefulWidget {
     StoryBundle bundle, {
     String? side,
     String? playerMbti,
+    String? start,
   }) => Navigator.of(context).push<String>(
     MaterialPageRoute(
-      builder: (_) =>
-          PreferenceScreen(bundle: bundle, side: side, playerMbti: playerMbti),
+      builder: (_) => PreferenceScreen(
+        bundle: bundle,
+        side: side,
+        playerMbti: playerMbti,
+        start: start,
+      ),
     ),
   );
 
@@ -79,12 +90,39 @@ class PreferenceScreen extends StatefulWidget {
 
   /// 소개 카드 목록. characters.json 순, 히든은 맨 뒤에 이름·문구 없이 한 칸.
   /// [playerMbti] 가 있으면 캐릭터 MBTI 와의 궁합 점수를 싣는다(히든은 MBTI 도 숨긴다).
+  ///
+  /// [start] 가 있으면 그 시작이 호감을 먼저 주는 사람을 맨 앞에 두고 [CastIntro.comesFirst] 로
+  /// 표시한다. 시작의 `castLines` 가 있는 사람은 그 문장이 첫 메시지다.
   static List<CastIntro> introsOf(
     StoryBundle bundle,
     String gender, {
     String? playerMbti,
+    String? start,
   }) {
-    final side = bundle.characters.where((c) => c.gender == gender);
+    final st = start == null ? null : bundle.startOf(start);
+    final eager = {
+      for (final e in (st?.effects.affection ?? const <String, int>{}).entries)
+        if (e.value > 0) e.key,
+    };
+    final side = [
+      ...bundle.characters.where(
+        (c) => c.gender == gender && eager.contains(c.id),
+      ),
+      ...bundle.characters.where(
+        (c) => c.gender == gender && !eager.contains(c.id),
+      ),
+    ];
+    String? lineOf(String id) {
+      final own = st?.castLines[id];
+      if (own == null) return bundle.firstLineOf(id);
+      return TextTemplate.fill(
+        own,
+        name: TextTemplate.currentName,
+        mbti: TextTemplate.currentMbti,
+        chars: bundle.charNames,
+      );
+    }
+
     return [
       for (final c in side)
         if (!c.hidden)
@@ -93,11 +131,12 @@ class PreferenceScreen extends StatefulWidget {
             name: c.name,
             title: c.displayTitle,
             tagline: c.tagline,
-            firstLine: bundle.firstLineOf(c.id),
+            firstLine: lineOf(c.id),
             mbti: c.mbti,
             compat: playerMbti == null || c.mbti == null
                 ? null
                 : Mbti.compat(playerMbti, c.mbti),
+            comesFirst: eager.contains(c.id),
           ),
       for (final c in side)
         if (c.hidden)
@@ -217,6 +256,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                     bundle: bundle,
                     side: side,
                     playerMbti: widget.playerMbti,
+                    start: widget.start,
                   ),
           ),
         ],
@@ -327,12 +367,14 @@ class _CastList extends StatelessWidget {
   final StoryBundle bundle;
   final String side;
   final String? playerMbti;
+  final String? start;
 
   const _CastList({
     super.key,
     required this.bundle,
     required this.side,
     this.playerMbti,
+    this.start,
   });
 
   @override
@@ -341,6 +383,7 @@ class _CastList extends StatelessWidget {
       bundle,
       side,
       playerMbti: playerMbti,
+      start: start,
     );
     // 소개할 캐릭터가 없으면 자리 표시 문구 대신 섹션 자체를 숨긴다.
     if (intros.isEmpty) return const SizedBox.shrink();

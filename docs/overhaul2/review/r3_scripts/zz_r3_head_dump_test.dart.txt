@@ -1,0 +1,87 @@
+// R3: dump REAL live-build (HEAD) SharedPreferences for save-compat checks on the branch.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+const out = String.fromEnvironment('OUT');
+
+Future<void> dump(String name) async {
+  final p = await SharedPreferences.getInstance();
+  final m = <String, Object?>{for (final k in p.getKeys()) k: p.get(k)};
+  File('$out/$name.json').writeAsStringSync(jsonEncode(m));
+  print('dumped $name keys=${m.keys.toList()}');
+}
+
+Future<void> playDays(GameController c, Random rnd, int days, {bool stopMid = false}) async {
+  final b = c.bundle;
+  for (var d = 0; d < days && c.ending == null; d++) {
+    if (c.phase == Phase.dayStart) c.beginMorning();
+    c.state!.hearts = b.config.maxHearts;
+    await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+    var n = 0;
+    while (c.phase == Phase.event) {
+      if (stopMid && d == days - 1 && n == 1) return; // mid-day, an event in progress
+      final ev = c.current!;
+      final open = [for (final v in c.choices) if (!v.locked) v.index];
+      final i = open[rnd.nextInt(open.length)];
+      final mg = ev.choices[i].minigame != null;
+      c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+      c.continueAfterChoice();
+      n++;
+    }
+    if (c.phase == Phase.summary) await c.endDay();
+  }
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  for (final seed in [1, 2, 3]) {
+    test('veteran mid-day seed $seed', () async {
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(bundle: testBundle(), save: SaveService());
+      await c.init();
+      await c.markIntroSeen();
+      final rnd = Random(seed);
+      await c.newGame(preference: Preference.genders[seed % 2], seed: seed);
+      await playDays(c, rnd, 120);
+      expect(c.ending, isNotNull);
+      await c.nextRun();
+      await playDays(c, rnd, 120);
+      await c.nextRun();
+      await playDays(c, rnd, 5, stopMid: true);
+      print('phase=${c.phase} day=${c.state!.day} cur=${c.current?.id} queue=${c.queuedEventIds}');
+      await dump('veteran_mid_$seed');
+    }, timeout: const Timeout(Duration(minutes: 5)));
+  }
+  test('newbie mid-day', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = GameController(bundle: testBundle(), save: SaveService());
+    await c.init();
+    await c.markIntroSeen();
+    await c.newGame(preference: Preference.genders[0], seed: 9);
+    await playDays(c, Random(9), 3, stopMid: true);
+    await dump('newbie_mid');
+  });
+  test('veteran morning (ending reached, next run not started)', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = GameController(bundle: testBundle(), save: SaveService());
+    await c.init();
+    await c.markIntroSeen();
+    final rnd = Random(4);
+    await c.newGame(preference: Preference.genders[1], seed: 4);
+    await playDays(c, rnd, 120);
+    await dump('veteran_after_ending');
+    await c.nextRun();
+    await playDays(c, rnd, 10);
+    await dump('veteran_morning');
+  }, timeout: const Timeout(Duration(minutes: 5)));
+}

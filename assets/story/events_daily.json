@@ -905,6 +905,7 @@
   },
   "weight": 2,
   "title": "1이 안 사라진다",
+  "clock": "19:00",
   "lines": [
    {
     "who": "narr",
@@ -1042,10 +1043,11 @@
   "weight": 3,
   "once": false,
   "title": "새벽 감성 메시지",
+  "clock": "03:50",
   "lines": [
    {
     "who": "narr",
-    "text": "새벽 4시. 잠이 안 온다. 감성이 차오른다."
+    "text": "새벽 3시 50분. 잠이 안 온다. 감성이 차오른다."
    },
    {
     "who": "narr",
@@ -1319,6 +1321,7 @@
   },
   "weight": 2,
   "title": "새벽 스토리 좋아요",
+  "clock": "01:00",
   "lines": [
    {
     "who": "narr",
@@ -1399,6 +1402,7 @@
   },
   "weight": 2,
   "title": "새벽 스토리 좋아요",
+  "clock": "01:00",
   "lines": [
    {
     "who": "narr",
@@ -1478,6 +1482,7 @@
   },
   "weight": 3,
   "title": "3년 전 사진 좋아요",
+  "clock": "02:00",
   "lines": [
    {
     "who": "narr",
@@ -2877,7 +2882,10 @@
    "anyAffection": {
     "min": 23,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "title": "영화 취향 충돌",
@@ -3006,11 +3014,15 @@
    "anyAffection": {
     "min": 29,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "once": false,
   "title": "막차",
+  "clock": "23:40",
   "lines": [
    {
     "who": "narr",
@@ -3148,7 +3160,10 @@
    "anyAffection": {
     "min": 23,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 2,
   "title": "비 오는 날",
@@ -3280,7 +3295,10 @@
      0,
      120
     ]
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "once": false,
@@ -3422,7 +3440,10 @@
    "anyAffection": {
     "min": 26,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "once": false,
@@ -3555,7 +3576,10 @@
    "anyAffection": {
     "min": 36,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "title": "손잡기",
@@ -3685,6 +3709,9 @@
    "day": [
     25,
     100
+   ],
+   "notFlags": [
+    "m36_parted"
    ]
   },
   "weight": 2,
@@ -3827,7 +3854,10 @@
    "anyAffection": {
     "min": 36,
     "count": 1
-   }
+   },
+   "notFlags": [
+    "m36_parted"
+   ]
   },
   "weight": 3,
   "title": "기념일 계산",
@@ -4349,6 +4379,7 @@
   },
   "weight": 3,
   "title": "잠결 전화",
+  "clock": "02:00",
   "lines": [
    {
     "who": "narr",
@@ -4467,7 +4498,8 @@
    ]
   },
   "weight": 2,
-  "title": "아침 국밥",
+  "title": "해장 국밥",
+  "clock": "09:30",
   "lines": [
    {
     "who": "them",
@@ -4558,11 +4590,14 @@
       "who": "narr",
       "text": "{top|이가} 아침 국밥에 자기를 불렀냐고 했다. 가겠다고."
      }
+    ],
+    "ifNotFlags": [
+     "m36_parted"
     ]
    }
   ],
   "once": false,
-  "hint": 2,
+  "hint": 0,
   "variants": [
    {
     "lines": [
@@ -4608,10 +4643,14 @@
    },
    "flags": [
     "club_afterparty"
+   ],
+   "notFlags": [
+    "m36_parted"
    ]
   },
   "weight": 2,
   "title": "2차 제안",
+  "clock": "21:30",
   "lines": [
    {
     "who": "narr",
@@ -6300,7 +6339,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "새벽 4시, 마지막 슬라이드가 저장됐다."
+      "text": "동이 틀 무렵 마지막 슬라이드가 저장됐다."
      },
      "수고했어요. 덕분에 살았다 진짜"
     ]
@@ -6582,6 +6621,7 @@
   },
   "weight": 3,
   "title": "야근과 약속",
+  "clock": "18:50",
   "lines": [
    {
     "who": "narr",
@@ -7212,6 +7252,7 @@
   },
   "weight": 3,
   "title": "정리의 시간",
+  "clock": "23:00",
   "lines": [
    {
     "who": "narr",
@@ -7948,7 +7989,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "잔돈 모아 산 로또. 5등, 5만 원."
+    "text": "잔돈 모아 산 로또. 5등, 5만원."
    }
   ],
   "choices": [
@@ -7962,7 +8003,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "5만 원. 커피 열 잔이거나, 괜찮은 저녁 한 번이다."
+      "text": "5만원. 커피 열 잔이거나, 괜찮은 저녁 한 번이다."
      }
     ]
    },
@@ -7979,7 +8020,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "통장에 5만 원이 찍혔다. 미래의 내가 고마워할 것이다. 아마."
+      "text": "통장에 5만원이 찍혔다. 미래의 내가 고마워할 것이다. 아마."
      }
     ]
    },
@@ -9636,6 +9677,7 @@
   },
   "weight": 3,
   "title": "혼밥",
+  "clock": "20:00",
   "lines": [
    {
     "who": "narr",
@@ -9681,6 +9723,9 @@
       "who": "narr",
       "text": "어디냐고 물었다. 나오겠다고."
      }
+    ],
+    "ifNotFlags": [
+     "m36_parted"
     ]
    },
    {
@@ -9750,6 +9795,7 @@
   },
   "weight": 2,
   "title": "새벽 운동",
+  "clock": "05:30",
   "lines": [
    {
     "who": "narr",
@@ -9844,6 +9890,9 @@
    "day": [
     1,
     3
+   ],
+   "notFlags": [
+    "start_alt"
    ]
   },
   "weight": 5,
@@ -9853,26 +9902,108 @@
    {
     "who": "them",
     "name": "태현",
-    "text": "야 오늘부터 D-100이다"
+    "text": "야 오늘부터 D-100이다",
+    "ifNotFlags": [
+     "start_alt"
+    ]
    },
    {
     "who": "them",
     "name": "태현",
-    "text": "100일 안에 연애 못 하면 네가 치킨 열 마리"
+    "text": "야 하루 늦었지만 오늘부터 D-98이다. 어제는 사고 수습한 걸로 치고",
+    "ifFlags": [
+     "start_alt"
+    ]
    },
    {
     "who": "them",
     "name": "태현",
-    "text": "하면 내가 열 마리"
+    "text": "100일 안에 연애 못 하면 네가 치킨 열 마리",
+    "ifNotFlags": [
+     "start_alt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "하면 내가 열 마리",
+    "ifNotFlags": [
+     "start_alt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "100일 안에 연애 못 하면 네가 치킨 열 마리. 하면 내가 열 마리",
+    "ifFlags": [
+     "start_alt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "그리고 보너스. 그 문장 주인이랑 되면 내가 따로 한 마리 더",
+    "ifFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "그리고 보너스. 부케 받은 사람이랑 되면 스무 마리. 이건 진심",
+    "ifFlags": [
+     "sc_speech"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "마이크 켜고 정식으로 고백하면 치킨 추가 ㅋㅋ",
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "서진보다 먼저 100일 사진 올리면 한 마리 더",
+    "ifFlags": [
+     "sc_swap"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "아 그리고 방금 뒤집은 거 유효. 네가 진짜 너로 성공하면 내가 스무 마리",
+    "ifFlags": [
+     "taehyun_debt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "사과의 의미로 판돈은 내가 더 건다. 진짜로",
+    "ifFlags": [
+     "sc_ghost"
+    ],
+    "ifNotFlags": [
+     "taehyun_debt"
+    ]
    },
    {
     "who": "me",
-    "text": "판돈이 왜 치킨이야"
+    "text": "판돈이 왜 치킨이야",
+    "ifNotFlags": [
+     "start_alt"
+    ]
    },
    {
     "who": "them",
     "name": "태현",
-    "text": "돈으로 하면 너 파산할까 봐 ㅋㅋ"
+    "text": "돈으로 하면 너 파산할까 봐 ㅋㅋ",
+    "ifNotFlags": [
+     "start_alt"
+    ]
    }
   ],
   "choices": [
@@ -9905,6 +10036,14 @@
       "who": "them",
       "name": "태현",
       "text": "오 ㅋㅋ 스무 마리 콜. 이 말 박제한다"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "아 근데 스무 마리는 이미 걸었잖아 ㅋㅋ 그럼 마흔 마리로 적는다",
+      "ifFlags": [
+       "taehyun_debt"
+      ]
      }
     ],
     "failReply": [
@@ -9970,8 +10109,7 @@
     ]
    }
   ],
-  "hint": 2,
-  "cliffhanger": "태현의 상태 메시지가 바뀌었다. \"D-100. 치킨 대기 중\""
+  "hint": 2
  },
  {
   "id": "d_open_bet_2",
@@ -10010,7 +10148,8 @@
     "effects": {
      "stats": {
       "esteem": 2,
-      "reputation": 2
+      "reputation": 2,
+      "heat": 8
      },
      "setFlags": [
       "bet_public"
@@ -10100,8 +10239,7 @@
     ]
    }
   ],
-  "hint": 0,
-  "cliffhanger": "단톡방 누군가가 \"나도 걸래\"라고 했다. 판돈이 늘었다."
+  "hint": 0
  },
  {
   "id": "d_open_groupchat",
@@ -10233,6 +10371,9 @@
    "day": [
     1,
     3
+   ],
+   "notFlags": [
+    "start_alt"
    ]
   },
   "weight": 4,
@@ -10580,6 +10721,9 @@
    "day": [
     1,
     3
+   ],
+   "notFlags": [
+    "start_alt"
    ]
   },
   "weight": 4,
@@ -10720,16 +10864,16 @@
   },
   "weight": 4,
   "once": true,
-  "title": "새벽 1시 14분",
+  "title": "답장 속도 테스트",
   "lines": [
    {
     "who": "narr",
-    "text": "새벽 1시 14분. 알림 하나."
+    "text": "알림 하나."
    },
    {
     "who": "them",
     "name": "태현",
-    "text": "자?"
+    "text": "뭐 해?"
    },
    {
     "who": "them",
@@ -10851,6 +10995,9 @@
    "day": [
     1,
     3
+   ],
+   "notFlags": [
+    "start_alt"
    ]
   },
   "weight": 4,
@@ -12209,6 +12356,7 @@
   "weight": 3,
   "once": true,
   "title": "나중에 얘기해 줄게",
+  "clock": "01:00",
   "lines": [
    {
     "who": "narr",

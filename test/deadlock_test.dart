@@ -9,6 +9,7 @@ import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
+import 'story_files.dart';
 
 /// 상호배타 게이트를 넣은 뒤 "여러 캐릭터를 고루 올린" 플레이가
 /// 아무 루트 이벤트도 못 보는 교착에 빠지지 않는지 확인한다.
@@ -17,9 +18,10 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
   characters: File('assets/story/characters.json').readAsStringSync(),
   events: [
     for (final f in StoryBundle.eventFiles)
-      File('assets/story/$f').readAsStringSync(),
+      readStoryFile(f),
   ],
   endings: File('assets/story/endings.json').readAsStringSync(),
+  starts: readStartsFile(),
   signals: File('assets/story/signals.json').existsSync()
       ? File('assets/story/signals.json').readAsStringSync()
       : null,
@@ -49,7 +51,10 @@ void main() {
   /// 모든 스탯을 넉넉히 채워 require 때문에 막히는 경우를 배제한다.
   void maxStats(GameState s) {
     for (final k in Stat.all) {
-      s.stats[k] = k == Stat.stress ? 0 : (k == Stat.money ? 900 : 100);
+      // 스트레스·소문은 낮을수록 막는 것이 없다(소문 위기가 일상 칸을 차지하지 않게).
+      s.stats[k] = Stat.lowerIsBetter.contains(k)
+          ? 0
+          : (k == Stat.money ? 900 : 100);
     }
   }
 
@@ -136,7 +141,10 @@ void main() {
         return;
       }
       // 상호배타 게이트가 엔딩 도달을 막지 않는지 확인.
-      expect(bundle.endings.length, 60);
+      expect(
+        bundle.endings.where((e) => !overhaul2EndingIds.contains(e.id)).length,
+        60,
+      );
       final resolver = EndingResolver(
         bundle.endings,
         characters: bundle.characters,

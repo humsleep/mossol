@@ -1,0 +1,31 @@
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/event_engine.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/story_repository.dart';
+
+const _config = '{"initialStats": {"charm": 10}, "actions": []}';
+const _chars = '[{"id": "a", "name": "가람", "gender": "f", "role": "senior"}]';
+const _endings = '[{"id": "solo", "name": "솔로", "tier": "solo", "default": true}]';
+Map<String, dynamic> ev(String id, Map<String, dynamic> trig) => {
+  'id': id, 'layer': 'main', 'day': 5, 'trigger': trig,
+  'lines': [{'who': 'them', 'text': '안녕'}],
+  'choices': [{'text': '하나', 'effects': {'setFlags': ['sc_clip_deny']}}, {'text': '둘'}],
+};
+void main() {
+  test('branch-flag main on same day as start main passes validator but both plan', () {
+    final starts = [
+      {'id': 'classic', 'title': 't', 'hook': 'h', 'introLine': 'a', 'introReply': 'b', 'effects': {}},
+      {'id': 'sc_clip', 'title': 't', 'hook': 'h', 'introLine': 'a', 'introReply': 'b', 'effects': {'setFlags': ['start_alt', 'sc_clip']}},
+    ];
+    final b = StoryBundle.fromJsonStrings(config: _config, characters: _chars,
+      events: [jsonEncode([ev('m_a', {'flags': ['sc_clip']}), ev('m_b', {'flags': ['sc_clip_deny']})])],
+      endings: _endings, starts: jsonEncode(starts));
+    final s = GameState.fresh(b.config, b.characters, seed: 1, nowMs: 0)..day = 5;
+    s.flags.addAll(['start_alt', 'sc_clip', 'sc_clip_deny']);
+    final mains = EventEngine(b).candidates(s, EventLayer.main).map((e) => e.id).toList();
+    print('mains same day: $mains');
+    expect(mains.length, 2);
+  });
+}

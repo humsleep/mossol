@@ -17,6 +17,7 @@ import 'notification_card.dart';
 import 'onboarding_gender_screen.dart';
 import 'onboarding_name_screen.dart';
 import 'preference_screen.dart';
+import 'start_pick_sheet.dart';
 import 'title_screen.dart';
 import 'widgets.dart';
 
@@ -73,6 +74,18 @@ class IntroScreen extends StatefulWidget {
   static const maybeLabel = '…일단 해볼게';
   static const dealReply = '오케이. 오늘부터 D+1이다';
 
+  /// 시작 카드 앞의 질문(docs/overhaul2/01_design.md §4.1). 카드 하나하나가 이 질문의 대답이다.
+  static const startQuestion = '갑자기 왜. 무슨 일 있었지?';
+
+  /// 시트를 닫아 버렸을 때 다시 여는 버튼.
+  static const startPickLabel = '무슨 일이었냐면…';
+
+  /// 이름 단계에서 시작 카드로 돌아가는 버튼.
+  static const startBackLabel = '아니, 다른 일이었어';
+
+  /// 질문이 다 뜬 뒤 카드 시트가 올라올 때까지.
+  static const startSheetDelay = Duration(milliseconds: 500);
+
   static const nameQuestion = '그래서, 뭐라고 부르지?';
   static const nameHint = OnboardingNameScreen.fieldHint;
   static const nameRule = OnboardingNameScreen.rule;
@@ -112,6 +125,9 @@ enum IntroStep {
   /// "진짜 할 거야?" 에 대한 답.
   deal,
 
+  /// "갑자기 왜. 무슨 일 있었지?" — 시작 카드(01_design §4.2). 시작 정의가 없으면 건너뛴다.
+  start,
+
   /// "뭐라고 부르지?" — 이름 입력(건너뛰기 있음).
   name,
 
@@ -148,6 +164,26 @@ class _IntroScreenState extends State<IntroScreen> {
   /// 이번 인트로에서 고른 값들. 마지막 답에서 한 번에 저장한다.
   String? _gender;
   String? _pickedName;
+
+  /// 시작 카드에서 고른 시작 스토리. 고르기 전·시작 정의가 없으면 null(= 클래식).
+  String? _startId;
+
+  /// 시작 카드 시트가 떠 있는 동안 두 번 열지 않는다.
+  bool _startSheetOpen = false;
+
+  /// 시작 카드를 고르기 직전의 대화 길이. 이름 단계에서 "다른 일이었어" 로 되돌릴 때 쓴다.
+  int? _startReturnLines;
+
+  /// 온보딩 측정을 이 흐름에서 이미 남겼는지(r1_bugs R1-6). 시작 카드로 되돌아가 다시 고르면
+  /// `start`·`name` 단계가 두 번 남아 전환율이 부풀려졌다.
+  bool _loggedStart = false;
+  bool _loggedName = false;
+
+  void _logName() {
+    if (_loggedName) return;
+    _loggedName = true;
+    c.logOnboardingStep(Analytics.stepName);
+  }
 
   @override
   void initState() {
@@ -222,18 +258,33 @@ class _IntroScreenState extends State<IntroScreen> {
 
   /// 태현이 할 말을 다 한 순간. 마지막 답 뒤였으면 여기서 캐스트 소개로 넘어간다.
   void _onTypingDone() {
+    if (_step == IntroStep.start) {
+      _timer?.cancel();
+      _timer = Timer(
+        IntroScreen.startSheetDelay,
+        () => unawaited(_openStart()),
+      );
+      return;
+    }
     final side = _preference;
     if (_step != IntroStep.starting || side == null) return;
     _timer?.cancel();
-    _timer = Timer(
-      IntroScreen.startDelay,
-      () => unawaited(_openCast(side)),
-    );
+    _timer = Timer(IntroScreen.startDelay, () => unawaited(_openCast(side)));
   }
 
   /// "진짜 할 거야?" 에 대한 답. 어느 쪽이든 판은 시작된다 — 이 답이 시작 버튼이다.
   void _answerDeal(String label) {
     SfxService.instance.cue(Sfx.msgOut);
+    // 시작 정의(starts.json)가 있으면 이유를 묻는다 — 카드가 대답이다(01_design §4.2).
+    if (c.bundle.starts.length > 1) {
+      setState(() {
+        _say(label);
+        _them(IntroScreen.startQuestion);
+        _step = IntroStep.start;
+      });
+      _scheduleReveal();
+      return;
+    }
     setState(() {
       _say(label);
       _them(IntroScreen.dealReply);
@@ -241,7 +292,44 @@ class _IntroScreenState extends State<IntroScreen> {
       _step = IntroStep.name;
     });
     _scheduleReveal();
-    c.logOnboardingStep(Analytics.stepName);
+    _logName();
+  }
+
+  /// 시작 카드 시트. 고르면 그 카드의 `introLine` 이 내 말풍선, `introReply` 가 태현의 반응이
+  /// 되고 이름 질문으로 넘어간다. 시트를 닫으면 이 단계에 남는다(하단 버튼으로 다시 연다).
+  Future<void> _openStart() async {
+    if (!mounted || _step != IntroStep.start || _startSheetOpen) return;
+    setState(() => _startSheetOpen = true);
+    if (!_loggedStart) {
+      _loggedStart = true;
+      c.logOnboardingStep(Analytics.stepStart);
+    }
+    final String? id;
+    try {
+      // 운명은 컨트롤러(메타)가 기억한다 — "다른 일이었어" 로 돌아와도 다시 뽑지 못한다(R1-2).
+      id = (await StartPickSheet.showPickFor(context, c))?.id;
+    } finally {
+      _startSheetOpen = false;
+    }
+    if (!mounted || id == null || _step != IntroStep.start) {
+      if (mounted) setState(() {});
+      return;
+    }
+    final st = c.bundle.startOf(id);
+    SfxService.instance.cue(Sfx.msgOut);
+    _startId = id;
+    _startReturnLines = _lines.length;
+    setState(() {
+      if (st != null) {
+        _say(st.introLine);
+        _them(st.introReply);
+      }
+      _them(IntroScreen.dealReply);
+      _them(IntroScreen.nameQuestion);
+      _step = IntroStep.name;
+    });
+    _scheduleReveal();
+    _logName();
   }
 
   String? get _nameError => _composing ? null : PlayerName.validate(_name.text);
@@ -338,6 +426,21 @@ class _IntroScreenState extends State<IntroScreen> {
     _scheduleReveal();
   }
 
+  /// 이름 단계에서 시작 카드로 돌아간다. 고른 카드의 대답과 태현의 반응을 지우고 시트를 다시 연다.
+  void _backToStart() {
+    final n = _startReturnLines;
+    if (n == null || n > _lines.length || _step != IntroStep.name) return;
+    _reveal?.cancel();
+    setState(() {
+      _lines.removeRange(n, _lines.length);
+      _pending.clear();
+      _startId = null;
+      _startReturnLines = null;
+      _step = IntroStep.start;
+    });
+    unawaited(_openStart());
+  }
+
   /// 캐스트 소개(§2.9). 인트로에서 고른 쪽을 먼저 펼치고, 거기서 반대쪽으로 넘어가면
   /// 실제로 시작하는 쪽은 **보고 있던 쪽**이다(홈에서 여는 새 게임과 같은 규칙).
   Future<void> _openCast(String side) async {
@@ -355,6 +458,7 @@ class _IntroScreenState extends State<IntroScreen> {
         c.bundle,
         side: side,
         playerMbti: c.playerMbti,
+        start: _startId,
       );
     } finally {
       TextTemplate.currentName = savedName;
@@ -402,7 +506,10 @@ class _IntroScreenState extends State<IntroScreen> {
       preference: preference,
       mbtiSource: Analytics.mbtiLater,
     );
-    await c.newGame(preference: preference);
+    await c.newGame(
+      preference: preference,
+      start: _startId ?? StartScenario.classic,
+    );
   }
 
   @override
@@ -451,8 +558,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     if (_typing)
                       TypingIndicator(
                         name: IntroScreen.friendName,
-                        showAvatar:
-                            _lines.isEmpty || _lines.last.who != 'them',
+                        showAvatar: _lines.isEmpty || _lines.last.who != 'them',
                       ),
                   ],
                 ),
@@ -497,9 +603,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   /// 하단 패널. 태현이 치고 있는 동안은 **비어 있다** — 본편에서 대사가 흐르는 중에
   /// 선택지가 없는 것과 같은 규칙이다. 답을 두 번 누르거나 다음 질문을 미리 볼 수 없다.
-  Widget _panel(BuildContext context) => _typing
-      ? const SizedBox.shrink()
-      : _panelFor(context);
+  Widget _panel(BuildContext context) =>
+      _typing ? const SizedBox.shrink() : _panelFor(context);
 
   Widget _panelFor(BuildContext context) => switch (_step) {
     IntroStep.deal => BottomPanel(
@@ -520,6 +625,16 @@ class _IntroScreenState extends State<IntroScreen> {
         ],
       ),
     ),
+    IntroStep.start =>
+      _startSheetOpen
+          ? const SizedBox.shrink()
+          : BottomPanel(
+              child: ChoiceButton(
+                key: const Key('intro-start-pick'),
+                text: IntroScreen.startPickLabel,
+                onPressed: () => unawaited(_openStart()),
+              ),
+            ),
     IntroStep.name => BottomPanel(child: _nameField(context)),
     IntroStep.gender => BottomPanel(
       child: Column(
@@ -582,15 +697,15 @@ class _IntroScreenState extends State<IntroScreen> {
           style: context.text.titleMedium,
           // 이름 규칙·거르개는 이름 화면과 같은 것을 쓴다(docs/NAME_GUIDE.md).
           maxLength: PlayerName.maxLength,
-          maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
+          maxLengthEnforcement:
+              MaxLengthEnforcement.truncateAfterCompositionEnds,
           inputFormatters: [NameInputFormatter()],
-          buildCounter:
-              (
-                context, {
-                required currentLength,
-                required isFocused,
-                maxLength,
-              }) => null,
+          buildCounter: (
+            context, {
+            required currentLength,
+            required isFocused,
+            maxLength,
+          }) => null,
           decoration: InputDecoration(
             hintText: IntroScreen.nameHint,
             helperText: IntroScreen.nameRule,
@@ -623,11 +738,18 @@ class _IntroScreenState extends State<IntroScreen> {
         TextButton(
           key: const Key('intro-name-skip'),
           onPressed: _skipName,
-          style: TextButton.styleFrom(
-            foregroundColor: scheme.onSurfaceVariant,
-          ),
+          style: TextButton.styleFrom(foregroundColor: scheme.onSurfaceVariant),
           child: const Text(IntroScreen.nameSkipLabel),
         ),
+        if (_startReturnLines != null)
+          TextButton(
+            key: const Key('intro-start-back'),
+            onPressed: _backToStart,
+            style: TextButton.styleFrom(
+              foregroundColor: scheme.onSurfaceVariant,
+            ),
+            child: const Text(IntroScreen.startBackLabel),
+          ),
       ],
     );
   }

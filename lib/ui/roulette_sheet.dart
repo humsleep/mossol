@@ -71,110 +71,118 @@ class _RouletteSheetState extends State<RouletteSheet>
     final slot = _slot;
     return RewardedBusyScope(
       child: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.xxl,
-          AppSpace.xl,
-          AppSpace.xxl,
-          AppSpace.xxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '오늘의 운',
-              textAlign: TextAlign.center,
-              style: context.text.titleLarge,
-            ),
-            const SizedBox(height: AppSpace.xs),
-            Text(keepAll('하루에 한 번. 결과가 마음에 안 들면 광고로 한 번 더.'),
-              textAlign: TextAlign.center,
-              style: context.text.bodySmall,
-            ),
-            const SizedBox(height: AppSpace.xl),
-            AnimatedBuilder(
-              animation: _spin,
-              builder: (context, _) {
-                if (slot != null && !_spinning) {
-                  final e = slots[slot];
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.xxl,
+            AppSpace.xl,
+            AppSpace.xxl,
+            AppSpace.xxl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '오늘의 운',
+                textAlign: TextAlign.center,
+                style: context.text.titleLarge,
+              ),
+              const SizedBox(height: AppSpace.xs),
+              Text(
+                keepAll('하루에 한 번. 결과가 마음에 안 들면 광고로 한 번 더.'),
+                textAlign: TextAlign.center,
+                style: context.text.bodySmall,
+              ),
+              const SizedBox(height: AppSpace.xl),
+              AnimatedBuilder(
+                animation: _spin,
+                builder: (context, _) {
+                  if (slot != null && !_spinning) {
+                    final e = slots[slot];
+                    return _SlotCard(
+                      title: e.$1,
+                      sub: e.$3,
+                      effects: e.$2,
+                      phase: _SlotPhase.result,
+                    );
+                  }
+                  if (!_spinning) {
+                    // 돌리기 전에는 결과처럼 보이면 안 된다.
+                    return const _SlotCard(
+                      title: '?',
+                      sub: '돌려야 나온다',
+                      effects: {},
+                      phase: _SlotPhase.idle,
+                    );
+                  }
+                  // 릴은 감속하며 지나간다. 값은 보여 주기용일 뿐 판정과 무관하다.
+                  final t = AppMotion.curve(
+                    context,
+                    AppMotion.standard,
+                  ).transform(_spin.value);
+                  final e = slots[(t * 40).floor() % slots.length];
                   return _SlotCard(
                     title: e.$1,
                     sub: e.$3,
                     effects: e.$2,
-                    phase: _SlotPhase.result,
+                    phase: _SlotPhase.spinning,
                   );
-                }
-                if (!_spinning) {
-                  // 돌리기 전에는 결과처럼 보이면 안 된다.
-                  return const _SlotCard(
-                    title: '?',
-                    sub: '돌려야 나온다',
-                    effects: {},
-                    phase: _SlotPhase.idle,
-                  );
-                }
-                // 릴은 감속하며 지나간다. 값은 보여 주기용일 뿐 판정과 무관하다.
-                final t = AppMotion.curve(
-                  context,
-                  AppMotion.standard,
-                ).transform(_spin.value);
-                final e = slots[(t * 40).floor() % slots.length];
-                return _SlotCard(
-                  title: e.$1,
-                  sub: e.$3,
-                  effects: e.$2,
-                  phase: _SlotPhase.spinning,
-                );
-              },
-            ),
-            const SizedBox(height: AppSpace.xl),
-            if (slot == null)
-              FilledButton(
-                onPressed: _spinning ? null : () => _run(widget.c.spinRoulette),
-                child: const Text('돌리기'),
-              )
-            else ...[
-              // 하루를 여는 1차 행동이 위, 광고 제안은 그 아래에 따로 둔다.
-              // 광고 버튼을 1차 버튼과 같은 무게로 나란히 두면 오인 탭을 노린
-              // 배치가 된다.
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('시작'),
+                },
               ),
-              if (widget.c.canUseRerollTicket) ...[
-                // 7일 연속 출석으로 받은 재도전권. 광고 없이 한 번 더.
-                const SizedBox(height: AppSpace.md),
-                OutlinedButton.icon(
+              const SizedBox(height: AppSpace.xl),
+              if (slot == null)
+                FilledButton(
                   onPressed: _spinning
                       ? null
-                      : () => _run(() {
+                      : () => _run(widget.c.spinRoulette),
+                  child: const Text('돌리기'),
+                )
+              else ...[
+                // 하루를 여는 1차 행동이 위, 광고 제안은 그 아래에 따로 둔다.
+                // 광고 버튼을 1차 버튼과 같은 무게로 나란히 두면 오인 탭을 노린
+                // 배치가 된다.
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('시작'),
+                ),
+                if (widget.c.canUseRerollTicket) ...[
+                  // 7일 연속 출석으로 받은 재도전권. 광고 없이 한 번 더.
+                  const SizedBox(height: AppSpace.md),
+                  OutlinedButton.icon(
+                    onPressed: _spinning
+                        ? null
+                        : () => _run(() {
                             // 티켓 차감은 비동기지만 결과 칸은 즉시 정해진다.
                             final done = widget.c.useRerollTicket();
                             unawaited(done);
                             return widget.c.rouletteSlot!;
                           }),
-                  icon: const Icon(Icons.confirmation_number_outlined, size: 18),
-                  label: Text(keepAll('재도전권 사용 (${widget.c.rerollTickets}장)')),
-                ),
-              ] else if (widget.c.canRerollRoulette) ...[
-                const SizedBox(height: AppSpace.md),
-                // 광고 대기·실패 안내는 RewardedButton 이 다른 자리와 똑같이 한다.
-                // 시트 안에서는 스낵바가 가리므로 버튼 아래 한 줄(inline).
-                RewardedButton(
-                  placement: 'roulette',
-                  label: '한 번 더 (광고)',
-                  icon: Icons.replay,
-                  kind: RewardedButtonKind.outlined,
-                  inline: true,
-                  enabled: !_spinning,
-                  onEarned: () => _run(widget.c.rerollRoulette),
-                ),
+                    icon: const Icon(
+                      Icons.confirmation_number_outlined,
+                      size: 18,
+                    ),
+                    label: Text(
+                      keepAll('재도전권 사용 (${widget.c.rerollTickets}장)'),
+                    ),
+                  ),
+                ] else if (widget.c.canRerollRoulette) ...[
+                  const SizedBox(height: AppSpace.md),
+                  // 광고 대기·실패 안내는 RewardedButton 이 다른 자리와 똑같이 한다.
+                  // 시트 안에서는 스낵바가 가리므로 버튼 아래 한 줄(inline).
+                  RewardedButton(
+                    placement: 'roulette',
+                    label: '한 번 더 (광고)',
+                    icon: Icons.replay,
+                    kind: RewardedButtonKind.outlined,
+                    inline: true,
+                    enabled: !_spinning,
+                    onEarned: () => _run(widget.c.rerollRoulette),
+                  ),
+                ],
               ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -211,7 +219,7 @@ class _SlotCard extends StatelessWidget {
   });
 
   /// 스트레스만 오르면 나쁘다. 하나라도 이로우면 좋은 칸으로 본다.
-  static bool _isGood(String key, int v) => key == Stat.stress ? v < 0 : v > 0;
+  static bool _isGood(String key, int v) => Stat.isGood(key, v);
 
   @override
   Widget build(BuildContext context) {
@@ -261,10 +269,11 @@ class _SlotCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: (result
-                        ? context.text.headlineSmall
-                        : context.text.headlineMedium)
-                    ?.copyWith(color: fg),
+                style:
+                    (result
+                            ? context.text.headlineSmall
+                            : context.text.headlineMedium)
+                        ?.copyWith(color: fg),
               ),
             ),
           ],
@@ -288,10 +297,9 @@ class _SlotCard extends StatelessWidget {
             children: [
               for (final e in effects.entries)
                 _EffectChip(
-                  label:
-                      e.key == Stat.money
-                          ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
-                          : '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
+                  label: e.key == Stat.money
+                      ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+                      : '${Stat.label(e.key)} ${e.value > 0 ? '+' : ''}${e.value}',
                   good: _isGood(e.key, e.value),
                   up: e.value > 0,
                   muted: !result,

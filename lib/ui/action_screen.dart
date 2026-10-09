@@ -6,6 +6,7 @@ import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
+import 'heat_gauge.dart';
 import 'home_screen.dart' show OvernightNote;
 import 'keep_all.dart';
 import 'relation_sheet.dart';
@@ -80,6 +81,8 @@ class _ActionScreenState extends State<ActionScreen> {
   @override
   Widget build(BuildContext context) {
     final s = c.state!;
+    final heat = s.stat(Stat.heat);
+    final villain = s.stat(Stat.villain);
     // 히든 캐릭터는 한 번이라도 얽힌 뒤에야 관계 줄에 나온다(기존 규칙 유지).
     final cast = [
       for (final ch in c.roster)
@@ -175,6 +178,23 @@ class _ActionScreenState extends State<ActionScreen> {
                     child: StatBars(state: s, compact: true),
                   ),
                 ),
+                // 3-1. 소문. "판을 키울까, 잠수 타서 식힐까" 는 여기서 정하므로 이 자리에도 보인다
+                // (r1_playtest P1-3). 소문이 0 인 회차(클래식)는 지금과 같다.
+                // 진상 칩은 게이지 옆(r2_meeting E4). 둘 다 0 이면 이 줄은 없다.
+                if (HeatGauge.shows(heat) || VillainChip.shows(villain)) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  Wrap(
+                    spacing: AppSpace.sm,
+                    runSpacing: AppSpace.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (HeatGauge.shows(heat))
+                        HeatGauge(key: const Key('action-heat'), heat: heat),
+                      if (VillainChip.shows(villain))
+                        VillainChip(villain: villain),
+                    ],
+                  ),
+                ],
 
                 // 4. 관계. 사람 수와 상관없이 한 줄, 누르면 상세.
                 if (cast.isNotEmpty) ...[
@@ -190,7 +210,7 @@ class _ActionScreenState extends State<ActionScreen> {
                   if (i > 0) const SizedBox(height: AppSpace.listGap),
                   AppListRow(
                     title: c.config.actions[i].name,
-                    subtitle: c.config.actions[i].desc,
+                    subtitle: actionSubtitle(c.config.actions[i], heat: heat),
                     leading: _ActionThumb(id: c.config.actions[i].id),
                     onTap: () => _start(context, c.config.actions[i]),
                   ),
@@ -203,8 +223,11 @@ class _ActionScreenState extends State<ActionScreen> {
     );
   }
 
-  Future<void> _openStatGuide(BuildContext context) =>
-      StatGuideSheet.show(context, actions: c.config.actions);
+  Future<void> _openStatGuide(BuildContext context) => StatGuideSheet.show(
+    context,
+    actions: c.config.actions,
+    showHeat: (c.state?.stat(Stat.heat) ?? 0) > 0,
+  );
 
   Future<void> _start(BuildContext context, DayAction action) async {
     final ok = await c.startDay(action);
@@ -238,6 +261,14 @@ class _ActionScreenState extends State<ActionScreen> {
     );
     if (watched == true) await c.grantHeart();
   }
+}
+
+/// 행동 목록의 설명. 소문이 있는 회차에서는 소문을 바꾸는 행동에 "소문 −6" 을 덧붙인다 —
+/// 휴식이 소문을 식힌다는 것이 결정하는 자리에 보여야 한다(r1_playtest P1-3).
+String actionSubtitle(DayAction a, {required int heat}) {
+  final d = a.effects.stats[Stat.heat] ?? 0;
+  if (heat <= 0 || d == 0) return a.desc;
+  return '${a.desc} · ${Stat.label(Stat.heat)} ${signed(d)}';
 }
 
 /// 하트가 비었을 때 다이얼로그 제목.

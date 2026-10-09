@@ -159,8 +159,12 @@ class EventEngine {
       bundle.characterById[ev.character];
 
   /// [ev] 를 볼 시점(플레이어 MBTI + 이벤트 캐릭터와의 궁합 + 상대 목소리).
-  MbtiView mbtiView(GameState s, StoryEvent ev) =>
-      MbtiView.of(s.mbti, mbtiOf(ev.character), voice: voiceOf(s, ev));
+  MbtiView mbtiView(GameState s, StoryEvent ev) => MbtiView.of(
+    s.mbti,
+    mbtiOf(ev.character),
+    voice: voiceOf(s, ev),
+    flags: s.flags,
+  );
 
   /// [ev] 를 이 회차 플레이어에게 보이는 줄·선택지만 남긴 사본. 조건이 없으면 원본.
   /// 선택지 인덱스·힌트는 거른 목록 기준이다. `GameController.current` 가 이것이다.
@@ -477,7 +481,67 @@ class EventEngine {
       if (pick == null) break;
       add(pick);
     }
-    return plan;
+    return orderByClock(plan, mainsFirst: s.day == 1 && opening);
+  }
+
+  /// 시각을 정한 장면(`clock`)의 자리(r3_meeting F2 → r5_meeting H1). 하루 시계는 거꾸로 가지
+  /// 않으므로(E7) 새벽 장면이 아침·낮 장면 뒤에 오면 "새벽 3시" 가 오전 9시로 찍혔다(r5_script R5-1).
+  ///
+  /// 하루 순서:
+  /// 1. 새벽(06:00 전)으로 정한 장면 — 메인 포함, 시각 순
+  /// 2. 메인(시각 없음 또는 06:00~11:59) — 원래 순서
+  /// 3. 오전(06:00~11:59)으로 정한 다른 장면 — 시각 순
+  /// 4. 나머지 — 원래 순서(행동 장면·일상·루트·히든)
+  /// 5. 오후·밤(12:00 이후)으로 정한 장면 — 늦은 시각의 메인 포함, 시각 순
+  ///
+  /// [mainsFirst] 면(오프닝 첫날) 메인이 1번보다도 앞이다 — D1 첫 장면은 m01 또는 시작 메인이다.
+  /// 시각을 정한 장면이 없는 날은 계획이 그대로다(오프닝 뒤의 "행동 장면 → 메인" 순서도 그대로).
+  /// `next` 로 들어오는 장면은 계획에 없다. 시각이 없는 사슬 장면은 큐 앞의 정오 전 고정 장면 뒤에
+  /// 끼운다(`GameController._nextSlot`).
+  static const clockNoon = 12 * 3600;
+  static const clockDawnEnd = 6 * 3600;
+
+  static List<StoryEvent> orderByClock(
+    List<StoryEvent> plan, {
+    bool mainsFirst = false,
+  }) {
+    if (!plan.any((e) => e.clockSeconds != null)) return plan;
+    bool isMain(StoryEvent e) => e.layer == EventLayer.main;
+    int? t(StoryEvent e) => e.clockSeconds;
+    bool dawn(StoryEvent e) =>
+        t(e) != null && t(e)! < clockDawnEnd && !(mainsFirst && isMain(e));
+    bool late(StoryEvent e) => t(e) != null && t(e)! >= clockNoon;
+    bool main(StoryEvent e) => isMain(e) && !dawn(e) && !late(e);
+    bool morning(StoryEvent e) =>
+        !isMain(e) && t(e) != null && !dawn(e) && !late(e);
+    final idx = {for (var i = 0; i < plan.length; i++) plan[i].id: i};
+    List<StoryEvent> byClock(bool Function(StoryEvent) keep) => [
+      for (final e in plan)
+        if (keep(e)) e,
+    ]..sort((a, b) {
+        final d = t(a)! - t(b)!;
+        return d != 0 ? d : idx[a.id]! - idx[b.id]!;
+      });
+    final head = byClock(dawn);
+    final mains = [
+      for (final e in plan)
+        if (main(e)) e,
+    ];
+    final am = byClock(morning);
+    final rest = [
+      for (final e in plan)
+        if (!dawn(e) && !late(e) && !main(e) && !morning(e)) e,
+    ];
+    // 앞으로 옮길 시각 장면이 없으면(오후·밤만) 메인과 나머지의 원래 순서를 지킨다.
+    final middle = head.isEmpty && am.isEmpty
+        ? [
+            for (final e in plan)
+              if (main(e) || rest.contains(e)) e,
+          ]
+        : [...mains, ...am, ...rest];
+    return mainsFirst
+        ? [...mains, ...head, ...middle.where((e) => !main(e)), ...byClock(late)]
+        : [...head, ...middle, ...byClock(late)];
   }
 
   /// 캐릭터 [id] 에게서 **이미 본** 루트 중 가장 높은 단계([StoryEvent.stage]). 없으면 null.
@@ -552,7 +616,13 @@ class EventEngine {
     final String chosen;
     // 오프닝에는 호감이 아직 의미가 없다. 첫날 동전 던지기 결과가 며칠씩
     // 같은 캐릭터를 밀어주지 않도록 후보가 있는 캐릭터 중 균등 무작위.
-    if (isOpening(s)) {
+    // 단, 시작이 "먼저 다가오는 사람" 으로 정한 캐릭터를 아직 못 만났으면 D2부터는 그 사람이다
+    // (r1_meeting D11, 01_design §7.1 "가속 역할의 r00 이 D1~3 에 나오지 않으면 망가진 것").
+    // 클래식은 보정이 없으므로 이 줄은 아무 일도 하지 않는다(균등 불변식 그대로).
+    final eager = isOpening(s) ? eagerStartCharacter(s, chars) : null;
+    if (eager != null) {
+      chosen = eager;
+    } else if (isOpening(s)) {
       chosen = chars[r.nextInt(chars.length)];
     } else {
       // 최상위와 호감도가 같은 캐릭터들 사이에서는 무작위.
@@ -574,6 +644,40 @@ class EventEngine {
   }
 
   StoryEvent? byId(String id) => bundle.eventById[id];
+
+  /// 오프닝 루트 칸이 먼저 내줄 "먼저 다가오는 사람". [candidates] 는 오늘 루트 후보가 있는
+  /// 캐릭터 id. D1 은 균등 추첨 그대로 두고(첫날의 우연), **D2 부터** 시작 보정 호감이 있는데
+  /// 아직 한 장면도 못 본 사람을 고른다. 여럿이면 보정이 큰 쪽, 같으면 id 순. 없으면 null.
+  static const eagerFromDay = 2;
+
+  String? eagerStartCharacter(GameState s, Iterable<String> candidates) {
+    if (s.day < eagerFromDay) return null;
+    String? best;
+    var bestBonus = 0;
+    for (final id in candidates) {
+      final bonus = startAffectionOf(s, id);
+      if (bonus <= 0 || !_unmet(s, id)) continue;
+      if (bonus > bestBonus ||
+          (bonus == bestBonus && id.compareTo(best!) < 0)) {
+        best = id;
+        bestBonus = bonus;
+      }
+    }
+    return best;
+  }
+
+  /// [id] 의 장면을 이 회차에 한 번도 못 봤는지.
+  bool _unmet(GameState s, String id) =>
+      !s.seen.any((e) => bundle.eventById[e]?.character == id);
+
+  /// 이 회차의 시작 스토리 id. 신규 시작은 자기 id 플래그를 세우므로 그것으로 알아본다.
+  /// 플래그가 없으면(예전 세이브 포함) [StartScenario.classic].
+  String startIdOf(GameState s) {
+    for (final st in bundle.starts) {
+      if (!st.isClassic && s.flags.contains(st.id)) return st.id;
+    }
+    return StartScenario.classic;
+  }
 
   /// 보이는 선택지와 잠금 여부. MBTI·궁합 조건이 맞지 않는 선택지는 빠지고,
   /// [ChoiceView.index] 는 [ev].choices 의 원래 인덱스다(거른 사본을 넘기면 그 사본 기준).
@@ -618,7 +722,9 @@ class EventEngine {
     final up =
         d.affection.values.any((v) => v > 0) ||
         d.trust.values.any((v) => v > 0) ||
-        d.stats.entries.any((e) => e.key != Stat.stress && e.value > 0);
+        d.stats.entries.any(
+          (e) => !Stat.lowerIsBetter.contains(e.key) && e.value > 0,
+        );
     final down =
         d.affection.values.any((v) => v < 0) ||
         d.trust.values.any((v) => v < 0) ||
@@ -756,13 +862,40 @@ class EventEngine {
     );
   }
 
+  /// 이 회차 시작 스토리가 [id] 에게 준 호감 보정("먼저 다가오는 사람", 01_design §3). 클래식은 0.
+  int startAffectionOf(GameState s, String id) {
+    for (final st in bundle.starts) {
+      if (!st.isClassic && s.flags.contains(st.id)) {
+        return st.effects.affection[id] ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  /// 시작 보정 호감은 **첫 접촉 전까지** 밤 감소(−1)를 받지 않는다. 그러지 않으면 +4 가 D5 무렵
+  /// 다 사라져서 "먼저 다가오는 사람" 이 아무 의미가 없다. 보정치를 넘는 호감, 한 번이라도 그
+  /// 사람의 장면을 본 뒤에는 평소대로 줄어든다.
+  bool _holdsStartBonus(GameState s, String id, int affection) {
+    final bonus = startAffectionOf(s, id);
+    if (bonus <= 0 || affection > bonus) return false;
+    return _unmet(s, id);
+  }
+
   /// 하루 마감. 접촉 없던 캐릭터 호감도 -1, 스트레스 자연 감소, 날짜 +1.
   void endDay(GameState s, {String? cliffhanger}) {
-    for (final r in s.relations.values) {
-      if (!r.contactedToday && r.affection > 0) r.affection -= 1;
+    s.relations.forEach((id, r) {
+      if (!r.contactedToday &&
+          r.affection > 0 &&
+          !_holdsStartBonus(s, id, r.affection)) {
+        r.affection -= 1;
+      }
       r.contactedToday = false;
-    }
+    });
     s.stats[Stat.stress] = max(0, s.stat(Stat.stress) - 3);
+    // config.dailyDrift: 밤마다 스탯 자연 변화(소문 −1 등). 0~상한으로 자른다.
+    bundle.config.dailyDrift.forEach((k, v) {
+      s.stats[k] = (s.stat(k) + v).clamp(0, Stat.maxOf(k));
+    });
     if (s.flags.contains('burnout')) {
       s.flags.remove('burnout');
       final n = (s.flags.where((f) => f.startsWith('burnout_')).length) + 1;

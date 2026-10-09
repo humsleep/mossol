@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../ads/ad_manager.dart';
+import '../engine/models.dart' show Stat;
 import '../engine/retention.dart' show TomorrowPeek;
 import '../game_controller.dart';
 import 'design_system.dart';
+import 'heat_gauge.dart';
 import 'retention_widgets.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
@@ -101,7 +103,42 @@ class SummaryScreen extends StatelessWidget {
                 const SectionHeader(title: '오늘의 변화'),
                 AppCard(
                   padding: AppInsets.cardTight,
-                  child: StatBars(state: s, delta: d.stats),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StatBars(state: s, delta: d.stats),
+                      // 소문은 스탯 격자 밖이다. 소문이 있거나 오늘 바뀐 회차에서만 한 줄.
+                      if (HeatGauge.shows(s.stat(Stat.heat)) ||
+                          (d.stats[Stat.heat] ?? 0) != 0 ||
+                          VillainChip.shows(s.stat(Stat.villain))) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpace.xs),
+                          child: Divider(),
+                        ),
+                        Wrap(
+                          spacing: AppSpace.sm,
+                          runSpacing: AppSpace.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (HeatGauge.shows(s.stat(Stat.heat)) ||
+                                (d.stats[Stat.heat] ?? 0) != 0)
+                              HeatGauge(
+                                heat: s.stat(Stat.heat),
+                                delta: d.stats[Stat.heat],
+                                overnight: c.config.dailyDrift[Stat.heat],
+                              ),
+                            // 진상 칩(r2_meeting E4). 오늘 오른 양을 괄호로.
+                            if (VillainChip.shows(s.stat(Stat.villain)))
+                              VillainChip(
+                                villain: s.stat(Stat.villain),
+                                delta: d.stats[Stat.villain],
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
 
                 // 3. 관계 변화. 한 줄씩 차례로 쌓인다.

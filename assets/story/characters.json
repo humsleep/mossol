@@ -37,6 +37,7 @@
   "mbti": "ESFP",
   "title": "알바 동료",
   "tagline": "국밥값은 반반, 마감은 같이",
+  "firstLine": "안녕? 나 하늘. 내일 마감 조 같이야",
   "likes": [
    "sense",
    "money"
@@ -97,6 +98,7 @@
   "mbti": "INTP",
   "title": "온라인 친구",
   "tagline": "새벽 두 판, 얼굴은 비밀인 듀오",
+  "firstLine": "님 아까 그 판 ㄹㅇ 잘함",
   "likes": [
    "sincerity",
    "sense"
@@ -218,6 +220,7 @@
   "mbti": "INFP",
   "title": "알바 동료",
   "tagline": "영수증 뒷면에 나를 그린 선임",
+  "firstLine": "내일 오픈 조 같이에요. 6시 50분.",
   "likes": [
    "sense",
    "sincerity"
@@ -280,6 +283,7 @@
   "mbti": "ESTP",
   "title": "온라인 친구",
   "tagline": "샷콜하던 그 목소리의 주인",
+  "firstLine": "님 아까 서폿 좀 치던데?",
   "likes": [
    "talk",
    "sense"

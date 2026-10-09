@@ -70,6 +70,7 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('next-run-character')));
       await tester.tap(find.byKey(const Key('next-run-character')));
       await tester.pumpAndSettle();
+      await pickStart(tester);
       expect(c.phase, Phase.action);
       expect(c.state!.run, 2);
       expect(c.state!.preference, Preference.female);
@@ -101,6 +102,7 @@ void main() {
       expect(find.byType(PreferenceScreen), findsOneWidget);
       await tester.tap(findText(PreferenceScreen.startLabel));
       await tester.pumpAndSettle();
+      await pickStart(tester);
       expect(c.phase, Phase.action);
       expect(c.state!.preference, Preference.male);
       expect(c.state!.run, 2);
@@ -144,6 +146,11 @@ void main() {
       }
       final c = found!;
       final name = c.characterName(hint!.characterId);
+      // 소문 게이지 줄(개편 2)만큼 정산이 길어졌다 — 화면 밖으로 밀리지 않게 세로를 넉넉히.
+      tester.view.physicalSize = const Size(400, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(wrapApp(SummaryScreen(c: c)));
       await tester.pumpAndSettle();
       expect(find.byType(TomorrowLine), findsOneWidget);

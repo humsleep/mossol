@@ -1,0 +1,663 @@
+// R2 bug hunt: meta migration, unknown ids, release validation, free-skip, chain cliffhanger,
+// opening bias, villain, pendingFate. Throwaway — copied to docs/overhaul2/review/r2_scripts/.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/meta_service.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/engine/story_repository.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/minigames/minigame.dart';
+import 'package:mossol/minigames/registry.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'story_files.dart';
+import 'widget/helpers.dart';
+
+const _config = '{"initialStats": {"charm": 10}, "actions": []}';
+const _chars = '''[
+  {"id": "a", "name": "가람", "gender": "f", "role": "senior"},
+  {"id": "b", "name": "나래", "gender": "m", "role": "senior"}
+]''';
+const _endings =
+    '[{"id": "solo", "name": "솔로", "tier": "solo", "default": true}]';
+
+Map<String, dynamic> _ev(
+  String id, {
+  String layer = 'daily',
+  int? day,
+  Map<String, dynamic>? trigger,
+  List<Map<String, dynamic>>? lines,
+  List<List<Map<String, dynamic>>>? variants,
+  List<Map<String, dynamic>>? choices,
+  String? cliffhanger,
+  String? clock,
+  bool? once,
+}) => {
+  'id': id,
+  'layer': layer,
+  'day': ?day,
+  'trigger': ?trigger,
+  'cliffhanger': ?cliffhanger,
+  'clock': ?clock,
+  'once': ?once,
+  'lines':
+      lines ??
+      [
+        {'who': 'them', 'text': '안녕'},
+      ],
+  if (variants != null)
+    'variants': [
+      for (final v in variants) {'lines': v},
+    ],
+  'choices':
+      choices ??
+      [
+        {'text': '하나'},
+        {'text': '둘'},
+      ],
+};
+
+StoryBundle _bundle(
+  List<Map<String, dynamic>> events, {
+  String? starts,
+  bool? deep,
+}) => StoryBundle.fromJsonStrings(
+  config: _config,
+  characters: _chars,
+  events: [jsonEncode(events)],
+  endings: _endings,
+  starts: starts,
+  deep: deep,
+);
+
+Future<GameController> _ctl(StoryBundle b, {Map<String, Object>? prefs}) async {
+  SharedPreferences.setMockInitialValues(prefs ?? {});
+  final c = GameController(bundle: b, save: SaveService());
+  await c.init();
+  await c.markIntroSeen();
+  return c;
+}
+
+Future<void> _startDay(GameController c) async {
+  c.beginMorning();
+  c.state!.hearts = c.config.maxHearts;
+  await c.startDay(const DayAction(id: 'x', name: 'x', desc: ''));
+}
+
+String _rd(String f) => File('assets/story/$f').readAsStringSync();
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // -------------------------------------------------------------------------
+  group('meta migration', () {
+    test('live-build (HEAD) meta JSON of a veteran: loads, but no veteran/done flags, classic suggested', () async {
+      final b = testBundle();
+      // Exactly the keys HEAD PlayerMeta.toJson writes.
+      final legacyMeta = {
+        'lastCheckInDate': '2026-10-01',
+        'streakDays': 3,
+        'bestStreak': 5,
+        'totalCheckIns': 9,
+        'totalRuns': 4,
+        'bestDayReached': 100,
+        'firstLaunchMs': 1,
+        'pendingHearts': 0,
+        'rerollTickets': 0,
+        'playerGender': 'f',
+        'playerName': '민지',
+        'nameAsked': true,
+        'mbti': 'INFP',
+        'mbtiAsked': true,
+        'lastEndingId': 'coach',
+        'sfxOn': true,
+        'hapticOn': true,
+        'freeInputSends': 2,
+        'introSeen': true,
+      };
+      SharedPreferences.setMockInitialValues({
+        'mossol_meta_v1': jsonEncode(legacyMeta),
+        'mossol_endings_v1': ['coach', 'solo_strong', 'doyun_bad'],
+      });
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      expect(c.meta!.totalRuns, 4);
+      expect(c.distinctEndingCount, 3);
+      print('suggestedStart for live-build veteran: ${c.suggestedStart}');
+      print('completedStarts: ${c.completedStarts}  startEndingCount(classic)=${c.startEndingCount('classic')}');
+      await c.newGame(preference: Preference.female, seed: 1, start: 'sc_leak');
+      final flags = c.state!.flags;
+      print('veteran? ${flags.contains(StartScenario.veteranFlag)} done_classic? ${flags.contains('done_classic')}');
+      expect(flags.contains(StartScenario.veteranFlag), isFalse,
+          reason: 'documents P2: live-build veterans are not veterans');
+      expect(c.suggestedStart, StartScenario.classic,
+          reason: 'documents P2: veteran with 4 runs is pointed at classic');
+    });
+
+    test('a non-list announcedStarts wipes the WHOLE meta (other new fields use _strs)', () async {
+      SharedPreferences.setMockInitialValues({
+        'mossol_meta_v1': jsonEncode({
+          'totalRuns': 7,
+          'playerName': '민지',
+          'announcedStarts': 'sc_swap',
+        }),
+      });
+      final m = await MetaService().load();
+      print('after load: totalRuns=${m.totalRuns} name=${m.playerName}');
+      expect(m.totalRuns, 0, reason: 'documents: whole meta reset');
+    });
+
+    test('seenEvents/seenRipples size after six full random runs', () async {
+      final b = testBundle();
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      await c.markIntroSeen();
+      var run = 1;
+      for (final st in b.starts) {
+        final rnd = Random(run);
+        await c.newGame(preference: Preference.genders[run % 2], seed: run, run: run, start: st.id);
+        for (var d = 0; d < 130 && c.ending == null; d++) {
+          c.beginMorning();
+          c.state!.hearts = b.config.maxHearts;
+          await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+          while (c.phase == Phase.event) {
+            final open = [for (final v in c.choices) if (!v.locked) v.index];
+            final i = open[rnd.nextInt(open.length)];
+            final mg = c.current!.choices[i].minigame != null;
+            c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+            c.continueAfterChoice();
+          }
+          if (c.phase == Phase.summary) await c.endDay();
+        }
+        run++;
+      }
+      final raw = jsonEncode(c.meta!.toJson());
+      print('runs=${run - 1} seenEvents=${c.meta!.seenEvents.length} seenRipples=${c.meta!.seenRipples.length} metaBytes=${raw.length}');
+      expect(raw.length, lessThan(64 * 1024));
+    }, timeout: const Timeout(Duration(minutes: 5)));
+  });
+
+  // -------------------------------------------------------------------------
+  group('unknown ids in a valid save / meta (renamed or removed content)', () {
+    test('save + meta pointing at ids that do not exist: continue, play 3 days, new game', () async {
+      final b = testBundle();
+      final s = GameState.fresh(b.config, b.characters, seed: 9, nowMs: 0, preference: Preference.female)
+        ..day = 7
+        ..dayStarted = true;
+      s.dayQueue = ['gone_event_x', 'd_kakao_03', 'gone_event_y'];
+      s.seen.addAll(['gone_a', 'm01']);
+      s.dailySeenDay['gone_b'] = 6;
+      s.flags.addAll(['sc_gone', 'gone_flag']);
+      final meta = PlayerMeta(
+        firstLaunchMs: 1,
+        introSeen: true,
+        totalRuns: 2,
+        pendingFate: 'sc_gone',
+        lastStart: 'sc_gone',
+        completedStarts: ['sc_gone', 'classic'],
+        startEndings: {
+          'sc_gone': ['gone_ending'],
+        },
+        seenEvents: ['gone_a', 'gone_b'],
+        seenRipples: ['gone|L|abc'],
+        announcedStarts: ['sc_gone'],
+      );
+      SharedPreferences.setMockInitialValues({
+        'mossol_save_v1': jsonEncode(s.toJson()),
+        'mossol_meta_v1': jsonEncode(meta.toJson()),
+        'mossol_endings_v1': ['gone_ending'],
+      });
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      expect(c.pendingFate, isNull);
+      expect(await c.continueGame(), isTrue);
+      expect(c.current?.id, 'd_kakao_03');
+      for (var d = 0; d < 3 && c.ending == null; d++) {
+        while (c.phase == Phase.event) {
+          c.choose(plainChoiceIndex(c));
+          c.continueAfterChoice();
+        }
+        if (c.phase == Phase.summary) await c.endDay();
+        c.beginMorning();
+        c.state!.hearts = b.config.maxHearts;
+        await c.startDay(b.config.actions.first);
+      }
+      print('suggested=${c.suggestedStart} fresh=${c.newlyUnlockedStarts}');
+      await c.newGame(preference: Preference.female, seed: 3, start: 'sc_leak');
+      expect(c.state!.flags, contains('done_sc_gone'));
+      expect(c.state!.flags, contains(StartScenario.veteranFlag));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('release-mode validation (deep: false)', () {
+    test('real data passes light validation; timing light vs deep', () {
+      registerMinigames();
+      List<int> time(bool deep) {
+        final out = <int>[];
+        for (var i = 0; i < 5; i++) {
+          final sw = Stopwatch()..start();
+          StoryBundle.fromJsonStrings(
+            config: _rd('config.json'),
+            characters: _rd('characters.json'),
+            events: [for (final f in StoryBundle.eventFiles) readStoryFile(f)],
+            endings: _rd('endings.json'),
+            signals: _rd('signals.json'),
+            starts: readStartsFile(),
+            knownMinigames: minigameIds,
+            requireEndingHints: true,
+            deep: deep,
+          );
+          out.add(sw.elapsedMilliseconds);
+        }
+        return out;
+      }
+
+      print('deep=true  ms ${time(true)}');
+      print('deep=false ms ${time(false)}');
+    });
+
+    final ok = [
+      _ev('m1', layer: 'main', day: 1),
+    ];
+    final cases = <String, List<Map<String, dynamic>>>{
+      'missing next target': [
+        ...ok,
+        _ev('d1', choices: [
+          {'text': '가', 'next': 'nowhere'},
+          {'text': '나'},
+        ]),
+      ],
+      'bad clock 1:05': [...ok, _ev('d1', clock: '1:05')],
+      'bad clock 24:00': [...ok, _ev('d1', clock: '24:00')],
+      'duplicate main day': [...ok, _ev('m2', layer: 'main', day: 1)],
+      'only one ungated choice': [
+        ...ok,
+        _ev('d1', choices: [
+          {'text': '가'},
+          {'text': '나', 'ifFlags': ['f1']},
+          {
+            'text': '다',
+            'effects': {
+              'setFlags': ['f1'],
+            },
+            'ifNotFlags': ['f1'],
+          },
+        ]),
+      ],
+      'ifFlags reads a flag nobody sets': [
+        ...ok,
+        _ev('d1', lines: [
+          {'who': 'them', 'text': '갈래', 'ifFlags': ['typo_flag']},
+          {'who': 'them', 'text': '평소'},
+        ]),
+      ],
+      'unknown stat key': [
+        ...ok,
+        _ev('d1', choices: [
+          {
+            'text': '가',
+            'effects': {
+              'stats': {'vilain': 1},
+            },
+          },
+          {'text': '나'},
+        ]),
+      ],
+    };
+    for (final MapEntry(:key, :value) in cases.entries) {
+      test('deep:false still throws: $key', () {
+        expect(() => _bundle(value, deep: false), throwsStateError);
+      });
+    }
+    test('deep:false still throws: castLines unknown character', () {
+      final starts = jsonEncode([
+        {'id': 'classic', 'title': 't', 'hook': 'h', 'introLine': 'a', 'introReply': 'b', 'effects': {}},
+        {
+          'id': 'sc_x',
+          'title': 't',
+          'hook': 'h',
+          'introLine': 'a',
+          'introReply': 'b',
+          'castLines': {'nobody': '안녕'},
+          'effects': {
+            'setFlags': ['start_alt', 'sc_x'],
+          },
+        },
+      ]);
+      expect(() => _bundle(ok, starts: starts, deep: false), throwsStateError);
+    });
+    test('deep:false lets a broken template through (documented trade-off)', () {
+      final ev = [
+        ...ok,
+        _ev('d1', lines: [
+          {'who': 'them', 'text': '{nmae} 안녕'},
+        ]),
+      ];
+      expect(() => _bundle(ev, deep: true), throwsStateError);
+      expect(() => _bundle(ev, deep: false), returnsNormally);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('free skip', () {
+    test('event seen earlier with variant A; this run shows variant B (never seen) -> still free skip', () async {
+      final b = _bundle([
+        _ev(
+          'e1',
+          once: false,
+          trigger: {
+            'day': [1, 100],
+          },
+          lines: [
+            {'who': 'them', 'text': '원본 앞'},
+            {'who': 'sys', 'wait': 20},
+            {'who': 'them', 'text': '원본 뒤'},
+          ],
+          variants: [
+            [
+              {'who': 'them', 'text': '변형 앞'},
+              {'who': 'sys', 'wait': 20},
+              {'who': 'them', 'text': '변형 뒤(처음 보는 줄)'},
+            ],
+          ],
+        ),
+      ]);
+      // Find two seeds where e1 starts on different variants.
+      String? firstText(int seed) {
+        return null;
+      }
+
+      firstText(0);
+      final c = await _ctl(b);
+      String? runOneText;
+      var seed = 1;
+      await c.newGame(seed: seed);
+      await _startDay(c);
+      runOneText = c.current!.lines.first.text;
+      c.choose(0);
+      c.continueAfterChoice();
+      // abandon run 1 -> merged
+      String? runTwoText;
+      for (seed = 2; seed < 50; seed++) {
+        await c.newGame(seed: seed);
+        await _startDay(c);
+        runTwoText = c.current!.lines.first.text;
+        if (runTwoText != runOneText) break;
+      }
+      print('run1=$runOneText run2=$runTwoText canFreeSkip=${c.canFreeSkipWait}');
+      expect(runTwoText, isNot(runOneText));
+      expect(c.canFreeSkipWait, isTrue, reason: 'documents P2: unseen variant behind a free skip');
+    });
+
+    test('abandon by relaunch: save on disk, new controller, newGame from home merges seen', () async {
+      final b = _bundle([
+        _ev('e1', once: false, trigger: {
+          'day': [1, 100],
+        }),
+      ]);
+      final c = await _ctl(b);
+      await c.newGame(seed: 1);
+      await _startDay(c);
+      c.choose(0);
+      c.continueAfterChoice();
+      // simulate app kill: new controller over same prefs
+      final c2 = GameController(bundle: b, save: SaveService());
+      await c2.init();
+      expect(c2.hasSave, isTrue);
+      await c2.newGame(seed: 2);
+      expect(c2.seenInEarlierRun('e1'), isTrue);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('chain cliffhanger', () {
+    Future<String?> run(StoryBundle b, int Function(GameController) pick, {bool Function(GameController)? undoAt}) async {
+      final c = await _ctl(b);
+      await c.newGame(seed: 5);
+      await _startDay(c);
+      final order = <String>[];
+      while (c.phase == Phase.event) {
+        order.add(c.current!.id);
+        c.choose(pick(c));
+        if (undoAt != null && undoAt(c)) {
+          c.undoChoice();
+          c.choose(1);
+        }
+        c.continueAfterChoice();
+      }
+      print('order=$order cliff=${c.cliffhanger}');
+      return c.cliffhanger;
+    }
+
+    test('multi-hop main -> daily -> daily(cliff) beats main', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, cliffhanger: 'M', choices: [
+          {'text': 'go', 'next': 'h1'},
+          {'text': 'no'},
+        ]),
+        _ev('h1', trigger: {
+          'day': [0, 0],
+        }, choices: [
+          {'text': 'go', 'next': 'h2'},
+          {'text': 'no'},
+        ]),
+        _ev('h2', cliffhanger: 'H2', trigger: {
+          'day': [0, 0],
+        }),
+        _ev('o', cliffhanger: 'O', trigger: {
+          'day': [1, 1],
+        }),
+      ]);
+      expect(await run(b, (c) => 0), 'H2');
+    });
+
+    test('failNext chain from main', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, cliffhanger: 'M', choices: [
+          {'text': 'go', 'chance': 0, 'failNext': 'f1', 'next': 'h1'},
+          {'text': 'no'},
+        ]),
+        _ev('f1', cliffhanger: 'F', trigger: {
+          'day': [0, 0],
+        }),
+        _ev('h1', cliffhanger: 'H', trigger: {
+          'day': [0, 0],
+        }),
+      ]);
+      expect(await run(b, (c) => 0), 'F');
+    });
+
+    test('undo after a chained pick: planned event x (also today) keeps inherited rank / is dropped', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, cliffhanger: 'M', choices: [
+          {'text': 'go', 'next': 'x'},
+          {'text': 'no'},
+        ]),
+        _ev('x', cliffhanger: 'X', trigger: {
+          'day': [1, 1],
+        }),
+      ]);
+      // without undo, picking "no": x is a normal planned daily -> main wins.
+      expect(await run(b, (c) => 1), 'M');
+      // pick "go" then undo and pick "no" -> x should still be planned, and main should win.
+      final c = await _ctl(b);
+      await c.newGame(seed: 5);
+      await _startDay(c);
+      final before = c.queuedEventIds.toList();
+      final order = <String>[];
+      while (c.phase == Phase.event) {
+        order.add(c.current!.id);
+        if (c.current!.id == 'm1') {
+          c.choose(0);
+          c.undoChoice();
+          c.choose(1);
+        } else {
+          c.choose(0);
+        }
+        c.continueAfterChoice();
+      }
+      print('planned after m1=$before order=$order cliff=${c.cliffhanger}');
+      expect(order, contains('x'), reason: 'undo drops a planned event (pre-existing)');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('opening bias on real data', () {
+    test('eager character met by D3 for every start x pref x D1 branch (30 seeds)', () async {
+      final b = testBundle();
+      final out = <String>[];
+      final fails = <String>[];
+      for (final st in b.starts.where((s) => !s.isClassic)) {
+        for (final pref in Preference.genders) {
+          final ids = [
+            for (final id in st.effects.affection.keys)
+              if (!b.absentIds(pref).contains(id)) id,
+          ];
+          for (var branch = 0; branch < 4; branch++) {
+            var hit = 0, n = 0;
+            final firstIds = <String, int>{};
+            for (var seed = 0; seed < 30; seed++) {
+              SharedPreferences.setMockInitialValues({});
+              final c = GameController(bundle: b, save: SaveService());
+              await c.init();
+              await c.markIntroSeen();
+              await c.newGame(preference: pref, seed: seed, start: st.id);
+              String? met;
+              for (var d = 0; d < 3 && met == null; d++) {
+                c.beginMorning();
+                c.state!.hearts = b.config.maxHearts;
+                await c.startDay(b.config.actions[(seed + d) % b.config.actions.length]);
+                while (c.phase == Phase.event) {
+                  final ev = c.current!;
+                  if (met == null && ids.contains(ev.character)) met = ev.id;
+                  final open = [for (final v in c.choices) if (!v.locked) v.index];
+                  final i = ev.layer == EventLayer.main && c.state!.day == 1
+                      ? open[min(branch, open.length - 1)]
+                      : open.first;
+                  final mg = ev.choices[i].minigame != null;
+                  c.choose(i, minigameSuccess: mg ? seed.isEven : null);
+                  c.continueAfterChoice();
+                }
+                if (c.phase == Phase.summary) await c.endDay();
+              }
+              n++;
+              if (met != null) {
+                hit++;
+                firstIds.update(met, (v) => v + 1, ifAbsent: () => 1);
+              } else {
+                fails.add('${st.id}/$pref/b$branch/s$seed');
+              }
+            }
+            out.add('${st.id}/$pref/b$branch ${ids.join(",")} D1-3 $hit/$n $firstIds');
+          }
+        }
+      }
+      out.forEach(print);
+      print('FAILS ${fails.length} ${fails.take(20)}');
+      expect(fails, isEmpty);
+    }, timeout: const Timeout(Duration(minutes: 10)));
+  });
+
+  // -------------------------------------------------------------------------
+  group('villain', () {
+    test('villain bot: always the villain choice when visible; value, endings, combo', () async {
+      final b = testBundle();
+      bool isVillain(Choice ch) =>
+          (ch.effects.stats[Stat.villain] ?? 0) > 0 || (ch.fail.stats[Stat.villain] ?? 0) > 0;
+      final endings = <String, int>{};
+      final vals = <int>[];
+      var villainChoices = 0, villainGood = 0;
+      for (final st in b.starts) {
+        for (var seed = 0; seed < 8; seed++) {
+          SharedPreferences.setMockInitialValues({});
+          final c = GameController(bundle: b, save: SaveService());
+          await c.init();
+          await c.markIntroSeen();
+          final rnd = Random(seed);
+          await c.newGame(preference: Preference.genders[seed % 2], seed: seed, start: st.id);
+          var maxV = 0;
+          for (var d = 0; d < 130 && c.ending == null; d++) {
+            c.beginMorning();
+            c.state!.hearts = b.config.maxHearts;
+            // never rest: keeps heat up
+            final acts = b.config.actions.where((a) => a.id != 'rest').toList();
+            await c.startDay(acts[rnd.nextInt(acts.length)]);
+            while (c.phase == Phase.event) {
+              final open = [for (final v in c.choices) if (!v.locked) v];
+              final v = open.where((v) => isVillain(v.choice)).firstOrNull ??
+                  open.where((v) => (v.choice.effects.stats[Stat.heat] ?? 0) > 0).firstOrNull ??
+                  open[rnd.nextInt(open.length)];
+              final mg = v.choice.minigame != null;
+              c.choose(v.index, minigameSuccess: mg ? true : null);
+              if (isVillain(v.choice)) {
+                villainChoices++;
+                if ((c.lastOutcome!.delta.stats[Stat.villain] ?? 0) > 0 && c.lastOutcome!.comboStarted) {
+                  villainGood++;
+                }
+              }
+              maxV = max(maxV, c.state!.stat(Stat.villain));
+              c.continueAfterChoice();
+            }
+            if (c.phase == Phase.summary) await c.endDay();
+          }
+          vals.add(maxV);
+          endings.update(c.ending?.id ?? 'none', (x) => x + 1, ifAbsent: () => 1);
+        }
+      }
+      print('villain picks=$villainChoices comboStarted-on-villain=$villainGood');
+      print('max villain per run=$vals');
+      print('endings=$endings');
+    }, timeout: const Timeout(Duration(minutes: 10)));
+  });
+
+  // -------------------------------------------------------------------------
+  group('pendingFate', () {
+    test('fate drawn, a different card picked -> cleared; next flow may draw again (reroll via throwaway run)', () async {
+      final b = testBundle();
+      final c = await _ctl(b);
+      await c.rememberFate('sc_ghost');
+      await c.newGame(preference: Preference.female, seed: 1, start: 'classic');
+      expect(c.pendingFate, isNull);
+      await c.rememberFate('sc_swap');
+      expect(c.pendingFate, 'sc_swap');
+    });
+  });
+
+  group('resume mid-day', () {
+    test('cliffhanger (and chain rank) after app restart mid-day', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, cliffhanger: 'M', choices: [
+          {'text': 'go', 'next': 'h1'},
+          {'text': 'no'},
+        ]),
+        _ev('h1', trigger: {
+          'day': [0, 0],
+        }),
+        _ev('o', cliffhanger: 'O', trigger: {
+          'day': [1, 1],
+        }),
+      ]);
+      final c = await _ctl(b);
+      await c.newGame(seed: 5);
+      await _startDay(c);
+      c.choose(0);
+      c.continueAfterChoice();
+      print('before restart cliff=${c.cliffhanger} queue=${c.current?.id},${c.queuedEventIds}');
+      final c2 = GameController(bundle: b, save: SaveService());
+      await c2.init();
+      await c2.continueGame();
+      while (c2.phase == Phase.event) {
+        c2.choose(0);
+        c2.continueAfterChoice();
+      }
+      print('after restart cliff=${c2.cliffhanger}');
+      expect(c2.cliffhanger, 'M', reason: 'pre-existing: cliffhanger is memory-only');
+    });
+  });
+}

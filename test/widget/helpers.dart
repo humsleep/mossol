@@ -13,7 +13,9 @@ import 'package:mossol/minigames/registry.dart';
 import 'package:mossol/ui/design_system.dart';
 import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/onboarding_name_screen.dart';
+import 'package:mossol/ui/start_pick_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../story_files.dart';
 
 StoryBundle? _cached;
 
@@ -25,12 +27,13 @@ StoryBundle testBundle() {
     characters: File('assets/story/characters.json').readAsStringSync(),
     events: [
       for (final f in StoryBundle.eventFiles)
-        File('assets/story/$f').readAsStringSync(),
+        readStoryFile(f),
     ],
     endings: File('assets/story/endings.json').readAsStringSync(),
     signals: File('assets/story/signals.json').existsSync()
         ? File('assets/story/signals.json').readAsStringSync()
         : null,
+    starts: readStartsFile(),
     knownMinigames: minigameIds,
   );
 }
@@ -252,3 +255,42 @@ Finder findWidgetWithText(Type type, String s, {bool skipOffstage = true}) =>
       of: findText(s, skipOffstage: skipOffstage),
       matching: find.byType(type, skipOffstage: skipOffstage),
     );
+
+/// 시작 카드 시트(docs/overhaul2/01_design.md §4)가 떠 있으면 [id] 카드를 고른다.
+/// 시트가 없으면(시작 정의가 없는 번들) 아무것도 하지 않는다.
+/// [settle] 이 false 면 고른 뒤 한 프레임만 그린다(바로 다음 단계를 프레임 단위로 볼 때).
+Future<void> pickStart(
+  WidgetTester tester, [
+  String id = StartScenario.classic,
+  bool settle = true,
+]) async {
+  await tester.pumpAndSettle();
+  if (find.byType(StartPickSheet).evaluate().isEmpty) return;
+  final card = find.byKey(Key('start-card-$id'));
+  await scrollStartSheetTo(tester, card);
+  await tester.tap(card);
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+}
+
+/// 시작 카드 시트 목록을 [target] 이 보일 때까지 굴린다(목록은 화면 밖 카드를 아직 안 만든다).
+Future<void> scrollStartSheetTo(WidgetTester tester, Finder target) async {
+  if (target.evaluate().isEmpty) {
+    final scrollable = find.descendant(
+      of: find.byKey(const Key('start-pick-list')),
+      matching: find.byType(Scrollable),
+    );
+    // 운명 카드가 맨 위라 아래로 굴린 뒤에는 위로 돌아가야 보인다. 맨 위에서 아래로 찾는다.
+    final pos = tester.state<ScrollableState>(scrollable).position;
+    pos.jumpTo(pos.minScrollExtent);
+    await tester.pump();
+    if (target.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(target, 200, scrollable: scrollable);
+    }
+  }
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+}

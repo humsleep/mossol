@@ -1,3 +1,4 @@
+import 'dart:io';
 // 출시 전 단위 테스트 보강: 세이브·메타의 예전 형식 / 손상 / 부분 JSON.
 //
 // 세이브(`mossol_save_v1`)와 메타(`mossol_meta_v1`)는 앱 업데이트를 넘어 살아남는다.
@@ -495,7 +496,20 @@ void main() {
           expect(e.image, 'assets/scenes/${e.trigger.action.first}');
         }
       }
-      expect(b.endings.every((e) => e.image == null), isTrue);
+      // 엔딩의 image 는 전용 그림이 오기 전까지의 대체 그림이다(r3: m36_waiting·m36_letgo·villain_legend).
+      // 있으면 실제 assets/endings/ 그림을 가리켜야 한다.
+      for (final e in b.endings.where((e) => e.image != null)) {
+        final path = e.image!;
+        expect(path, startsWith('assets/endings/'), reason: e.id);
+        final base = path.split('/').last.split('.').first;
+        expect(
+          Directory('assets/endings').listSync().any(
+            (f) => f.uri.pathSegments.last.split('.').first == base,
+          ),
+          isTrue,
+          reason: '${e.id} -> $path',
+        );
+      }
     });
 
     test('세이브에는 아무것도 추가되지 않는다', () {

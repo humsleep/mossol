@@ -15,6 +15,7 @@ import 'package:mossol/ui/preference_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'story_files.dart';
 import 'widget/helpers.dart';
 
 // ---------------------------------------------------------------------------
@@ -840,6 +841,7 @@ void main() {
       await tester.pump();
       await tester.tap(findText('새 게임'));
       await tester.pumpAndSettle();
+      await pickStart(tester);
       await tester.tap(find.byKey(const Key('gender-m')));
       await tester.pumpAndSettle();
       await skipNameStep(tester);
@@ -937,7 +939,10 @@ void main() {
       }
       expect(bySide['f'], 6 * 4, reason: '여성 6명 × 캐릭터 엔딩 4종(천생연분 포함)');
       expect(bySide['m'], 6 * 4, reason: '남성 6명 × 캐릭터 엔딩 4종(천생연분 포함)');
-      expect(bySide[null], 12, reason: '공용 엔딩');
+      // 공용 12 + 개편 2 의 공용 엔딩(overhaul2EndingIds 중 데이터에 있는 것).
+      final o2 = bundle.endings.where((e) => overhaul2EndingIds.contains(e.id));
+      expect(o2.map((e) => e.id), containsAll(['influencer', 'infamous']));
+      expect(bySide[null], 12 + o2.length, reason: '공용 엔딩');
     });
   });
 }

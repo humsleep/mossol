@@ -28,6 +28,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'story_files.dart';
 
 // ---------------------------------------------------------------------------
 // 도우미
@@ -40,9 +41,10 @@ StoryBundle realBundle() {
     characters: File('assets/story/characters.json').readAsStringSync(),
     events: [
       for (final f in StoryBundle.eventFiles)
-        File('assets/story/$f').readAsStringSync(),
+        readStoryFile(f),
     ],
     endings: File('assets/story/endings.json').readAsStringSync(),
+    starts: readStartsFile(),
     signals: File('assets/story/signals.json').existsSync()
         ? File('assets/story/signals.json').readAsStringSync()
         : null,
@@ -220,9 +222,10 @@ void main() {
         characters: File('assets/story/characters.json').readAsStringSync(),
         events: [
           for (final f in StoryBundle.eventFiles)
-            File('assets/story/$f').readAsStringSync(),
+            readStoryFile(f),
         ],
         endings: File('assets/story/endings.json').readAsStringSync(),
+        starts: readStartsFile(),
         signals: File('assets/story/signals.json').readAsStringSync(),
         knownMinigames: minigameIds,
       );

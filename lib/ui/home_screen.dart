@@ -9,12 +9,14 @@ import '../engine/models.dart';
 import '../game_controller.dart';
 import 'album_screen.dart';
 import 'design_system.dart';
+import 'heat_gauge.dart';
 import 'keep_all.dart';
 import 'onboarding_gender_screen.dart';
 import 'retention_widgets.dart';
 import 'scene_card.dart' show SceneImage;
 import 'scene_registry.dart';
 import 'settings_screen.dart';
+import 'start_pick_sheet.dart';
 import 'widgets.dart';
 
 /// 첫 화면 v2. 규격은 docs/HOME_REDESIGN.md §1 (요약은 DESIGN_SYSTEM §2.1).
@@ -201,6 +203,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     // C. 자원 줄 — 세이브가 있고 요약을 읽었을 때만.
                     if (summary != null) ...[
                       _ResourceRow(c: c, hearts: summary.hearts),
+                      // C-1. 소문 게이지. 소문이 1 이상인 회차에서만(01_design §5.1).
+                      if (HeatGauge.shows(summary.heat)) ...[
+                        const SizedBox(height: AppSpace.sm),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: HeatGauge(heat: summary.heat),
+                        ),
+                      ],
                       const SizedBox(height: AppSpace.md),
                     ],
 
@@ -329,19 +339,35 @@ class _HomeScreenState extends State<HomeScreen> {
     await _startNewGame(context);
   }
 
-  /// 온보딩("나는?", 답이 없을 때만) → 이름 · MBTI(아직 안 물었을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
+  /// 시작 카드(01_design §4.1 — 시작이 가장 큰 결정이라 맨 앞) → 온보딩("나는?", 답이 없을 때만)
+  /// → 이름 · MBTI(아직 안 물었을 때만) → 캐스트 소개를 거쳐 새 게임. 뒤로 가면 아무것도
   /// 하지 않는다. 1단계 답은 새 게임이 실제로 시작될 때 기기 메타에 저장한다.
+  ///
+  /// 시작 카드 다음 단계에서 뒤로 나오면 시작 카드로 돌아온다(앞 단계로 돌아가는 규칙).
+  /// 시작 정의가 없으면(클래식뿐) 카드 없이 예전 흐름 그대로다.
   Future<void> _startNewGame(BuildContext context) async {
-    final pick = await OnboardingGenderScreen.run(
-      context,
-      c.bundle,
-      savedGender: c.playerGender,
-      askName: c.shouldAskName,
-      askMbti: c.shouldAskMbti,
-      savedMbti: c.playerMbti,
-      onStep: c.logOnboardingStep,
-    );
-    if (pick == null) return;
+    final hasStarts = c.bundle.starts.length > 1;
+    String? start;
+    // 뽑은 운명은 컨트롤러가 메타에 고정한다(r1_meeting D10) — 뒤로 가기·시트 닫기·앱 재시작
+    // 어느 길로도 다시 뽑지 못한다. newGame 이 지운다.
+    if (hasStarts) c.logOnboardingStep(Analytics.stepStart);
+    NewGamePick? pick;
+    while (pick == null) {
+      final picked = await StartPickSheet.showPickFor(context, c);
+      if (picked == null || !context.mounted) return;
+      start = picked.id;
+      pick = await OnboardingGenderScreen.run(
+        context,
+        c.bundle,
+        savedGender: c.playerGender,
+        askName: c.shouldAskName,
+        askMbti: c.shouldAskMbti,
+        savedMbti: c.playerMbti,
+        onStep: c.logOnboardingStep,
+        start: start,
+      );
+      if (pick == null && (!hasStarts || !context.mounted)) return;
+    }
     final g = pick.gender;
     if (g != null) await c.setPlayerGender(g);
     // 이름 단계: 입력했으면 저장, 건너뛰었으면 다음부터 묻지 않는다(설정에서 바꿀 수 있다).
@@ -362,7 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ? Analytics.mbtiSkip
           : Analytics.mbtiToggle,
     );
-    await c.newGame(preference: pick.preference);
+    await c.newGame(
+      preference: pick.preference,
+      start: start ?? StartScenario.classic,
+    );
   }
 }
 

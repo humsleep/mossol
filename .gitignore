@@ -54,3 +54,4 @@ app.*.map.json
 /tool/fonts_src/
 art_src/
 .venv/
+art_inbox/

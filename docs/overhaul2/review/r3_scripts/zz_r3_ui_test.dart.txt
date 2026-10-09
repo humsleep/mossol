@@ -1,0 +1,326 @@
+// R3 bug hunt (UI): villain chip next to the heat gauge at 320pt × 2.0 (light/dark), result panel
+// chip, fast-forward tap-to-reveal races. Throwaway — copied to docs/overhaul2/review/r3_scripts/.
+// ignore_for_file: avoid_print
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/analytics/analytics.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/action_screen.dart';
+import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/heat_gauge.dart';
+import 'package:mossol/ui/summary_screen.dart';
+
+import 'helpers.dart';
+
+void _screen(WidgetTester tester, double scale, {Size size = const Size(320, 568), bool dark = false}) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  tester.platformDispatcher.textScaleFactorTestValue = scale;
+  if (dark) tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+    tester.platformDispatcher.clearPlatformBrightnessTestValue();
+  });
+}
+
+List<String> _errors(WidgetTester tester) {
+  final out = <String>[];
+  Object? e;
+  while ((e = tester.takeException()) != null) {
+    out.add('$e'.split('\n').take(2).join(' / '));
+    if ('$e'.contains('overflowed')) {
+      final d = (e is FlutterError) ? e : null;
+      print('OVERFLOW DETAIL: ${d?.diagnostics.map((x) => x.toString()).where((x) => x.contains('dart:') || x.contains('Row') || x.contains('constraints')).take(8).join(' | ') ?? e}');
+    }
+  }
+  return out;
+}
+
+Widget _wrap(Widget w, bool dark) => wrapApp(w, mode: dark ? ThemeMode.dark : ThemeMode.light);
+
+Future<void> _scrollAll(WidgetTester tester, List<String> errs) async {
+  final scrollables = find.byType(Scrollable);
+  for (var i = 0; i < scrollables.evaluate().length; i++) {
+    final st = tester.state<ScrollableState>(scrollables.at(i));
+    if (st.position.axis != Axis.vertical) continue;
+    for (var k = 0; k < 30 && st.position.pixels < st.position.maxScrollExtent; k++) {
+      st.position.jumpTo((st.position.pixels + 200).clamp(0, st.position.maxScrollExtent));
+      await tester.pump();
+      errs.addAll(_errors(tester));
+    }
+  }
+}
+
+void _chipInside(WidgetTester tester, String tag) {
+  final chips = find.byKey(const Key('villain-chip'));
+  for (final e in chips.evaluate()) {
+    final r = tester.getRect(find.byWidget(e.widget));
+    final text = find.descendant(of: find.byWidget(e.widget), matching: find.byType(Text));
+    final shown = (tester.widget<Text>(text.first).data ?? '');
+    final rp = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.byWidget(e.widget), matching: find.byType(RichText)).first,
+    );
+    print('$tag chip rect=${r.left.toStringAsFixed(0)}..${r.right.toStringAsFixed(0)} '
+        'w=${r.width.toStringAsFixed(0)} text="$shown" ellipsized=${rp.didExceedMaxLines}');
+    expect(r.right <= 320.5, isTrue, reason: '$tag chip off screen');
+  }
+}
+
+void main() {
+  for (final dark in [false, true]) {
+    final mode = dark ? 'dark' : 'light';
+    for (final scale in [1.0, 1.3, 2.0, 3.0]) {
+      final tag = '320x568 x$scale $mode';
+
+      testWidgets('action: heat 95 + villain 12 $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final errs = <String>[];
+        for (final heat in [0, 95]) {
+          final c = await makeController();
+          await c.newGame(preference: Preference.female, seed: 1, start: heat == 0 ? 'classic' : 'sc_clip');
+          c.state!.stats[Stat.heat] = heat;
+          c.state!.stats[Stat.villain] = 12;
+          c.beginMorning();
+          await tester.pumpWidget(_wrap(ActionScreen(c: c), dark));
+          await tester.pumpAndSettle();
+          errs.addAll(_errors(tester));
+          _chipInside(tester, '$tag action heat=$heat');
+          await _scrollAll(tester, errs);
+        }
+        print('$tag action errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('summary: heat 99 −12 + villain 12 (+3) $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 1, start: 'sc_clip');
+        c.beginMorning();
+        await c.startDay(c.config.actions.first);
+        while (c.phase == Phase.event) {
+          c.choose(plainChoiceIndex(c));
+          c.continueAfterChoice();
+        }
+        c.state!.stats[Stat.heat] = 99;
+        c.state!.stats[Stat.villain] = 12;
+        c.dayDelta.stats[Stat.heat] = -12;
+        c.dayDelta.stats[Stat.villain] = 3;
+        await tester.pumpWidget(_wrap(SummaryScreen(c: c), dark));
+        await tester.pump(const Duration(seconds: 4));
+        final errs = _errors(tester);
+        _chipInside(tester, '$tag summary');
+        await _scrollAll(tester, errs);
+        print('$tag summary errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('result panel villain chip $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 11, start: 'sc_leak');
+        final b = c.bundle;
+        bool isV(Choice ch) =>
+            (ch.effects.stats[Stat.villain] ?? 0) > 0 && ch.minigame == null && ch.chance == null && !ch.isGated;
+        final ev = b.events.firstWhere((e) => e.choices.any(isV));
+        c.state!.flags.addAll(ev.trigger.flags);
+        c.state!.stats[Stat.villain] = 9;
+        c.current = ev;
+        c.revealed = 0;
+        c.phase = Phase.event;
+        await tester.pumpWidget(_wrap(EventScreen(c: c), dark));
+        await revealAll(tester, c);
+        await tester.pumpAndSettle();
+        final cur = c.current!;
+        final vi = cur.choices.indexWhere(isV);
+        c.choose(vi);
+        await tester.pump();
+        await settleReplies(tester);
+        await tester.pump(const Duration(seconds: 2));
+        final errs = _errors(tester);
+        print('$tag result delta=${c.lastOutcome!.delta.stats} chips=${find.byKey(const Key('villain-chip')).evaluate().length}');
+        for (final el in find.byWidgetPredicate((w) => w is Flex, skipOffstage: false).evaluate()) {
+          final ro = el.renderObject;
+          if (ro is! RenderFlex || ro.direction != Axis.horizontal || !ro.hasSize) continue;
+          var sum = 0.0;
+          var ch = ro.firstChild;
+          while (ch != null) {
+            sum += ch.size.width;
+            ch = (ch.parentData as FlexParentData).nextSibling;
+          }
+          if (sum > ro.size.width + 0.5) {
+            final texts = find.descendant(of: find.byWidget(el.widget), matching: find.byType(Text), skipOffstage: false)
+                .evaluate().map((t) => (t.widget as Text).data).toList();
+            print('$tag OVER flex w=${ro.size.width} children=$sum texts=$texts chain=${el.debugGetCreatorChain(6)}');
+          }
+        }
+        _chipInside(tester, '$tag result');
+        await _scrollAll(tester, errs);
+        expect(find.byKey(const Key('villain-chip')), findsOneWidget);
+        expect(errs, isEmpty);
+      });
+    }
+  }
+
+  for (final scale in [2.0, 3.0]) {
+    testWidgets('geometry on a tall 320 screen x$scale: action/summary chip beside gauge', (tester) async {
+      _screen(tester, scale, size: const Size(320, 2400));
+      final c = await makeController();
+      await c.newGame(preference: Preference.female, seed: 1, start: 'sc_clip');
+      c.state!.stats[Stat.heat] = 95;
+      c.state!.stats[Stat.villain] = 12;
+      c.beginMorning();
+      await tester.pumpWidget(_wrap(ActionScreen(c: c), false));
+      await tester.pumpAndSettle();
+      final g = tester.getRect(find.byKey(const Key('action-heat')));
+      print('x$scale action gauge=${g.left.toStringAsFixed(0)}..${g.right.toStringAsFixed(0)} y=${g.top.toStringAsFixed(0)}');
+      _chipInside(tester, 'x$scale action tall');
+      expect(_errors(tester), isEmpty);
+    });
+
+    testWidgets('result panel NON-villain choice x$scale (baseline)', (tester) async {
+      _screen(tester, scale);
+      final c = await makeController();
+      await c.newGame(preference: Preference.female, seed: 11, start: 'sc_leak');
+      final b = c.bundle;
+      final ev = b.events.firstWhere((e) => e.choices.any((ch) => (ch.effects.stats[Stat.villain] ?? 0) > 0 && !ch.isGated));
+      c.state!.flags.addAll(ev.trigger.flags);
+      c.current = ev;
+      c.revealed = 0;
+      c.phase = Phase.event;
+      await tester.pumpWidget(_wrap(EventScreen(c: c), false));
+      await revealAll(tester, c);
+      await tester.pumpAndSettle();
+      final cur = c.current!;
+      final vi = cur.choices.indexWhere((ch) => (ch.effects.stats[Stat.villain] ?? 0) == 0 && ch.minigame == null && ch.chance == null);
+      c.choose(vi);
+      await tester.pump();
+      await settleReplies(tester);
+      await tester.pump(const Duration(seconds: 2));
+      final errs = _errors(tester);
+      print('x$scale non-villain result delta=${c.lastOutcome!.delta.stats} errs=$errs');
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  group('fast-forward tap races', () {
+    StoryEvent probe(String id, {bool call = false}) => StoryEvent.fromJson({
+      'id': id,
+      'layer': 'daily',
+      'title': '확인',
+      'character': 'daeun',
+      'format': ?(call ? 'call' : null),
+      'lines': [
+        {'who': 'them', 'text': '하나'},
+        {'who': 'them', 'text': '둘'},
+        {'who': 'me', 'text': '셋'},
+        {'who': 'sys', 'wait': 20},
+        {'who': 'them', 'text': '넷'},
+        {'who': 'narr', 'text': '다섯'},
+      ],
+      'choices': [
+        {'text': '하나', 'reply': [{'who': 'them', 'text': '응'}, {'who': 'them', 'text': '그래'}]},
+        {'text': '둘'},
+      ],
+    });
+
+    Future<GameController> setup(WidgetTester tester, StoryEvent ev) async {
+      final c = await makeController();
+      await c.newGame(preference: Preference.female, seed: 11);
+      c.meta!.seenEvents.add(ev.id);
+      c.current = ev;
+      c.revealed = 0;
+      c.phase = Phase.event;
+      await tester.pumpWidget(wrapApp(EventScreen(c: c)));
+      await tester.pump();
+      return c;
+    }
+
+    testWidgets('burst taps during reveal stop at the wait line; tap during wait does nothing', (tester) async {
+      final c = await setup(tester, probe('zz_ff1'));
+      expect(c.canFastForward, isTrue);
+      final esteem0 = c.state!.stat(Stat.esteem);
+      // 5 taps in one frame
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      }
+      await tester.pump();
+      print('after burst: revealed=${c.revealed} (wait line index 3)');
+      expect(c.revealed, 3);
+      await tester.pump(const Duration(seconds: 2));
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+        await tester.pump(const Duration(milliseconds: 30));
+      }
+      expect(c.revealed, 3, reason: 'tap must not jump the wait');
+      // free skip, then burst taps → rest
+      final skip = find.byKey(const Key('wait-free-skip'));
+      expect(skip, findsOneWidget);
+      await tester.ensureVisible(skip);
+      await tester.tap(skip);
+      await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      await tester.pump();
+      print('after free skip + tap same frame: revealed=${c.revealed} linesDone=${c.linesDone}');
+      await tester.pump(const Duration(seconds: 1));
+      expect(c.linesDone, isTrue);
+      expect(c.state!.stat(Stat.esteem), esteem0, reason: 'free skip: no penalty');
+      // choices are up: tap does nothing, choose, tap during replies
+      await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      await tester.pump();
+      c.choose(0);
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 100));
+      await settleReplies(tester);
+      expect(_errors(tester), isEmpty);
+    });
+
+    testWidgets('waiting penalty not double-applied when the wait ends while tapping', (tester) async {
+      final c = await setup(tester, probe('zz_ff2'));
+      final esteem0 = c.state!.stat(Stat.esteem);
+      await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      await tester.pump();
+      // let the wait run out naturally while tapping every 500ms
+      for (var i = 0; i < 50 && !c.linesDone; i++) {
+        await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+        await tester.pump(const Duration(milliseconds: 500));
+      }
+      print('esteem ${esteem0} -> ${c.state!.stat(Stat.esteem)} linesDone=${c.linesDone}');
+      expect(c.state!.stat(Stat.esteem), esteem0 - 1);
+      expect(_errors(tester), isEmpty);
+    });
+
+    testWidgets('free-skip double tap in ONE frame: lines skipped / analytics', (tester) async {
+      final rec = RecordingAnalyticsBackend();
+      final old = Analytics.instance.backend;
+      Analytics.instance.backend = rec;
+      addTearDown(() => Analytics.instance.backend = old);
+      final c = await setup(tester, probe('zz_ff4'));
+      await tester.tap(find.byKey(const Key('chat-tap')), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final skip = find.byKey(const Key('wait-free-skip'));
+      await tester.ensureVisible(skip);
+      await tester.pump();
+      final before = c.revealed;
+      await tester.tap(skip);
+      await tester.tap(skip, warnIfMissed: false);
+      await tester.pump();
+      print('same-frame double free skip: revealed $before -> ${c.revealed} '
+          'wait_skip_free logs=${rec.paramsOf(Analytics.waitSkipFree).length}');
+      await tester.pump(const Duration(seconds: 2));
+      expect(_errors(tester), isEmpty);
+    });
+
+    testWidgets('seen call: ff in call view (no chat tap) + accept/decline', (tester) async {
+      final ev = probe('zz_ff3', call: true);
+      final c = await setup(tester, ev);
+      print('call: chat-tap present=${find.byKey(const Key('chat-tap')).evaluate().length} ff=${c.canFastForward}');
+      await tester.pump(const Duration(seconds: 3));
+      expect(_errors(tester), isEmpty);
+    });
+  });
+}

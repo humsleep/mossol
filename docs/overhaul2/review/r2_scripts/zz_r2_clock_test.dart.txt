@@ -1,0 +1,68 @@
+// R2: does the fake clock run backwards inside a day when an event pins `clock`?
+// ignore_for_file: avoid_print
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/event_screen.dart' show ChatClock;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test('clock monotonic within a day', () async {
+    final b = testBundle();
+    final back = <String, int>{};
+    final samples = <String>[];
+    var days = 0;
+    for (final st in b.starts) {
+      for (var seed = 0; seed < 12; seed++) {
+        SharedPreferences.setMockInitialValues({});
+        final c = GameController(bundle: b, save: SaveService());
+        await c.init();
+        await c.markIntroSeen();
+        final rnd = Random(seed);
+        await c.newGame(preference: Preference.genders[seed % 2], seed: seed, start: st.id);
+        for (var d = 0; d < 110 && c.ending == null; d++) {
+          c.beginMorning();
+          c.state!.hearts = b.config.maxHearts;
+          await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+          days++;
+          int? last;
+          String? lastId;
+          while (c.phase == Phase.event) {
+            final ev = c.current!;
+            final s = c.state!;
+            final start = ev.clockSeconds ??
+                ChatClock.startSeconds(seed: s.seed, day: s.day, index: c.todayEventIndex, total: c.todayEventTotal);
+            final times = ChatClock.timesFor(ev.lines, start);
+            if (last != null && start < last && (ev.clock != null || b.eventById[lastId!]?.clock != null)) {
+              final k = '${lastId}->${ev.id}';
+              back.update(k, (v) => v + 1, ifAbsent: () => 1);
+              if (samples.length < 12) {
+                samples.add('${st.id} s$seed D${s.day}: $lastId ends ${ChatClock.label(last)} -> ${ev.id} starts ${ChatClock.label(start)}');
+              }
+            }
+            last = times.isEmpty ? start : times.last;
+            lastId = ev.id;
+            final open = [for (final v in c.choices) if (!v.locked) v.index];
+            final i = open[rnd.nextInt(open.length)];
+            final mg = ev.choices[i].minigame != null;
+            c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+            c.continueAfterChoice();
+          }
+          if (c.phase == Phase.summary) await c.endDay();
+        }
+      }
+    }
+    print('days=$days backwards(involving a pinned clock)=${back.values.fold(0, (a, b) => a + b)}');
+    final top = back.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    for (final e in top.take(15)) {
+      print('  ${e.key}: ${e.value}');
+    }
+    samples.forEach(print);
+  }, timeout: const Timeout(Duration(minutes: 10)));
+}

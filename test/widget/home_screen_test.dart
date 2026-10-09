@@ -494,6 +494,13 @@ void main() {
       final launcher = _NoBrowser();
       UrlLauncherPlatform.instance = launcher;
       await tester.pumpWidget(wrapApp(SettingsScreen(c: c)));
+      // 설정 행이 늘어(읽은 장면 빨리 감기) 이 행은 첫 화면 아래에 있을 수 있다.
+      await tester.scrollUntilVisible(
+        findText('개인정보처리방침'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(findText('개인정보처리방침'));
       await tester.pumpAndSettle();
       expect(launcher.launched, [AppLinks.privacyPolicy]);
