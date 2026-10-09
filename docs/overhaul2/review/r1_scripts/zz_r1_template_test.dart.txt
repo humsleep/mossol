@@ -1,0 +1,60 @@
+// R1: render every new line through TextTemplate with real names for f and m.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/text_template.dart';
+
+import 'widget/helpers.dart';
+
+void main() {
+  test('new lines render cleanly', () {
+    final b = testBundle();
+    final newIds = <String>{
+      for (final f in ['events_start.json', 'events_freedom.json'])
+        for (final e in jsonDecode(File('assets/story/$f').readAsStringSync()) as List)
+          (e as Map)['id'] as String,
+      ...b.events.where((e) => e.id.startsWith('a_hustle_')).map((e) => e.id),
+    };
+    final problems = <String>{};
+    final fallbacks = <String>{};
+    for (final e in b.events) {
+      final isNew = newIds.contains(e.id);
+      final texts = <String>[
+        for (final l in e.lines)
+          if (isNew || l.isFlagGated) l.text,
+        for (final v in e.variants)
+          for (final l in v)
+            if (isNew || l.isFlagGated) l.text,
+        for (final c in e.choices) ...[
+          if (isNew || c.isFlagGated) c.text,
+          for (final l in [...c.reply, ...c.failReply, ...c.critReply])
+            if (isNew || l.isFlagGated) l.text,
+        ],
+      ];
+      for (final pref in Preference.genders) {
+        if (e.trigger.pref != null && e.trigger.pref != pref) continue;
+        if (e.character != null && b.absentIds(pref).contains(e.character)) continue;
+        final chars = b.charNamesFor(pref);
+        for (final name in ['민석', '민지', 'Jin', null]) {
+          for (final t in texts.where((t) => t.trim().isNotEmpty)) {
+            final p = TextTemplate.problems(t);
+            if (p.isNotEmpty) problems.add('${e.id}: $p :: $t');
+            final out = TextTemplate.fill(t, name: name, mbti: null, top: name == null ? null : '다은', chars: chars);
+            if (out.contains('{') || out.contains('}')) problems.add('${e.id}/$pref unresolved :: $out');
+            if (out.contains('  ') || out.trim().isEmpty) problems.add('${e.id}/$pref spacing/empty :: "$out" <- $t');
+            if (t.contains('{char:') && out.contains(TextTemplate.topFallback)) {
+              fallbacks.add('${e.id}/$pref char fallback :: $out <- $t');
+            }
+          }
+        }
+      }
+    }
+    problems.forEach(print);
+    fallbacks.forEach(print);
+    expect(problems, isEmpty);
+    expect(fallbacks, isEmpty);
+  });
+}

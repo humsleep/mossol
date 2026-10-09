@@ -1,0 +1,86 @@
+// R1: intro fate reroll, ending double-tap, home dismiss.
+// ignore_for_file: avoid_print
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/ending_screen.dart';
+import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/intro_screen.dart';
+import 'package:mossol/ui/notification_card.dart';
+import 'package:mossol/ui/start_pick_sheet.dart';
+import 'package:mossol/ui/widgets.dart' show TypingIndicator;
+
+import 'helpers.dart';
+
+Future<void> settleTyping(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 12; i++) {
+    if (find.byType(TypingIndicator).evaluate().isEmpty) break;
+    await tester.pump(const Duration(milliseconds: 2500));
+  }
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets('intro: fate then "다른 일이었어" reopens sheet with fate unlocked (reroll)', (tester) async {
+    final c = await makeController(firstLaunch: true);
+    await tester.pumpWidget(fullApp(c));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('title-start')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.byType(NotificationCard));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('intro-yes')));
+    await settleTyping(tester);
+    await tester.pump(IntroScreen.startSheetDelay);
+    await tester.pumpAndSettle();
+    expect(find.byType(StartPickSheet), findsOneWidget);
+    final fate = find.byKey(const Key('start-fate'));
+    await scrollStartSheetTo(tester, fate);
+    await tester.tap(fate);
+    await tester.pumpAndSettle();
+    await settleTyping(tester);
+    expect(find.byKey(const Key('intro-start-back')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('intro-start-back')));
+    await tester.pumpAndSettle();
+    final sheet = tester.widget<StartPickSheet>(find.byType(StartPickSheet));
+    print('reopened fateLocked=${sheet.fateLocked}');
+    expect(sheet.fateLocked, isNotNull, reason: 'intro allows fate reroll');
+  });
+
+  testWidgets('ending: double tap on next-run button opens two sheets?', (tester) async {
+    final c = await makeController();
+    await c.newGame(preference: Preference.female, seed: 3);
+    c.beginMorning();
+    await c.startDay(c.config.actions.first);
+    while (c.phase == Phase.event) {
+      c.choose(plainChoiceIndex(c));
+      c.continueAfterChoice();
+    }
+    c.state!.day = c.config.totalDays;
+    await c.endDay();
+    expect(c.ending, isNotNull);
+    await tester.pumpWidget(wrapApp(EndingScreen(c: c)));
+    await tester.pump(const Duration(seconds: 5));
+    final btn = findText('${c.state!.run + 1}회차 시작');
+    await tester.ensureVisible(btn);
+    await tester.pumpAndSettle();
+    await tester.tap(btn);
+    await tester.tap(btn, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    print('sheets after double tap: ${find.byType(StartPickSheet).evaluate().length}');
+    expect(find.byType(StartPickSheet), findsOneWidget);
+  });
+
+  testWidgets('event screen with alt start renders day 1', (tester) async {
+    final c = await makeController();
+    await c.newGame(preference: Preference.male, seed: 3, start: 'sc_leak');
+    c.beginMorning();
+    await c.startDay(c.config.actions.first);
+    await tester.pumpWidget(fullApp(c));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(EventScreen), findsOneWidget);
+  });
+}

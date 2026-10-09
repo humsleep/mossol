@@ -1,0 +1,197 @@
+{
+ "starts": [
+  {
+   "id": "classic",
+   "title": "치킨 열 마리",
+   "hook": "100일 안에 연애 못 하면 치킨 열 마리",
+   "logline": "태현이 내기를 걸었다. 증인은 친구 단톡 일곱 명이다.",
+   "introLine": "그냥. 올해는 다르게 살고 싶어",
+   "introReply": "그럼 내기하자",
+   "tags": [
+    "생활 코미디",
+    "내기"
+   ],
+   "spice": 1,
+   "unlockEndings": 0,
+   "image": "assets/scenes/m01",
+   "effects": {}
+  },
+  {
+   "id": "sc_leak",
+   "title": "단톡 박제",
+   "hook": "고백 연습을 알바 단톡에 보냈다",
+   "logline": "누구한테 쓴 고백인지는 나만 안다. 단톡은 오늘부터 추리 게임이다.",
+   "introLine": "고백 문장 하나 써 봤는데 검사 좀 해 줘. 지금 보낼게",
+   "introReply": "ㅇㅋ 내 방에 보내라. 딴 데 보내지 말고 ㅋㅋ",
+   "tags": [
+    "창피 코미디",
+    "추리"
+   ],
+   "spice": 2,
+   "unlockEndings": 0,
+   "recommended": true,
+   "image": "assets/scenes/sc_leak_d1",
+   "castLines": {
+    "daeun": "그거 누구 얘기예요?",
+    "haneul": "야 신입 ㅋㅋㅋ 그거 누구 얘기야?"
+   },
+   "effects": {
+    "stats": {
+     "heat": 30,
+     "stress": 8,
+     "talk": 2,
+     "esteem": -2
+    },
+    "affection": {
+     "daeun": 4,
+     "haneul": 4
+    },
+    "setFlags": [
+     "start_alt",
+     "sc_leak"
+    ]
+   }
+  },
+  {
+   "id": "sc_speech",
+   "title": "축사 대참사",
+   "hook": "축사 도중 대형 스크린에 태현의 톡이 떴다",
+   "logline": "이 축사가 망신으로 끝날지 레전드로 남을지는 다음 10초에 달렸다. 하객석에는 13년 만에 보는 6학년 3반 동창도 있다.",
+   "introLine": "나 내일 결혼식 축사해. 대타로",
+   "introReply": "너가? ㅋㅋ 응원 톡 보낼게. 딱 읽을 때 맞춰서",
+   "tags": [
+    "공개 망신",
+    "레전드"
+   ],
+   "spice": 2,
+   "unlockEndings": 0,
+   "image": "assets/scenes/sc_speech_d1",
+   "castLines": {
+    "yeeun": "부케 주인입니다 ㅋㅋ 댓글로만 인사하기 좀 그래서",
+    "geonwoo": "나 건우. 부케 받은 그 키 큰 애 ㅋㅋ"
+   },
+   "effects": {
+    "stats": {
+     "heat": 35,
+     "esteem": 5,
+     "talk": 1,
+     "stress": 10
+    },
+    "affection": {
+     "yeeun": 4,
+     "geonwoo": 4
+    },
+    "setFlags": [
+     "start_alt",
+     "sc_speech"
+    ]
+   }
+  },
+  {
+   "id": "sc_clip",
+   "title": "마이크 켜진 새벽",
+   "hook": "마이크가 켜진 줄 모르고 혼잣말을 했다",
+   "logline": "얼굴도 모르는 사람에게 한 고백이 인터넷에 박제됐다. 정작 그 사람은 아직 아무 말이 없다.",
+   "introLine": "듀오 한 판만 하고 잘게",
+   "introReply": "또? 마이크는 꼭 꺼라. 너 혼잣말 심함",
+   "tags": [
+    "바이럴",
+    "정체 추리"
+   ],
+   "spice": 3,
+   "unlockEndings": 0,
+   "image": "assets/scenes/sc_clip_d1",
+   "castLines": {
+    "sohee": "클립 백 번쯤 들었어",
+    "minjae": "나 얼굴은 안 보여 줄 건데. 그래도 돼?"
+   },
+   "effects": {
+    "stats": {
+     "heat": 40,
+     "talk": 3,
+     "sense": 2,
+     "charm": -2,
+     "stress": 6
+    },
+    "affection": {
+     "sohee": 4,
+     "minjae": 4
+    },
+    "setFlags": [
+     "start_alt",
+     "sc_clip"
+    ]
+   }
+  },
+  {
+   "id": "sc_swap",
+   "title": "환승 목격",
+   "hook": "석 달 썸 상대가 다음 날 커플 프사를 올렸다",
+   "logline": "시작도 못 하고 밀려났다. 100일 뒤에 웃는 사람이 누구일지 정할 차례다.",
+   "introLine": "서진이 우린 친구래. 석 달을",
+   "introReply": "…친구? 석 달을? 오늘은 프사 같은 거 보지 말고 자라",
+   "tags": [
+    "복수 드라마",
+    "라이벌"
+   ],
+   "spice": 3,
+   "unlockEndings": 1,
+   "image": "assets/scenes/sc_swap_d1",
+   "castLines": {
+    "seoyeon": "표정 관리 0점.",
+    "jeongwoo": "괜찮아? 아니, 안 괜찮겠다. 하하."
+   },
+   "effects": {
+    "stats": {
+     "heat": 15,
+     "esteem": -1,
+     "stress": 8,
+     "charm": 2
+    },
+    "affection": {
+     "seoyeon": 4,
+     "jeongwoo": 4
+    },
+    "setFlags": [
+     "start_alt",
+     "sc_swap"
+    ]
+   }
+  },
+  {
+   "id": "sc_ghost",
+   "title": "새벽 3시의 나",
+   "hook": "내가 쓴 적 없는 시가 소개팅 상대에게 갔다",
+   "logline": "범인은 가까이 있다. 그런데 시를 받은 사람이 하필 엄마가 밀고 있는 소개팅 상대다.",
+   "introLine": "내 폰 요즘 이상해. 새벽마다 뭐가 울리다 말아",
+   "introReply": "…스팸이겠지 ㅋㅋ 폰 엎고 자라",
+   "tags": [
+    "배신 코미디",
+    "거짓말"
+   ],
+   "spice": 2,
+   "unlockEndings": 2,
+   "image": "assets/scenes/sc_ghost_d1",
+   "castLines": {
+    "jiwoo": "어제 새벽 3시에 써 주신 시, 아직도 생각나요.",
+    "seunghyun": "어제 새벽 3시에 써 주신 시, 아직도 생각나요."
+   },
+   "effects": {
+    "stats": {
+     "heat": 10,
+     "sense": 2,
+     "talk": -2,
+     "stress": 5
+    },
+    "affection": {
+     "jiwoo": 4,
+     "seunghyun": 4
+    },
+    "setFlags": [
+     "start_alt",
+     "sc_ghost"
+    ]
+   }
+  }
+ ]
+}

@@ -15,6 +15,7 @@ import 'package:mossol/engine/models.dart';
 import 'package:mossol/engine/story_repository.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
+import 'story_files.dart';
 
 const kSeeds = int.fromEnvironment('SEEDS', defaultValue: 200);
 const kMinigameSuccess = int.fromEnvironment("MG", defaultValue: 60) / 100;
@@ -50,6 +51,11 @@ String simPreference() {
 ///   해피율·천생연분율 표를 만든다(tool/sim_out/mbti_table.txt).
 const kMbti = String.fromEnvironment('MBTI', defaultValue: 'none');
 
+/// 시작 스토리(docs/overhaul2/01_design.md §7.2). `--dart-define=START=<id>` 면 본 시뮬레이션을
+/// 그 시작으로 돌리고, `START=all` 이면 시작 6종 × 선호 2 × 핵심 전략 표를 따로 만든다
+/// (`tool/sim_out/start_table.txt`). 기본은 클래식 — 예전 결과와 같다.
+const kStart = String.fromEnvironment('START', defaultValue: 'classic');
+
 /// [kMbti] 가 가리키는 한 가지 유형(`all`·`none` 은 null). 오타면 바로 실패한다.
 String? simMbti() {
   if (kMbti == 'none' || kMbti == 'all') return null;
@@ -72,9 +78,10 @@ StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
   characters: File('$kStoryDir/characters.json').readAsStringSync(),
   events: [
     for (final f in StoryBundle.eventFiles)
-      File('$kStoryDir/$f').readAsStringSync(),
+      readStoryFile(f, dir: kStoryDir),
   ],
   endings: File('$kStoryDir/endings.json').readAsStringSync(),
+  starts: readStartsFile(dir: kStoryDir),
   signals: File('$kStoryDir/signals.json').existsSync()
       ? File('$kStoryDir/signals.json').readAsStringSync()
       : null,
@@ -224,6 +231,40 @@ Set<String> happyFlags(StoryBundle b, String target) => _happyFlags.putIfAbsent(
 );
 final _happyFlags = <String, Set<String>>{};
 
+/// 해피 엔딩을 막는 플래그(`when.notFlags`). [target] 이 있으면 그 캐릭터의 해피·천생연분만,
+/// 없으면 모든 해피 엔딩(r3_meeting F5: `m36_parted`·`m36_rejected`).
+Set<String> happyBlockers(StoryBundle b, String? target) => _happyBlockers.putIfAbsent(
+  '${identityHashCode(b)}:$target',
+  () => {
+    for (final e in b.endings)
+      if (e.tier == 'happy' && (target == null || e.character == target))
+        ...e.when.notFlags,
+  },
+);
+final _happyBlockers = <String, Set<String>>{};
+
+/// 고백 결과 플래그. 누군가를 공략하는 플레이어는 m36·두 번째 대답에서 고백을 고른다
+/// (focus+hint 가 힌트로 고르는 것과 같은 선택). 고백이 실패하면 `m36_rejected` 가 남지만 그것은
+/// 실제 플레이어가 치르는 확률이다.
+const confessFlag = 'm36_confessed';
+
+/// [open] 안에 고백(성공 시 [confessFlag])이 있으면 그 번호. 없으면 null.
+int? confessIndex(List<ChoiceView> open) {
+  for (final v in open) {
+    if (v.choice.effects.setFlags.contains(confessFlag)) return v.index;
+  }
+  return null;
+}
+
+/// 선택지가 해피를 막는 플래그를 세울 확률 × 벌점. 집중·스탯 봇이 "정리한다" 를 공짜 이득으로
+/// 고르던 문제(F8 시뮬: focus 해피 80%대 → 3~9%)를 막는다.
+double blockerPenalty(Choice c, double p, Set<String> blockers) {
+  if (blockers.isEmpty) return 0;
+  final onSuccess = c.effects.setFlags.any(blockers.contains) ? 1.0 : 0.0;
+  final onFail = c.fail.setFlags.any(blockers.contains) ? 1.0 : 0.0;
+  return -20 * (p * onSuccess + (1 - p) * onFail);
+}
+
 /// 3. 한 캐릭터 집중. 그 캐릭터의 호감·신뢰, 진정성을 최대화.
 class FocusStrategy extends Strategy {
   final String target;
@@ -268,6 +309,9 @@ class FocusStrategy extends Strategy {
     if (useHint && ev.hint != null && open.any((v) => v.index == ev.hint)) {
       return ev.hint!;
     }
+    final confess = confessIndex(open);
+    if (confess != null) return confess;
+    final blockers = happyBlockers(e.bundle, target);
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
@@ -284,7 +328,10 @@ class FocusStrategy extends Strategy {
           (f.setFlags.contains('fishing_mind') || f.setFlags.contains('greedy')
               ? -3
               : 0);
-      final score = p * val(c.effects) + (1 - p) * val(c.fail);
+      final score =
+          p * val(c.effects) +
+          (1 - p) * val(c.fail) +
+          blockerPenalty(c, p, blockers);
       if (score > bestScore) {
         bestScore = score;
         best = v;
@@ -334,6 +381,9 @@ class StatGrowthStrategy extends Strategy {
     Random r,
     EventEngine e,
   ) {
+    final confess = confessIndex(open);
+    if (confess != null) return confess;
+    final blockers = happyBlockers(e.bundle, null);
     ChoiceView? best;
     var bestScore = double.negativeInfinity;
     for (final v in open) {
@@ -346,7 +396,8 @@ class StatGrowthStrategy extends Strategy {
                   0.2 * sumMap(c.effects.affection, self: self)) +
           (1 - p) *
               (statSum(c.fail.stats) +
-                  0.2 * sumMap(c.fail.affection, self: self));
+                  0.2 * sumMap(c.fail.affection, self: self)) +
+          blockerPenalty(c, p, blockers);
       if (score > bestScore) {
         bestScore = score;
         best = v;
@@ -490,6 +541,37 @@ class ToxicStrategy extends Strategy {
       }
     }
     return best!.index;
+  }
+}
+
+/// 진상 플레이어(개편 2): `villain_move` 를 세우는 "(진상) …" 선택지가 보이면 늘 그것을,
+/// 없으면 [ToxicStrategy] 처럼 고른다. 소문 엔딩 `infamous` 가 닿는지 보는 봇이다.
+class VillainStrategy extends ToxicStrategy {
+  VillainStrategy(super.target);
+  static const flag = 'villain_move';
+
+  /// 진상 선택지인지: 진상 지수를 올리거나(r1_meeting §3 `stats.villain`) 예전 표식 플래그를 세운다.
+  static bool isVillain(Choice c) =>
+      c.effects.setFlags.contains(flag) ||
+      c.fail.setFlags.contains(flag) ||
+      (c.effects.stats[Stat.villain] ?? 0) > 0 ||
+      (c.fail.stats[Stat.villain] ?? 0) > 0;
+  @override
+  String get name => 'villain';
+
+  @override
+  int pick(
+    GameState s,
+    StoryEvent ev,
+    List<ChoiceView> open,
+    Random r,
+    EventEngine e,
+  ) {
+    for (final v in open) {
+      final c = v.choice;
+      if (isVillain(c)) return v.index;
+    }
+    return super.pick(s, ev, open, r, e);
   }
 }
 
@@ -651,6 +733,12 @@ class RunResult {
   String tier = '';
   int endDay = 0;
   final Map<String, int> stats = {};
+
+  /// 내기(d_open_bet)를 본 횟수. 어느 시작이든 정확히 1이어야 한다(개편 2 §0-1).
+  int betShown = 0;
+
+  /// 회차 중 가장 높았던 소문.
+  int heatMax = 0;
   final Map<String, int> aff = {};
   final Map<String, int> trust = {};
   int lockedSeen = 0;
@@ -722,6 +810,7 @@ RunResult simulate(
   String? pref,
   String? mbti,
   bool useKMbti = true,
+  String? start,
 }) {
   final engine = EventEngine(b);
   final resolver = EndingResolver(b.endings, characters: b.characters);
@@ -734,6 +823,9 @@ RunResult simulate(
     mbti: mbti ?? (useKMbti ? simMbti() : null),
   );
   simAbsent = engine.absentFor(s);
+  // 시작 보정은 newGame 과 같은 자리(교차 회차 보너스 뒤 — 시뮬레이션에는 보너스가 없다).
+  final scenario = b.startOf(start ?? (kStart == 'all' ? 'classic' : kStart));
+  if (scenario != null) applyEffects(s, scenario.effects, absent: simAbsent);
   final r = Random(seed * 7919 + strat.name.hashCode);
   final res = RunResult(
     strat.name,
@@ -805,6 +897,7 @@ RunResult simulate(
       // 화면과 같이 이 회차 MBTI 로 거른 사본(줄·선택지·힌트 인덱스가 거른 목록 기준).
       final ev = engine.viewFor(s, queue.removeAt(0));
       res.eventsTotal++;
+      if (ev.id == 'd_open_bet') res.betShown++;
       // 읽씹 대기 줄: UI 가 자존감 -1
       for (final l in ev.lines) {
         if (l.isWait) {
@@ -884,12 +977,19 @@ RunResult simulate(
       final next = out.nextEventId;
       if (next != null) {
         final ne = engine.byId(next);
-        if (ne != null) queue.insert(0, ne);
+        if (ne != null) {
+          // 컨트롤러(GameController.choose)와 같이: 오늘 계획에 이미 있으면 앞으로 당길 뿐
+          // 두 번 틀지 않는다. 예전에는 여기서 같은 장면이 두 번 나왔다(클래식 d_open_bet).
+          queue.removeWhere((e) => e.id == ne.id);
+          queue.insert(0, ne);
+        }
       }
     }
 
     final st = s.stat(Stat.stress);
     if (st > res.stressMax) res.stressMax = st;
+    final heat = s.stat(Stat.heat);
+    if (heat > res.heatMax) res.heatMax = heat;
     if (st >= 70) res.stressHighDays++;
     res.daysPlayed++;
     res.decayTotal += s.relations.values
@@ -1005,12 +1105,110 @@ String mbtiTable(StoryBundle bundle) {
   return out.toString();
 }
 
+/// 시작 6종 × 선호 2 × 핵심 전략 표(START=all). 전략별 해피율(README 목표), 소문 엔딩 도달률,
+/// 최종 소문 분포, 내기 노출 횟수.
+String startTable(StoryBundle b) {
+  final out = StringBuffer();
+  out.writeln(
+    '=== 시작별 해피율 (시드 $kSeeds, 미니게임 ${(kMinigameSuccess * 100).round()}%) ===',
+  );
+  out.writeln(
+    '목표(r5 H7): focus 72~91% · first ≤ 클래식+2pp · 진상 봇 inf+leg 15~35% · focus+hint ≤95%',
+  );
+  out.writeln(
+    '${'start'.padRight(10)}${'pref'.padRight(5)}${'first'.padLeft(7)}${'random'.padLeft(8)}'
+    '${'focus'.padLeft(7)}${'f+hint'.padLeft(8)}${'statGr'.padLeft(8)}${'toxic'.padLeft(7)}'
+    '${'villn'.padLeft(7)}  infamous fst/rnd/foc/stG/vil         legend fst/rnd/foc/stG/vil           '
+    'vilBot inf+leg  m36good foc/f+h/stG  influencer foc/stG/all    '
+    'heat(end mean/p50/p90/max) heatMax-mean bet',
+  );
+  for (final st in b.startsOrClassic) {
+    for (final pref in Preference.genders) {
+      final roster = b.charactersFor(pref).map((c) => c.id).toList();
+      final strategies = <String, Strategy Function(int)>{
+        'first': (_) => FirstStrategy(),
+        'random': (_) => RandomStrategy(),
+        'focus': (seed) => FocusStrategy(roster[seed % roster.length]),
+        'focus+hint': (seed) =>
+            FocusStrategy(roster[seed % roster.length], useHint: true),
+        'statGrow': (_) => StatGrowthStrategy(),
+        'toxic': (seed) => ToxicStrategy(roster[seed % roster.length]),
+        'villain': (seed) => VillainStrategy(roster[seed % roster.length]),
+      };
+      final rate = <String, double>{};
+      final infamBy = <String, int>{};
+      final legendBy = <String, int>{};
+      // m36 결과 good 엔딩(r3 F5: m36_waiting·m36_letgo). 집중 봇이 해피 대신 여기로 가는 비율.
+      final m36GoodBy = <String, int>{};
+      final influBy = <String, int>{};
+      final all = <RunResult>[];
+      for (final e in strategies.entries) {
+        var happy = 0;
+        for (var seed = 1; seed <= kSeeds; seed++) {
+          final r = simulate(b, e.value(seed), seed, pref: pref, start: st.id);
+          all.add(r);
+          if (r.tier == 'happy') happy++;
+          if (r.ending == 'infamous') {
+            infamBy[e.key] = (infamBy[e.key] ?? 0) + 1;
+          }
+          if (r.ending == 'villain_legend') {
+            legendBy[e.key] = (legendBy[e.key] ?? 0) + 1;
+          }
+          if (r.ending == 'm36_waiting' || r.ending == 'm36_letgo') {
+            m36GoodBy[e.key] = (m36GoodBy[e.key] ?? 0) + 1;
+          }
+          if (r.ending == 'influencer') {
+            influBy[e.key] = (influBy[e.key] ?? 0) + 1;
+          }
+        }
+        rate[e.key] = happy / kSeeds;
+      }
+      final n = all.length;
+      final influ = all.where((r) => r.ending == 'influencer').length;
+      final heats = all.map((r) => r.stats[Stat.heat] ?? 0).toList()..sort();
+      int q(double p) => heats[((heats.length - 1) * p).round()];
+      final mean = heats.fold(0, (a, x) => a + x) / heats.length;
+      final maxMean = all.fold(0, (a, r) => a + r.heatMax) / n;
+      final bets = all.map((r) => r.betShown).toSet().toList()..sort();
+      String pc(double v) => '${(v * 100).toStringAsFixed(1)}%';
+      String inf(String k) => pc((infamBy[k] ?? 0) / kSeeds);
+      String leg(String k) => pc((legendBy[k] ?? 0) / kSeeds);
+      // r2_meeting E10: 진상 봇 악명 + 레전드 합계 15~35%, 다른 봇 0%.
+      final vilBot = ((infamBy['villain'] ?? 0) + (legendBy['villain'] ?? 0)) / kSeeds;
+      String flu(String k) => pc((influBy[k] ?? 0) / kSeeds);
+      out.writeln(
+        '${st.id.padRight(10)}${pref.padRight(5)}${pc(rate['first']!).padLeft(7)}'
+        '${pc(rate['random']!).padLeft(8)}${pc(rate['focus']!).padLeft(7)}'
+        '${pc(rate['focus+hint']!).padLeft(8)}${pc(rate['statGrow']!).padLeft(8)}'
+        '${pc(rate['toxic']!).padLeft(7)}${pc(rate['villain']!).padLeft(7)}'
+        '  ${[for (final k in ['first', 'random', 'focus', 'statGrow', 'villain']) inf(k)].join('/').padRight(29)}'
+        '  ${[for (final k in ['first', 'random', 'focus', 'statGrow', 'villain']) leg(k)].join('/').padRight(29)}'
+        '  ${pc(vilBot).padLeft(7)}'
+        '  ${[for (final k in ['focus', 'focus+hint', 'statGrow']) pc((m36GoodBy[k] ?? 0) / kSeeds)].join('/').padRight(19)}'
+        '  ${[flu('focus'), flu('statGrow'), pc(influ / n)].join('/').padRight(22)}'
+        '  ${mean.toStringAsFixed(1)}/${q(.5)}/${q(.9)}/${heats.last}'
+        '          ${maxMean.toStringAsFixed(1)}  $bets',
+      );
+    }
+  }
+  return out.toString();
+}
+
 void main() {
   late StoryBundle bundle;
   setUpAll(() {
     registerMinigames();
     bundle = loadBundle();
   });
+
+  if (kStart == 'all') {
+    test('시작별 표 (START=all)', () {
+      final table = startTable(bundle);
+      print(table);
+      Directory(kOutDir).createSync(recursive: true);
+      File('$kOutDir/start_table.txt').writeAsStringSync(table);
+    }, timeout: const Timeout(Duration(minutes: 120)));
+  }
 
   if (kMbti == 'all') {
     test('MBTI 17종 표 (MBTI=all)', () {

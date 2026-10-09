@@ -166,6 +166,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(findText('2회차 시작'));
       await tester.pump();
+      // 다음 회차의 첫 단계는 시작 카드(docs/overhaul2/01_design.md §4.1).
+      await pickStart(tester, StartScenario.classic, false);
       // 새 회차는 first 카드를 지나 행동 화면으로. spinRouletteSheet 의 pumpAndSettle 이 통과한다.
       expect(c.phase, Phase.dayStart);
       expect(c.state!.run, 2);

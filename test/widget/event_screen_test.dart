@@ -66,7 +66,11 @@ void main() {
   testWidgets('읽씹 대기: 카운트다운이 돌고 끝나면 자존감 -1, 다음 줄로 넘어간다', (tester) async {
     // m03 마지막 줄이 sys wait 20.
     final ev = c.bundle.eventById['m03']!;
-    final waitIdx = ev.lines.indexWhere((l) => l.isWait);
+    // 화면은 거른 사본을 쓴다 — 파급 줄(ifFlags)은 이 회차에 안 보인다.
+    final waitIdx = c.engine
+        .viewFor(c.state!, ev)
+        .lines
+        .indexWhere((l) => l.isWait);
     expect(waitIdx, greaterThan(0));
     final esteemBefore = c.state!.stat(Stat.esteem);
 

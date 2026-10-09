@@ -36,7 +36,9 @@
   "money": 30,
   "stress": 40,
   "sincerity": 50,
-  "reputation": 30
+  "reputation": 30,
+  "heat": 0,
+  "villain": 0
  },
  "actions": [
   {
@@ -114,7 +116,8 @@
    "effects": {
     "stats": {
      "stress": -12,
-     "esteem": 1
+     "esteem": 1,
+     "heat": -6
     }
    },
    "affinity": [
@@ -153,5 +156,8 @@
    1.03,
    1.06
   ]
+ },
+ "dailyDrift": {
+  "heat": -1
  }
 }

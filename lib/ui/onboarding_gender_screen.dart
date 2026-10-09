@@ -66,6 +66,7 @@ class OnboardingGenderScreen extends StatelessWidget {
     bool askMbti = false,
     String? savedMbti,
     ValueChanged<String>? onStep,
+    String? start,
   }) async {
     // [newGender] 는 이번에 1단계에서 고른 값(결과에 싣는다), [gender] 는 기본 쪽을 정할 값.
     Future<NewGamePick?> afterGender(
@@ -97,6 +98,7 @@ class OnboardingGenderScreen extends StatelessWidget {
             bundle,
             side: side,
             playerMbti: playerMbti,
+            start: start,
           );
         } finally {
           TextTemplate.currentName = savedName;

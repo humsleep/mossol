@@ -151,7 +151,7 @@ flutter run -d "iPhone 17" --dart-define=MOSSOL_DEBUG_GALLERY=true
 | first (항상 첫 선택지) | ≤ 6% | 5% |
 | random | ≤ 5% | 2% |
 | focus (한 명 집중) | 72~80% | 77% |
-| focus+hint | 85~92% | 90% |
+| focus+hint | 85~95% (2026-10-09 상한 92→95, r5_meeting H5) | 90% |
 | statGrow | ≤ 85% | 76% |
 
 - 모먼트(`events_moments.json`) 보상 규칙: 첫 선택지(누르기만 하면 되는 답)는 호감·신뢰를 원래의 40%, 힌트 선택지는 호감 80%(신뢰 유지), 그 밖의 좋은 답은 호감 60%·신뢰 70%, 호감 40 이상에서 뜨는 후반 모먼트는 여기에 ×0.7. 호감만 오르고 신뢰는 안 오르는 "독성" 답과 가장 무심한 답(회피형 봇이 고르는 최소 선택지)은 그대로 둔다(toxic·wallflower 봇 분포 보존).
@@ -237,3 +237,18 @@ flutter run -d "iPhone 17"
 `lib/ads/ad_manager.dart` 는 UMP 동의 → ATT → SDK 초기화 순서를 콜백으로 강제한다.
 타임아웃으로 순서를 재촉하면 "다음 화면에서 허용을 눌러 주세요" 안내가
 이미 지나간 ATT 뒤에 뜨는 사고가 난다. 동의가 끝나지 않으면 그 세션에는 ATT 를 묻지 않는다.
+
+## 개편 2: 시작 스토리 · 소문 · 파급 줄 (엔진)
+
+설계는 `docs/overhaul2/01_design.md`. 엔진·UI 쪽 계약만 적는다.
+
+- **시작 스토리** `assets/story/starts.json`(`{"starts": [...]}`, 없으면 클래식만). 필드: `id`·`title`·`hook`·`logline`·`introLine`·`introReply`·`tags`·`spice`(1~3)·`unlockEndings`·`image`(확장자 생략 가능)·`effects`.
+  검증: id 유일, `classic` 필수(플래그·보정 없음), 신규는 `sc_` 접두어 + `setFlags` 에 `start_alt` 와 자기 id(그 밖에는 `sc_*` 만), 보정 상한(스탯 ±10, 소문 0~40, 진정성 −5 이상, 호감 0~4, 앨범·`*`·`@top` 금지).
+  `newGame(start:)` 이 교차 회차 보너스 **다음에** 보정을 한 번 적용한다. 세이브에 새 칸은 없다 — 플래그 없음 = 클래식(예전 세이브 그대로). 메타에 운명 뽑기용 `lastStart` 만 추가.
+- **시작 카드** `lib/ui/start_pick_sheet.dart`: 인트로("갑자기 왜. 무슨 일 있었지?" → 카드 → 내 말 `introLine` · 태현 `introReply`), 홈 새 게임의 첫 단계, 엔딩 뒤 다음 회차. 해금은 앨범의 서로 다른 엔딩 수 ≥ `unlockEndings`. 운명 뽑기는 잠긴 것 포함·바로 전 시작 제외·이번 회차만. 그림이 없으면 그라데이션 + 아이콘.
+- **클래식 전용 장면**은 `trigger.notFlags: ["start_alt"]`(m01·m02·m_brief·m_brief_m·d_open_story·d_open_pfp_who·d_open_app_match).
+- **main 날짜 검증 키** `(pref, startKey)`: `trigger.flags` 의 `sc_*` → 그 시작, `notFlags` 의 `start_alt` → classic, 둘 다 없으면 공용(모두와 충돌).
+- **소문** `heat`(숨은 스탯, 0~100, "소문"). 키가 없는 세이브는 0. 휴식 −6. 1 이상인 회차에서만 홈·정산에 5칸 게이지(`lib/ui/heat_gauge.dart`). 오르는 쪽은 "좋은 선택"(콤보)으로 치지 않는다.
+- **파급 줄** `ifFlags`·`ifNotFlags`(문자열 하나 또는 목록)를 `Line`(대사·반응)과 `Choice` 에 붙인다. MBTI 거르기와 같은 자리에서 숨긴다(잠금 아님). 검증: 조건 붙은 선택지가 있는 이벤트는 조건 없는 선택지 2개 이상, 읽는 플래그는 어딘가의 `setFlags`(이벤트·시작) 또는 엔진 플래그(`album_10/20/30`, `burnout_N`)여야 한다.
+- 이벤트 파일 `events_start.json`·`events_freedom.json` 은 선택 파일이다(없으면 빈 배열).
+- **시작별 시뮬레이션**: `flutter test test/sim_balance_test.dart --plain-name "시작별 표" --dart-define=START=all --dart-define=SEEDS=500` → `tool/sim_out/start_table.txt`(시작 6종 × 선호 2 × 핵심 전략 해피율, 소문 엔딩 도달률, 최종 소문 분포, 내기 노출 횟수). `START=<id>` 면 본 시뮬레이션을 그 시작으로 돌린다.

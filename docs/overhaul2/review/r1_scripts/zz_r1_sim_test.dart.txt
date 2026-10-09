@@ -1,0 +1,204 @@
+// R1 bug hunt: every start x pref x D1 branch, days 1-10 deterministic; 100 days random.
+// ignore_for_file: avoid_print
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/engine/story_repository.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+class Report {
+  final problems = <String>[];
+  void add(String s) {
+    if (problems.length < 400) problems.add(s);
+  }
+}
+
+/// Plays [days] days. [pick] chooses the index among visible choices.
+Future<void> play(
+  GameController c,
+  Report r,
+  String tag,
+  int days, {
+  required int Function(GameController c, List<int> open) pick,
+  required DayAction Function(GameController c) action,
+  bool Function(GameController c)? minigameOk,
+  void Function(GameController c)? onEvent,
+}) async {
+  final b = c.bundle;
+  var betCount = 0;
+  for (var d = 0; d < days; d++) {
+    if (c.ending != null) return;
+    final s = c.state!;
+    final day = s.day;
+    c.beginMorning();
+    s.hearts = b.config.maxHearts;
+    final ok = await c.startDay(action(c));
+    if (!ok) {
+      r.add('$tag D$day startDay false');
+      return;
+    }
+    if (c.current == null) r.add('$tag D$day empty queue');
+    final shown = <String>[];
+    var guard = 0;
+    while (c.phase == Phase.event && c.current != null) {
+      if (guard++ > 40) {
+        r.add('$tag D$day >40 events (loop?) ${shown.join(",")}');
+        return;
+      }
+      final ev = c.current!;
+      if (shown.contains(ev.id)) r.add('$tag D$day twice ${ev.id}');
+      shown.add(ev.id);
+      if (ev.id == 'd_open_bet') betCount++;
+      final visibleLines = ev.lines.where((l) => !l.isWait).length;
+      if (visibleLines == 0) r.add('$tag D$day ${ev.id} 0 lines');
+      final open = [
+        for (final v in c.choices)
+          if (!v.locked) v.index,
+      ];
+      if (c.choices.isEmpty) r.add('$tag D$day ${ev.id} 0 choices');
+      if (open.isEmpty) {
+        r.add('$tag D$day ${ev.id} all choices locked');
+        return;
+      }
+      // unresolved templates after say()
+      for (final l in ev.lines) {
+        final t = c.say(l.text);
+        if (RegExp(r'\{[a-z]').hasMatch(t)) {
+          r.add('$tag ${ev.id} unresolved: $t');
+        }
+      }
+      onEvent?.call(c);
+      final idx = pick(c, open);
+      final mgc = c.current!.choices[idx].minigame != null;
+      c.choose(idx, minigameSuccess: mgc ? minigameOk?.call(c) : null);
+      // next target visible?
+      final nx = c.lastOutcome?.nextEventId;
+      if (nx != null && b.eventById[nx] == null) {
+        r.add('$tag ${ev.id} next to missing $nx');
+      }
+      c.continueAfterChoice();
+    }
+    if (day <= 10 && day >= 1) {}
+    if (c.phase != Phase.summary) {
+      r.add('$tag D$day phase ${c.phase} after events');
+      return;
+    }
+    await c.endDay();
+  }
+  if (days >= 10 && betCount != 1) r.add('$tag bet shown $betCount times');
+}
+
+Future<GameController> ctl() async {
+  SharedPreferences.setMockInitialValues({});
+  final c = GameController(bundle: testBundle(), save: SaveService());
+  await c.init();
+  await c.markIntroSeen();
+  return c;
+}
+
+void main() {
+  late StoryBundle b;
+  setUpAll(() => b = testBundle());
+
+  test('D1-10 deterministic: start x pref x D1 branch', () async {
+    final r = Report();
+    for (final st in b.starts) {
+      for (final pref in Preference.genders) {
+        for (var branch = 0; branch < 4; branch++) {
+          for (final mg in [true, false]) {
+            final c = await ctl();
+            await c.newGame(preference: pref, seed: 7 + branch, start: st.id);
+            final tag = '${st.id}/$pref/b$branch/mg$mg';
+            await play(
+              c,
+              r,
+              tag,
+              10,
+              minigameOk: (_) => mg,
+              action: (c) => b.config.actions[c.state!.day % b.config.actions.length],
+              pick: (c, open) {
+                final ev = c.current!;
+                if (c.state!.day == 1 && ev.layer == EventLayer.main) {
+                  return open[min(branch, open.length - 1)];
+                }
+                return open.first;
+              },
+            );
+          }
+        }
+      }
+    }
+    print('PROBLEMS ${r.problems.length}');
+    r.problems.toSet().forEach(print);
+    expect(r.problems, isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 20)));
+
+  test('accelerated role r00 within D1-3', () async {
+    final out = <String>[];
+    for (final st in b.starts.where((s) => !s.isClassic)) {
+      for (final pref in Preference.genders) {
+        final ids = [for (final id in st.effects.affection.keys) if (!b.absentIds(pref).contains(id)) id];
+        var hit3 = 0, hit5 = 0, n = 0;
+        for (var seed = 0; seed < 100; seed++) {
+          final c = await ctl();
+          await c.newGame(preference: pref, seed: seed, start: st.id);
+          final rnd = Random(seed);
+          int? firstDay;
+          await play(c, Report(), 'x', 5,
+              action: (c) => b.config.actions[rnd.nextInt(b.config.actions.length)],
+              pick: (c, open) => open.first,
+              minigameOk: (_) => true,
+              onEvent: (c) {
+                if (firstDay == null && c.current!.id == '${ids.first}_r00') firstDay = c.state!.day;
+              });
+          n++;
+          if (firstDay != null && firstDay! <= 3) hit3++;
+          if (firstDay != null && firstDay! <= 5) hit5++;
+        }
+        out.add('${st.id}/$pref ${ids.first}_r00 D1-3: $hit3/$n  D1-5: $hit5/$n');
+      }
+    }
+    out.forEach(print);
+  }, timeout: const Timeout(Duration(minutes: 10)));
+
+  test('100 days random, 50 seeds per start', () async {
+    final r = Report();
+    final endings = <String, Map<String, int>>{};
+    for (final st in b.starts) {
+      for (var seed = 0; seed < 50; seed++) {
+        final rnd = Random(seed * 31 + st.id.hashCode);
+        final c = await ctl();
+        final pref = Preference.genders[seed % 2];
+        await c.newGame(preference: pref, seed: seed, start: st.id);
+        final tag = '${st.id}/$pref/s$seed';
+        await play(
+          c,
+          r,
+          tag,
+          120,
+          minigameOk: (_) => rnd.nextBool(),
+          action: (c) => b.config.actions[rnd.nextInt(b.config.actions.length)],
+          pick: (c, open) => open[rnd.nextInt(open.length)],
+        );
+        if (c.ending == null) {
+          r.add('$tag no ending day=${c.state!.day}');
+        } else {
+          (endings[st.id] ??= {}).update(c.ending!.id, (v) => v + 1, ifAbsent: () => 1);
+        }
+        final h = c.state!.stat(Stat.heat);
+        if (h < 0 || h > 100) r.add('$tag heat out of range $h');
+      }
+    }
+    print('ENDINGS $endings');
+    print('PROBLEMS ${r.problems.length}');
+    r.problems.toSet().forEach(print);
+    expect(r.problems, isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 30)));
+}
+
+void accelMain() {}

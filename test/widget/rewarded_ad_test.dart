@@ -134,7 +134,11 @@ void main() {
 
   testWidgets('읽씹 건너뛰기 광고를 기다리는 동안 카운트다운이 멈춘다', (tester) async {
     final ev = c.bundle.eventById['m03']!;
-    final waitIdx = ev.lines.indexWhere((l) => l.isWait);
+    // 화면은 거른 사본을 쓴다 — 파급 줄(ifFlags)은 이 회차에 안 보인다.
+    final waitIdx = c.engine
+        .viewFor(c.state!, ev)
+        .lines
+        .indexWhere((l) => l.isWait);
     await showEvent(tester, 'm03');
     for (var i = 0; i < 40 && c.revealed < waitIdx; i++) {
       await tester.pump(const Duration(milliseconds: 500));

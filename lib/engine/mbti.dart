@@ -151,11 +151,16 @@ class MbtiView {
   /// 호감 1위의 말높임. 1위가 없으면 [Politeness.casual](12명 중 9명).
   final String politeness;
 
+  /// 이 회차에 서 있는 플래그. 파급 줄(`ifFlags`·`ifNotFlags`, docs/overhaul2/01_design.md §5.2)을
+  /// 같은 자리에서 거른다. 기본은 빈 집합 — 플래그가 하나도 없는 회차(클래식 첫날)다.
+  final Set<String> flags;
+
   const MbtiView(
     this.player, {
     this.compat = Mbti.neutralCompat,
     this.humor = Humor.fallback,
     this.politeness = Politeness.casual,
+    this.flags = const {},
   });
 
   /// [player] 와 캐릭터 MBTI [characterMbti], 그리고 이 씬에서 말하는 상대 [voice] 로 만든다.
@@ -165,6 +170,7 @@ class MbtiView {
     String? player,
     String? characterMbti, {
     CharacterDef? voice,
+    Set<String> flags = const {},
   }) => MbtiView(
     player,
     compat: Mbti.compat(player, characterMbti),
@@ -173,6 +179,7 @@ class MbtiView {
       _ => Humor.fallback,
     },
     politeness: voice?.politeness ?? Politeness.casual,
+    flags: flags,
   );
 
   /// 상대 축 조건. 빈 목록·null 은 조건 없음.
@@ -182,7 +189,12 @@ class MbtiView {
     return true;
   }
 
+  /// 플래그 조건. [ifFlags] 는 전부 있어야, [ifNotFlags] 는 하나도 없어야 참.
+  bool allowsFlags(List<String> ifFlags, List<String> ifNotFlags) =>
+      ifFlags.every(flags.contains) && !ifNotFlags.any(flags.contains);
+
   bool allowsLine(Line l) =>
+      allowsFlags(l.ifFlags, l.ifNotFlags) &&
       Mbti.allows(
         player: player,
         compatScore: compat,
@@ -193,6 +205,7 @@ class MbtiView {
       _allowsVoice(l.humor, l.register);
 
   bool allowsChoice(Choice c) =>
+      allowsFlags(c.ifFlags, c.ifNotFlags) &&
       Mbti.allows(
         player: player,
         compatScore: compat,
@@ -234,6 +247,9 @@ extension MbtiFilter on StoryEvent {
   /// 상대 축(`humor`·`register`) 조건이 있는지.
   bool get hasVoiceGates =>
       _anyGate((l) => l.isVoiceGated, (c) => c.isVoiceGated);
+
+  /// 파급 줄(`ifFlags`·`ifNotFlags`) 조건이 있는지.
+  bool get hasFlagGates => _anyGate((l) => l.isFlagGated, (c) => c.isFlagGated);
 
   /// [v] 플레이어에게 보이는 사본. 맞지 않는 줄·선택지·반응 줄을 빼고, 힌트 인덱스를
   /// 남은 선택지 기준으로 다시 맞춘다(힌트 선택지가 빠지면 null). 조건이 없으면 원본.

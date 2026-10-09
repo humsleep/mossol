@@ -1,0 +1,108 @@
+// R1: mid-day save/resume for each start; legacy save continuation.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/engine/story_repository.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+String viewSig(GameController c) {
+  final e = c.current;
+  if (e == null) return 'null';
+  return jsonEncode({
+    'id': e.id,
+    'lines': [for (final l in e.lines) c.say(l.text)],
+    'choices': [for (final v in c.choices) '${v.index}:${v.locked}:${c.say(v.choice.text)}'],
+    'replies': [
+      for (final ch in e.choices) [for (final l in ch.reply) l.text],
+    ],
+  });
+}
+
+Future<GameController> reload(StoryBundle b) async {
+  final c2 = GameController(bundle: b, save: SaveService());
+  await c2.init();
+  final ok = await c2.continueGame();
+  expect(ok, isTrue);
+  return c2;
+}
+
+void main() {
+  late StoryBundle b;
+  setUpAll(() => b = testBundle());
+
+  test('mid-event resume equals for every start', () async {
+    final problems = <String>[];
+    for (final st in b.starts) {
+      for (final pref in Preference.genders) {
+        for (var seed = 0; seed < 6; seed++) {
+          SharedPreferences.setMockInitialValues({});
+          var c = GameController(bundle: b, save: SaveService());
+          await c.init();
+          await c.markIntroSeen();
+          await c.newGame(preference: pref, seed: seed, start: st.id);
+          final rnd = Random(seed);
+          final killDay = 1 + rnd.nextInt(5);
+          for (var d = 0; d < 6; d++) {
+            final day = c.state!.day;
+            c.beginMorning();
+            c.state!.hearts = b.config.maxHearts;
+            await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+            var k = 0;
+            while (c.phase == Phase.event && c.current != null) {
+              // Kill before choice on killDay.
+              if (day == killDay && k <= 3) {
+                final sig = viewSig(c);
+                final flags = Set.of(c.state!.flags);
+                final heat = c.state!.stat(Stat.heat);
+                final queue = c.queuedEventIds;
+                final c2 = await reload(b);
+                final sig2 = viewSig(c2);
+                if (sig != sig2) problems.add('${st.id}/$pref/s$seed D$day pre-choice view differs\n$sig\n$sig2');
+                if (!const SetEquality().equals(flags, c2.state!.flags)) problems.add('${st.id} flags differ');
+                if (heat != c2.state!.stat(Stat.heat)) problems.add('${st.id} heat differ');
+                if (queue.join() != c2.queuedEventIds.join()) problems.add('${st.id}/$pref/s$seed D$day queue differ $queue ${c2.queuedEventIds}');
+                c = c2;
+              }
+              final open = [for (final v in c.choices) if (!v.locked) v.index];
+              final i = open[rnd.nextInt(open.length)];
+              final mg = c.current!.choices[i].minigame != null;
+              c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+              await Future<void>.delayed(Duration.zero);
+              if (day == killDay && k <= 3) {
+                // Kill after choice, before continue.
+                final flags = Set.of(c.state!.flags);
+                final stats = Map.of(c.state!.stats);
+                final queue = c.queuedEventIds;
+                final c2 = await reload(b);
+                if (!const SetEquality().equals(flags, c2.state!.flags)) problems.add('${st.id} post flags differ');
+                if (jsonEncode(stats) != jsonEncode(c2.state!.stats)) problems.add('${st.id} post stats differ');
+                final expectNext = queue.isEmpty ? null : queue.first;
+                if (c2.current?.id != expectNext) problems.add('${st.id}/$pref/s$seed D$day post-choice resume current ${c2.current?.id} expected $expectNext');
+                c = c2;
+                k++;
+                continue;
+              }
+              k++;
+              c.continueAfterChoice();
+            }
+            if (c.phase == Phase.summary) await c.endDay();
+          }
+        }
+      }
+    }
+    problems.toSet().take(40).forEach(print);
+    expect(problems, isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 10)));
+}
+
+class SetEquality {
+  const SetEquality();
+  bool equals(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
+}

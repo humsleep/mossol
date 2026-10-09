@@ -123,7 +123,11 @@ void main() {
     await tester.tap(find.byKey(const Key('stat-guide')));
     await tester.pumpAndSettle();
     expect(find.text(StatGuideSheet.title), findsOneWidget);
-    expect(statGuide.length, 6);
+    // 여섯 스탯 + 소문(docs/overhaul2/01_design.md §5.1). 소문은 1 이상인 회차에서만 보인다.
+    expect(statGuide.length, 7);
+    expect(statGuide.last.key, Stat.heat);
+    expect(c.state!.stat(Stat.heat), 0);
+    expect(find.text(Stat.label(Stat.heat)), findsNothing);
     await tester.drag(
       find.byKey(const Key('stat-guide-scroll')),
       const Offset(0, -3000),
@@ -141,6 +145,8 @@ void main() {
   test('스탯 설명의 아침 행동 줄은 config.json 수치에서 뽑는다', () {
     final actions = testBundle().config.actions;
     expect(StatGuideSheet.actionLine(Stat.charm, actions), '헬스장 +1 · 스타일링 +2');
+    // 소문은 잠수(휴식)로만 식는다.
+    expect(StatGuideSheet.actionLine(Stat.heat, actions), '집에서 휴식 -6');
     // 스트레스는 내리는 쪽(휴식)이 먼저.
     expect(
       StatGuideSheet.actionLine(Stat.stress, actions),

@@ -1,0 +1,350 @@
+// R2 bug hunt: changed screens at 320x568 with large text in light AND dark; widget races.
+// Throwaway — copied to docs/overhaul2/review/r2_scripts/.
+// ignore_for_file: avoid_print
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/action_screen.dart';
+import 'package:mossol/ui/ending_screen.dart';
+import 'package:mossol/ui/event_screen.dart';
+import 'package:mossol/ui/intro_screen.dart';
+import 'package:mossol/ui/notification_card.dart';
+import 'package:mossol/ui/preference_screen.dart';
+import 'package:mossol/ui/settings_screen.dart';
+import 'package:mossol/ui/start_pick_sheet.dart';
+import 'package:mossol/ui/stat_guide.dart';
+import 'package:mossol/ui/summary_screen.dart';
+import 'package:mossol/ui/widgets.dart';
+
+import 'helpers.dart';
+
+void _screen(WidgetTester tester, double scale, {Size size = const Size(320, 568), bool dark = false}) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  tester.platformDispatcher.textScaleFactorTestValue = scale;
+  if (dark) tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+    tester.platformDispatcher.clearPlatformBrightnessTestValue();
+  });
+}
+
+List<String> _errors(WidgetTester tester) {
+  final out = <String>[];
+  Object? e;
+  while ((e = tester.takeException()) != null) {
+    out.add('$e'.split('\n').take(2).join(' / '));
+  }
+  return out;
+}
+
+Widget _wrap(Widget w, bool dark) => wrapApp(w, mode: dark ? ThemeMode.dark : ThemeMode.light);
+
+Future<void> _scrollAll(WidgetTester tester, List<String> errs) async {
+  final scrollables = find.byType(Scrollable);
+  for (var i = 0; i < scrollables.evaluate().length; i++) {
+    final st = tester.state<ScrollableState>(scrollables.at(i));
+    if (st.position.axis != Axis.vertical) continue;
+    for (var k = 0; k < 30 && st.position.pixels < st.position.maxScrollExtent; k++) {
+      st.position.jumpTo((st.position.pixels + 200).clamp(0, st.position.maxScrollExtent));
+      await tester.pump();
+      errs.addAll(_errors(tester));
+    }
+  }
+}
+
+Future<void> _settleTyping(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 12; i++) {
+    if (find.byType(TypingIndicator).evaluate().isEmpty) break;
+    await tester.pump(const Duration(milliseconds: 2500));
+  }
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  for (final dark in [false, true]) {
+    final mode = dark ? 'dark' : 'light';
+    for (final scale in [1.3, 2.0]) {
+      final tag = '320x568 x$scale $mode';
+
+      testWidgets('start sheet + fate reveal $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final b = testBundle();
+        await tester.pumpWidget(_wrap(
+          Scaffold(
+            body: StartPickSheet(
+              starts: b.starts,
+              endingCount: 1,
+              charNames: b.charNames,
+              newIds: const {'sc_swap'},
+              suggestedId: 'sc_speech',
+              endingsByStart: const {'classic': 12, 'sc_leak': 3},
+            ),
+          ),
+          dark,
+        ));
+        await tester.pumpAndSettle();
+        final errs = _errors(tester);
+        await tester.tap(find.byKey(const Key('start-fate')));
+        await tester.pumpAndSettle();
+        errs.addAll(_errors(tester));
+        await _scrollAll(tester, errs);
+        print('$tag sheet errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('settings $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await tester.pumpWidget(_wrap(SettingsScreen(c: c), dark));
+        await tester.pumpAndSettle();
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag settings errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('preference (castLines, comesFirst) $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final b = testBundle();
+        final errs = <String>[];
+        for (final side in Preference.genders) {
+          await tester.pumpWidget(_wrap(PreferenceScreen(bundle: b, side: side, start: 'sc_speech', playerMbti: 'INFP'), dark));
+          await tester.pumpAndSettle();
+          errs.addAll(_errors(tester));
+          await _scrollAll(tester, errs);
+        }
+        print('$tag pref errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('stat guide with heat $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await tester.pumpWidget(_wrap(Scaffold(body: StatGuideSheet(actions: c.config.actions, showHeat: true)), dark));
+        await tester.pumpAndSettle();
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag guide errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('action screen with heat $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 1, start: 'sc_clip');
+        c.state!.stats[Stat.heat] = 95;
+        c.beginMorning();
+        await tester.pumpWidget(_wrap(ActionScreen(c: c), dark));
+        await tester.pumpAndSettle();
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag action errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('summary with heat $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 1, start: 'sc_clip');
+        c.beginMorning();
+        await c.startDay(c.config.actions.first);
+        while (c.phase == Phase.event) {
+          c.choose(plainChoiceIndex(c));
+          c.continueAfterChoice();
+        }
+        c.state!.stats[Stat.heat] = 99;
+        c.dayDelta.stats[Stat.heat] = -12;
+        await tester.pumpWidget(_wrap(SummaryScreen(c: c), dark));
+        await tester.pump(const Duration(seconds: 4));
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag summary errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('event screen NEW dots on every line kind + free skip $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 11);
+        final ev = StoryEvent.fromJson({
+          'id': 'zz_probe',
+          'layer': 'daily',
+          'title': '확인',
+          'character': 'daeun',
+          'lines': [
+            {'who': 'them', 'text': '평소 줄인데 꽤 길게 써서 두 줄을 넘기는 말풍선', 'ifFlags': ['start_alt']},
+            {'who': 'me', 'text': '내 말도 갈래 줄이다 길게 길게', 'ifFlags': ['start_alt']},
+            {'who': 'narr', 'text': '서술 줄도 갈래다. 길게 써서 줄바꿈을 본다.', 'ifFlags': ['start_alt']},
+            {'who': 'sys', 'text': '시스템 줄 갈래', 'ifFlags': ['start_alt']},
+            {'who': 'sys', 'wait': 30},
+            {'who': 'them', 'text': '끝'},
+          ],
+          'choices': [
+            {'text': '하나'},
+            {'text': '둘'},
+            {'text': '갈래 선택지인데 아주 길게 써서 두세 줄로 넘어가는 선택지 문구', 'ifFlags': ['start_alt']},
+          ],
+        });
+        c.meta!.seenEvents.add(ev.id);
+        c.state!.flags.add(StartScenario.altFlag);
+        c.current = ev;
+        c.revealed = 0;
+        c.phase = Phase.event;
+        await tester.pumpWidget(_wrap(EventScreen(c: c), dark));
+        for (var i = 0; i < 12; i++) {
+          await tester.pump(const Duration(seconds: 1));
+        }
+        final errs = _errors(tester);
+        final skip = find.byKey(const Key('wait-free-skip'));
+        print('$tag free-skip visible=${skip.evaluate().length} newDots=${find.byType(NewDot).evaluate().length}');
+        if (skip.evaluate().isNotEmpty) {
+          await tester.ensureVisible(skip);
+          await tester.pump();
+          // double tap on free skip in the same frame
+          final before = c.revealed;
+          await tester.tap(skip);
+          await tester.pump(const Duration(milliseconds: 60));
+          await tester.tap(skip, warnIfMissed: false);
+          await tester.pump();
+          print('$tag revealed before=$before after double tap=${c.revealed}');
+        }
+        await revealAll(tester, c);
+        await tester.pumpAndSettle();
+        errs.addAll(_errors(tester));
+        await _scrollAll(tester, errs);
+        print('$tag event errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('ending screen $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 3, start: 'sc_leak');
+        c.state!.day = c.config.totalDays;
+        await c.endDay();
+        await tester.pumpWidget(_wrap(EndingScreen(c: c), dark));
+        await tester.pump(const Duration(seconds: 6));
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag ending errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('home with heat $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 1, start: 'sc_clip');
+        c.state!.stats[Stat.heat] = 90;
+        c.goHome();
+        await tester.pumpWidget(fullApp(c));
+        await tester.pump(const Duration(seconds: 2));
+        final errs = _errors(tester);
+        await _scrollAll(tester, errs);
+        print('$tag home errs=$errs');
+        expect(errs, isEmpty);
+      });
+
+      testWidgets('intro start step + name step with back button $tag', (tester) async {
+        _screen(tester, scale, dark: dark);
+        final c = await makeController(firstLaunch: true);
+        await tester.pumpWidget(fullApp(c));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('title-start')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.tap(find.byType(NotificationCard));
+        await tester.pumpAndSettle();
+        final yes = find.byKey(const Key('intro-yes'));
+        await tester.ensureVisible(yes);
+        await tester.tap(yes);
+        await _settleTyping(tester);
+        await tester.pump(IntroScreen.startSheetDelay);
+        await tester.pumpAndSettle();
+        final errs = _errors(tester);
+        expect(find.byType(StartPickSheet), findsOneWidget);
+        await pickStart(tester, 'sc_speech');
+        await _settleTyping(tester);
+        errs.addAll(_errors(tester));
+        expect(find.byKey(const Key('intro-start-back')), findsOneWidget);
+        await _scrollAll(tester, errs);
+        print('$tag intro errs=$errs');
+        expect(errs, isEmpty);
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  testWidgets('race: fate card double-tap in one frame', (tester) async {
+    final b = testBundle();
+    String? popped;
+    var drawn = 0;
+    await tester.pumpWidget(wrapApp(Builder(
+      builder: (ctx) => Scaffold(
+        body: Center(
+          child: FilledButton(
+            onPressed: () async {
+              final r = await StartPickSheet.show(ctx, starts: b.starts, endingCount: 0, onFateDrawn: (id) async => drawn++);
+              popped = r?.id;
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    )));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('start-fate')));
+    await tester.pump(const Duration(milliseconds: 50)); // mid AnimatedSwitcher cross-fade
+    await tester.tap(find.byKey(const Key('start-fate')), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    print('drawn=$drawn popped=$popped sheetOpen=${find.byType(StartPickSheet).evaluate().length} reveal=${find.byKey(const Key('start-fate-reveal')).evaluate().length}');
+  });
+
+  testWidgets('race: fate-go double tap in one frame pops twice?', (tester) async {
+    final c = await makeController();
+    await tester.pumpWidget(fullApp(c));
+    await tester.pump();
+    await tester.tap(findText('새 게임'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('start-fate')));
+    await tester.pumpAndSettle();
+    final go = find.byKey(const Key('start-fate-go'));
+    await tester.ensureVisible(go);
+    await tester.pumpAndSettle();
+    await tester.tap(go);
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(go, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    print('after fate-go double tap: errors=${_errors(tester)} routes ok, home visible=${findText('새 게임').evaluate().length}');
+  });
+
+  testWidgets('race: back gesture while fate reveal is shown (home) keeps fate', (tester) async {
+    final c = await makeController();
+    await tester.pumpWidget(fullApp(c));
+    await tester.pump();
+    await tester.tap(findText('새 게임'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('start-fate')));
+    // close immediately, before the async meta save completes
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    nav.maybePop();
+    await tester.pumpAndSettle();
+    final fate = c.pendingFate;
+    print('pendingFate after immediate back=$fate');
+    expect(fate, isNotNull);
+    // lifecycle pause/resume while sheet open
+    await tester.tap(findText('새 게임'));
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(tester.widget<StartPickSheet>(find.byType(StartPickSheet)).fateLocked, fate);
+    print('errors=${_errors(tester)}');
+  });
+}

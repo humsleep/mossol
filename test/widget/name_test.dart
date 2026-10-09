@@ -5,7 +5,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +24,7 @@ import 'package:mossol/ui/settings_screen.dart';
 import 'package:mossol/ui/summary_screen.dart';
 
 import 'helpers.dart';
+import '../story_files.dart';
 
 void main() {
   late GameController c;
@@ -53,6 +53,8 @@ void main() {
       await tester.tap(findText('시작'));
       await tester.pumpAndSettle();
     }
+    // 새 게임의 첫 단계는 시작 카드(docs/overhaul2/01_design.md §4.1).
+    await pickStart(tester);
   }
 
   Future<void> toNameStep(WidgetTester tester) async {
@@ -514,7 +516,7 @@ void main() {
     });
 
     test('검증기: 모르는 조사 · 닫히지 않은 중괄호 · 치환 안 하는 필드는 오류, 정상 형식은 통과', () {
-      String read(String f) => File('assets/story/$f').readAsStringSync();
+      String read(String f) => readStoryFile(f);
       StoryBundle build(Map<String, dynamic> extra) =>
           StoryBundle.fromJsonStrings(
             config: read('config.json'),
@@ -524,6 +526,7 @@ void main() {
               jsonEncode([extra]),
             ],
             endings: read('endings.json'),
+            starts: readStartsFile(),
           );
       Map<String, dynamic> ev(String text, {String? album}) => {
         'id': 't_validate',

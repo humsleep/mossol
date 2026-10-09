@@ -224,12 +224,17 @@ abstract final class SceneImages {
     return r.exact(p.image) ?? r.photo(p.icon);
   }
 
-  /// 엔딩 히어로. `image` 필드 → 엔딩 id → 캐릭터 id → 공용 `common_<tier>`.
+  /// 엔딩 히어로. 엔딩 id 그림 → `image` 필드 → 캐릭터 id → 공용 `common_<tier>`.
+  ///
+  /// 엔딩 id 그림이 `image` 보다 먼저다: `image` 는 전용 그림이 오기 전까지의 **대체 그림**이다
+  /// (`m36_waiting` → common_solo 처럼). 전용 그림 `assets/endings/<엔딩 id>` 를 넣으면 데이터의
+  /// `image` 를 지우지 않아도 그 그림이 나온다. 바꾸기 전 데이터에서 `image` 가 엔딩 id 그림을
+  /// 덮던 엔딩은 없었다(`image` 를 가진 엔딩 3개 모두 id 그림이 없다).
   static String? forEnding(Ending? e, {SceneRegistry? registry}) {
     if (e == null) return null;
     final r = _r(registry);
-    return r.exact(e.image) ??
-        r.ending(e.id) ??
+    return r.ending(e.id) ??
+        r.exact(e.image) ??
         r.ending(e.character) ??
         r.ending(commonEndingKey(e.tier));
   }

@@ -10,6 +10,7 @@ import 'preference_screen.dart';
 import 'retention_widgets.dart';
 import 'scene_card.dart';
 import 'scene_registry.dart';
+import 'start_pick_sheet.dart';
 import 'widgets.dart';
 import 'keep_all.dart';
 
@@ -81,10 +82,7 @@ class EndingScreen extends StatelessWidget {
                 child: NextRunCard(
                   suggestion: next,
                   hintText: hint,
-                  onPickCharacter: () {
-                    c.logNextRunTap('character');
-                    c.nextRun();
-                  },
+                  onPickCharacter: () => _next(context, tap: 'character'),
                   onOtherSide: next.otherSide == null
                       ? null
                       : () => _meetOtherSide(context, next.otherSide!),
@@ -95,7 +93,7 @@ class EndingScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: c.nextRun,
+                onPressed: () => _next(context),
                 child: Text(keepAll('${s.run + 1}회차 시작')),
               ),
             ),
@@ -110,7 +108,6 @@ class EndingScreen extends StatelessWidget {
   /// 반대쪽 캐스트 소개를 먼저 보여 주고, 고르면 그 쪽으로 다음 회차를 시작한다.
   /// 뒤로 가면 엔딩 화면에 그대로 남는다.
   Future<void> _meetOtherSide(BuildContext context, String side) async {
-    c.logNextRunTap('other_side');
     final pref = await PreferenceScreen.show(
       context,
       c.bundle,
@@ -118,7 +115,25 @@ class EndingScreen extends StatelessWidget {
       playerMbti: c.playerMbti,
     );
     if (pref == null || !context.mounted) return;
-    await c.nextRun(preference: pref);
+    await _next(context, preference: pref, tap: 'other_side');
+  }
+
+  /// 다음 회차. 시작 카드(01_design §4.1)를 먼저 고른다 — 닫으면 엔딩 화면에 그대로 남는다.
+  /// 시작 정의가 없으면 카드 없이 곧바로 클래식.
+  /// [tap] 은 "다음 판" 카드에서 무엇을 눌렀는지(측정). 시작을 실제로 골랐을 때만 남긴다.
+  Future<void> _next(
+    BuildContext context, {
+    String? preference,
+    String? tap,
+  }) async {
+    final start = await StartPickSheet.showFor(
+      context,
+      c,
+      preference: preference ?? c.state?.preference,
+    );
+    if (start == null || !context.mounted) return;
+    if (tap != null) c.logNextRunTap(tap);
+    await c.nextRun(preference: preference, start: start);
   }
 
   String _tierLabel(String tier) => switch (tier) {

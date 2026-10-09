@@ -20,9 +20,37 @@ class Stat {
   static const sincerity = 'sincerity';
   static const reputation = 'reputation';
 
+  /// 소문 지수(docs/overhaul2/01_design.md §5.1, GTA 수배 레벨). 0~100. 평판과 다른 축이다 —
+  /// 평판은 나를 **좋게** 보는 정도, 소문은 나를 **화제로 삼는** 정도. 스탯 격자에는 나오지 않고
+  /// 값이 1 이상인 회차에서만 홈·정산의 5칸 게이지로 보인다. 키가 없는 예전 세이브는
+  /// [GameState.stat] 이 0 을 돌려주므로 이전 작업이 없다.
+  static const heat = 'heat';
+
+  /// 진상 지수(docs/overhaul2/review/r1_meeting.md D4). 진상 선택마다 +1, 0~[villainMax].
+  /// 스탯 격자·게이지에는 나오지 않는다. 대본이 `trigger.stats.villain` 으로 라이벌 추격·재판·
+  /// 속죄 장면과 `infamous` 엔딩을 연다. 키가 없는 예전 세이브는 0 이다(이전 작업 없음).
+  static const villain = 'villain';
+  static const villainMax = 99;
+
   static const visible = [charm, talk, esteem, sense, money, stress];
-  static const hidden = [sincerity, reputation];
+  static const hidden = [sincerity, reputation, heat, villain];
   static const all = [...visible, ...hidden];
+
+  /// 낮을수록 좋은(오르면 경고색인) 스탯. 소문은 오르는 것이 "좋은 선택"이 아니다 —
+  /// 판을 키운 대가다. 진상 지수도 같다 — 오르면 콤보("좋은 선택")로 세지 않는다.
+  static const lowerIsBetter = {stress, heat, villain};
+
+  /// [key] 가 [delta] 만큼 바뀐 것이 좋은 쪽인지.
+  static bool isGood(String key, int delta) =>
+      lowerIsBetter.contains(key) ? delta < 0 : delta > 0;
+
+  /// 소문 게이지 칸 수와 구간 이름(§5.1 "구간(UI 5칸)").
+  static const heatSegments = 5;
+  static const heatBands = ['조용', '수군수군', '화제', '박제 위기', '대참사'];
+
+  /// 소문 [v] 의 구간(0~4). 0~19 · 20~39 · 40~59 · 60~79 · 80~100.
+  static int heatBand(int v) =>
+      (v.clamp(0, 100) ~/ 20).clamp(0, heatSegments - 1);
 
   /// 돈 1 = **1,000원**. 대본이 이미 이 축척으로 쓰여 있다
   /// (`d_luck_01` money +50 = "5만원", `d_friend_05` -150 = "15만원",
@@ -61,10 +89,16 @@ class Stat {
     stress: '스트레스',
     sincerity: '진정성',
     reputation: '평판',
+    heat: '소문',
+    villain: '진상',
   };
 
   static String label(String key) => labels[key] ?? key;
-  static int maxOf(String key) => key == money ? 9999 : 100;
+  static int maxOf(String key) => switch (key) {
+    money => 9999,
+    villain => villainMax,
+    _ => 100,
+  };
 }
 
 /// 캐릭터의 농담 코드(`characters.json` 의 `humor`). 짤 고르기 미니게임이 쓰던 값인데,
@@ -565,6 +599,12 @@ class Line {
   /// 규약은 [Sticker], 에셋이 없으면 아무것도 그리지 않는다(빈 줄도 없음).
   final String? sticker;
 
+  /// 파급 줄(01_design §5.2). [ifFlags] 가 **모두** 있을 때만 보이고, [ifNotFlags] 가
+  /// **하나라도** 있으면 숨는다. 잠금이 아니라 숨김이다 — `require.flags` 와 달리 잠금 문구가
+  /// 필요 없다. 거르는 자리는 MBTI 거르기와 같다([MbtiView]).
+  final List<String> ifFlags;
+  final List<String> ifNotFlags;
+
   const Line({
     required this.who,
     this.text = '',
@@ -577,6 +617,8 @@ class Line {
     this.humor = const [],
     this.register,
     this.sticker,
+    this.ifFlags = const [],
+    this.ifNotFlags = const [],
   });
 
   bool get isWait => who == 'sys' && wait > 0;
@@ -587,8 +629,11 @@ class Line {
   /// 상대(1위) 목소리 조건이 붙은 줄인지.
   bool get isVoiceGated => humor.isNotEmpty || register != null;
 
+  /// 플래그(파급 줄) 조건이 붙은 줄인지.
+  bool get isFlagGated => ifFlags.isNotEmpty || ifNotFlags.isNotEmpty;
+
   /// 조건이 하나라도 붙은 줄인지. 붙은 줄이 하나도 없으면 거르기 자체를 건너뛴다.
-  bool get isGated => isPlayerGated || isVoiceGated;
+  bool get isGated => isPlayerGated || isVoiceGated || isFlagGated;
 
   /// 글과 사진 캡션을 [f] 로 바꾼 사본. 화면에 내기 직전 이름 치환에 쓴다.
   ///
@@ -607,6 +652,8 @@ class Line {
     humor: humor,
     register: register,
     sticker: sticker,
+    ifFlags: ifFlags,
+    ifNotFlags: ifNotFlags,
   );
 
   factory Line.fromJson(Map<String, dynamic> j) => Line(
@@ -626,6 +673,8 @@ class Line {
       _ => null,
     },
     sticker: j['sticker'] as String?,
+    ifFlags: _strListOrOne(j['ifFlags']),
+    ifNotFlags: _strListOrOne(j['ifNotFlags']),
   );
 }
 
@@ -672,6 +721,12 @@ class Choice {
   /// 문구 2-gram·태그에 합쳐진다. 없으면 빈 목록 — 스키마 호환.
   final List<String> intent;
 
+  /// 파급 줄 조건(01_design §5.2). 뜻은 [Line.ifFlags]·[Line.ifNotFlags] 와 같다.
+  /// 맞지 않는 선택지는 **보이지 않는다**(잠기는 것이 아니다). 검증기가 이벤트마다 조건 없는
+  /// 선택지를 2개 이상 요구한다 — 어떤 플래그 조합에서도 선택지가 1개 이하로 줄지 않게.
+  final List<String> ifFlags;
+  final List<String> ifNotFlags;
+
   const Choice({
     required this.text,
     this.require,
@@ -691,6 +746,8 @@ class Choice {
     this.humor = const [],
     this.register,
     this.intent = const [],
+    this.ifFlags = const [],
+    this.ifNotFlags = const [],
   });
 
   /// 플레이어(MBTI·궁합) 조건이 붙은 선택지인지.
@@ -699,7 +756,10 @@ class Choice {
   /// 상대(1위) 목소리 조건이 붙은 선택지인지.
   bool get isVoiceGated => humor.isNotEmpty || register != null;
 
-  bool get isGated => isPlayerGated || isVoiceGated;
+  /// 플래그(파급 줄) 조건이 붙은 선택지인지.
+  bool get isFlagGated => ifFlags.isNotEmpty || ifNotFlags.isNotEmpty;
+
+  bool get isGated => isPlayerGated || isVoiceGated || isFlagGated;
 
   /// 문구와 반응 줄을 [f] 로 바꾼 사본. 효과·조건·다음 이벤트는 그대로.
   Choice mapText(String Function(String) f) => Choice(
@@ -721,6 +781,8 @@ class Choice {
     humor: humor,
     register: register,
     intent: intent,
+    ifFlags: ifFlags,
+    ifNotFlags: ifNotFlags,
   );
 
   /// 반응 줄만 바꾼 사본(MBTI 줄 거르기).
@@ -747,6 +809,8 @@ class Choice {
     humor: humor,
     register: register,
     intent: intent,
+    ifFlags: ifFlags,
+    ifNotFlags: ifNotFlags,
   );
 
   /// 이 결과에 맞는 반응 줄.
@@ -780,6 +844,8 @@ class Choice {
       _ => null,
     },
     intent: _strList(j['intent']),
+    ifFlags: _strListOrOne(j['ifFlags']),
+    ifNotFlags: _strListOrOne(j['ifNotFlags']),
   );
 }
 
@@ -843,6 +909,21 @@ class StoryEvent {
   /// 여러 이벤트가 한 장을 나눠 쓸 때(`m03`/`m03_m`)만 적는다.
   final String? image;
 
+  /// 장면이 정한 시각(`"clock": "HH:MM"`, 선택, r1_meeting D8). 있으면 말풍선의 가짜 시계가
+  /// 하루 안 순서 대신 이 시각에서 시작한다 — 새벽 장면이 "오전 9:43" 으로 찍히지 않게.
+  /// 없으면 예전처럼 하루 안 위치로 정한다. 형식은 검증기가 본다([clockPattern]).
+  final String? clock;
+
+  /// `HH:MM`(00:00~23:59).
+  static final clockPattern = RegExp(r'^([01]\d|2[0-3]):([0-5]\d)$');
+
+  /// [clock] 을 자정부터의 초로. 없거나 형식이 틀리면 null.
+  int? get clockSeconds {
+    final m = clock == null ? null : clockPattern.firstMatch(clock!);
+    if (m == null) return null;
+    return int.parse(m[1]!) * 3600 + int.parse(m[2]!) * 60;
+  }
+
   static const formatChat = 'chat';
   static const formatCall = 'call';
   static const formats = [formatChat, formatCall];
@@ -865,6 +946,7 @@ class StoryEvent {
     this.format = formatChat,
     this.preview,
     this.image,
+    this.clock,
   });
 
   /// 상대가 먼저 거는 전화인지.
@@ -902,6 +984,7 @@ class StoryEvent {
     format: format,
     preview: preview == null ? null : f(preview!),
     image: image,
+    clock: clock,
   );
 
   /// 대사·선택지·힌트만 바꾼 사본(MBTI 거르기, lib/engine/mbti.dart).
@@ -926,6 +1009,7 @@ class StoryEvent {
     format: format,
     preview: preview,
     image: image,
+    clock: clock,
   );
 
   /// 대사 묶음만 갈아 끼운 사본([EventEngine.variantOf]). 변형 목록은 그대로 들고 간다 —
@@ -947,6 +1031,7 @@ class StoryEvent {
     format: format,
     preview: preview,
     image: image,
+    clock: clock,
   );
 
   /// 화면에 보이는 글 전부(위치, 문자열). 검증기가 자리표시자 형식을 본다.
@@ -1023,8 +1108,8 @@ class StoryEvent {
       variants: [
         for (final v in (j['variants'] as List?) ?? const [])
           [
-            for (final l in ((v as Map<String, dynamic>)['lines'] as List?) ??
-                const [])
+            for (final l
+                in ((v as Map<String, dynamic>)['lines'] as List?) ?? const [])
               Line.fromJson(l as Map<String, dynamic>),
           ],
       ],
@@ -1040,6 +1125,10 @@ class StoryEvent {
         _ => null,
       },
       image: j['image'] as String?,
+      clock: switch ((j['clock'] as String?)?.trim()) {
+        final String v when v.isNotEmpty => v,
+        _ => null,
+      },
     );
   }
 }
@@ -1161,8 +1250,8 @@ class Ending {
   final bool immediate;
   final bool isDefault;
 
-  /// 엔딩 히어로 그림 경로(선택, 06 §4). 없으면 엔딩 id → 캐릭터 id →
-  /// 공용 `common_<tier>` 순으로 `assets/endings/` 를 찾는다.
+  /// 엔딩 히어로의 **대체** 그림 경로(선택, 06 §4). 전용 그림 `assets/endings/<엔딩 id>` 가 있으면
+  /// 그것이 먼저고, 없을 때 이 경로 → 캐릭터 id → 공용 `common_<tier>` 순이다(SceneImages.forEnding).
   final String? image;
 
   // 캐릭터 엔딩([character])은 그 캐릭터의 성별로 자동 필터된다([EndingResolver]).
@@ -1210,6 +1299,129 @@ class Ending {
     isDefault: (j['default'] as bool?) ?? false,
     image: j['image'] as String?,
   );
+}
+
+/// 시작 스토리(docs/overhaul2/01_design.md §3·§5.0 B1). `assets/story/starts.json`.
+///
+/// 시작은 **플래그로만** 저장된다: 신규 시작은 [effects] 의 `setFlags` 로 `start_alt` 와 자기 id 를
+/// 세우고, [classic] 은 아무것도 세우지 않는다. 그래서 플래그가 없는 예전 세이브는 저절로
+/// 클래식이고, 세이브에 새 칸이 없다. 클래식 전용 장면은 `notFlags: ["start_alt"]` 로 막는다.
+class StartScenario {
+  final String id;
+  final String title;
+
+  /// 카드의 한 줄 훅. 잠긴 카드를 탭하면 이것만 보여 준다.
+  final String hook;
+  final String logline;
+
+  /// 인트로에서 태현의 "갑자기 왜. 무슨 일 있었지?" 에 대한 내 대답과 태현의 반응.
+  final String introLine;
+  final String introReply;
+
+  /// 톤 태그(텍스트 칩).
+  final List<String> tags;
+
+  /// 자극도 1~3(고추 칸).
+  final int spice;
+
+  /// 이 시작이 열리는 데 필요한 엔딩 앨범 수(서로 다른 엔딩). 0 이면 처음부터.
+  final int unlockEndings;
+
+  /// 카드 그림 경로(확장자 생략 가능, [AssetPath]). 없거나 파일이 없으면 UI 가 그라데이션으로 대신한다.
+  final String? image;
+
+  /// 새 게임에서 교차 회차 보너스 **다음에** 한 번 적용하는 보정(크리티컬·앨범 없음).
+  final Effects effects;
+
+  /// 1회차 추천(`"recommended": true`, 선택, r1_meeting D9). 이 기기의 첫 회차에 "처음이라면"
+  /// 배지와 기본 선택이 이 시작에 붙는다. 없으면 클래식이 그 자리다. 검증기가 하나 이하·처음부터
+  /// 열린 시작만 허락한다.
+  final bool recommended;
+
+  /// 이 시작에서 캐스트 소개(새 게임 마지막 단계)의 첫 메시지를 바꿀 캐릭터 → 문장(`castLines`, 선택).
+  /// 없는 캐릭터는 characters.json 의 `firstLine` 그대로다. 시작의 사연과 첫 메시지가 어긋날 때
+  /// (예: 축사 대참사의 하객석 짝꿍이 "혹시 우리 초등학교…" 로 처음 인사) 쓴다(r1_playtest P2-4).
+  final Map<String, String> castLines;
+
+  /// 플래그 없는 기본 시작(태현의 치킨 내기).
+  static const classic = 'classic';
+
+  /// 신규 시작이 모두 세우는 플래그. 클래식 장면이 `notFlags` 로 이것을 본다.
+  static const altFlag = 'start_alt';
+
+  /// 신규 시작 id 의 접두어. 메인 날짜 검증 키(B3)가 `trigger.flags` 에서 이것을 찾는다.
+  static const idPrefix = 'sc_';
+
+  /// 엔딩까지 간 시작마다 새 게임이 세우는 플래그 `done_<id>`(r1_meeting §3·D7). 대본은
+  /// `trigger.flags` 로 읽기만 한다(카메오). 세이브에는 다른 플래그처럼 남을 뿐 새 칸이 없다.
+  static const donePrefix = 'done_';
+  static String doneFlag(String id) => '$donePrefix$id';
+
+  /// 엔딩을 본 시작이 하나 이상이면 새 게임이 세우는 플래그.
+  static const veteranFlag = 'veteran';
+
+  /// §3.0 시작 보정 상한.
+  static const maxStatShift = 10;
+  static const minSincerity = -5;
+  static const maxAffection = 4;
+  static const maxHeat = 40;
+
+  const StartScenario({
+    required this.id,
+    required this.title,
+    this.hook = '',
+    this.logline = '',
+    this.introLine = '',
+    this.introReply = '',
+    this.tags = const [],
+    this.spice = 1,
+    this.unlockEndings = 0,
+    this.image,
+    this.effects = Effects.none,
+    this.recommended = false,
+    this.castLines = const {},
+  });
+
+  bool get isClassic => id == classic;
+
+  /// [endingCount](앨범의 서로 다른 엔딩 수) 로 열려 있는지.
+  bool unlockedBy(int endingCount) => endingCount >= unlockEndings;
+
+  factory StartScenario.fromJson(Map<String, dynamic> j) => StartScenario(
+    id: j['id'] as String,
+    title: (j['title'] as String?) ?? '',
+    hook: (j['hook'] as String?) ?? '',
+    logline: (j['logline'] as String?) ?? '',
+    introLine: (j['introLine'] as String?) ?? '',
+    introReply: (j['introReply'] as String?) ?? '',
+    tags: _strList(j['tags']),
+    spice: ((j['spice'] as num?) ?? 1).toInt(),
+    unlockEndings: ((j['unlockEndings'] as num?) ?? 0).toInt(),
+    image: switch ((j['image'] as String?)?.trim()) {
+      final String v when v.isNotEmpty => v,
+      _ => null,
+    },
+    effects: Effects.fromJson(j['effects'] as Map<String, dynamic>?),
+    recommended: j['recommended'] == true,
+    castLines: {
+      if (j['castLines'] case final Map m)
+        for (final e in m.entries)
+          if (e.key is String &&
+              e.value is String &&
+              (e.value as String).trim().isNotEmpty)
+            e.key as String: (e.value as String).trim(),
+    },
+  );
+
+  /// `{"starts": [...]}` 또는 맨 배열.
+  static List<StartScenario> listFromJson(Object? j) {
+    final list = j is Map ? j['starts'] : j;
+    if (list == null) return const [];
+    return [
+      for (final e in list as List)
+        StartScenario.fromJson(e as Map<String, dynamic>),
+    ];
+  }
 }
 
 class DayAction {
@@ -1351,6 +1563,11 @@ class GameConfig {
   /// 내용은 스토리 담당이 채운다 — 엔진은 "있으면 맨 앞에 순서대로 깐다"까지만 안다.
   final List<String> openingScript;
 
+  /// 밤마다(하루 마감) 스탯에 더하는 값(`dailyDrift`, 선택). 예: `{"heat": -1}` — 소문은
+  /// 아무것도 안 해도 하루에 1씩 식는다(docs/overhaul2/01_design.md §5.1). 결과는 0~상한으로
+  /// 자른다. 비어 있으면(기본) 예전 그대로. 스트레스의 밤 −3 은 엔진에 따로 있다.
+  final Map<String, int> dailyDrift;
+
   /// [dailyCooldownDays] 기본값. 하루에 뽑는 일상은 1~2개(오프닝 3~4개)이므로 14일이면
   /// 최대 30개 남짓이 냉각 중이고, 조건을 통과한 일상 후보는 그보다 훨씬 많다.
   /// 2주면 플레이어가 같은 장면을 '방금 그거'로 알아채지 않는 선이기도 하다.
@@ -1396,7 +1613,18 @@ class GameConfig {
   /// [countdownMilestones] 기본값. 100일 중 카운트다운이 화면에 4~5번만 떴다는
   /// docs/review/11_story_verdict.md §4-3 의 실측에 대한 엔진 쪽 답이다 —
   /// 남은 날이 이 숫자가 되는 날은 화면이 반드시 카운트다운을 세게 보여 준다.
-  static const defaultCountdownMilestones = [90, 75, 50, 30, 20, 10, 5, 3, 1, 0];
+  static const defaultCountdownMilestones = [
+    90,
+    75,
+    50,
+    30,
+    20,
+    10,
+    5,
+    3,
+    1,
+    0,
+  ];
 
   const GameConfig({
     this.totalDays = 100,
@@ -1414,6 +1642,7 @@ class GameConfig {
     this.fillSeenBelow = defaultFillSeenBelow,
     this.countdownMilestones = defaultCountdownMilestones,
     this.openingScript = const [],
+    this.dailyDrift = const {},
   });
 
   /// [chapter](1부터) 의 제목. 없거나 비어 있으면 null.
@@ -1482,6 +1711,7 @@ class GameConfig {
       for (final v in (j['openingScript'] as List?) ?? const [])
         if ('$v'.trim().isNotEmpty) '$v'.trim(),
     ],
+    dailyDrift: _intMap(j['dailyDrift']),
   );
 }
 
@@ -1691,6 +1921,10 @@ class GameState {
     'dailySeenDay': Map.of(dailySeenDay),
     'seenCount': Map.of(seenCount),
     'freeInputs': [for (final f in freeInputs) f.toJson()],
+    'todayCliffhanger': todayCliffhanger,
+    'todayCliffRank': todayCliffRank,
+    'chainRank': Map.of(chainRank),
+    'dayClockEnd': dayClockEnd,
   };
 
   factory GameState.fromJson(Map<String, dynamic> j) =>
@@ -1737,7 +1971,24 @@ class GameState {
         ..freeInputs.addAll([
           for (final e in (j['freeInputs'] as List?) ?? const [])
             ?FreeInputEntry.fromJson(e),
-        ]);
+        ])
+        ..todayCliffhanger = j['todayCliffhanger'] as String?
+        ..todayCliffRank = (j['todayCliffRank'] as num?)?.toInt()
+        ..chainRank.addAll(_intMap(j['chainRank']))
+        ..dayClockEnd = (j['dayClockEnd'] as num?)?.toInt();
+
+  // ---- 하루 도중 상태(컨트롤러가 저장 직전에 채운다, r2_meeting E7·E9). 없는 예전 세이브는 빈 값. ----
+
+  /// 오늘 지금까지의 클리프행어와 그 층 순위. 하루 도중 앱을 다시 켜도 "가장 센 층" 규칙(S7)과
+  /// 갈래 우선(D6)이 이어진다. 마감에서 비운다.
+  String? todayCliffhanger;
+  int? todayCliffRank;
+
+  /// 오늘 `next` 로 끼운 이벤트 → 물려받은 층 순위(D6).
+  final Map<String, int> chainRank = {};
+
+  /// 오늘 마지막으로 끝난 장면의 가짜 시계(자정부터 초). 다음 장면은 이보다 늦게 시작한다(E7).
+  int? dayClockEnd;
 
   // ---- 서사 신호(lib/engine/signals.dart). 없는 예전 세이브는 전부 빈 값. ----
 

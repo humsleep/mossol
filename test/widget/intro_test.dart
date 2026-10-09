@@ -14,6 +14,7 @@ import 'package:mossol/ui/notification_card.dart';
 import 'package:mossol/ui/onboarding_gender_screen.dart';
 import 'package:mossol/ui/onboarding_mbti_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
+import 'package:mossol/ui/start_pick_sheet.dart';
 import 'package:mossol/ui/title_screen.dart';
 import 'package:mossol/ui/widgets.dart';
 
@@ -45,6 +46,23 @@ void main() {
     }
     await tester.pumpAndSettle();
     expect(find.byType(TypingIndicator), findsNothing);
+  }
+
+  /// "진짜 할 거야?" 에 답하고 → 태현의 "갑자기 왜. 무슨 일 있었지?" → 시작 카드 시트에서
+  /// [start] 를 고른 뒤 이름 질문까지 다 뜰 때까지(docs/overhaul2/01_design.md §4.2).
+  Future<void> answerDeal(
+    WidgetTester tester, {
+    String key = 'intro-yes',
+    String start = StartScenario.classic,
+  }) async {
+    await tester.tap(find.byKey(Key(key)));
+    await settleTyping(tester);
+    expect(findText(IntroScreen.startQuestion), findsOneWidget);
+    await tester.pump(IntroScreen.startSheetDelay);
+    await tester.pumpAndSettle();
+    expect(find.byType(StartPickSheet), findsOneWidget);
+    await pickStart(tester, start);
+    await settleTyping(tester);
   }
 
   /// 마지막 답 뒤 캐스트 소개가 뜨면 `시작하기` 로 닫아 첫날로 들어간다.
@@ -114,9 +132,12 @@ void main() {
     expect(findText(IntroScreen.previewLine), findsOneWidget);
 
     // 대화 안에는 "시작하기" 버튼이 없다 — 대답이 곧 다음 단계다.
-    await tester.tap(find.byKey(const Key('intro-yes')));
-    await settleTyping(tester);
+    await answerDeal(tester);
     expect(findText(IntroScreen.yesLabel), findsOneWidget);
+    // 시작 카드가 내 대답이 된다: 클래식의 introLine(내 말) → introReply(태현).
+    final classic = c.bundle.startOf(StartScenario.classic)!;
+    expect(findText(classic.introLine), findsOneWidget);
+    expect(findText(classic.introReply), findsOneWidget);
     expect(findText(IntroScreen.nameQuestion), findsOneWidget);
     expect(findText(PreferenceScreen.startLabel), findsNothing);
 
@@ -152,6 +173,8 @@ void main() {
     expect(c.state!.preference, Preference.female);
     expect(c.state!.day, 1);
     expect(c.hasSave, isTrue);
+    // 클래식은 플래그를 세우지 않는다 — 플래그 없음이 곧 클래식이다.
+    expect(c.state!.flags.contains(StartScenario.altFlag), isFalse);
     // MBTI 는 여기서 묻지 않았다 — D+4 대화의 몫으로 남는다.
     expect(c.shouldAskMbti, isTrue);
     expect(c.phase, anyOf(Phase.dayStart, Phase.action));
@@ -180,10 +203,30 @@ void main() {
       // 내 말은 곧바로, 태현의 답은 아직 하나도 없다. 대신 `…` 가 떠 있다.
       expect(findText(IntroScreen.yesLabel), findsOneWidget);
       expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(findText(IntroScreen.startQuestion), findsNothing);
+      await settleTyping(tester);
+      await tester.pump(IntroScreen.startSheetDelay);
+      await tester.pumpAndSettle();
+
+      // 카드를 고르면 내 말(introLine)은 곧바로, 태현의 세 줄은 한 줄씩.
+      final classic = c.bundle.startOf(StartScenario.classic)!;
+      final card = find.byKey(const Key('start-card-${StartScenario.classic}'));
+      await scrollStartSheetTo(tester, card);
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(findText(classic.introLine), findsOneWidget);
+      expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(findText(classic.introReply), findsNothing);
       expect(findText(IntroScreen.dealReply), findsNothing);
-      expect(findText(IntroScreen.nameQuestion), findsNothing);
 
       // 첫 줄이 뜬다. 아직 다음 줄은 없고 `…` 는 그대로 하나다(§4.1).
+      await tester.pump(
+        Duration(milliseconds: EventScreen.themDelayMs(classic.introReply)),
+      );
+      expect(findText(classic.introReply), findsOneWidget);
+      expect(findText(IntroScreen.dealReply), findsNothing);
+      expect(find.byType(TypingIndicator), findsOneWidget);
+
       await tester.pump(
         Duration(milliseconds: EventScreen.themDelayMs(IntroScreen.dealReply)),
       );
@@ -191,7 +234,7 @@ void main() {
       expect(findText(IntroScreen.nameQuestion), findsNothing);
       expect(find.byType(TypingIndicator), findsOneWidget);
 
-      // 둘째 줄이 뜨면 `…` 가 사라진다.
+      // 마지막 줄이 뜨면 `…` 가 사라진다.
       await tester.pump(
         Duration(
           milliseconds: EventScreen.themDelayMs(IntroScreen.nameQuestion),
@@ -210,11 +253,11 @@ void main() {
       await tester.pump();
 
       // 한 밀리초 모자라면 아직 안 뜬다 — 두 번째 구현이 아니라 그 식 그대로다.
-      final wait = EventScreen.themDelayMs(IntroScreen.dealReply);
+      final wait = EventScreen.themDelayMs(IntroScreen.startQuestion);
       await tester.pump(Duration(milliseconds: wait - 1));
-      expect(findText(IntroScreen.dealReply), findsNothing);
+      expect(findText(IntroScreen.startQuestion), findsNothing);
       await tester.pump(const Duration(milliseconds: 1));
-      expect(findText(IntroScreen.dealReply), findsOneWidget);
+      expect(findText(IntroScreen.startQuestion), findsOneWidget);
     });
 
     testWidgets('치는 동안 하단 패널은 비어 있다 — 답을 두 번 누를 수 없다', (tester) async {
@@ -231,7 +274,20 @@ void main() {
       expect(find.byKey(const Key('intro-maybe')), findsNothing);
       expect(find.byKey(const Key('intro-name-field')), findsNothing);
 
-      // 태현이 말을 마치면 그때 이름 입력이 올라온다.
+      // 태현이 말을 마치면 그때 시작 카드 시트가 올라온다. 이름 입력은 아직이다.
+      await settleTyping(tester);
+      await tester.pump(IntroScreen.startSheetDelay);
+      await tester.pumpAndSettle();
+      expect(find.byType(StartPickSheet), findsOneWidget);
+      expect(find.byKey(const Key('intro-name-field')), findsNothing);
+      // 시트를 닫아도 막다른 길이 아니다 — 다시 여는 버튼이 남는다.
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byType(StartPickSheet), findsNothing);
+      expect(find.byKey(const Key('intro-start-pick')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('intro-start-pick')));
+      await tester.pumpAndSettle();
+      await pickStart(tester);
       await settleTyping(tester);
       expect(find.byKey(const Key('intro-name-field')), findsOneWidget);
       // 내 말풍선은 하나뿐이다(두 번 들어가지 않았다).
@@ -243,8 +299,7 @@ void main() {
       await tester.pumpWidget(fullApp(c));
       await tester.pump();
       await openIntroChat(tester);
-      await tester.tap(find.byKey(const Key('intro-yes')));
-      await settleTyping(tester);
+      await answerDeal(tester);
       await tester.tap(find.byKey(const Key('intro-name-skip')));
       await settleTyping(tester);
       await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
@@ -279,9 +334,9 @@ void main() {
       await tester.tap(find.byKey(const Key('intro-yes')));
       await tester.pump();
       expect(find.byType(TypingIndicator), findsOneWidget);
-      expect(findText(IntroScreen.nameQuestion), findsNothing);
+      expect(findText(IntroScreen.startQuestion), findsNothing);
       await settleTyping(tester);
-      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
+      expect(findText(IntroScreen.startQuestion), findsOneWidget);
       // 반복 애니메이션은 없다 — `…` 는 정적인 Text 한 개다(§3.2).
       expect(tester.takeException(), isNull);
     });
@@ -292,8 +347,7 @@ void main() {
     await tester.pumpWidget(fullApp(c));
     await tester.pump();
     await openIntroChat(tester);
-    await tester.tap(find.byKey(const Key('intro-maybe')));
-    await settleTyping(tester);
+    await answerDeal(tester, key: 'intro-maybe');
 
     // 빈 값이면 1차 버튼이 꺼져 있다(이름 화면과 같은 규칙).
     FilledButton submit() => tester.widget<FilledButton>(
@@ -332,8 +386,7 @@ void main() {
     await tester.pumpWidget(fullApp(c));
     await tester.pump();
     await openIntroChat(tester);
-    await tester.tap(find.byKey(const Key('intro-yes')));
-    await settleTyping(tester);
+    await answerDeal(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
     await settleTyping(tester);
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.female}')));
@@ -358,8 +411,7 @@ void main() {
     await tester.pumpWidget(fullApp(c));
     await tester.pump();
     await openIntroChat(tester);
-    await tester.tap(find.byKey(const Key('intro-yes')));
-    await settleTyping(tester);
+    await answerDeal(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
     await settleTyping(tester);
     await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
@@ -406,8 +458,7 @@ void main() {
 
     // 대화(가장 긴 단계인 "나는?" 패널까지).
     await openIntroChat(tester);
-    await tester.tap(find.byKey(const Key('intro-yes')));
-    await settleTyping(tester);
+    await answerDeal(tester);
     await tester.tap(find.byKey(const Key('intro-name-skip')));
     await settleTyping(tester);
     expect(tester.takeException(), isNull);
@@ -528,6 +579,95 @@ void main() {
       await revealAll(tester, c);
       await tester.pumpAndSettle();
       expect(find.byType(MbtiSheet), findsNothing);
+    });
+  });
+
+  group('시작 카드 (docs/overhaul2/01_design.md §4)', () {
+    testWidgets('신규 시작을 고르면 그 대답이 대화에 남고, 회차가 그 시작으로 열린다', (
+      tester,
+    ) async {
+      final c = await makeController(firstLaunch: true);
+      final leak = c.bundle.startOf('sc_leak')!;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+      await answerDeal(tester, start: leak.id);
+      expect(findText(leak.introLine), findsOneWidget);
+      expect(findText(leak.introReply), findsOneWidget);
+      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
+      await tester.tap(find.byKey(const Key('intro-name-skip')));
+      await settleTyping(tester);
+      await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
+      await startFromCast(tester);
+      final s = c.state!;
+      expect(s.flags, containsAll([StartScenario.altFlag, leak.id]));
+      expect(s.stat(Stat.heat), 30);
+      expect(c.meta!.lastStart, leak.id);
+    });
+
+    testWidgets('이름 단계에서 "다른 일이었어" → 시작 카드로 돌아가 다시 고른다', (tester) async {
+      final c = await makeController(firstLaunch: true);
+      final leak = c.bundle.startOf('sc_leak')!;
+      final classic = c.bundle.startOf(StartScenario.classic)!;
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+      await answerDeal(tester, start: leak.id);
+      expect(findText(leak.introLine), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('intro-start-back')));
+      await tester.tap(find.byKey(const Key('intro-start-back')));
+      await tester.pumpAndSettle();
+      expect(find.byType(StartPickSheet), findsOneWidget);
+      expect(findText(leak.introLine), findsNothing);
+      await pickStart(tester);
+      await settleTyping(tester);
+      expect(findText(classic.introLine), findsOneWidget);
+      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
+      await tester.tap(find.byKey(const Key('intro-name-skip')));
+      await settleTyping(tester);
+      await tester.tap(find.byKey(const Key('gender-${PlayerGender.male}')));
+      await startFromCast(tester);
+      expect(c.state!.flags, isEmpty, reason: '클래식으로 바뀌었다');
+    });
+
+    testWidgets('첫 회차: 엔딩 0개면 잠긴 카드는 고를 수 없고, 탭하면 훅만 펼친다', (
+      tester,
+    ) async {
+      final c = await makeController(firstLaunch: true);
+      final locked = [
+        for (final s in c.bundle.starts)
+          if (!s.unlockedBy(0)) s,
+      ];
+      expect(locked.map((s) => s.id), containsAll(['sc_swap', 'sc_ghost']));
+      await tester.pumpWidget(fullApp(c));
+      await tester.pump();
+      await openIntroChat(tester);
+      await tester.tap(find.byKey(const Key('intro-yes')));
+      await settleTyping(tester);
+      await tester.pump(IntroScreen.startSheetDelay);
+      await tester.pumpAndSettle();
+      expect(findText(StartPickSheet.firstBadge), findsOneWidget);
+      final card = find.byKey(Key('start-card-${locked.first.id}'));
+      await scrollStartSheetTo(tester, card);
+      expect(findText(locked.first.hook), findsNothing);
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      // 시트는 그대로, 훅 한 줄만 보인다.
+      expect(find.byType(StartPickSheet), findsOneWidget);
+      expect(findText(locked.first.hook), findsOneWidget);
+      expect(c.hasSave, isFalse);
+      // 운명 뽑기는 어떤 카드든(잠긴 것 포함) 하나를 고른다.
+      await scrollStartSheetTo(tester, find.byKey(const Key('start-fate')));
+      await tester.tap(find.byKey(const Key('start-fate')));
+      await tester.pumpAndSettle();
+      // 결과를 짧게 보여 준다(r1_meeting D10). 뽑힌 순간 메타에 남는다.
+      expect(find.byKey(const Key('start-fate-reveal')), findsOneWidget);
+      expect(c.pendingFate, isNotNull);
+      await tester.tap(find.byKey(const Key('start-fate-go')));
+      await tester.pumpAndSettle();
+      expect(find.byType(StartPickSheet), findsNothing);
+      await settleTyping(tester);
+      expect(findText(IntroScreen.nameQuestion), findsOneWidget);
     });
   });
 }

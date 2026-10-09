@@ -1,0 +1,32 @@
+// ignore_for_file: avoid_print
+import 'dart:io';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/story_repository.dart';
+import 'package:mossol/minigames/minigame.dart';
+import 'package:mossol/minigames/registry.dart';
+
+String rd(String f) {
+  final file = File('assets/story/$f');
+  if (!file.existsSync()) return '[]';
+  return file.readAsStringSync();
+}
+
+void main() {
+  test('validate time', () {
+    registerMinigames();
+    final cfg = rd('config.json'), ch = rd('characters.json'), en = rd('endings.json');
+    final evs = [for (final f in StoryBundle.eventFiles) rd(f)];
+    final sig = File('assets/story/signals.json').existsSync() ? rd('signals.json') : null;
+    final st = File('assets/story/starts.json').existsSync() ? rd('starts.json') : null;
+    final times = <int>[];
+    for (var i = 0; i < 6; i++) {
+      final sw = Stopwatch()..start();
+      StoryBundle.fromJsonStrings(config: cfg, characters: ch, events: evs, endings: en, signals: sig,
+        // ignore: argument_type_not_assignable
+        starts: st,
+        knownMinigames: minigameIds, requireEndingHints: true);
+      times.add(sw.elapsedMilliseconds);
+    }
+    print('VALIDATE ms: $times');
+  });
+}

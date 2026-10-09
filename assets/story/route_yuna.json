@@ -120,11 +120,31 @@
   "lines": [
    {
     "who": "narr",
-    "text": "무료 PT 체험 날. 포니테일이 뛰어오듯 다가왔다."
+    "text": "무료 PT 체험 날. 포니테일이 뛰어오듯 다가왔다.",
+    "ifNotFlags": [
+     "trainer_early"
+    ]
    },
    {
     "who": "them",
-    "text": "안녕하세요!! 오늘 담당 유나예요"
+    "text": "안녕하세요!! 오늘 담당 유나예요",
+    "ifNotFlags": [
+     "trainer_early"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "체험권 그 트레이너다. 기분 3점이던 날을 기억하고 있었다.",
+    "ifFlags": [
+     "trainer_early"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "또 오셨네요!! 오늘은 기분 몇 점?",
+    "ifFlags": [
+     "trainer_early"
+    ]
    },
    {
     "who": "them",
@@ -434,6 +454,7 @@
   },
   "weight": 2,
   "title": "떡볶이 2인분",
+  "clock": "22:00",
   "lines": [
    {
     "who": "narr",
@@ -1233,6 +1254,7 @@
   },
   "weight": 2,
   "title": "새벽 5시",
+  "clock": "05:00",
   "lines": [
    {
     "who": "narr",

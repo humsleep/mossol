@@ -1,0 +1,35 @@
+// ignore_for_file: avoid_print
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/event_screen.dart';
+import 'helpers.dart';
+
+void main() {
+  testWidgets('villain choice result panel shows "진상 +1" chip', (tester) async {
+    final c = await makeController();
+    await c.newGame(preference: Preference.female, seed: 11, start: 'sc_leak');
+    final b = c.bundle;
+    // a real villain choice from data
+    final ev = b.events.firstWhere((e) => e.choices.any((ch) => (ch.effects.stats[Stat.villain] ?? 0) > 0 && ch.minigame == null && ch.chance == null && !ch.isGated));
+    final idx = ev.choices.indexWhere((ch) => (ch.effects.stats[Stat.villain] ?? 0) > 0 && ch.minigame == null && ch.chance == null && !ch.isGated);
+    print('event ${ev.id} choice "${ev.choices[idx].text}" effects=${ev.choices[idx].effects.stats}');
+    c.state!.flags.addAll(ev.trigger.flags);
+    c.current = ev;
+    c.revealed = 0;
+    c.phase = Phase.event;
+    await tester.pumpWidget(wrapApp(EventScreen(c: c)));
+    await revealAll(tester, c);
+    await tester.pumpAndSettle();
+    final cur = c.current!;
+    final vi = cur.choices.indexWhere((ch) => ch.text == ev.choices[idx].text);
+    c.choose(vi);
+    await tester.pump();
+    await settleReplies(tester);
+    await tester.pump(const Duration(seconds: 2));
+    final chip = findTextContaining('진상 +1');
+    print('chips with 진상: ${chip.evaluate().length}; delta=${c.lastOutcome!.delta.stats}');
+    expect(chip, findsWidgets);
+  });
+}

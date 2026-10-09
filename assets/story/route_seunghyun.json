@@ -26,11 +26,24 @@
   "lines": [
    {
     "who": "narr",
-    "text": "저장 안 된 번호. 프로필 사진은 강아지 뒤통수다."
+    "text": "저장 안 된 번호. 프로필 사진은 강아지 뒤통수다.",
+    "ifNotFlags": [
+     "sc_ghost"
+    ]
    },
    {
     "who": "them",
-    "text": "안녕하세요, {name|씨|}. 승현입니다. 어머님께 번호 받았습니다."
+    "text": "안녕하세요, {name|씨|}. 승현입니다. 어머님께 번호 받았습니다.",
+    "ifNotFlags": [
+     "sc_ghost"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "앱 말고 정식으로 인사드려요. 어머님께 번호 받았습니다.",
+    "ifFlags": [
+     "sc_ghost"
+    ]
    },
    {
     "who": "them",
@@ -265,7 +278,7 @@
     "seunghyun_texted"
    ]
   },
-  "weight": 2,
+  "weight": 20,
   "title": "첫 만남 3분",
   "lines": [
    {
@@ -1076,6 +1089,7 @@
   },
   "weight": 2,
   "title": "새벽 3시, 한 줄",
+  "clock": "03:07",
   "lines": [
    {
     "who": "narr",
@@ -2527,7 +2541,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "점심시간. 승현이 사진을 보냈다."
+    "text": "진료 쉬는 시간. 승현이 사진을 보냈다."
    },
    {
     "who": "them",
@@ -2772,7 +2786,7 @@
    ]
   },
   "weight": 4,
-  "title": "수술 끝난 새벽",
+  "title": "수술 끝난 밤",
   "lines": [
    {
     "who": "them",
@@ -3079,6 +3093,7 @@
   },
   "weight": 2,
   "title": "저만 모른다고 혼났어요",
+  "clock": "20:30",
   "lines": [
    {
     "who": "narr",

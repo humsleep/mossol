@@ -1,0 +1,79 @@
+// ignore_for_file: avoid_print
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/settings_screen.dart';
+import 'package:mossol/ui/summary_screen.dart';
+import 'helpers.dart';
+
+void _screen(WidgetTester tester, double scale) {
+  tester.view.physicalSize = const Size(320, 568);
+  tester.view.devicePixelRatio = 1.0;
+  tester.platformDispatcher.textScaleFactorTestValue = scale;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+  });
+}
+
+void main() {
+  final saved = FlutterError.onError;
+  final details = <String>[];
+  setUp(() => details.clear());
+  for (final scale in [1.6, 1.8, 2.0]) {
+    testWidgets('settings detail $scale', (tester) async {
+      FlutterError.onError = (d) => details.add(d.toString());
+      addTearDown(() => FlutterError.onError = saved);
+      _screen(tester, scale);
+      final c = await makeController();
+      await tester.pumpWidget(wrapApp(SettingsScreen(c: c)));
+      await tester.pumpAndSettle();
+      final st = tester.state<ScrollableState>(find.byType(Scrollable).first);
+      for (var k = 0; k < 30; k++) {
+        st.position.jumpTo((st.position.pixels + 200).clamp(0, st.position.maxScrollExtent));
+        await tester.pump();
+      }
+      for (final d in details) {
+        final lines = d.split('\n');
+        print('--- settings $scale');
+        final i = lines.indexWhere((l) => l.contains('RenderFlex in question'));
+        if (i >= 0) print(lines.skip(i).take(25).join('\n'));
+        print(lines.where((l) => l.contains('overflowed') || l.contains('file:///Users') || l.contains('Row') ).take(12).join('\n'));
+      }
+    });
+  }
+  for (final (start, heat, delta) in [('classic', 0, 0), ('sc_clip', 99, -12), ('sc_clip', 30, 5)]) {
+    for (final scale in [1.6, 2.0]) {
+      testWidgets('summary detail $start heat=$heat d=$delta x$scale', (tester) async {
+        FlutterError.onError = (d) => details.add(d.toString());
+        addTearDown(() => FlutterError.onError = saved);
+        _screen(tester, scale);
+        final c = await makeController();
+        await c.newGame(preference: Preference.female, seed: 1, start: start);
+        c.beginMorning();
+        await c.startDay(c.config.actions.first);
+        while (c.phase == Phase.event) {
+          c.choose(plainChoiceIndex(c));
+          c.continueAfterChoice();
+        }
+        c.state!.stats[Stat.heat] = heat;
+        if (delta != 0) c.dayDelta.stats[Stat.heat] = delta; else c.dayDelta.stats.remove(Stat.heat);
+        await tester.pumpWidget(wrapApp(SummaryScreen(c: c)));
+        await tester.pump(const Duration(seconds: 4));
+        final st = tester.state<ScrollableState>(find.byType(Scrollable).first);
+        for (var k = 0; k < 30; k++) {
+          st.position.jumpTo((st.position.pixels + 200).clamp(0, st.position.maxScrollExtent));
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        print('--- summary $start heat=$heat d=$delta x$scale : ${details.length} errors');
+        for (final d in details.take(2)) {
+          final lines = d.split('\n');
+          print(lines.where((l) => l.contains('overflowed') || l.contains('Row') || l.contains('Column') || l.contains('creator') || l.contains('file:///Users') ).take(10).join('\n'));
+        }
+      });
+    }
+  }
+}

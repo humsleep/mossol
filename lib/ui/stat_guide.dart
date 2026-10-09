@@ -86,6 +86,19 @@ const statGuide = [
     '5천원 이하로 바닥나면 “잔고 바닥” 위기 이벤트',
     '3만원 이하인데 가까운 사람이 있으면 “돈 문제” 가 터질 수도',
   ]),
+  // 소문(01_design §5.1). 평판과 다른 축 — 좋게 보는 정도가 아니라 화제로 삼는 정도.
+  // 소문이 1 이상인 회차에서만 시트에 나온다([StatGuideSheet.showHeat]).
+  StatInfo(
+    Stat.heat,
+    '내가 동네 화제인 정도. 평판과는 다르다. 좋게 보든 나쁘게 보든 다들 내 얘기를 한다.',
+    '밤마다 저절로 -1 · 자극적인 선택·공개 선언으로 오르고, 사과나 해명으로 내린다',
+    [
+      '홈과 정산의 5칸 게이지: 조용 · 수군수군 · 화제 · 박제 위기 · 대참사',
+      '20부터 예상 못 한 사건이 끼어들기 시작한다',
+      '60을 넘기면 소문이 걷잡을 수 없이 퍼질 수도',
+      '잠수(집에서 휴식)로 조금씩 식는다',
+    ],
+  ),
 ];
 
 /// 스탯 설명 시트.
@@ -93,16 +106,25 @@ class StatGuideSheet extends StatelessWidget {
   /// 아침 행동 목록(config.json `actions`). "어떻게 오르나" 줄을 여기서 뽑는다.
   final List<DayAction> actions;
 
-  const StatGuideSheet({super.key, this.actions = const []});
+  /// 소문 칸을 보여 줄지. 소문이 0 인 회차(클래식)에서는 숨긴다 — 게이지가 없는 회차에
+  /// 게이지 설명이 뜨면 헷갈린다.
+  final bool showHeat;
+
+  const StatGuideSheet({
+    super.key,
+    this.actions = const [],
+    this.showHeat = false,
+  });
 
   static Future<void> show(
     BuildContext context, {
     List<DayAction> actions = const [],
+    bool showHeat = false,
   }) => showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => StatGuideSheet(actions: actions),
+    builder: (_) => StatGuideSheet(actions: actions, showHeat: showHeat),
   );
 
   static const title = '스탯은 이렇게 쓰여요';
@@ -115,7 +137,7 @@ class StatGuideSheet extends StatelessWidget {
         if (a.effects.stats[key] case final d? when d != 0) (a.name, d),
     ];
     if (hits.isEmpty) return null;
-    final good = key == Stat.stress ? (int d) => d < 0 : (int d) => d > 0;
+    bool good(int d) => Stat.isGood(key, d);
     hits.sort((a, b) {
       final ga = good(a.$2) ? 0 : 1;
       final gb = good(b.$2) ? 0 : 1;
@@ -155,10 +177,11 @@ class StatGuideSheet extends StatelessWidget {
                 ),
                 style: text.bodyMedium?.copyWith(color: soft),
               ),
-              for (final g in statGuide) ...[
-                const SizedBox(height: AppSpace.md),
-                _StatCard(info: g, morning: actionLine(g.key, actions)),
-              ],
+              for (final g in statGuide)
+                if (showHeat || g.key != Stat.heat) ...[
+                  const SizedBox(height: AppSpace.md),
+                  _StatCard(info: g, morning: actionLine(g.key, actions)),
+                ],
               const SizedBox(height: AppSpace.lg),
               Text(
                 keepAll(
@@ -188,7 +211,7 @@ class _StatCard extends StatelessWidget {
     final text = context.text;
     final scheme = context.scheme;
     final color = t.statColor(info.key);
-    final inverted = info.key == Stat.stress;
+    final inverted = Stat.lowerIsBetter.contains(info.key);
     final how = [?morning, ?info.more];
     return AppCard(
       accentStripe: color,

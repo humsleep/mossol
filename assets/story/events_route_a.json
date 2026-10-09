@@ -2438,7 +2438,17 @@
   "lines": [
    {
     "who": "narr",
-    "text": "카페 알바 첫날. 마감 조 하늘이 말을 걸었다."
+    "text": "카페 알바 첫날. 마감 조 하늘이 말을 걸었다.",
+    "ifNotFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "출근 첫 주 마감. 하늘이 행주를 어깨에 걸고 말을 걸었다.",
+    "ifFlags": [
+     "sc_leak"
+    ]
    },
    {
     "who": "them",
@@ -2474,7 +2484,31 @@
       "haneul_first_shift"
      ]
     },
-    "reply": "ㅋㅋ 오늘만 봐준다. 내일부턴 국물도 없어"
+    "reply": "ㅋㅋ 오늘만 봐준다. 내일부턴 국물도 없어",
+    "ifNotFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "text": "첫 주니까 봐줘요",
+    "ifFlags": [
+     "sc_leak"
+    ],
+    "effects": {
+     "affection": {
+      "*": 3
+     },
+     "setFlags": [
+      "haneul_contact",
+      "haneul_first_shift"
+     ]
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "ㅋㅋ 이번 주만 봐준다. 다음 주부턴 국물도 없어"
+     }
+    ]
    },
    {
     "text": "내일은 하늘 씨보다 빠를 거예요",
@@ -2522,7 +2556,7 @@
     ]
    }
   ],
-  "hint": 2
+  "hint": 3
  },
  {
   "id": "haneul_r02",
@@ -3181,6 +3215,7 @@
   },
   "weight": 2,
   "title": "하늘의 투잡",
+  "clock": "02:00",
   "lines": [
    {
     "who": "narr",
@@ -4742,11 +4777,44 @@
   "lines": [
    {
     "who": "narr",
-    "text": "엄마가 넘겨준 번호. 프로필에는 러닝 사진과 책 사진이 있다."
+    "text": "엄마가 넘겨준 번호. 프로필에는 러닝 사진과 책 사진이 있다.",
+    "ifNotFlags": [
+     "sc_ghost"
+    ]
    },
    {
     "who": "narr",
-    "text": "첫 메시지를 보내야 한다."
+    "text": "첫 메시지를 보내야 한다.",
+    "ifNotFlags": [
+     "sc_ghost"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "엄마가 넘겨준 진짜 번호. 앱 속 사흘은 내 문장이 아니었다.",
+    "ifFlags": [
+     "sc_ghost"
+    ],
+    "ifNotFlags": [
+     "jiwoo_sms"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "이번 첫 메시지는 내 손으로 보낸다.",
+    "ifFlags": [
+     "sc_ghost"
+    ],
+    "ifNotFlags": [
+     "jiwoo_sms"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "문자로는 이미 며칠째다. 엄마들 소개로 다시 인사하는 건 처음이다.",
+    "ifFlags": [
+     "jiwoo_sms"
+    ]
    }
   ],
   "choices": [
@@ -4770,8 +4838,27 @@
      ]
     },
     "reply": [
-     "안녕하세요. 네 얘기 들었어요",
-     "저도 이런 자리는 익숙하지 않아서 좀 어색하네요"
+     {
+      "who": "them",
+      "text": "안녕하세요. 네 얘기 들었어요",
+      "ifNotFlags": [
+       "jiwoo_sms"
+      ]
+     },
+     {
+      "who": "them",
+      "text": "저도 이런 자리는 익숙하지 않아서 좀 어색하네요",
+      "ifNotFlags": [
+       "jiwoo_sms"
+      ]
+     },
+     {
+      "who": "them",
+      "text": "알아요 ㅎㅎ 문자 그분이잖아요. 엄마들이 우리보다 늦었네요",
+      "ifFlags": [
+       "jiwoo_sms"
+      ]
+     }
     ],
     "failReply": [
      {
@@ -4818,8 +4905,24 @@
      ]
     },
     "reply": [
-     "아 네. 바쁘시면 무리 안 하셔도 돼요",
-     "저도 엄마 때문에 연락드린 거라서요"
+     {
+      "who": "them",
+      "text": "아 네. 바쁘시면 무리 안 하셔도 돼요"
+     },
+     {
+      "who": "them",
+      "text": "저도 엄마 때문에 연락드린 거라서요",
+      "ifNotFlags": [
+       "jiwoo_sms"
+      ]
+     },
+     {
+      "who": "them",
+      "text": "앱에 문자에 이미 바쁘셨잖아요. 괜찮아요",
+      "ifFlags": [
+       "jiwoo_sms"
+      ]
+     }
     ]
    }
   ],
@@ -4845,7 +4948,7 @@
     "jiwoo_texted"
    ]
   },
-  "weight": 2,
+  "weight": 20,
   "title": "첫 만남 3분",
   "lines": [
    {
@@ -5679,6 +5782,7 @@
   },
   "weight": 2,
   "title": "야근하는 밤",
+  "clock": "01:00",
   "lines": [
    {
     "who": "narr",
@@ -6986,8 +7090,25 @@
     "text": "동아리 단톡. 신입 환영 메시지가 쏟아지는 중."
    },
    {
+    "who": "narr",
+    "text": "서진 얘기로 시끄러운 단톡에서 선배가 굳이 딴 얘기를 꺼냈다.",
+    "ifFlags": [
+     "sc_swap"
+    ],
+    "ifNotFlags": [
+     "swap_senior_met"
+    ]
+   },
+   {
     "who": "them",
     "text": "@{name||신입} 너 지난주에 강의실 앞에서 나한테 길 물어봤던 사람 맞지?"
+   },
+   {
+    "who": "them",
+    "text": "이건 단톡용 인사. 커피 얘기는 개인톡에서.",
+    "ifFlags": [
+     "swap_senior_met"
+    ]
    },
    {
     "who": "narr",
@@ -7071,6 +7192,9 @@
     "reply": [
      "아 그래?",
      "분명 너였는데. 뭐 됐고"
+    ],
+    "ifNotFlags": [
+     "swap_senior_met"
     ]
    }
   ],
@@ -7102,15 +7226,75 @@
   "lines": [
    {
     "who": "narr",
-    "text": "내일 카페 알바 첫 출근. 저장 안 된 번호로 톡이 왔다."
+    "text": "내일 카페 알바 첫 출근. 저장 안 된 번호로 톡이 왔다.",
+    "ifNotFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "첫 출근이 코앞이다. 저장 안 된 번호로 톡이 왔다.",
+    "ifFlags": [
+     "sc_leak"
+    ],
+    "ifNotFlags": [
+     "leak_dm"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "아까 그 '같은 마감 조' 번호에서 또 톡이 왔다.",
+    "ifFlags": [
+     "leak_dm"
+    ]
    },
    {
     "who": "them",
-    "text": "안녕 {name||}? 나 하늘. 내일 마감 조 같이야"
+    "text": "안녕 {name||}? 나 하늘. 내일 마감 조 같이야",
+    "ifNotFlags": [
+     "sc_leak"
+    ]
    },
    {
     "who": "them",
-    "text": "앞치마 사이즈 뭐야? 사장님이 물어보래"
+    "text": "나 하늘. 그 단톡 마감 조임. 첫 출근 날 같이야",
+    "ifFlags": [
+     "sc_leak"
+    ],
+    "ifNotFlags": [
+     "leak_dm"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "아 출근 날 알려 준다 했는데 못 참겠다 ㅋㅋ 나 하늘",
+    "ifFlags": [
+     "leak_dm"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "아 그 단톡 신입 맞지? ㅋㅋㅋ 그 문장 나도 봄",
+    "ifFlags": [
+     "sc_leak"
+    ],
+    "ifNotFlags": [
+     "leak_dm"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "앞치마 사이즈 뭐야? 사장님이 물어보래",
+    "ifNotFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "앞치마 사이즈 뭐야? 점장님이 물어보래",
+    "ifFlags": [
+     "sc_leak"
+    ]
    },
    {
     "who": "them",
@@ -7128,7 +7312,22 @@
       "haneul_contact"
      ]
     },
-    "reply": "ㅇㅋ M. 내일 5시 50분까지. 6시면 늦은 거임"
+    "reply": [
+     {
+      "who": "them",
+      "text": "ㅇㅋ M. 내일 5시 50분까지. 6시면 늦은 거임",
+      "ifNotFlags": [
+       "sc_leak"
+      ]
+     },
+     {
+      "who": "them",
+      "text": "ㅇㅋ M. 출근 날 5시 50분까지. 6시면 늦은 거임",
+      "ifFlags": [
+       "sc_leak"
+      ]
+     }
+    ]
    },
    {
     "text": "늦으면 하늘 씨가 커버해 주는 거 아니에요?",
@@ -7198,7 +7397,7 @@
    }
   ],
   "hint": 2,
-  "cliffhanger": "하늘: \"내일 5시 50분. 컵 위치는 내가 알려줄게.\""
+  "cliffhanger": "하늘: \"출근 날 5시 50분. 컵 위치는 내가 알려줄게.\""
  },
  {
   "id": "seoyeon_mbti_talk",

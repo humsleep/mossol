@@ -10,6 +10,7 @@ import 'package:mossol/ui/onboarding_name_screen.dart';
 import 'package:mossol/ui/preference_screen.dart';
 
 import 'helpers.dart';
+import 'package:mossol/ui/start_pick_sheet.dart';
 
 void main() {
   late GameController c;
@@ -44,6 +45,9 @@ void main() {
 
     await tester.tap(findText('새 게임'));
     await tester.pumpAndSettle();
+    // 첫 단계는 시작 카드(docs/overhaul2/01_design.md §4.1).
+    expect(find.byType(StartPickSheet), findsOneWidget);
+    await pickStart(tester);
     // 첫 새 게임은 "나는?" → 캐스트 소개를 거친다. 시작하기를 누르면 확인 없이 시작한다.
     expect(findText(OnboardingGenderScreen.title), findsOneWidget);
     expect(c.phase, Phase.home);
@@ -174,7 +178,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('시작'));
     await tester.pumpAndSettle();
-    // 지우기 확인 뒤 "나는?"(아직 답이 없다). 2단계에서 뒤로 가면 1단계로, 1단계에서 뒤로
+    await pickStart(tester);
+    // 지우기 확인 뒤 시작 카드 → "나는?"(아직 답이 없다). 2단계에서 뒤로 가면 1단계로, 1단계에서 뒤로
     // 가면 홈으로 — 새 게임이 시작되지 않고 세이브도 그대로, 답도 저장되지 않는다.
     expect(findText(OnboardingGenderScreen.title), findsOneWidget);
     await tester.tap(findText('여자'));
@@ -198,6 +203,11 @@ void main() {
     expect(findText(OnboardingGenderScreen.title), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
+    // "나는?" 에서 뒤로 가면 시작 카드로, 시작 카드를 닫으면 홈으로.
+    expect(find.byType(StartPickSheet), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.byType(StartPickSheet), findsNothing);
     expect(c.phase, Phase.home);
     expect(c.hasSave, isTrue);
     expect(c.playerGender, isNull);
@@ -205,6 +215,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(findText('시작'));
     await tester.pumpAndSettle();
+    await pickStart(tester);
     await tester.tap(findText('여자'));
     await tester.pumpAndSettle();
     await skipNameStep(tester);

@@ -1800,7 +1800,7 @@
    },
    {
     "who": "narr",
-    "text": "2천 원이 빈다. 여섯 번 셌다."
+    "text": "2천원이 빈다. 여섯 번 셌다."
    }
   ],
   "choices": [
@@ -1831,7 +1831,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "지갑에서 천 원짜리 두 장. 아무도 모르는 2천 원짜리 평화."
+      "text": "지갑에서 천 원짜리 두 장. 아무도 모르는 2천원짜리 평화."
      }
     ]
    },
@@ -1868,7 +1868,7 @@
    ]
   },
   "weight": 3,
-  "title": "점심 12시 10분",
+  "title": "주문 폭주",
   "image": "assets/scenes/work",
   "lines": [
    {
@@ -3483,7 +3483,7 @@
   "lines": [
    {
     "who": "narr",
-    "text": "눈을 뜨니 오후 1시."
+    "text": "눈을 뜨니 해가 중천이다."
    },
    {
     "who": "narr",
@@ -3501,7 +3501,7 @@
     "reply": [
      {
       "who": "narr",
-      "text": "눈을 뜨니 오후 4시. 한 시간의 기준이 이상하다."
+      "text": "눈을 뜨니 해가 기울었다. 한 시간의 기준이 이상하다."
      }
     ]
    },
@@ -4070,7 +4070,7 @@
    }
   },
   "weight": 3,
-  "title": "너무 평화로운 오후",
+  "title": "너무 평화로운 하루",
   "image": "assets/scenes/rest",
   "lines": [
    {
@@ -5199,6 +5199,1182 @@
      {
       "who": "narr",
       "text": "덜컥 맡았다. 이제 화술이 진짜 필요해졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_reply",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "답장 대행 의뢰",
+  "image": "assets/scenes/work",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "마감 중. 단골손님이 카운터 너머로 폰을 내밀었다."
+   },
+   {
+    "who": "them",
+    "name": "단골손님",
+    "text": "저기… 연애 잘하실 것 같아서요"
+   },
+   {
+    "who": "them",
+    "name": "단골손님",
+    "text": "이 사람한테 답장 좀 써 주실 수 있어요? 사례는 할게요"
+   },
+   {
+    "who": "narr",
+    "text": "어디서 많이 본 구조다. 남의 이름으로 남의 마음을 쓰는 일.",
+    "ifFlags": [
+     "sc_ghost"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "모쏠한테 연애 답장을 부탁하다니. 세상은 넓다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "맡는다. 신중하게",
+    "effects": {
+     "stats": {
+      "money": 15,
+      "talk": 2
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "heat": 8,
+      "sincerity": -2
+     },
+     "album": "답장 대행 정체 발각"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "세 줄짜리 답장을 썼다. 다음 날 단골손님이 커피를 두 잔 샀다."
+     },
+     {
+      "who": "them",
+      "name": "단골손님",
+      "text": "그 사람이 '오늘 말투 좋다'래요 ㅋㅋ"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "them",
+      "name": "단골손님",
+      "text": "저기… 그 사람이 '이거 누가 써 줬냐'고 물어요"
+     },
+     {
+      "who": "them",
+      "name": "단골손님",
+      "text": "카페 이름까지 맞혔어요"
+     },
+     {
+      "who": "narr",
+      "text": "그 사람은 다음 날 카페에 왔다. 나를 오래 봤다."
+     }
+    ]
+   },
+   {
+    "text": "거절한다. 본인 말이 제일 좋다고",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "단골손님",
+      "text": "…그쵸. 제가 써 볼게요"
+     },
+     {
+      "who": "narr",
+      "text": "일주일 뒤, 단골손님이 둘이 왔다."
+     }
+    ]
+   },
+   {
+    "text": "대신 써 주진 않고 조언만",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "sincerity": 1,
+      "money": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "단골손님",
+      "text": "오 이게 더 좋네요. 팁이에요"
+     },
+     {
+      "who": "narr",
+      "text": "팁 3천원. 내 연애보다 남의 연애가 쉽다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 대행 답장을 '내 상담 성공 사례'로 무단 홍보",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 8,
+      "money": 25,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move",
+      "v_case_study"
+     ],
+     "album": "성공 사례 무단 게시"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "단골손님 대화를 '성공 사례'로 올렸다. 상담 문의가 세 건 들어왔다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_hustle_guest",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "하객 알바",
+  "image": "assets/scenes/friends",
+  "lines": [
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "야 하객 알바 할래? 반나절에 1.2만원. 뷔페 포함 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "신부 쪽 친구 역할. 사진만 웃고 찍으면 됨"
+   },
+   {
+    "who": "narr",
+    "text": "결혼식장이라니. 그날 이후 처음이다.",
+    "ifFlags": [
+     "sc_speech"
+    ]
+   }
+  ],
+  "choices": [
+   {
+    "text": "한다. 웃는 건 자신 있음",
+    "effects": {
+     "stats": {
+      "money": 12
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "money": 12,
+      "heat": 10
+     },
+     "album": "하객 알바 하다 동창 마주침"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "단체 사진 세 번. 뷔페 한 접시. 아무도 나를 몰랐다."
+     },
+     {
+      "who": "narr",
+      "text": "완벽한 하루였다. 돈을 받고 남의 행복을 축하하는 일."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "신랑 쪽 하객석에 6학년 3반 동창이 있었다."
+     },
+     {
+      "who": "them",
+      "name": "동창",
+      "text": "너 신부랑 아는 사이였어?? ㅋㅋㅋ"
+     },
+     {
+      "who": "narr",
+      "text": "모른다고 할 수 없었다. 알바라고 할 수도 없었다."
+     }
+    ]
+   },
+   {
+    "text": "가짜 하객은 좀",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "ㅋㅋ 너답다. 다른 사람 구할게"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 하객 알바 하고 '가짜 하객 체험기' 영상까지 올린다",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 10,
+      "money": 12,
+      "villain": 1,
+      "charm": 2
+     },
+     "setFlags": [
+      "villain_move",
+      "v_fakeguest"
+     ],
+     "album": "가짜 하객 체험기"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'남의 결혼식에서 1.2만원 버는 법' 조회수 8만. 신부 얼굴만 모자이크했다."
+     },
+     {
+      "who": "narr",
+      "text": "협찬 문의가 두 건 들어왔다. 하객 알바보다 영상이 돈이 됐다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_edit",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "read"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "숏폼 편집 외주",
+  "image": "assets/scenes/read",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "외주 사이트에 메시지 한 통. '30초 숏폼 편집, 오늘 밤까지, 1만원'."
+   },
+   {
+    "who": "narr",
+    "text": "받은 원본 파일을 열었다. 새벽 두 시, 그 게임. 내 목소리다.",
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "원본 파일은 고양이 브이로그다. 고양이가 3분 동안 잔다.",
+    "ifNotFlags": [
+     "sc_clip"
+    ]
+   }
+  ],
+  "choices": [
+   {
+    "text": "깔끔하게 편집한다",
+    "effects": {
+     "stats": {
+      "money": 10,
+      "sense": 2
+     }
+    },
+    "minigame": "pick_meme",
+    "fail": {
+     "stats": {
+      "money": 5,
+      "stress": 3
+     },
+     "album": "편집 자막 오타로 역주행"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "자막, 컷, 효과음. 30초에 맞췄다. 의뢰인이 별 다섯 개를 줬다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "자막에 오타 하나. 그 오타가 밈이 됐다. 의뢰인은 반만 기뻐했다."
+     }
+    ]
+   },
+   {
+    "text": "내 목소리 부분만 잘라 내고 넘긴다",
+    "effects": {
+     "stats": {
+      "money": 10,
+      "heat": -5
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "내 목소리 3초를 잘랐다. 영상은 오히려 깔끔해졌다."
+     },
+     {
+      "who": "narr",
+      "text": "의뢰인은 몰랐다. 아마도."
+     }
+    ],
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "text": "마감이 무리라 거절한다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "거절 메시지를 보냈다. 그 밤에 처음으로 일찍 잤다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_course",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "style"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "데이트 코스 체험단",
+  "image": "assets/scenes/style",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "체험단 당첨 문자. '신규 데이트 코스 사전 답사, 후기 작성 시 사례비 지급'."
+   },
+   {
+    "who": "narr",
+    "text": "혼자 가는 데이트 코스. 역사상 가장 쓸쓸한 체험단이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "진지하게 코스를 짜서 다녀온다",
+    "effects": {
+     "stats": {
+      "money": 8,
+      "sense": 3,
+      "stress": -3
+     }
+    },
+    "minigame": "date_course",
+    "fail": {
+     "stats": {
+      "money": 8,
+      "stress": 2
+     },
+     "album": "혼자 커플 세트 주문"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "카페, 산책로, 야경. 순서만 바꿔도 하루가 달라졌다."
+     },
+     {
+      "who": "narr",
+      "text": "후기 마지막 줄: '다음엔 둘이 오겠습니다.'"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "코스 마지막 식당은 커플 세트만 팔았다. 2인분을 혼자 먹었다."
+     }
+    ]
+   },
+   {
+    "text": "대충 사진만 찍고 후기 쓴다",
+    "effects": {
+     "stats": {
+      "money": 8,
+      "sincerity": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "사진 열 장, 후기 다섯 줄. 사례비는 들어왔다. 기억은 안 남았다."
+     }
+    ]
+   },
+   {
+    "text": "{top}한테 같이 가자고 해 본다",
+    "effects": {
+     "stats": {
+      "money": 8,
+      "esteem": 1
+     },
+     "affection": {
+      "@top": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'체험단인데 같이 갈래?' 보내 놓고 1분 동안 후회했다."
+     },
+     {
+      "who": "narr",
+      "text": "{top|이가} '체험단이 핑계'인 걸 안다면서 시간을 물어 왔다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_flea",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "work"
+   ],
+   "affection": {
+    "sohee": [
+     10,
+     100
+    ],
+    "minjae": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 1,
+  "once": true,
+  "title": "중고거래 직거래",
+  "image": "assets/scenes/work",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "안 쓰는 게임 굿즈를 중고로 올렸다. 직거래 장소, 역 3번 출구."
+   },
+   {
+    "who": "them",
+    "name": "구매자",
+    "text": "도착했는데 혹시 5천원만 깎아 주실 수 있나요?"
+   },
+   {
+    "who": "them",
+    "name": "구매자",
+    "text": "아 그리고 박스 없어요? 사진엔 있던데"
+   },
+   {
+    "who": "narr",
+    "text": "구매자 닉네임에 그 게임 길드 태그가 붙어 있다. 듀오가 있는 길드다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "깎아 준다. 길드 사람이니까",
+    "effects": {
+     "stats": {
+      "money": 5
+     },
+     "affection": {
+      "sohee": 1,
+      "minjae": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "구매자",
+      "text": "와 감사요 ㅋㅋ 길드에 소문내 드림"
+     },
+     {
+      "who": "narr",
+      "text": "그날 밤 듀오가 귓속말을 보냈다. '굿즈 판 사람 너지? ㅋㅋ'"
+     }
+    ]
+   },
+   {
+    "text": "정가 고수. 박스는 원래 없다고",
+    "effects": {
+     "stats": {
+      "money": 10
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "stress": 4
+     },
+     "album": "직거래 노쇼 30분 대기"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "구매자",
+      "text": "…네"
+     },
+     {
+      "who": "narr",
+      "text": "거래는 됐다. 별점은 별 두 개였다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "구매자가 '생각해 볼게요'를 남기고 사라졌다. 30분 기다렸다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_mc",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "stats": {
+    "reputation": [
+     50,
+     100
+    ]
+   },
+   "notFlags": [
+    "sc_speech_sequel"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "돌잔치 사회 대타",
+  "image": "assets/scenes/friends",
+  "lines": [
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "야 급함. 내일 조카 돌잔치 사회자가 펑크 냄"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "너 말 잘하잖아. 1.5만원이랑 답례떡. 해 주라"
+   },
+   {
+    "who": "narr",
+    "text": "돌잡이 순서표가 사진으로 왔다. 순서가 열한 개다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "한다. 순서표부터 외운다",
+    "effects": {
+     "stats": {
+      "money": 15,
+      "talk": 3,
+      "heat": 5
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "money": 15,
+      "stress": 4
+     },
+     "album": "돌잔치 사회 중 아기 이름 틀림"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "돌잡이에서 아기가 마이크를 잡았다. 장내 폭소. 다음 사회자 섭외가 두 건 들어왔다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "아기 이름을 두 번 틀렸다. 세 번째에 할머니가 고쳐 주셨다."
+     }
+    ]
+   },
+   {
+    "text": "말은 잘해도 사회는 못 해",
+    "effects": {
+     "stats": {
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "ㅋㅋ 아쉽네. 다른 사람 찾아볼게"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "a_hustle_mc_sequel",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "friends"
+   ],
+   "flags": [
+    "sc_speech_sequel"
+   ],
+   "day": [
+    25,
+    100
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "축사 리벤지: 돌잔치",
+  "image": "assets/scenes/friends",
+  "lines": [
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "약속한 2편 날입니다 ㅋㅋ 돌잔치 사회"
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "카메라 두 대 들고 감. 이번엔 미러링 없음"
+   },
+   {
+    "who": "narr",
+    "text": "축사 이후 처음으로 카메라 두 대 앞에서 잡는 마이크. 손에 땀이 난다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "레전드 2편을 찍는다",
+    "effects": {
+     "stats": {
+      "money": 15,
+      "talk": 3,
+      "heat": 5,
+      "reputation": 2
+     }
+    },
+    "minigame": "word_order",
+    "fail": {
+     "stats": {
+      "money": 15,
+      "heat": 8
+     },
+     "album": "2편도 대참사"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "돌잡이 순간 애드리브 한 줄에 장내가 뒤집혔다."
+     },
+     {
+      "who": "them",
+      "name": "신랑 친구",
+      "text": "ㅋㅋㅋㅋ 2편이 1편 이김"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "이번엔 폰을 꺼 뒀는데 스마트워치에 알림이 떴다. '태현: 2편 화이팅 ㅋㅋ'"
+     },
+     {
+      "who": "them",
+      "name": "신랑 친구",
+      "text": "이게 2편이다 ㅋㅋㅋ 시리즈 확정"
+     }
+    ]
+   },
+   {
+    "text": "카메라는 끄고 사회만",
+    "effects": {
+     "stats": {
+      "money": 15,
+      "sincerity": 2,
+      "heat": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "신랑 친구",
+      "text": "아 아쉽 ㅋㅋ 근데 사회는 진짜 잘했다"
+     },
+     {
+      "who": "narr",
+      "text": "영상 없는 하루. 박수는 그대로였다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_hustle_review",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "리뷰 대필 제안",
+  "image": "assets/scenes/rest",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "집에서 쉬는데 DM이 왔다."
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "안녕하세요 ㅎㅎ 맛집 리뷰 대필 알바 구해요"
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "가 본 척만 하시면 돼요. 건당 2천원. 열 건이면 2만원"
+   },
+   {
+    "who": "narr",
+    "text": "남인 척 쓰는 글이라니. 새벽 3시의 시가 떠올랐다.",
+    "ifFlags": [
+     "sc_ghost_lie"
+    ]
+   }
+  ],
+  "choices": [
+   {
+    "text": "한다. 쉬운 돈이니까",
+    "effects": {
+     "stats": {
+      "money": 20,
+      "sincerity": -5
+     },
+     "setFlags": [
+      "hustle_fake_review"
+     ]
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "money": 20,
+      "sincerity": -5,
+      "heat": 10
+     },
+     "setFlags": [
+      "hustle_fake_review"
+     ],
+     "album": "가짜 리뷰 말투 들킴"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "가 본 적 없는 식당에 별 다섯 개를 열 번 줬다. 손가락이 이상하게 무거웠다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "열 개 리뷰가 다 같은 말투였다. '분위기 미쳤어요 ㅋㅋ'."
+     },
+     {
+      "who": "narr",
+      "text": "누군가 내 계정을 캡처해 '리뷰 알바 실체'로 올렸다."
+     }
+    ]
+   },
+   {
+    "text": "거절한다",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "모르는 계정",
+      "text": "아쉽네요 ㅎㅎ"
+     },
+     {
+      "who": "narr",
+      "text": "차단했다. 쉬는 날이 조금 더 쉬는 날 같아졌다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_hustle_stream",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "stats": {
+    "heat": [
+     30,
+     100
+    ]
+   },
+   "notFlags": [
+    "sc_clip_guest"
+   ]
+  },
+  "weight": 1,
+  "once": true,
+  "title": "합방 게스트 섭외",
+  "image": "assets/scenes/rest",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "모르는 스트리머의 DM. '요즘 화제의 그분 맞죠? 합방 게스트 와 주실래요?'"
+   },
+   {
+    "who": "narr",
+    "text": "출연료 1만원. 동시 접속 500명."
+   }
+  ],
+  "choices": [
+   {
+    "text": "나간다",
+    "effects": {
+     "stats": {
+      "money": 10,
+      "charm": 2,
+      "heat": 10
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "money": 10,
+      "heat": 12,
+      "esteem": -2
+     },
+     "album": "합방에서 말 씹힘 연속 7회"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "두 시간 동안 질문 공세. 대부분 내 연애에 대한 거였다. 할 말이 없어서 더 웃겼다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "말이 일곱 번 씹혔다. 채팅창에 '렉 아니고 긴장임' 밈이 생겼다."
+     }
+    ]
+   },
+   {
+    "text": "거절한다",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "거절했다. 그날 밤 알림이 다섯 개 줄었다. 조용해서 좋았다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 방송에서 '아는 사람 썰'을 푼다. 이름만 가리고",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 12,
+      "money": 25,
+      "villain": 1
+     },
+     "trust": {
+      "@top": -3
+     },
+     "setFlags": [
+      "villain_move",
+      "v_stream_gossip"
+     ],
+     "album": "이름만 가린 지인 썰"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "동접 500이 1500이 됐다. 채팅창 1위: '이름 가려도 다 앎 ㅋㅋ'. 썰의 주인공들도 다 알아들었다."
+     },
+     {
+      "who": "narr",
+      "text": "썰값으로 후원이 1.5만원 더 들어왔다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_hustle_stream_hot",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "notFlags": [
+    "sc_clip_guest"
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "메인 게스트 섭외",
+  "image": "assets/scenes/rest",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "큰 채널 DM. '요즘 제일 핫한 그분 맞죠? 메인 게스트로 모십니다.'"
+   },
+   {
+    "who": "narr",
+    "text": "출연료 2.5만원. 동시 접속 5천 명."
+   },
+   {
+    "who": "narr",
+    "text": "소문이 클수록 출연료도 컸다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "나간다",
+    "effects": {
+     "stats": {
+      "money": 25,
+      "charm": 2,
+      "heat": 12
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "money": 25,
+      "heat": 15,
+      "esteem": -3
+     },
+     "album": "메인 게스트 방송 사고"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "두 시간 생방송. 질문의 절반이 내 소문이었다. 나머지 절반은 내 연애였다. 둘 다 할 말이 별로 없었다."
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "생방송에서 말이 아홉 번 씹혔다. '렉 아니고 긴장'이 채팅창을 덮었다."
+     }
+    ]
+   },
+   {
+    "text": "거절한다",
+    "effects": {
+     "stats": {
+      "stress": -2,
+      "heat": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "거절했다. 2.5만원짜리 거절이다. 생각보다 개운했다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 방송에서 '동네 빌런 썰'을 직접 판다",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 15,
+      "money": 25,
+      "villain": 1
+     },
+     "trust": {
+      "@top": -3
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "동네 빌런 썰 생방송"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "동접 5천이 1만이 됐다. 채팅창 1위: '이 사람 본인 썰이 제일 셈'."
+     },
+     {
+      "who": "narr",
+      "text": "{top|이가} 방송 다시보기를 보냈다. 말은 없었다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "a_hustle_stream_clip",
+  "layer": "daily",
+  "trigger": {
+   "action": [
+    "rest"
+   ],
+   "flags": [
+    "sc_clip_guest"
+   ]
+  },
+  "weight": 3,
+  "once": true,
+  "title": "듀오 채널 합방",
+  "image": "assets/scenes/rest",
+  "lines": [
+   {
+    "who": "them",
+    "name": "듀오",
+    "text": "합방 날 ㅋㅋ 마이크 켜진 거 확인함?"
+   },
+   {
+    "who": "them",
+    "name": "듀오",
+    "text": "오늘은 켜져 있는 게 정상임"
+   },
+   {
+    "who": "narr",
+    "text": "얼마 전엔 사고였던 마이크가 오늘은 출연료다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "마이크 켜고 듀오 한다",
+    "effects": {
+     "stats": {
+      "money": 10,
+      "charm": 2,
+      "heat": 10
+     },
+     "affection": {
+      "sohee": 2,
+      "minjae": 2
+     }
+    },
+    "minigame": "call_rhythm",
+    "fail": {
+     "stats": {
+      "money": 10,
+      "heat": 15
+     },
+     "album": "합방에서 혼잣말 재연"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "시청자들이 '그 클립 주인공'을 연호했다. 듀오가 대신 막아 줬다."
+     },
+     {
+      "who": "them",
+      "name": "듀오",
+      "text": "얘 서폿 잘함. 목소리 말고 그거 보러 오세요 ㅋㅋ"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "긴장해서 또 혼잣말을 했다. 이번엔 채팅창이 다 들었다."
+     },
+     {
+      "who": "them",
+      "name": "듀오",
+      "text": "ㅋㅋㅋㅋ 이 사람 진짜 안 변함"
+     }
+    ]
+   },
+   {
+    "text": "오늘은 채팅으로만 참여",
+    "effects": {
+     "stats": {
+      "money": 5,
+      "sense": 1
+     },
+     "affection": {
+      "sohee": 1,
+      "minjae": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "듀오",
+      "text": "ㅋㅋ 오케 채팅 게스트"
+     },
+     {
+      "who": "narr",
+      "text": "채팅 한 줄에도 하트가 쏟아졌다. 목소리 없이도 됐다."
      }
     ]
    }

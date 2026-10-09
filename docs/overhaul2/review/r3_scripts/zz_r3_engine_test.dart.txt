@@ -1,0 +1,500 @@
+// R3 bug hunt (engine): live-build save compat, earlier-branch saves, undo with new day fields,
+// variant-seen determinism across restarts, migration idempotency/corrupt album, meta growth,
+// analytics double logging. Throwaway — copied to docs/overhaul2/review/r3_scripts/.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mossol/analytics/analytics.dart';
+import 'package:mossol/engine/meta_service.dart';
+import 'package:mossol/engine/models.dart';
+import 'package:mossol/engine/save_service.dart';
+import 'package:mossol/engine/story_repository.dart';
+import 'package:mossol/game_controller.dart';
+import 'package:mossol/ui/event_screen.dart' show ChatClock;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'widget/helpers.dart';
+
+const _dumps = 'docs/overhaul2/review/r3_scripts/live_dumps';
+
+Map<String, Object> _readDump(String name) {
+  final j = jsonDecode(File('$_dumps/$name.json').readAsStringSync()) as Map;
+  return {
+    for (final e in j.entries)
+      e.key as String: e.value is List
+          ? (e.value as List).cast<String>().toList()
+          : e.value as Object,
+  };
+}
+
+Future<Map<String, Object?>> _prefs() async {
+  final p = await SharedPreferences.getInstance();
+  return {for (final k in p.getKeys()) k: p.get(k)};
+}
+
+/// Plays the current event like the screen does (asks the clock first), returns the event id.
+String _playOne(GameController c, Random rnd, {List<String>? problems}) {
+  final ev = c.current!;
+  final s = c.state!;
+  if (ev.lines.isEmpty && ev.choices.isEmpty) problems?.add('empty event ${ev.id} D${s.day}');
+  if (!ev.isCall) {
+    c.clockStartFor(
+      ev,
+      ChatClock.startSeconds(
+        seed: s.seed,
+        day: s.day,
+        index: c.todayEventIndex,
+        total: c.todayEventTotal,
+      ),
+    );
+  }
+  final open = [for (final v in c.choices) if (!v.locked) v.index];
+  if (open.isEmpty) {
+    problems?.add('no open choice ${ev.id} D${s.day}');
+    return ev.id;
+  }
+  final i = open[rnd.nextInt(open.length)];
+  final mg = ev.choices[i].minigame != null;
+  c.choose(i, minigameSuccess: mg ? rnd.nextBool() : null);
+  c.continueAfterChoice();
+  return ev.id;
+}
+
+Future<void> _playToEnd(
+  GameController c,
+  Random rnd, {
+  List<String>? problems,
+  int maxDays = 130,
+}) async {
+  final b = c.bundle;
+  for (var d = 0; d < maxDays && c.ending == null; d++) {
+    if (c.phase == Phase.dayStart) c.beginMorning();
+    if (c.phase == Phase.action) {
+      c.state!.hearts = b.config.maxHearts;
+      await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+    }
+    var guard = 0;
+    while (c.phase == Phase.event && guard++ < 40) {
+      _playOne(c, rnd, problems: problems);
+    }
+    if (guard >= 40) problems?.add('event loop D${c.state!.day}');
+    if (c.phase == Phase.summary) await c.endDay();
+  }
+}
+
+// ---- synthetic bundle (same shape as r1/r2 scripts) ----
+const _config = '{"initialStats": {"charm": 10}, "actions": []}';
+const _chars = '''[
+  {"id": "a", "name": "가람", "gender": "f", "role": "senior"},
+  {"id": "b", "name": "나래", "gender": "m", "role": "senior"}
+]''';
+const _endings =
+    '[{"id": "solo", "name": "솔로", "tier": "solo", "default": true}]';
+
+Map<String, dynamic> _ev(
+  String id, {
+  String layer = 'daily',
+  int? day,
+  Map<String, dynamic>? trigger,
+  List<Map<String, dynamic>>? lines,
+  List<Map<String, dynamic>>? choices,
+  String? cliffhanger,
+  bool? once,
+}) => {
+  'id': id,
+  'layer': layer,
+  'day': ?day,
+  'trigger': ?trigger,
+  'cliffhanger': ?cliffhanger,
+  'once': ?once,
+  'lines':
+      lines ??
+      [
+        {'who': 'them', 'text': '안녕'},
+        {'who': 'them', 'text': '둘째 줄'},
+      ],
+  'choices':
+      choices ??
+      [
+        {'text': '하나'},
+        {'text': '둘'},
+      ],
+};
+
+StoryBundle _bundle(List<Map<String, dynamic>> events) =>
+    StoryBundle.fromJsonStrings(
+      config: _config,
+      characters: _chars,
+      events: [jsonEncode(events)],
+      endings: _endings,
+    );
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // ---------------------------------------------------------------------------
+  group('live build (HEAD) saves', () {
+    for (final name in [
+      'veteran_mid_1',
+      'veteran_mid_2',
+      'veteran_mid_3',
+      'newbie_mid',
+      'veteran_morning',
+    ]) {
+      test('$name: init → migration → continue → play to ending', () async {
+        final dump = _readDump(name);
+        SharedPreferences.setMockInitialValues(dump);
+        final save0 = jsonDecode(dump['mossol_save_v1'] as String) as Map<String, dynamic>;
+        final meta0 = jsonDecode(dump['mossol_meta_v1'] as String) as Map<String, dynamic>;
+        final album = (dump['mossol_endings_v1'] as List<String>?) ?? const <String>[];
+
+        final c = GameController(bundle: testBundle(), save: SaveService());
+        await c.init();
+        final m = c.meta!;
+        if (album.isNotEmpty) {
+          expect(m.completedStarts, [StartScenario.classic]);
+          expect(m.startEndings[StartScenario.classic]!.toSet(), album.toSet());
+        } else {
+          expect(m.completedStarts, isEmpty);
+        }
+        if ((meta0['totalRuns'] as int) > 1) {
+          expect(m.seenEvents.toSet(), (save0['seen'] as List).cast<String>().toSet());
+        } else {
+          expect(m.seenEvents, isEmpty);
+        }
+        // idempotent: a second launch does not change meta
+        final metaAfter1 = (await _prefs())['mossol_meta_v1'];
+        final c2 = GameController(bundle: testBundle(), save: SaveService());
+        await c2.init();
+        expect((await _prefs())['mossol_meta_v1'], metaAfter1);
+
+        expect(await c2.continueGame(), isTrue);
+        print('$name: phase=${c2.phase} day=${c2.state!.day} cur=${c2.current?.id} '
+            'cliff=${c2.cliffhanger} clockEnd=${c2.dayClockEnd} ff=${c2.canFastForward} '
+            'suggested=${c2.suggestedStart}');
+        final problems = <String>[];
+        await _playToEnd(c2, Random(name.hashCode), problems: problems);
+        expect(problems, isEmpty);
+        expect(c2.ending, isNotNull);
+        print('$name: ending=${c2.ending!.id} completed=${c2.completedStarts} '
+            'seenEvents=${c2.meta!.seenEvents.length}');
+        // next run: veteran/done flags
+        await c2.nextRun(start: 'sc_leak');
+        expect(c2.state!.flags, containsAll(['veteran', 'done_classic']));
+      }, timeout: const Timeout(Duration(minutes: 3)));
+    }
+
+    test('veteran_after_ending (no save): suggested start is not classic, flags on new game', () async {
+      SharedPreferences.setMockInitialValues(_readDump('veteran_after_ending'));
+      final c = GameController(bundle: testBundle(), save: SaveService());
+      await c.init();
+      print('suggested=${c.suggestedStart} completed=${c.completedStarts} '
+          'classicEndings=${c.startEndingCount(StartScenario.classic)}');
+      expect(c.suggestedStart, isNot(StartScenario.classic));
+      await c.newGame(start: 'sc_leak', preference: Preference.genders[0]);
+      expect(c.state!.flags, containsAll(['veteran', 'done_classic']));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('earlier-branch save shapes', () {
+    test('mid-day save without r2 day fields (r1-era branch) and with explicit nulls', () async {
+      for (final mode in ['missing', 'nulls']) {
+        SharedPreferences.setMockInitialValues({});
+        final c = GameController(bundle: testBundle(), save: SaveService());
+        await c.init();
+        await c.markIntroSeen();
+        await c.newGame(start: 'sc_clip', seed: 5, preference: Preference.genders[1]);
+        final rnd = Random(5);
+        // play 2 days, then 1 event into day 3
+        for (var d = 0; d < 2; d++) {
+          c.beginMorning();
+          c.state!.hearts = 5;
+          await c.startDay(c.config.actions.first);
+          while (c.phase == Phase.event) {
+            _playOne(c, rnd);
+          }
+          await c.endDay();
+        }
+        c.beginMorning();
+        await c.startDay(c.config.actions.first);
+        _playOne(c, rnd);
+        final p = await SharedPreferences.getInstance();
+        final j = jsonDecode(p.getString('mossol_save_v1')!) as Map<String, dynamic>;
+        for (final k in ['todayCliffhanger', 'todayCliffRank', 'chainRank', 'dayClockEnd']) {
+          if (mode == 'missing') {
+            j.remove(k);
+          } else {
+            j[k] = null;
+          }
+        }
+        await p.setString('mossol_save_v1', jsonEncode(j));
+        final c2 = GameController(bundle: testBundle(), save: SaveService());
+        await c2.init();
+        expect(await c2.continueGame(), isTrue, reason: mode);
+        final problems = <String>[];
+        await _playToEnd(c2, rnd, problems: problems);
+        expect(problems, isEmpty, reason: mode);
+        expect(c2.ending, isNotNull, reason: mode);
+      }
+    }, timeout: const Timeout(Duration(minutes: 3)));
+  });
+
+  // ---------------------------------------------------------------------------
+  group('undo with the r2 day fields', () {
+    test('chained pick → undo → other pick: queue, chain rank, cliffhanger, clock, saved fields', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, cliffhanger: 'M', choices: [
+          {'text': 'A', 'effects': {'affection': {'a': -1}}, 'next': 'h1'},
+          {'text': 'B'},
+        ]),
+        _ev('h1', layer: 'daily', trigger: {'flags': ['never']}, cliffhanger: 'H'),
+        _ev('x', layer: 'daily', day: 1),
+      ]);
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      await c.markIntroSeen();
+      await c.newGame(seed: 1);
+      c.beginMorning();
+      await c.startDay(const DayAction(id: 'x', name: 'x', desc: ''));
+      expect(c.current!.id, 'm1');
+      c.clockStartFor(c.current!, 9 * 3600);
+      final before = (
+        q: c.queuedEventIds,
+        cliff: c.cliffhanger,
+        clock: c.dayClockEnd,
+      );
+      final p = await SharedPreferences.getInstance();
+      final saveBefore = jsonDecode(p.getString('mossol_save_v1')!) as Map<String, dynamic>;
+      c.choose(0);
+      expect(c.queuedEventIds.first, 'h1');
+      expect(c.cliffhanger, 'M');
+      expect(c.dayClockEnd, isNotNull);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      c.undoChoice();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(c.queuedEventIds, before.q);
+      expect(c.cliffhanger, before.cliff);
+      expect(c.dayClockEnd, before.clock);
+      // what is on disk right after undo (app killed here)?
+      final saveAfterUndo = jsonDecode(p.getString('mossol_save_v1')!) as Map<String, dynamic>;
+      print('disk after undo: seen=${saveAfterUndo['seen']} queue=${saveAfterUndo['dayQueue']} '
+          'stats.charm/aff=${(saveAfterUndo['relations'] as Map)['a']} '
+          'cliff=${saveAfterUndo['todayCliffhanger']} chain=${saveAfterUndo['chainRank']}');
+      print('disk before choice: seen=${saveBefore['seen']} queue=${saveBefore['dayQueue']} '
+          'aff=${(saveBefore['relations'] as Map)['a']}');
+      c.choose(1);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(c.queuedEventIds, ['x']);
+      expect(c.cliffhanger, 'M');
+      final s = jsonDecode(p.getString('mossol_save_v1')!) as Map<String, dynamic>;
+      expect(s['chainRank'], isEmpty);
+      expect(s['dayQueue'], ['x']);
+      c.continueAfterChoice();
+      // restart now: x must still be next, cliffhanger M
+      final c2 = GameController(bundle: b, save: SaveService());
+      await c2.init();
+      await c2.continueGame();
+      expect(c2.current!.id, 'x');
+      expect(c2.cliffhanger, 'M');
+    });
+
+    test('app killed right after undo (before re-pick): which state comes back?', () async {
+      final b = _bundle([
+        _ev('m1', layer: 'main', day: 1, choices: [
+          {'text': 'A', 'effects': {'affection': {'a': -3}, 'stats': {'charm': -5}}},
+          {'text': 'B'},
+        ]),
+        _ev('x', layer: 'daily', day: 1),
+      ]);
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      await c.markIntroSeen();
+      await c.newGame(seed: 1);
+      c.beginMorning();
+      await c.startDay(const DayAction(id: 'x', name: 'x', desc: ''));
+      final charm0 = c.state!.stat('charm');
+      c.choose(0);
+      // real app: the rewarded ad takes seconds, so the post-choice save hits the disk first
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      c.undoChoice();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(c.state!.stat('charm'), charm0);
+      final c2 = GameController(bundle: b, save: SaveService());
+      await c2.init();
+      await c2.continueGame();
+      print('after relaunch: current=${c2.current?.id} charm=${c2.state!.stat('charm')} '
+          '(before choice $charm0) aff=${c2.state!.affectionOf('a')} seen=${c2.state!.seen}');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('variant-seen tracking', () {
+    test('absorbed id#index == variants actually shown (with random mid-day restarts)', () async {
+      final b = testBundle();
+      var mismatches = 0;
+      var checked = 0;
+      var ffWrong = 0;
+      var ffChecks = 0;
+      for (var seed = 0; seed < 6; seed++) {
+        SharedPreferences.setMockInitialValues({});
+        var c = GameController(bundle: b, save: SaveService());
+        await c.init();
+        await c.markIntroSeen();
+        final rnd = Random(seed);
+        final st = b.starts[seed % b.starts.length].id;
+        await c.newGame(start: st, seed: seed + 100, preference: Preference.genders[seed % 2]);
+        final shown = <String>{};
+        for (var d = 0; d < 130 && c.ending == null; d++) {
+          if (c.phase == Phase.dayStart) c.beginMorning();
+          c.state!.hearts = 5;
+          await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+          while (c.phase == Phase.event) {
+            final ev = c.current!;
+            final orig = b.eventById[ev.id]!;
+            if (orig.variants.isNotEmpty) {
+              // which bundle is on screen? compare the lines
+              final s = c.state!;
+              final idx = c.engine.variantIndexOf(s, orig);
+              shown.add('${ev.id}#$idx');
+            }
+            _playOne(c, rnd);
+            if (rnd.nextInt(10) == 0 && c.phase == Phase.event) {
+              // relaunch mid-day
+              c = GameController(bundle: b, save: SaveService());
+              await c.init();
+              await c.continueGame();
+            }
+          }
+          if (c.phase == Phase.summary) await c.endDay();
+        }
+        final keys = c.meta!.seenEvents.where((k) => k.contains('#')).toSet();
+        checked += shown.length;
+        final missing = shown.difference(keys);
+        final extra = keys.difference(shown);
+        mismatches += missing.length + extra.length;
+        if (missing.isNotEmpty || extra.isNotEmpty) {
+          print('seed $seed: missing=$missing extra=$extra');
+        }
+        // run 2: fast-forward must only claim variants that were shown
+        await c.nextRun(start: st);
+        final shown2 = <String>{};
+        for (var d = 0; d < 40 && c.ending == null; d++) {
+          if (c.phase == Phase.dayStart) c.beginMorning();
+          c.state!.hearts = 5;
+          await c.startDay(b.config.actions[rnd.nextInt(b.config.actions.length)]);
+          while (c.phase == Phase.event) {
+            final ev = c.current!;
+            final orig = b.eventById[ev.id]!;
+            if (orig.variants.isNotEmpty) {
+              final idx = c.engine.variantIndexOf(c.state!, orig);
+              final key = '${ev.id}#$idx';
+              ffChecks++;
+              if (c.canFastForward && !shown.contains(key) && !shown2.contains(key)) {
+                ffWrong++;
+                print('ff on unseen variant $key');
+              }
+              shown2.add(key);
+            }
+            _playOne(c, rnd);
+          }
+          if (c.phase == Phase.summary) await c.endDay();
+        }
+      }
+      print('variant keys checked=$checked mismatches=$mismatches ffChecks=$ffChecks ffWrong=$ffWrong');
+      expect(mismatches, 0);
+      expect(ffWrong, 0);
+    }, timeout: const Timeout(Duration(minutes: 8)));
+  });
+
+  // ---------------------------------------------------------------------------
+  group('migration edge cases', () {
+    test('album with junk ids/duplicates; meta corrupt; repeated launches', () async {
+      final legacyMeta = jsonEncode({'totalRuns': 5, 'introSeen': true, 'lastEndingId': 'solo_strong'});
+      SharedPreferences.setMockInitialValues({
+        'mossol_meta_v1': legacyMeta,
+        'mossol_endings_v1': ['solo_strong', 'gone_ending', 'solo_strong', ''],
+      });
+      for (var i = 0; i < 3; i++) {
+        final c = GameController(bundle: testBundle(), save: SaveService());
+        await c.init();
+        print('launch $i: completed=${c.completedStarts} classic=${c.meta!.startEndings} '
+            'distinct=${c.distinctEndingCount} seen=${c.meta!.seenEvents.length}');
+        expect(c.completedStarts, [StartScenario.classic]);
+      }
+      // corrupt meta → wiped → re-migrated from album
+      final p = await SharedPreferences.getInstance();
+      await p.setString('mossol_meta_v1', '{not json');
+      final c = GameController(bundle: testBundle(), save: SaveService());
+      await c.init();
+      print('after corrupt meta: completed=${c.completedStarts} runs=${c.meta!.totalRuns} '
+          'firstOnboarding=${c.isFirstOnboarding} suggested=${c.suggestedStart}');
+    });
+
+    test('totalRuns>1 + save with seen: migration seeds seenEvents from the CURRENT run', () async {
+      // A live veteran in the middle of run 3: today's not-yet-finished daily that was already
+      // seen earlier in THIS run is now "seen in an earlier run" → fast-forward / free skip.
+      SharedPreferences.setMockInitialValues(_readDump('veteran_mid_2'));
+      final c = GameController(bundle: testBundle(), save: SaveService());
+      await c.init();
+      await c.continueGame();
+      print('current=${c.current?.id} seenInEarlierRun=${c.seenInEarlierRun(c.current!.id)} '
+          'ff=${c.canFastForward}');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('meta growth', () {
+    test('meta JSON size after full runs of every start (both prefs)', () async {
+      final b = testBundle();
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(bundle: b, save: SaveService());
+      await c.init();
+      await c.markIntroSeen();
+      final rnd = Random(77);
+      var runs = 0;
+      for (final pref in Preference.genders) {
+        for (final st in b.starts) {
+          await c.newGame(start: st.id, preference: pref, run: runs + 1);
+          await _playToEnd(c, rnd);
+          runs++;
+          final p = await SharedPreferences.getInstance();
+          final raw = p.getString('mossol_meta_v1')!;
+          print('run $runs ${st.id}/$pref: meta=${raw.length}B seenEvents=${c.meta!.seenEvents.length} '
+              '(variant keys ${c.meta!.seenEvents.where((k) => k.contains('#')).length}) '
+              'ripples=${c.meta!.seenRipples.length} save=${p.getString('mossol_save_v1')?.length}B');
+        }
+      }
+      final evs = b.events.length;
+      final varKeys = b.events.fold<int>(0, (a, e) => a + (e.variants.isEmpty ? 0 : e.variants.length + 1));
+      print('upper bound: events=$evs variantKeys=$varKeys');
+    }, timeout: const Timeout(Duration(minutes: 8)));
+  });
+
+  // ---------------------------------------------------------------------------
+  group('analytics', () {
+    test('run_started fate flag across restarts of the fate start', () async {
+      final rec = RecordingAnalyticsBackend();
+      SharedPreferences.setMockInitialValues({});
+      final c = GameController(
+        bundle: testBundle(),
+        save: SaveService(),
+        analytics: Analytics(backend: rec),
+      );
+      await c.init();
+      await c.markIntroSeen();
+      await c.rememberFate('sc_leak');
+      await c.newGame(start: 'sc_leak', preference: 'f'); // fate run
+      await c.newGame(start: 'sc_leak', preference: 'f'); // abandoned & restarted (card or fate?)
+      await c.newGame(start: 'classic', preference: 'f');
+      await c.newGame(start: 'sc_leak', preference: 'f'); // picked by hand later
+      final fates = [for (final p in rec.paramsOf(Analytics.runStarted)) p['fate']];
+      print('run_started fate flags=$fates count=${fates.length}');
+    });
+  });
+}

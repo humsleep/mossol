@@ -374,8 +374,7 @@ abstract final class AppTypography {
   ];
 
   /// 표·타이머·스탯처럼 자리수가 고정돼야 하는 숫자.
-  static TextStyle tabular(TextStyle base) =>
-      base.copyWith(fontFeatures: _tab);
+  static TextStyle tabular(TextStyle base) => base.copyWith(fontFeatures: _tab);
 
   /// 워드마크(앱 이름) 전용. **타이틀 화면(§2.16) 한 곳에서만** 쓴다.
   ///
@@ -811,7 +810,11 @@ class AppTokens extends ThemeExtension<AppTokens> {
             t,
           ),
       },
-      neutralAccent: CharacterAccent.lerp(neutralAccent, other.neutralAccent, t),
+      neutralAccent: CharacterAccent.lerp(
+        neutralAccent,
+        other.neutralAccent,
+        t,
+      ),
       shadowCard: BoxShadow.lerpList(shadowCard, other.shadowCard, t)!,
       shadowRaised: BoxShadow.lerpList(shadowRaised, other.shadowRaised, t)!,
       shadowSheet: BoxShadow.lerpList(shadowSheet, other.shadowSheet, t)!,
@@ -940,6 +943,7 @@ abstract final class _StatKey {
   static const sense = 'sense';
   static const money = 'money';
   static const stress = 'stress';
+  static const heat = 'heat';
 }
 
 final AppTokens _lightTokens = AppTokens(
@@ -982,6 +986,7 @@ final AppTokens _lightTokens = AppTokens(
     _StatKey.sense: AppPalette.infoLight,
     _StatKey.money: AppPalette.successLight,
     _StatKey.stress: AppPalette.dangerLight,
+    _StatKey.heat: AppPalette.warningLight,
   },
   characterAccents: const {
     'seoyeon': CharacterAccent(
@@ -1051,25 +1056,13 @@ final AppTokens _lightTokens = AppTokens(
     onContainer: AppPalette.inkText,
   ),
   shadowCard: const [
-    BoxShadow(
-      color: Color(0x0F1C1216),
-      blurRadius: 10,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x0F1C1216), blurRadius: 10, offset: Offset(0, 2)),
   ],
   shadowRaised: const [
-    BoxShadow(
-      color: Color(0x1A1C1216),
-      blurRadius: 18,
-      offset: Offset(0, 6),
-    ),
+    BoxShadow(color: Color(0x1A1C1216), blurRadius: 18, offset: Offset(0, 6)),
   ],
   shadowSheet: const [
-    BoxShadow(
-      color: Color(0x261C1216),
-      blurRadius: 28,
-      offset: Offset(0, -6),
-    ),
+    BoxShadow(color: Color(0x261C1216), blurRadius: 28, offset: Offset(0, -6)),
   ],
   numericSmall: _numeric(12.5, FontWeight.w600, AppPalette.inkTextSoft),
   numericMedium: _numeric(15, FontWeight.w700, AppPalette.inkText),
@@ -1118,6 +1111,7 @@ final AppTokens _darkTokens = AppTokens(
     _StatKey.sense: AppPalette.infoDark,
     _StatKey.money: AppPalette.successDark,
     _StatKey.stress: AppPalette.dangerDark,
+    _StatKey.heat: AppPalette.warningDark,
   },
   characterAccents: const {
     'seoyeon': CharacterAccent(
@@ -1187,25 +1181,13 @@ final AppTokens _darkTokens = AppTokens(
     onContainer: AppPalette.nightText,
   ),
   shadowCard: const [
-    BoxShadow(
-      color: Color(0x40000000),
-      blurRadius: 12,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x40000000), blurRadius: 12, offset: Offset(0, 2)),
   ],
   shadowRaised: const [
-    BoxShadow(
-      color: Color(0x59000000),
-      blurRadius: 20,
-      offset: Offset(0, 8),
-    ),
+    BoxShadow(color: Color(0x59000000), blurRadius: 20, offset: Offset(0, 8)),
   ],
   shadowSheet: const [
-    BoxShadow(
-      color: Color(0x73000000),
-      blurRadius: 30,
-      offset: Offset(0, -8),
-    ),
+    BoxShadow(color: Color(0x73000000), blurRadius: 30, offset: Offset(0, -8)),
   ],
   numericSmall: _numeric(12.5, FontWeight.w600, AppPalette.nightTextSoft),
   numericMedium: _numeric(15, FontWeight.w700, AppPalette.nightText),
@@ -1290,7 +1272,10 @@ abstract final class AppTheme {
         titleTextStyle: text.titleLarge,
         toolbarTextStyle: text.bodyMedium,
         iconTheme: IconThemeData(color: scheme.onSurface, size: 22),
-        actionsIconTheme: IconThemeData(color: scheme.onSurfaceVariant, size: 22),
+        actionsIconTheme: IconThemeData(
+          color: scheme.onSurfaceVariant,
+          size: 22,
+        ),
         actionsPadding: const EdgeInsets.only(right: AppSpace.sm),
       ),
 
@@ -1300,7 +1285,9 @@ abstract final class AppTheme {
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
           disabledBackgroundColor: scheme.surfaceContainerHighest,
-          disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+          disabledForegroundColor: scheme.onSurfaceVariant.withValues(
+            alpha: 0.6,
+          ),
           minimumSize: const Size(72, 52),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.xxl,
@@ -1316,7 +1303,9 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.onSurface,
-          disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+          disabledForegroundColor: scheme.onSurfaceVariant.withValues(
+            alpha: 0.5,
+          ),
           backgroundColor: scheme.surfaceContainerLowest,
           minimumSize: const Size(72, 52),
           padding: const EdgeInsets.symmetric(
@@ -1336,7 +1325,9 @@ abstract final class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: scheme.primary,
-          disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+          disabledForegroundColor: scheme.onSurfaceVariant.withValues(
+            alpha: 0.5,
+          ),
           minimumSize: const Size(48, AppSpace.minTouch),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.md,

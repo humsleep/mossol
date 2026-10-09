@@ -212,6 +212,49 @@ void main() {
       expect(SceneImages.commonEndingKey('happy'), isNull);
     });
 
+    test('엔딩: 전용 id 그림이 image 필드보다 먼저, image 는 대체 그림', () {
+      // 전용 그림이 없으면 image(대체) → 그다음 캐릭터·공용.
+      expect(
+        SceneImages.forEnding(
+          const Ending(
+            id: 'm36_waiting',
+            name: '엔딩',
+            tier: 'good',
+            image: 'assets/endings/common_bad.webp',
+          ),
+          registry: registry,
+        ),
+        'assets/endings/common_bad.webp',
+      );
+      // 전용 그림(ending_one)이 들어오면 image 를 지우지 않아도 그것이 나온다.
+      expect(
+        SceneImages.forEnding(
+          const Ending(
+            id: 'ending_one',
+            name: '엔딩',
+            tier: 'good',
+            image: 'assets/endings/common_bad.webp',
+          ),
+          registry: registry,
+        ),
+        'assets/endings/ending_one.webp',
+      );
+      // image 경로 파일이 없으면 캐릭터 그림.
+      expect(
+        SceneImages.forEnding(
+          const Ending(
+            id: 'x',
+            name: '엔딩',
+            tier: 'happy',
+            character: 'seoyeon',
+            image: 'assets/endings/nope.webp',
+          ),
+          registry: registry,
+        ),
+        'assets/endings/seoyeon.webp',
+      );
+    });
+
     test('스티커: 화이트리스트를 통과한 이름만 찾는다', () {
       expect(
         SceneImages.forSticker('seoyeon_joy', registry: registry),

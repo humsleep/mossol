@@ -13,15 +13,17 @@ import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 
 import 'widget/helpers.dart';
+import 'story_files.dart';
 
 StoryBundle loadBundle() => StoryBundle.fromJsonStrings(
   config: File('assets/story/config.json').readAsStringSync(),
   characters: File('assets/story/characters.json').readAsStringSync(),
   events: [
     for (final f in StoryBundle.eventFiles)
-      File('assets/story/$f').readAsStringSync(),
+      readStoryFile(f),
   ],
   endings: File('assets/story/endings.json').readAsStringSync(),
+  starts: readStartsFile(),
   signals: File('assets/story/signals.json').existsSync()
       ? File('assets/story/signals.json').readAsStringSync()
       : null,
@@ -262,7 +264,14 @@ void main() {
         for (final c in e.choices) {
           for (final fx in [c.effects, c.fail]) {
             fx.stats.forEach((k, v) {
-              final cap = k == Stat.money ? 10 : (k == Stat.stress ? 6 : 4);
+              // 소문은 밸런스 스탯이 아니다 — 클래식의 증인 단톡 선언(d_open_bet_2)이
+              // 첫 소문 공급원으로 +8(docs/overhaul2/01_design.md §3.2).
+              final cap = switch (k) {
+                Stat.money => 10,
+                Stat.stress => 6,
+                Stat.heat => 10,
+                _ => 4,
+              };
               expect(v.abs(), lessThanOrEqualTo(cap), reason: '$id $k=$v');
             });
             for (final v in [...fx.affection.values, ...fx.trust.values]) {

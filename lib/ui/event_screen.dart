@@ -20,6 +20,7 @@ import 'profile_view.dart';
 import 'scene_card.dart';
 import 'scene_registry.dart';
 import 'widgets.dart';
+import 'heat_gauge.dart' show VillainChip;
 import 'keep_all.dart';
 
 /// 전화 이벤트의 단계. docs/MOMENTS_SPEC.md §1.1.
@@ -110,6 +111,10 @@ class EventScreen extends StatefulWidget {
   ///
   /// 이 화면 밖에서도 쓴다 — 첫 실행 인트로(`intro_screen.dart`)가 태현의 답을 한 줄씩
   /// 띄울 때 같은 식을 쓴다. 두 벌이 되면 첫 대화와 본편의 박자가 갈린다.
+  /// 빨리 감기 장면의 줄 간격(r2_meeting E5). 0 이면 한 프레임에 다 쌓여 스크롤이 못 따라가므로
+  /// 아주 짧게 둔다.
+  static const fastForwardLine = Duration(milliseconds: 60);
+
   static int themDelayMs(String text) {
     final chars = text.replaceAll(RegExp(r'\s'), '').length;
     return (600 + chars * 18).clamp(800, 2400);
@@ -135,6 +140,9 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   /// 선택 뒤 상대 반응 중 지금까지 보여 준 줄 수.
   int _replyShown = 0;
   Timer? _replyTimer;
+
+  /// 소문 상승 진동([_syncReply]).
+  Timer? _heatTimer;
   ChoiceOutcome? _replyFor;
 
   /// 내 말풍선 옆 `읽음`. 보낸 뒤 500ms(실패 톤 1500ms) 지나 켜진다(04 §2.4).
@@ -171,6 +179,9 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
   /// `읽음` 지연. 실패 톤이면 "읽고 고민했다" 를 숫자 없이 전하려고 더 늦춘다.
   static const readDelay = Duration(milliseconds: 500);
   static const readDelayFail = Duration(milliseconds: 1500);
+
+  /// 소문이 오른 선택 뒤 가벼운 진동까지의 간격.
+  static const heatHapticDelay = Duration(milliseconds: 120);
 
   /// initState 에서는 MediaQuery(동작 줄이기)를 읽을 수 없어서 첫 동기화를 미룬다.
   bool _started = false;
@@ -209,6 +220,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _timer?.cancel();
     _replyTimer?.cancel();
     _readTimer?.cancel();
+    _heatTimer?.cancel();
     _callTimer?.cancel();
     _previewTimer?.cancel();
     _sfx.stopRing();
@@ -397,6 +409,14 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
         c.lastChoice?.minigame == null) {
       _sfx.cue(o.success ? Sfx.choiceOk : Sfx.choiceFail);
     }
+    // 소문이 오르면 가벼운 진동 한 번(01_design §5.1). 성패음의 진동과 한 박자로 뭉개지지
+    // 않게 이 저장소의 두 박자 간격(120ms)을 두고 낸다.
+    if (o != null && (o.delta.stats[Stat.heat] ?? 0) > 0) {
+      _heatTimer?.cancel();
+      _heatTimer = Timer(heatHapticDelay, () {
+        if (mounted) _sfx.haptic(HapticKind.light);
+      });
+    }
     _replyTimer?.cancel();
     _readTimer?.cancel();
     _replyShown = 0;
@@ -482,14 +502,18 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
       _runWaitCountdown();
       return;
     }
-    final delay = Duration(
-      milliseconds: switch (next.who) {
-        'me' => 450,
-        'narr' => 350,
-        'them' => EventScreen.themDelayMs(next.text),
-        _ => 800,
-      },
-    );
+    // 이전 회차에서 본 장면(빨리 감기, r2_meeting E5): 타이핑 연출 없이 거의 한 번에 쌓는다.
+    final ff = c.canFastForward;
+    final delay = ff
+        ? EventScreen.fastForwardLine
+        : Duration(
+            milliseconds: switch (next.who) {
+              'me' => 450,
+              'narr' => 350,
+              'them' => EventScreen.themDelayMs(next.text),
+              _ => 800,
+            },
+          );
     void reveal() {
       if (!mounted) return;
       c.revealNext();
@@ -498,6 +522,7 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
 
     final afterWait = c.revealed > 0 && ev.lines[c.revealed - 1].isWait;
     final erase =
+        !ff &&
         next.who == 'them' &&
         !ev.isCall &&
         !_eraseDone &&
@@ -542,6 +567,19 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     _scheduleReveal();
   }
 
+  /// 빨리 감기 장면에서 대화를 탭하면 다음 대기 줄(또는 끝)까지 남은 줄을 바로 연다(E5).
+  /// 대기 줄은 그대로 남는다 — 무료 건너뛰기 버튼이 맡는다.
+  void _revealRestNow() {
+    final ev = c.current;
+    if (ev == null || !c.canFastForward || c.lastOutcome != null) return;
+    if (_waitLeft > 0) return;
+    _timer?.cancel();
+    while (!c.linesDone && !ev.lines[c.revealed].isWait) {
+      c.revealNext();
+    }
+    _scheduleReveal();
+  }
+
   /// 광고를 기다리는 동안 카운트다운이 계속 돌면, 광고를 보고도 자존감이 깎이고
   /// 대사 한 줄이 건너뛰어진다. 광고를 띄우기 전에 먼저 멈춘다.
   void _pauseWait() => _timer?.cancel();
@@ -552,6 +590,22 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     c.revealNext();
     _scheduleReveal();
   }
+
+  /// 이미 본 장면의 무료 건너뛰기(D5). 광고 보상과 같은 결과(대가 없이 다음 줄)다.
+  void _skipWaitFree() {
+    // 같은 프레임의 두 번째 탭은 무시한다(줄 두 개가 열리고 기록이 두 번 남는다, r3_bugs R3-3).
+    // `_waitLeft` 만으로는 모자라다: 다음 줄이 또 대기 줄이면 첫 탭이 곧바로 새 대기를 세워서
+    // 두 번째 탭이 그 대기까지 공짜로 넘겼다. 다음 프레임까지 잠근다.
+    if (!mounted || _waitLeft <= 0 || _freeSkipLocked) return;
+    _freeSkipLocked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _freeSkipLocked = false);
+    _pauseWait();
+    c.logWaitSkipFree();
+    _skipWaitEarned();
+  }
+
+  /// 무료 건너뛰기 탭을 다음 프레임까지 막는다([_skipWaitFree]).
+  bool _freeSkipLocked = false;
 
   /// 광고를 못 받았으면 멈춰 둔 초부터 그대로 이어 센다. 안내는 버튼이 한다.
   void _skipWaitFailed() {
@@ -734,15 +788,21 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
     ];
     final keys = [for (final l in rows) _speakerKey(l, partner)];
     // 가짜 시계. 대사 줄은 큐의 시간대에서, 내 선택·반응은 그 뒤로 이어진다.
+    // 장면이 시각을 정했으면(`clock`, r1_meeting D8) 그 시각부터 — 새벽 장면이 아침으로 찍히지 않게.
+    // 같은 날 시계는 거꾸로 가지 않는다 — 앞 장면 끝보다 이르면 그 다음 분부터(E7).
     final times = ChatClock.timesFor(
       rows,
-      ChatClock.startSeconds(
-        seed: s.seed,
-        day: s.day,
-        index: c.todayEventIndex,
-        total: c.todayEventTotal,
+      c.clockStartFor(
+        ev,
+        ChatClock.startSeconds(
+          seed: s.seed,
+          day: s.day,
+          index: c.todayEventIndex,
+          total: c.todayEventTotal,
+        ),
       ),
     );
+    final newLines = missedCall ? const <int>{} : c.newRippleLines;
 
     // 다음에 칠 줄(타이핑 표시의 화자). 없으면 null.
     final Line? upcoming = replying
@@ -771,6 +831,8 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
               ? _readShown
               : rows.skip(i + 1).any((x) => x.who == 'them'));
       final id = _speakerIdFor(l, ev);
+      // 대사 줄(선택·반응 앞)만 NEW 를 단다. 번호는 지금 이벤트 lines 기준이다.
+      final fresh = i < visible.length && newLines.contains(i);
       bubbles.add(
         ChatBubble(
           line: l,
@@ -780,7 +842,9 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
           isFirstOfGroup: first,
           isLastOfGroup: last,
           showAvatar: first,
-          meta: time == null && !read ? null : ChatMeta(time: time, read: read),
+          meta: time == null && !read && !fresh
+              ? null
+              : ChatMeta(time: time, read: read, isNew: fresh),
         ),
       );
       // 스티커는 그 대사 바로 아래 별도 줄. 상대 줄에만, 에셋이 없으면 빈 칸도 없다.
@@ -820,53 +884,61 @@ class _EventScreenState extends State<EventScreen> with WidgetsBindingObserver {
         children: [
           // 대화 영역만 한 단 어두운(밝은) 바탕을 깔아 패널·헤더와 분리한다.
           Expanded(
-            child: ColoredBox(
-              color: t.chatBackground,
-              // 대화는 길어야 십수 줄이라 전부 그린다. 게으른 ListView 는 끝 높이를 어림해
-              // 마지막 줄(대기 블록·사진)로 스크롤이 못 미칠 때가 있다.
-              child: SingleChildScrollView(
-                controller: _scroll,
-                padding: const EdgeInsets.only(
-                  top: AppSpace.sm,
-                  bottom: AppSpace.lg,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 장면 삽화(06 §1). 그림이 없으면 아무것도 그리지 않는다 — 여백도 0.
-                    SceneScope(
-                      builder: (context, r) => SceneCard(
-                        path: SceneImages.forEvent(ev, registry: r),
-                        title: ev.title,
-                        bundle: r.bundle,
+            child: GestureDetector(
+              key: const Key('chat-tap'),
+              behavior: HitTestBehavior.translucent,
+              onTap: c.canFastForward ? _revealRestNow : null,
+              child: ColoredBox(
+                color: t.chatBackground,
+                // 대화는 길어야 십수 줄이라 전부 그린다. 게으른 ListView 는 끝 높이를 어림해
+                // 마지막 줄(대기 블록·사진)로 스크롤이 못 미칠 때가 있다.
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsets.only(
+                    top: AppSpace.sm,
+                    bottom: AppSpace.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 장면 삽화(06 §1). 그림이 없으면 아무것도 그리지 않는다 — 여백도 0.
+                      SceneScope(
+                        builder: (context, r) => SceneCard(
+                          path: SceneImages.forEvent(ev, registry: r),
+                          title: ev.title,
+                          bundle: r.bundle,
+                        ),
                       ),
-                    ),
-                    // 제목은 헤더가 아니라 대화의 첫 줄이다.
-                    ChatDivider(
-                      text: ev.title.isEmpty
-                          ? 'D+${s.day}'
-                          : 'D+${s.day} · ${ev.title}',
-                    ),
-                    if (missedCall) _MissedCall(name: partner),
-                    ...bubbles,
-                    if (waiting)
-                      _WaitingBlock(
-                        secondsLeft: _waitLeft,
-                        secondsTotal: waitLine.wait,
-                        onSkipStart: _pauseWait,
-                        onSkipEarned: _skipWaitEarned,
-                        onSkipFailed: _skipWaitFailed,
-                      )
-                    else if (upcoming != null)
-                      _typing(
-                        upcoming,
-                        ev,
-                        partner,
-                        first:
-                            keys.isEmpty ||
-                            keys.last != _speakerKey(upcoming, partner),
+                      // 제목은 헤더가 아니라 대화의 첫 줄이다.
+                      ChatDivider(
+                        text: ev.title.isEmpty
+                            ? 'D+${s.day}'
+                            : 'D+${s.day} · ${ev.title}',
                       ),
-                  ],
+                      if (missedCall) _MissedCall(name: partner),
+                      ...bubbles,
+                      if (waiting)
+                        _WaitingBlock(
+                          secondsLeft: _waitLeft,
+                          secondsTotal: waitLine.wait,
+                          onSkipStart: _pauseWait,
+                          onSkipEarned: _skipWaitEarned,
+                          onSkipFailed: _skipWaitFailed,
+                          // 이전 회차에서 본 장면이고 "읽은 장면 빨리 감기" 가 켜져 있으면
+                          // 광고 대신 바로 건너뛴다(r1_meeting D5). 처음 보는 장면은 그대로 광고.
+                          onFreeSkip: c.canFreeSkipWait ? _skipWaitFree : null,
+                        )
+                      else if (upcoming != null)
+                        _typing(
+                          upcoming,
+                          ev,
+                          partner,
+                          first:
+                              keys.isEmpty ||
+                              keys.last != _speakerKey(upcoming, partner),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1026,13 +1098,20 @@ class _WaitingBlock extends StatelessWidget {
   final VoidCallback onSkipEarned;
   final VoidCallback onSkipFailed;
 
+  /// 있으면 광고 버튼 대신 무료 "건너뛰기"(이전 회차에서 본 장면, D5).
+  final VoidCallback? onFreeSkip;
+
   const _WaitingBlock({
     required this.secondsLeft,
     required this.secondsTotal,
     required this.onSkipStart,
     required this.onSkipEarned,
     required this.onSkipFailed,
+    this.onFreeSkip,
   });
+
+  /// 무료 건너뛰기 버튼 글.
+  static const freeSkipLabel = '본 장면이라 건너뛰기';
 
   @override
   Widget build(BuildContext context) {
@@ -1074,13 +1153,21 @@ class _WaitingBlock extends StatelessWidget {
             fill: t.systemLine,
           ),
           const SizedBox(height: AppSpace.xs),
-          RewardedButton(
-            placement: 'wait_skip',
-            label: '광고 보고 기다리지 않기',
-            beforeWatch: onSkipStart,
-            onEarned: onSkipEarned,
-            onFailed: onSkipFailed,
-          ),
+          if (onFreeSkip case final free?)
+            TextButton.icon(
+              key: const Key('wait-free-skip'),
+              onPressed: free,
+              icon: const Icon(Icons.fast_forward_outlined, size: 18),
+              label: const Text(freeSkipLabel),
+            )
+          else
+            RewardedButton(
+              placement: 'wait_skip',
+              label: '광고 보고 기다리지 않기',
+              beforeWatch: onSkipStart,
+              onEarned: onSkipEarned,
+              onFailed: onSkipFailed,
+            ),
         ],
       ),
     );
@@ -1410,6 +1497,7 @@ class _ChoicePanelState extends State<_ChoicePanel> {
             trailingLabel: _trailingLabel(choices[i]),
             trailingTone: _trailingTone(choices[i]),
             recommended: c.hintIndex == choices[i].index,
+            isNew: c.newRippleChoices.contains(choices[i].index),
           ),
         ),
     ],
@@ -1792,15 +1880,18 @@ class _ResultPanel extends StatelessWidget {
         ? Icons.local_fire_department
         : Icons.check_circle_outline;
 
+    final villainUp = o.delta.stats[Stat.villain] ?? 0;
     final parts = <_DeltaPart>[
+      // 진상은 감점 칩이 아니라 악명 칩으로 따로 그린다(r2_meeting E4, r2_bugs R2-4).
       for (final e in o.delta.stats.entries)
-        _DeltaPart(
-          e.key == Stat.money
-              ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
-              : '${Stat.label(e.key)} ${signed(e.value)}',
-          good: e.key == Stat.stress ? e.value < 0 : e.value > 0,
-          up: e.value > 0,
-        ),
+        if (e.key != Stat.villain)
+          _DeltaPart(
+            e.key == Stat.money
+                ? '${Stat.label(e.key)} ${Stat.wonDelta(e.value)}'
+                : '${Stat.label(e.key)} ${signed(e.value)}',
+            good: Stat.isGood(e.key, e.value),
+            up: e.value > 0,
+          ),
       for (final e in o.delta.affection.entries)
         _DeltaPart(
           '${c.characterName(e.key)} 호감 ${signed(e.value)}',
@@ -1902,13 +1993,21 @@ class _ResultPanel extends StatelessWidget {
             ),
           const SizedBox(height: AppSpace.md),
           // 변화량은 색 + 부호 + 화살표 3중. 한 줄 문장 나열보다 눈에 먼저 든다.
-          if (parts.isEmpty)
+          if (parts.isEmpty && villainUp <= 0)
             Text('변화 없음', style: context.text.bodyMedium?.copyWith(color: fg))
           else
             Wrap(
               spacing: AppSpace.sm,
               runSpacing: AppSpace.sm,
-              children: [for (final p in parts) _DeltaChip(part: p)],
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final p in parts) _DeltaChip(part: p),
+                if (villainUp > 0)
+                  VillainChip(
+                    villain: c.state!.stat(Stat.villain),
+                    delta: villainUp,
+                  ),
+              ],
             ),
           if (o.delta.album != null)
             Padding(
@@ -2126,7 +2225,9 @@ class _DeltaChip extends StatelessWidget {
             color: color,
           ),
           const SizedBox(width: AppSpace.xxs),
-          Text(part.text, style: t.numericSmall.copyWith(color: color)),
+          Flexible(
+            child: Text(part.text, style: t.numericSmall.copyWith(color: color)),
+          ),
         ],
       ),
     );

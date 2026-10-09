@@ -19,7 +19,7 @@
    ]
   },
   "weight": 2,
-  "title": "음성 채널 새벽 통화",
+  "title": "음성 채널 밤 통화",
   "lines": [
    {
     "who": "them",
@@ -27,7 +27,17 @@
    },
    {
     "who": "them",
-    "text": "근데 너 목소리 처음 들었는데 생각보다 차분하네"
+    "text": "근데 너 목소리 처음 들었는데 생각보다 차분하네",
+    "ifNotFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "근데 클립 말고 생으로 들으니까 더 차분하네",
+    "ifFlags": [
+     "sc_clip"
+    ]
    },
    {
     "who": "sys",
@@ -239,7 +249,8 @@
    ]
   },
   "weight": 2,
-  "title": "새벽 3시의 고백",
+  "title": "늦은 밤의 고백",
+  "clock": "23:30",
   "lines": [
    {
     "who": "them",
@@ -4868,6 +4879,13 @@
    },
    {
     "who": "them",
+    "text": "그때 체험하신 분이죠. 어깨는 좀 풀렸어요?",
+    "ifFlags": [
+     "trainer_early"
+    ]
+   },
+   {
+    "who": "them",
     "text": "허리 말려요. 그러다 다쳐요"
    },
    {
@@ -6761,15 +6779,35 @@
   "lines": [
    {
     "who": "narr",
-    "text": "새벽 랭크 게임. 게임이 끝나자 팀원에게서 귓속말."
+    "text": "랭크 게임. 게임이 끝나자 팀원에게서 귓속말."
    },
    {
     "who": "them",
-    "text": "님 아까 그 판 ㄹㅇ 잘함"
+    "text": "님 아까 그 판 ㄹㅇ 잘함",
+    "ifNotFlags": [
+     "sc_clip"
+    ]
    },
    {
     "who": "them",
-    "text": "친추 ㄱ? 나 매일 이 시간에 함"
+    "text": "아까 그 판 ㄹㅇ 잘함. 클립보다 실력이 나음 ㅋㅋ",
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "친추 ㄱ? 나 매일 이 시간에 함",
+    "ifNotFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "아 그러고 보니 이름 말 안 했네",
+    "ifFlags": [
+     "sc_clip"
+    ]
    },
    {
     "who": "them",
@@ -6883,11 +6921,24 @@
    },
    {
     "who": "them",
-    "text": "나 예은이. 옆자리. 기억 안 나면 좀 섭섭"
+    "text": "사실 알고 물어봄 ㅋㅋ 부케 주인입니다. 댓글로만 인사하기 좀 그래서",
+    "ifFlags": [
+     "sc_speech"
+    ]
    },
    {
     "who": "them",
-    "text": "동창회 단톡에서 프사 보고 바로 알아봤어 ㅋㅋ"
+    "text": "나 예은이. 옆자리. 기억 안 나면 좀 섭섭",
+    "ifNotFlags": [
+     "sc_speech"
+    ]
+   },
+   {
+    "who": "them",
+    "text": "동창회 단톡에서 프사 보고 바로 알아봤어 ㅋㅋ",
+    "ifNotFlags": [
+     "sc_speech"
+    ]
    }
   ],
   "choices": [

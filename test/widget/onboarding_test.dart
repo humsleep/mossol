@@ -5,7 +5,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +22,7 @@ import 'package:mossol/ui/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers.dart';
+import '../story_files.dart';
 
 void main() {
   late GameController c;
@@ -52,6 +52,8 @@ void main() {
       await tester.tap(findText('시작'));
       await tester.pumpAndSettle();
     }
+    // 새 게임의 첫 단계는 시작 카드(docs/overhaul2/01_design.md §4.1).
+    await pickStart(tester);
   }
 
   Future<void> tapStart(WidgetTester tester) async {
@@ -307,11 +309,25 @@ void main() {
       }
       // 사람이 쓴 firstLine 이 우선, 없으면 첫 접촉 이벤트의 첫 them 대사.
       expect(b.firstLineOf('jeongwoo'), '아까 공지 딱딱했지. 하하. 반가워.');
-      final r00 = b.eventById['seoyeon_r00']!;
+      // 루트 장면을 번호 순으로 훑어 처음 나오는, 조건 없는 them 대사. 파급 줄(ifFlags 등)은
+      // 누구에게나 같은 첫 메시지가 아니라 건너뛴다 — 대본이 첫 만남 줄을 갈래별로 나누면 다음 장면으로 내려간다.
+      String? firstUngated(String id) {
+        for (var n = 0; n < 30; n++) {
+          final e = b.eventById['${id}_r${n.toString().padLeft(2, '0')}'];
+          if (e == null) continue;
+          for (final l in e.lines) {
+            if (l.who == 'them' && !l.isGated && l.photo == null && l.text.trim().isNotEmpty) {
+              return l.text.trim();
+            }
+          }
+        }
+        return null;
+      }
+
       expect(
         b.firstLineOf('seoyeon'),
         // 첫 메시지는 이름 자리표시자를 채운 결과다(이름이 없으면 대체어).
-        TextTemplate.fill(r00.lines.firstWhere((l) => l.who == 'them').text),
+        TextTemplate.fill(firstUngated('seoyeon')!),
       );
       // 지우는 r00 이 없고 r01 에 them 대사가 없어 r02 로 내려간다.
       expect(
@@ -321,7 +337,7 @@ void main() {
     });
 
     test('tagline 20자 초과는 검증에서 막는다', () {
-      String read(String f) => File('assets/story/$f').readAsStringSync();
+      String read(String f) => readStoryFile(f);
       final chars = jsonDecode(read('characters.json')) as List<dynamic>;
       (chars.first as Map<String, dynamic>)['tagline'] = '가' * 21;
       expect(
@@ -330,6 +346,7 @@ void main() {
           characters: jsonEncode(chars),
           events: [for (final f in StoryBundle.eventFiles) read(f)],
           endings: read('endings.json'),
+          starts: readStartsFile(),
         ),
         throwsA(isA<StateError>()),
       );

@@ -20,6 +20,7 @@ import 'package:mossol/ui/scene_registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'widget/helpers.dart';
+import 'story_files.dart';
 
 void main() {
   late StoryBundle bundle;
@@ -32,9 +33,10 @@ void main() {
       characters: File('assets/story/characters.json').readAsStringSync(),
       events: [
         for (final f in StoryBundle.eventFiles)
-          File('assets/story/$f').readAsStringSync(),
+          readStoryFile(f),
       ],
       endings: File('assets/story/endings.json').readAsStringSync(),
+      starts: readStartsFile(),
       signals: File('assets/story/signals.json').readAsStringSync(),
       knownMinigames: minigameIds,
     );
@@ -65,7 +67,11 @@ void main() {
   group('데이터', () {
     test('모든 행동에 장면이 있고, 장면은 모두 아는 행동을 가리킨다', () {
       final ids = actionIds().toSet();
-      expect(scenes(), hasLength(55));
+      // 개편 2 의 의뢰(a_hustle_*)는 작가가 덧붙이는 중이라 빼고 센다.
+      expect(
+        scenes().where((e) => !e.id.startsWith(overhaul2HustlePrefix)),
+        hasLength(55),
+      );
       for (final a in ids) {
         expect(
           scenes().where((e) => e.trigger.action.contains(a)).length,
@@ -125,11 +131,15 @@ void main() {
           {'text': '고른다'},
         ],
       });
+      // 엔딩은 기본 엔딩만 — 실제 엔딩은 이 합성 묶음에 없는 m36 결과 플래그를 읽는다(검증기 F5).
       StoryBundle with1(StoryEvent e) => StoryBundle(
         config: bundle.config,
         characters: bundle.characters,
         events: [e],
-        endings: bundle.endings,
+        endings: [
+          for (final x in bundle.endings)
+            if (x.isDefault) x,
+        ],
       );
       expect(() => with1(ev('daily', ['gym'])).validate(), returnsNormally);
       expect(() => with1(ev('daily', ['gyn'])).validate(), throwsStateError);
@@ -153,10 +163,12 @@ void main() {
           for (final seed in [1, 2, 3]) {
             final plan = engine.planDay(at(day, action: a, seed: seed));
             expect(plan, isNotEmpty);
+            // 새벽·아침으로 시각을 정한 장면(과 그날의 메인)은 행동 장면보다 앞일 수 있다(r3 F2).
+            final first = plan.firstWhere((e) => !_dawnOrMain(e));
             expect(
-              plan.first.trigger.action,
+              first.trigger.action,
               contains(a),
-              reason: '$a D$day seed$seed → ${plan.first.id}',
+              reason: '$a D$day seed$seed → ${[for (final e in plan) e.id]}',
             );
             // 행동 장면은 하루에 하나.
             expect(plan.where(engine.isActionScene).length, 1);
@@ -169,11 +181,17 @@ void main() {
       for (final run in [1, 2]) {
         for (final day in [1, 2, 3]) {
           final plan = engine.planDay(at(day, action: 'gym', run: run));
-          expect(plan.first.layer, EventLayer.main, reason: 'run$run D$day');
+          // D1 첫 장면은 늘 메인(m01 또는 시작 메인). D2·3 은 새벽으로 정한 장면이 먼저일 수 있다(r5 H1).
+          final firstMain = plan.firstWhere((e) => !_dawnOrMain(e) || e.layer == EventLayer.main);
+          expect(
+            day == 1 ? plan.first.layer : firstMain.layer,
+            EventLayer.main,
+            reason: 'run$run D$day',
+          );
           final i = plan.indexWhere((e) => e.trigger.action.contains('gym'));
           expect(i, greaterThan(0), reason: 'run$run D$day');
           expect(
-            plan.take(i).every((e) => e.layer == EventLayer.main),
+            plan.take(i).every(_dawnOrMain),
             isTrue,
             reason: 'run$run D$day ${[for (final e in plan) e.id]}',
           );
@@ -201,7 +219,11 @@ void main() {
           if (e.once) s.seen.add(e.id);
         }
         final plan = engine.planDay(s);
-        expect(plan.first.trigger.action, contains(a), reason: a);
+        expect(
+          plan.firstWhere((e) => !_dawnOrMain(e)).trigger.action,
+          contains(a),
+          reason: a,
+        );
       }
     });
 
@@ -346,3 +368,8 @@ void main() {
     });
   });
 }
+
+/// 행동 장면보다 앞에 올 수 있는 장면: 메인, 정오 전으로 시각을 정한 장면(r3_meeting F2).
+bool _dawnOrMain(StoryEvent e) =>
+    e.layer == EventLayer.main ||
+    (e.clockSeconds != null && e.clockSeconds! < EventEngine.clockNoon);

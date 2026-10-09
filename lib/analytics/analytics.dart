@@ -59,6 +59,9 @@ class Analytics {
   static const onboardingStep = 'onboarding_step';
   static const onboardingDone = 'onboarding_done';
   static const runStarted = 'run_started';
+
+  /// 이전 회차에서 본 장면의 대기 줄을 광고 없이 건너뛰었다(r1_meeting D5).
+  static const waitSkipFree = 'wait_skip_free';
   static const dayReached = 'day_reached';
   static const runEnded = 'run_ended';
   static const adHintUsed = 'ad_hint_used';
@@ -83,6 +86,10 @@ class Analytics {
   /// 온보딩 단계 이름(`onboarding_step{step}`).
   /// [stepIntro] 는 첫 실행 인트로(태현의 첫 문자)가 떴을 때 — 홈을 건너뛴 경로다.
   static const stepIntro = 'intro';
+
+  /// 시작 카드 시트가 처음 떴을 때(r1_bugs R1-6). 시트에서 떠난 사람이 `name` 직전 이탈로
+  /// 섞이지 않게 따로 센다. 한 흐름에 한 번.
+  static const stepStart = 'start';
   static const stepGender = 'gender';
   static const stepName = 'name';
   static const stepMbti = 'mbti';
@@ -149,9 +156,23 @@ class Analytics {
 
   /// [run] 은 게임 안 회차(엔딩 뒤 "다음 회차" 로만 오른다), [n] 은 이 기기에서 시작한
   /// 회차 수(메타 `totalRuns`, 이번 판 포함). 2회차 시작률은 `n >= 2` 로 본다.
-  void runStart({required int run, required String pref, required int n}) {
+  /// [start] 는 시작 스토리 id(docs/overhaul2/01_design.md §5.0 B5). 클래식은 `classic`.
+  /// [fate] 면 운명 뽑기로 나온 시작이다(`fate: 1`, 01_design §7.4-2 결정용). 아니면 0.
+  void runStart({
+    required int run,
+    required String pref,
+    required int n,
+    String start = 'classic',
+    bool fate = false,
+  }) {
     setUserProperty('pref', pref);
-    log(runStarted, {'run': run, 'pref': pref, 'n': n});
+    log(runStarted, {
+      'run': run,
+      'pref': pref,
+      'n': n,
+      'start': start,
+      'fate': fate ? 1 : 0,
+    });
   }
 
   /// [day] 가 [dayMilestones] 일 때만 보낸다.
@@ -230,7 +251,8 @@ class Analytics {
   });
 
   /// [reason] 은 empty/emoji/long/spam/profanity.
-  void freeInputBlock(String reason) => log(freeInputBlocked, {'reason': reason});
+  void freeInputBlock(String reason) =>
+      log(freeInputBlocked, {'reason': reason});
 
   void freeInputLock({required String ev, required int topI}) =>
       log(freeInputLocked, {'ev': _id(ev), 'top_i': topI});

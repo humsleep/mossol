@@ -1,0 +1,3058 @@
+[
+ {
+  "id": "d_street_01",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     20,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "편의점의 눈빛",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "편의점 계산대. 알바생이 바코드를 찍다 멈췄다."
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "혹시… 그분 아니세요?"
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "축사 영상 그분 맞죠? ㅋㅋ",
+    "ifFlags": [
+     "sc_speech"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "목소리 들으니까 확실한데 ㅋㅋ",
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "알바 단톡 고백 캡처 그분…?",
+    "ifFlags": [
+     "sc_leak_captured"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "아 아니면 죄송해요 ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네 그분 맞아요",
+    "effects": {
+     "stats": {
+      "heat": 3,
+      "esteem": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "편의점 알바생",
+      "text": "헐 대박 ㅋㅋ 사진 한 장만…"
+     },
+     {
+      "who": "narr",
+      "text": "편의점 셀카가 그날 저녁 동네 커뮤에 올라왔다."
+     }
+    ]
+   },
+   {
+    "text": "아닌데요?",
+    "effects": {
+     "stats": {
+      "heat": -2,
+      "sincerity": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "편의점 알바생",
+      "text": "아 죄송해요 ㅋㅋ 닮으셔서"
+     },
+     {
+      "who": "narr",
+      "text": "나가는 뒤에서 '아니 맞는데' 하는 소리가 들렸다."
+     }
+    ]
+   },
+   {
+    "text": "봉투 주세요",
+    "effects": {
+     "stats": {
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "편의점 알바생",
+      "text": "…100원이요"
+     },
+     {
+      "who": "narr",
+      "text": "대화는 거기서 끝났다. 소문은 끝나지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 사진은 유료입니다. 한 장에 천원",
+    "effects": {
+     "stats": {
+      "reputation": -6,
+      "heat": 5,
+      "money": 1,
+      "villain": 1,
+      "charm": 2
+     },
+     "setFlags": [
+      "villain_move",
+      "v_paid_selfie"
+     ],
+     "album": "편의점 유료 셀카"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "편의점 알바생",
+      "text": "…아 네"
+     },
+     {
+      "who": "narr",
+      "text": "그 대화가 '편의점 유료 셀카 그분'으로 커뮤에 올라왔다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 편의점 앞에 줄이 생겼다. 전부 천원씩 들고 있었다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "d_street_02",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     20,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "캡처의 귀환",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 이거 봐 ㅋㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "사진 한 장. 네 얘기다. 네 단계 거쳐서 나한테 돌아옴",
+    "photo": {
+     "icon": "street",
+     "caption": "출처 불명 캡처"
+    }
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "우리 회사 막내 단톡에서 돌고 있대"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "알바 단톡 그 문장이 이번엔 손글씨 버전으로 돌더라",
+    "ifFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "합성이라던 그 목소리 밈 버전도 있음 ㅋㅋ",
+    "ifFlags": [
+     "sc_clip_deny"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "너 진짜 유명해졌다"
+   }
+  ],
+  "choices": [
+   {
+    "text": "어디까지 퍼졌는지 추적한다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "세 단계까지 거슬러 올라갔다. 네 번째 방은 모르는 동네 맘카페였다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "거기까지 갔으면 그냥 포기해 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "ㅋㅋ 웃고 넘긴다",
+    "effects": {
+     "stats": {
+      "stress": -2,
+      "heat": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "그래 그게 최고다. 웃는 사람은 놀림감이 안 돼"
+     }
+    ]
+   },
+   {
+    "text": "태현 너 이거 퍼뜨리지 마",
+    "effects": {
+     "stats": {
+      "heat": -3,
+      "talk": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "나 아님 ㅋㅋ 난 받기만 했어"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "…회사 막내한테 보낸 건 맞음"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 캡처에 '내 해명'을 붙여 더 퍼뜨린다",
+    "effects": {
+     "stats": {
+      "reputation": -6,
+      "heat": 6,
+      "villain": 1,
+      "talk": 2
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "해명이 원본을 이김"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "야 해명이 원본보다 웃겨 ㅋㅋㅋ 근데 왜 퍼뜨려"
+     },
+     {
+      "who": "narr",
+      "text": "해명이 다섯 단계를 더 돌았다. 이번엔 내가 출처다."
+     }
+    ]
+   }
+  ],
+  "hint": 1
+ },
+ {
+  "id": "d_street_03",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     30,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "엄마도 봤다",
+  "lines": [
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "너 인터넷에 나왔다며?"
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "이모가 보내 줬어. 이모는 미용실에서 봤대"
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "옆집 아주머니도 알더라"
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "밥은 먹고 다니니"
+   }
+  ],
+  "choices": [
+   {
+    "text": "엄마 그거 별거 아니야",
+    "effects": {
+     "stats": {
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "별거 아니면 엄마가 왜 미용실에서 알아"
+     },
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "주말에 와. 반찬 해 놨다"
+     }
+    ]
+   },
+   {
+    "text": "응 좀 유명해졌어 ㅋㅋ",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "heat": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "유명해지는 건 좋은데 사람은 조심해"
+     },
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "이모가 너 사인 받아 오래"
+     }
+    ]
+   },
+   {
+    "text": "…미안. 창피했지",
+    "effects": {
+     "stats": {
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "창피하긴. 엄마는 웃었어"
+     },
+     {
+      "who": "them",
+      "name": "엄마",
+      "text": "근데 다음엔 엄마한테 먼저 말해"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 엄마 반응 캡처를 콘텐츠로 올린다",
+    "effects": {
+     "stats": {
+      "reputation": -6,
+      "heat": 8,
+      "villain": 1,
+      "charm": 2
+     },
+     "setFlags": [
+      "villain_move",
+      "v_mom_content"
+     ],
+     "album": "엄마 톡 콘텐츠화"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'우리 엄마도 봄 ㅋㅋ' 게시물이 터졌다."
+     },
+     {
+      "who": "narr",
+      "text": "엄마 말투가 그 주의 밈이 됐다. '밥은 먹고 다니니' 스티커까지 나왔다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "d_street_04",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "사칭 계정",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 이거 너야?"
+   },
+   {
+    "who": "narr",
+    "text": "링크. 내 사진에 내 이름. 소개글: '모쏠 탈출 상담해 드려요. 1회 5천원'."
+   },
+   {
+    "who": "narr",
+    "text": "팔로워가 나보다 많다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "신고한다",
+    "effects": {
+     "stats": {
+      "heat": -5,
+      "sense": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "신고 접수. 사흘 뒤 계정이 사라졌다. 상담 후기 열두 개와 함께."
+     }
+    ]
+   },
+   {
+    "text": "댓글: 본계는 여기입니다",
+    "effects": {
+     "stats": {
+      "heat": 5,
+      "reputation": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "댓글에 공감이 수백 개 붙었다. 사칭 계정이 내 팔로워를 늘려 주고 있다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "ㅋㅋ 사칭범이 홍보 담당 됨"
+     }
+    ]
+   },
+   {
+    "text": "상담 후기를 읽어 본다",
+    "effects": {
+     "stats": {
+      "sense": 2,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'덕분에 고백 성공했어요.' 가짜 나는 진짜 나보다 연애를 잘했다."
+     },
+     {
+      "who": "narr",
+      "text": "이상하게 조금 힘이 났다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 사칭 계정이랑 손잡고 유료 상담 수익 반띵",
+    "effects": {
+     "stats": {
+      "reputation": -12,
+      "heat": 10,
+      "money": 25,
+      "sincerity": -4,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move",
+      "v_fakecoach"
+     ],
+     "album": "사칭 계정과 동업"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'공식 인증 상담사' 계정이 생겼다. 상담 한 번에 5천원, 반은 내 몫."
+     },
+     {
+      "who": "narr",
+      "text": "일주일 만에 2.5만원. 가짜 나는 진짜 나보다 돈도 잘 벌었다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_05",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     30,
+     100
+    ]
+   },
+   "affection": {
+    "sohee": [
+     10,
+     100
+    ],
+    "haneul": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "유명인이랑 아는 사이",
+  "lines": [
+   {
+    "who": "them",
+    "name": "{char:sohee,haneul}",
+    "text": "야 너 요즘 유명인이더라 ㅋㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "{char:sohee,haneul}",
+    "text": "나 너랑 아는 사이라고 자랑하고 다님"
+   },
+   {
+    "who": "them",
+    "name": "{char:sohee,haneul}",
+    "text": "다들 안 믿어서 우리 톡 캡처 보여 줌. 괜찮지? ㅋㅋ"
+   }
+  ],
+  "choices": [
+   {
+    "text": "ㅋㅋ 사인해 줄까",
+    "effects": {
+     "stats": {
+      "talk": 1,
+      "heat": 2
+     },
+     "affection": {
+      "sohee": 2,
+      "haneul": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "ㅋㅋㅋㅋ 이거지"
+     },
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "나중에 진짜 해 줘. 액자 함"
+     }
+    ]
+   },
+   {
+    "text": "캡처는 보여 주지 마",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "heat": -2
+     },
+     "trust": {
+      "sohee": 2,
+      "haneul": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "아 오케 ㅋㅋ 바로 지움"
+     },
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "근데 자랑은 계속함"
+     }
+    ]
+   },
+   {
+    "text": "나 요즘 좀 피곤해",
+    "effects": {
+     "stats": {
+      "stress": -2
+     },
+     "affection": {
+      "sohee": 1,
+      "haneul": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "헐 ㅋㅋ 유명세 ㅠ"
+     },
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "그럼 오늘은 웃긴 거만 보냄. 답장 안 해도 됨"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 우리 톡 캡처를 내가 더 퍼뜨린다. 찐친 인증",
+    "effects": {
+     "stats": {
+      "reputation": -6,
+      "heat": 6,
+      "villain": 1,
+      "charm": 2
+     },
+     "trust": {
+      "sohee": -3,
+      "haneul": -3
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "찐친 인증 캡처"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "어 그건 내 톡인데 ㅋㅋ"
+     },
+     {
+      "who": "them",
+      "name": "{char:sohee,haneul}",
+      "text": "…물어보고 올리지"
+     },
+     {
+      "who": "narr",
+      "text": "처음으로 ㅋㅋ 뒤에 아무 말이 오지 않았다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_06",
+  "layer": "daily",
+  "character": "seoyeon",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "시끄러운 사람",
+  "lines": [
+   {
+    "who": "them",
+    "text": "요즘 시끄럽더라."
+   },
+   {
+    "who": "them",
+    "text": "동아리 단톡에서도 네 얘기 나와."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "나는 조용한 게 좋아. 알지?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "한동안 잠수 탈게요",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "stress": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "잠수는 너무 갔고."
+     },
+     {
+      "who": "them",
+      "text": "조용해지면 커피 사."
+     }
+    ]
+   },
+   {
+    "text": "시끄러운 것도 저예요",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그래. 알아."
+     },
+     {
+      "who": "them",
+      "text": "근데 내 앞에선 좀 작게 해."
+     }
+    ]
+   },
+   {
+    "text": "선배 앞에서는 조용할게요",
+    "effects": {
+     "stats": {
+      "talk": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "말은 잘해."
+     },
+     {
+      "who": "them",
+      "text": "그게 시끄러운 거야."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 선배 톡을 캡처해 '선배도 내 팬' 인증",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 10,
+      "villain": 1,
+      "esteem": 2
+     },
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -5
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "선배도 내 팬 인증"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'동아리 선배도 내 팬ㅋ' 게시물. 댓글 1위: '선배 표정 안 봐도 보임'."
+     },
+     {
+      "who": "them",
+      "text": "내리고 연락하지 마."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_06_m",
+  "layer": "daily",
+  "character": "jeongwoo",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "시끄러운 후배",
+  "lines": [
+   {
+    "who": "them",
+    "text": "요즘 좀 시끄럽네. 하하."
+   },
+   {
+    "who": "them",
+    "text": "나는 괜찮은데 동아리 단톡은 아니래."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "text": "회장이라 한 번은 말해야 해서. 미안."
+   }
+  ],
+  "choices": [
+   {
+    "text": "한동안 잠수 탈게요",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "stress": 2
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "잠수까지는 아니고. 단톡에서만 조금 작게."
+     },
+     {
+      "who": "them",
+      "text": "개인톡은 그대로 해도 돼."
+     }
+    ]
+   },
+   {
+    "text": "시끄러운 것도 저예요",
+    "effects": {
+     "stats": {
+      "esteem": 2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "응. 알아. 그래서 나는 괜찮다고 한 거야. 하하."
+     }
+    ]
+   },
+   {
+    "text": "선배는 진짜 괜찮아요?",
+    "effects": {
+     "stats": {
+      "sense": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "괜찮아. 하하."
+     },
+     {
+      "who": "them",
+      "text": "진짜로. 사탕 있어."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 선배 톡을 캡처해 '회장도 내 편' 인증",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 10,
+      "esteem": 2,
+      "villain": 1
+     },
+     "affection": {
+      "*": -4
+     },
+     "trust": {
+      "*": -5
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "회장도 내 편 인증"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'동아리 회장도 내 편ㅋ' 게시물. 댓글 1위: '회장님 표정 안 봐도 보임'."
+     },
+     {
+      "who": "them",
+      "text": "내 이름은 빼 줘. 동아리 일이라서."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_07",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "affection": {
+    "jiwoo": [
+     10,
+     100
+    ],
+    "seunghyun": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "조금 거리를 둘게요",
+  "lines": [
+   {
+    "who": "them",
+    "name": "{char:jiwoo,seunghyun}",
+    "text": "요즘 이름이 자주 들려요."
+   },
+   {
+    "who": "them",
+    "name": "{char:jiwoo,seunghyun}",
+    "text": "어머니들 사이에서도요."
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "them",
+    "name": "{char:jiwoo,seunghyun}",
+    "text": "싫어서가 아니라, 조용해지면 그때 다시 연락할게요. 괜찮죠?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "네. 정리되면 제가 먼저 연락할게요",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "heat": -5
+     },
+     "trust": {
+      "jiwoo": 2,
+      "seunghyun": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:jiwoo,seunghyun}",
+      "text": "좋아요. 기다릴게요."
+     }
+    ]
+   },
+   {
+    "text": "소문이랑 저는 다르잖아요",
+    "effects": {
+     "stats": {
+      "esteem": 1
+     },
+     "affection": {
+      "jiwoo": -1,
+      "seunghyun": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:jiwoo,seunghyun}",
+      "text": "알아요. 그래서 조용할 때 보고 싶은 거예요."
+     }
+    ]
+   },
+   {
+    "text": "…서운하네요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "jiwoo": 1,
+      "seunghyun": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "{char:jiwoo,seunghyun}",
+      "text": "서운하다고 말해 줘서 고마워요."
+     },
+     {
+      "who": "them",
+      "name": "{char:jiwoo,seunghyun}",
+      "text": "그럼 짧게 한 번만 봐요. 이번 주에."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 이 톡을 '소개팅 상대가 나 못 잊음'으로 각색해 올린다",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 10,
+      "villain": 1,
+      "talk": 2
+     },
+     "trust": {
+      "jiwoo": -5,
+      "seunghyun": -5
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "소개팅 상대 각색 썰"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "각색한 썰이 커뮤 인기글이 됐다. 원본보다 훨씬 드라마틱했다."
+     },
+     {
+      "who": "them",
+      "name": "{char:jiwoo,seunghyun}",
+      "text": "이거 저죠. 지워 주세요. 오늘 안에요."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_08",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     60,
+     100
+    ]
+   }
+  },
+  "weight": 4,
+  "once": true,
+  "title": "익명 게시판",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "익명 게시판 인기글 1위."
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "요즘 핫한 그 사람 실체 아는 사람?"
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "같은 수업 듣는데 실물은 그냥 평범함 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "평범한 게 죄냐 ㅋㅋ"
+   },
+   {
+    "who": "narr",
+    "text": "댓글 87개. 절반은 나를 모르는 사람이 나에 대해 쓴 글이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "익명으로 해명 댓글을 단다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "heat": -5
+     }
+    },
+    "minigame": "group_chat",
+    "fail": {
+     "stats": {
+      "heat": 8,
+      "esteem": -2
+     },
+     "album": "익명 해명하다 본인 인증"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "댓글 하나. 짧고 담백하게. 추천이 비추보다 많았다."
+     },
+     {
+      "who": "them",
+      "name": "익명",
+      "text": "이 댓글 본인 같은데 ㅋㅋ 근데 멋있네"
+     }
+    ],
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "'저 그렇게 평범하지 않거든요'를 올리고 나서야 닉네임이 실명인 걸 봤다."
+     },
+     {
+      "who": "them",
+      "name": "익명",
+      "text": "ㅋㅋㅋㅋ 본인 등판"
+     }
+    ]
+   },
+   {
+    "text": "안 본 걸로 한다",
+    "effects": {
+     "stats": {
+      "stress": 3,
+      "esteem": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "앱을 지웠다. 30분 뒤에 다시 깔았다."
+     }
+    ]
+   },
+   {
+    "text": "캡처해서 친구들이랑 같이 웃는다",
+    "effects": {
+     "stats": {
+      "stress": -3,
+      "reputation": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "ㅋㅋ '평범한 게 죄냐' 이거 내가 쓴 거임"
+     },
+     {
+      "who": "narr",
+      "text": "태현이 익명으로 내 편을 들고 있었다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 부계정으로 나를 칭찬하는 글 50개 작성",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 10,
+      "villain": 1,
+      "esteem": 2
+     },
+     "setFlags": [
+      "villain_move",
+      "v_selfpraise"
+     ],
+     "album": "자작 칭찬 50연발"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "칭찬 글 50개. 전부 '진짜 멋있는 사람 되요'로 끝났다. 익명 게시판 인기글 1위가 바뀌었다."
+     },
+     {
+      "who": "narr",
+      "text": "'요즘 핫한 그 사람 실체'가 '요즘 핫한 그 사람 미담'이 됐다."
+     }
+    ]
+   }
+  ],
+  "hint": 2
+ },
+ {
+  "id": "d_street_09",
+  "layer": "daily",
+  "character": "yuna",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "인증샷 콘텐츠",
+  "lines": [
+   {
+    "who": "them",
+    "text": "회원님 유명해졌어요!!"
+   },
+   {
+    "who": "them",
+    "text": "헬스장 단톡에서도 회원님 얘기해요. 저는 좋은 얘기만 골라 들었어요!"
+   },
+   {
+    "who": "them",
+    "text": "오늘 인증샷 콘텐츠 가요! 지금 기분 몇 점이에요?"
+   }
+  ],
+  "choices": [
+   {
+    "text": "8점이요. 찍어요!",
+    "effects": {
+     "stats": {
+      "charm": 1,
+      "heat": 3
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "좋아요!! 8점짜리 표정 나왔다!"
+     },
+     {
+      "who": "narr",
+      "text": "헬스장 계정에 올라간 사진. 댓글이 전부 '회원님 화이팅'이었다."
+     }
+    ]
+   },
+   {
+    "text": "오늘은 운동만 할게요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그것도 정답이에요! 사진은 다음에!"
+     }
+    ]
+   },
+   {
+    "text": "소문 때문에 좀 지쳤어요",
+    "effects": {
+     "stats": {
+      "stress": -2
+     },
+     "affection": {
+      "*": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "그럼 오늘은 스트레칭만! 기분 점수 올리는 게 먼저예요"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_street_09_m",
+  "layer": "daily",
+  "character": "doyun",
+  "trigger": {
+   "day": [
+    4,
+    100
+   ],
+   "stats": {
+    "heat": [
+     40,
+     100
+    ]
+   },
+   "affection": {
+    "*": [
+     10,
+     100
+    ]
+   }
+  },
+  "weight": 3,
+  "once": true,
+  "title": "소문보다 자세",
+  "lines": [
+   {
+    "who": "them",
+    "text": "요즘 회원님 얘기가 데스크까지 와요."
+   },
+   {
+    "who": "them",
+    "text": "운동은 소문이랑 상관없어요."
+   },
+   {
+    "who": "them",
+    "text": "자세만 봅니다. 오늘 스쿼트부터."
+   }
+  ],
+  "choices": [
+   {
+    "text": "그 말 좋네요",
+    "effects": {
+     "stats": {
+      "sincerity": 1
+     },
+     "affection": {
+      "*": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 무게보다 자세예요."
+     }
+    ]
+   },
+   {
+    "text": "사진 한 장만 찍어 주세요",
+    "effects": {
+     "stats": {
+      "heat": 2,
+      "charm": 1
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "사진은 안 찍습니다."
+     },
+     {
+      "who": "them",
+      "text": "대신 폼은 봐 드려요. 그게 더 오래가요."
+     }
+    ]
+   },
+   {
+    "text": "오늘은 그냥 쉴래요",
+    "effects": {
+     "stats": {
+      "stress": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "text": "네. 쉬는 것도 운동이에요."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_heat_spread",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    8,
+    100
+   ],
+   "stats": {
+    "heat": [
+     60,
+     100
+    ]
+   }
+  },
+  "weight": 10,
+  "once": true,
+  "title": "박제 위기",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "눈을 떴을 때부터 내 이름이 동네 커뮤 실시간 검색어에 있었다."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 이거 선 넘었다. 네 얘기가 학교 밖까지 나감"
+   },
+   {
+    "who": "narr",
+    "text": "{top|이가} 링크 하나를 보냈다. 아무 말 없이. 그게 더 무섭다."
+   },
+   {
+    "who": "narr",
+    "text": "알림 소리가 끊기지 않는다. 진동이 책상을 긁는다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "공개 사과문을 올린다",
+    "effects": {
+     "stats": {
+      "heat": -25,
+      "reputation": 2,
+      "esteem": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "짧은 글 하나. 변명은 뺐다. 생각보다 많은 사람이 '이 정도면 됐다'고 했다."
+     },
+     {
+      "who": "narr",
+      "text": "{top|이가} 늦게 한 줄을 보냈다. '잘했어.'"
+     }
+    ]
+   },
+   {
+    "text": "잠수 탄다. 일주일",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "stress": 5
+     },
+     "trust": {
+      "@top": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "모든 알림을 껐다. 조용해졌다. {top}의 톡도 같이 묻혔다."
+     }
+    ]
+   },
+   {
+    "text": "해명 라이브를 켠다",
+    "effects": {
+     "stats": {
+      "heat": 10,
+      "reputation": -13,
+      "talk": 2
+     },
+     "album": "해명 라이브 동접 3명"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "라이브를 켰다. 동접 3명. 그중 한 명이 태현이다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 그 라이브가 클립으로 돌았다. 조회수는 3명이 아니었다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 더 시끄러운 떡밥을 던져 시선을 돌린다",
+    "effects": {
+     "stats": {
+      "reputation": -15,
+      "heat": 12,
+      "sincerity": -3,
+      "villain": 1,
+      "stress": -5
+     },
+     "trust": {
+      "@top": -5
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "근황 공개 예정 낚시"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "'근황 공개 예정' 한 줄을 올렸다. 반나절 동안 시선이 그쪽으로 갔다."
+     },
+     {
+      "who": "narr",
+      "text": "공개할 근황은 없었다. 이번엔 낚시 욕까지 나한테 왔다."
+     },
+     {
+      "who": "narr",
+      "text": "{top|이가} 짧게 물었다. '그거 너야?'"
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "실시간 검색어에서 내 이름이 내려갔다. 대신 '그 사람 근황'이 올라왔다."
+ },
+ {
+  "id": "c_heat_meltdown",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    8,
+    100
+   ],
+   "stats": {
+    "heat": [
+     85,
+     100
+    ]
+   }
+  },
+  "weight": 12,
+  "once": true,
+  "title": "대참사",
+  "clock": "04:00",
+  "lines": [
+   {
+    "who": "narr",
+    "text": "새벽 4시. 알림 999+."
+   },
+   {
+    "who": "narr",
+    "text": "내 이름, 내 사진, 내가 한 말, 내가 안 한 말까지. 모두 한 화면에 있다."
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 괜찮냐. 진짜로 묻는 거다"
+   },
+   {
+    "who": "narr",
+    "text": "{top|이가} 보낸 마지막 톡은 어제 저녁이다. 그 뒤로 조용하다."
+   },
+   {
+    "who": "sys",
+    "wait": 5
+   }
+  ],
+  "choices": [
+   {
+    "text": "전부 내려놓고 사과한다",
+    "effects": {
+     "stats": {
+      "heat": -40,
+      "sincerity": 3,
+      "reputation": -5
+     },
+     "trust": {
+      "@top": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "계정을 정리하고 사과문 하나만 남겼다. 지울 수 없는 것들은 지우지 않았다."
+     },
+     {
+      "who": "narr",
+      "text": "며칠 뒤, 소문은 다른 사람 이름으로 옮겨 갔다. 인터넷은 원래 그렇다."
+     }
+    ]
+   },
+   {
+    "text": "{top}에게 먼저 전화한다",
+    "effects": {
+     "stats": {
+      "heat": -20,
+      "reputation": -8,
+      "sincerity": 2
+     },
+     "trust": {
+      "@top": -2
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "신호음이 길었다. 받았다."
+     },
+     {
+      "who": "narr",
+      "text": "{top|은는} 화내지 않았다. 대신 오래 말이 없었다. 그 침묵이 화보다 무거웠다."
+     }
+    ]
+   },
+   {
+    "text": "버틴다. 아무것도 안 한다",
+    "effects": {
+     "stats": {
+      "heat": -5,
+      "reputation": -10,
+      "stress": 10
+     },
+     "trust": {
+      "@top": -5
+     },
+     "album": "대참사 한가운데서 셀카"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "버텼다. 아무것도 안 했다. 그러다 습관처럼 셀카를 찍어 올렸다."
+     },
+     {
+      "who": "narr",
+      "text": "그게 그날 제일 많이 공유된 사진이 됐다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 대참사를 굿즈로 판다. '대참사 에디션' 티셔츠",
+    "effects": {
+     "stats": {
+      "reputation": -12,
+      "heat": 10,
+      "money": 30,
+      "villain": 1
+     },
+     "trust": {
+      "@top": -6
+     },
+     "setFlags": [
+      "villain_move",
+      "v_tshirt"
+     ],
+     "album": "대참사 에디션 티셔츠"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "주문 87건. 입금 확인 12건. 3만원이 들어왔다."
+     },
+     {
+      "who": "narr",
+      "text": "'대참사 에디션'이 동네 유행어가 됐다. 리뷰 1위: '입고 다니면 길이 열림.'"
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "태현이 문 앞에 치킨을 두고 갔다. 쪽지: '내기랑 별개'."
+ },
+ {
+  "id": "d_villain_rival_leak",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "flags": [
+    "sc_leak"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "신입님 행적 보고서",
+  "lines": [
+   {
+    "who": "sys",
+    "text": "카페 알바방 (수사본부) · 공지"
+   },
+   {
+    "who": "them",
+    "name": "막내",
+    "text": "[보고서] 신입님 최근 행적 정리했습니다"
+   },
+   {
+    "who": "them",
+    "name": "막내",
+    "text": "첨부. 부계정 열 개 투표 기록",
+    "ifFlags": [
+     "leak_rigged"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "막내",
+    "text": "첨부. 제 작년 메시지 공지 건. 아직 안 잊음",
+    "ifFlags": [
+     "v_maknae_notice"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "막내",
+    "text": "1. 단톡 2. 커뮤 3. 동네. 출처는 다 스샷으로 있음 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "점장",
+    "text": "업무방입니다. 그리고 읽었습니다."
+   },
+   {
+    "who": "narr",
+    "text": "보고서는 일곱 쪽이었다. 내가 한 일인데 남이 쓰니까 더 길었다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "단톡에 사과문을 올린다",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "reputation": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "막내",
+      "text": "ㅋㅋ 사과 접수. 보고서는 보관함으로"
+     },
+     {
+      "who": "them",
+      "name": "점장",
+      "text": "업무방입니다. 수고하셨습니다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 막내 행적 보고서로 맞불",
+    "effects": {
+     "stats": {
+      "reputation": -6,
+      "heat": 10,
+      "talk": 2,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "수사관 vs 신입 2차전"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "막내",
+      "text": "와 맞불 ㅋㅋㅋ 근데 제 보고서가 더 두꺼움"
+     },
+     {
+      "who": "narr",
+      "text": "보고서 전쟁은 사흘 갔다. 아무도 일을 안 했다. 점장님만 했다."
+     }
+    ]
+   },
+   {
+    "text": "공지를 안 읽은 척한다",
+    "effects": {
+     "stats": {
+      "stress": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "안 읽은 척했다. 읽음 10에 내 것도 들어 있었다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_rival_speech",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "flags": [
+    "sc_speech"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "2편은 제가 찍습니다",
+  "lines": [
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "님 요즘 진상 클립이 제 축사 영상보다 잘 나가요 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "그래서 2편은 제가 찍기로 했습니다. 제목은 '모쏠 축사 그 후'"
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "원본 주인 행세하신 거 저 아직 기억해요",
+    "ifFlags": [
+     "speech_self_upload"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "비하인드 예고편, 신부 측에서 다 봤대요",
+    "ifFlags": [
+     "v_behind"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "동창 결혼식 폭로 코너 영상도 제 단톡까지 왔고요",
+    "ifFlags": [
+     "v_roast"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "신랑 친구",
+    "text": "주인공 허락은 안 받음. 님한테 배웠어요"
+   }
+  ],
+  "choices": [
+   {
+    "text": "찍지 마세요. 제가 먼저 사과할게요",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "sincerity": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "신랑 친구",
+      "text": "ㅋㅋ 사과 영상이면 찍어 드림"
+     },
+     {
+      "who": "narr",
+      "text": "사과 영상은 조회수 300. 그게 딱 좋았다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 맞불 영상: '신랑 친구의 실체'",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 8,
+      "charm": 2,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "신랑 친구 실체 영상"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "신랑 친구",
+      "text": "와 ㅋㅋ 전쟁이네요"
+     },
+     {
+      "who": "narr",
+      "text": "두 영상 댓글창이 서로를 퍼 날랐다. 이긴 사람은 없었다."
+     }
+    ]
+   },
+   {
+    "text": "6학년 3반 단톡에 도움을 청한다",
+    "effects": {
+     "stats": {
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "동창",
+      "text": "ㅋㅋ 우유야 이번엔 네가 좀 심했어"
+     },
+     {
+      "who": "narr",
+      "text": "단톡 21명 중 아무도 편을 들어 주지 않았다. 공정했다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_rival_clip",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "flags": [
+    "sc_clip"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "진상 모음집 3탄",
+  "lines": [
+   {
+    "who": "them",
+    "name": "클립 장인",
+    "text": "님 진상 모음집 3탄까지 땄어요 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "클립 장인",
+    "text": "조회수가 처음 그 클립보다 높음. 수익 반띵 하실?"
+   },
+   {
+    "who": "them",
+    "name": "클립 장인",
+    "text": "'듀오가 먼저 꼬심' 원본 대조 영상도 만들었음 ㅋㅋ",
+    "ifFlags": [
+     "v_fabricate"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "클립 장인",
+    "text": "리액션 영상 편도 3탄에 들어감",
+    "ifFlags": [
+     "v_reaction"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "처음엔 목소리였다. 지금은 내가 한 짓들이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "내려 주세요. 다 제 잘못입니다",
+    "effects": {
+     "stats": {
+      "heat": -10,
+      "reputation": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "클립 장인",
+      "text": "ㅋㅋ 본인이 인정하면 재미없는데"
+     },
+     {
+      "who": "narr",
+      "text": "한 시간 뒤 3탄이 내려갔다. 1탄은 남았다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) 수익 반띵 콜. 4탄은 내가 직접 기획",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 8,
+      "money": 25,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "진상 모음집 공동 제작"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "클립 장인",
+      "text": "ㅋㅋㅋ 이 사람 진짜다"
+     },
+     {
+      "who": "narr",
+      "text": "4탄 기획서 첫 줄에 듀오 이름이 있었다. 지웠다. 조금 늦게."
+     }
+    ]
+   },
+   {
+    "text": "듀오에게 먼저 연락한다",
+    "effects": {
+     "stats": {
+      "sincerity": 1,
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "듀오",
+      "text": "봤어. 나는 그 클립 안 봄"
+     },
+     {
+      "who": "them",
+      "name": "듀오",
+      "text": "근데 너는 한 번 봐야 할 듯"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_rival_swap",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "flags": [
+    "sc_swap"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "서진의 역공",
+  "lines": [
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "너 요즘 과 단톡에서 유명하더라"
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "나한테만 그런 줄 알았는데 ㅎㅎ",
+    "ifFlags": [
+     "swap_sniped"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "나는 너 착한 줄만 알았는데 ㅎㅎ",
+    "ifNotFlags": [
+     "swap_sniped"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "다들 나한테 물어봐. 쟤 원래 저랬냐고"
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "'자?' 캡처 올린 거 동아리 사람들 아직 기억해",
+    "ifFlags": [
+     "v_zz"
+    ]
+   }
+  ],
+  "choices": [
+   {
+    "text": "그건 내 잘못이야. 미안",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "heat": -8
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "서진",
+      "text": "너 사과도 하는구나"
+     },
+     {
+      "who": "narr",
+      "text": "처음으로 서진이 할 말을 찾지 못했다."
+     }
+    ]
+   },
+   {
+    "text": "(진상) '원래 저랬냐' 글에 서진 얘기로 답글을 단다",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 13,
+      "esteem": 2,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "질문 답글로 역공"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "답글이 원글보다 길었다. 베스트 댓글: '둘 다 그만'."
+     }
+    ]
+   },
+   {
+    "text": "숨김 처리",
+    "effects": {
+     "stats": {
+      "esteem": 1,
+      "stress": -1
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "숨김 버튼. 1초도 안 걸렸다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_rival_ghost",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "flags": [
+    "sc_ghost"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "코치의 공식 입장문",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 너 요즘 왜 그래"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "내 얘기는 됐고. 동네가 다 너 얘기다"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "그래서 코치 공식 입장문 올렸다"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "그리고 감성글 계정. 6년 전 블로그 링크가 나한테도 왔다",
+    "ifFlags": [
+     "v_selfpoem"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "'저는 이 사람의 코치가 아닙니다.' 공감 214개."
+   }
+  ],
+  "choices": [
+   {
+    "text": "입장문 내려. 내가 정리할게",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "heat": -8
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "진짜지? 그럼 내린다"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "코치 복직은 보류"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 반박 입장문: '코치가 시를 대신 썼습니다'",
+    "effects": {
+     "stats": {
+      "reputation": -10,
+      "heat": 14,
+      "talk": 2,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "코치 vs 선수 입장문"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "와 그걸 까냐 ㅋㅋ"
+     },
+     {
+      "who": "narr",
+      "text": "입장문 두 개가 나란히 돌았다. 둘 다 졌다."
+     }
+    ]
+   },
+   {
+    "text": "치킨 사 들고 태현네 간다",
+    "effects": {
+     "stats": {
+      "stress": -3,
+      "money": -5
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "치킨으로 퉁치려고?"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "퉁쳐 준다. 반만"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_rival",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    12,
+    60
+   ],
+   "stats": {
+    "villain": [
+     2,
+     99
+    ]
+   },
+   "notFlags": [
+    "start_alt"
+   ]
+  },
+  "weight": 6,
+  "once": true,
+  "title": "증인 긴급 회의",
+  "lines": [
+   {
+    "who": "sys",
+    "text": "친구 단톡 (9)"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "긴급 회의. 내기 증인 일곱 명 소집"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "요즘 얘 진상 짓 커뮤에서 봤다. 이거 내기 무효 아님?"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "사칭 계정이랑 동업한 거 증인들 다 봄",
+    "ifFlags": [
+     "v_fakecoach"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "'되요' 50번 그거 너지?",
+    "ifFlags": [
+     "v_selfpraise"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "판정은 코치가 한다. 일단 들어 보자"
+   }
+  ],
+  "choices": [
+   {
+    "text": "다 인정. 내기는 계속",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "heat": -6
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "오 인정 빠르네. 계속 간다"
+     },
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "대신 치킨은 더 걸자"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 증인들 흑역사로 맞불",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 10,
+      "talk": 2,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "증인 단톡 흑역사 대전"
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "친구",
+      "text": "와 그걸 꺼내?"
+     },
+     {
+      "who": "narr",
+      "text": "단톡이 조용해졌다. 증인이 일곱 명에서 세 명이 됐다."
+     }
+    ]
+   },
+   {
+    "text": "단톡을 나간다",
+    "effects": {
+     "stats": {
+      "reputation": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "3분 뒤 태현이 다시 초대했다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "증인방은 못 나간다 ㅋㅋ"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "c_villain_trial",
+  "layer": "crisis",
+  "trigger": {
+   "day": [
+    20,
+    100
+   ],
+   "stats": {
+    "villain": [
+     4,
+     99
+    ]
+   }
+  },
+  "weight": 12,
+  "once": true,
+  "title": "단톡 재판",
+  "lines": [
+   {
+    "who": "sys",
+    "text": "'재판' 단톡방 · 피고인 1"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "재판장 태현입니다. 코치로서 책임지고 진행합니다"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "피해자분들 한 줄씩 진술 부탁드립니다"
+   },
+   {
+    "who": "them",
+    "name": "친구",
+    "text": "내기 증인 대표입니다. 증인 단톡 피해자",
+    "ifNotFlags": [
+     "start_alt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "막내",
+    "text": "공지 사건 피해자입니다 ㅋㅋ",
+    "ifFlags": [
+     "sc_leak"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "신부",
+    "text": "결혼식 피해자. 아직 화남",
+    "ifFlags": [
+     "sc_speech",
+     "speech_self_upload"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "동창",
+    "text": "6학년 3반 대표로 왔습니다. 단톡 피해자",
+    "ifFlags": [
+     "sc_speech"
+    ],
+    "ifNotFlags": [
+     "speech_self_upload"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "듀오",
+    "text": "방송 피해자. 할 말은 많은데 안 함",
+    "ifFlags": [
+     "sc_clip"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "단톡 저격 피해자 ㅎㅎ",
+    "ifFlags": [
+     "sc_swap",
+     "swap_sniped"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "서진",
+    "text": "캡처 피해자 ㅎㅎ 아니면 그냥 구경",
+    "ifFlags": [
+     "sc_swap"
+    ],
+    "ifNotFlags": [
+     "swap_sniped"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "{char:jiwoo,seunghyun}",
+    "text": "대필 피해자예요. 정확히는 시 피해자.",
+    "ifFlags": [
+     "sc_ghost"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "익명 피해자 세 명 추가요"
+   },
+   {
+    "who": "them",
+    "name": "점장",
+    "text": "부계정 열 개 피해자 점장입니다. 그리고 무효표입니다.",
+    "ifFlags": [
+     "leak_rigged"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "'되요' 50번 감별한 사람입니다. 맞춤법 피해자",
+    "ifFlags": [
+     "v_selfpraise"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "편의점 알바생",
+    "text": "천원 셀카 줄 섰던 사람입니다",
+    "ifFlags": [
+     "v_paid_selfie"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "단골손님",
+    "text": "성공 사례 본인입니다. 허락 안 했습니다",
+    "ifFlags": [
+     "v_case_study"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "신랑",
+    "text": "가짜 하객 영상에 나온 신랑입니다",
+    "ifFlags": [
+     "v_fakeguest"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "대참사 티셔츠 샀습니다. 환불 원합니다",
+    "ifFlags": [
+     "v_tshirt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "듀오",
+    "text": "'듀오가 먼저 꼬심'의 그 듀오입니다",
+    "ifFlags": [
+     "v_fabricate"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "6년 전 블로그 원작자 대리인입니다. 태현이 보냈어요",
+    "ifFlags": [
+     "v_selfpoem"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "익명",
+    "text": "이름만 가린 방송 썰 주인공입니다. 다 알아들었어요",
+    "ifFlags": [
+     "v_stream_gossip"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "엄마도 들어왔다. 밥은 먹고 다니니",
+    "ifNotFlags": [
+     "v_mom_content"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "엄마",
+    "text": "엄마 말투 스티커 수익은 엄마 몫이다. 밥은 먹고 다니니",
+    "ifFlags": [
+     "v_mom_content"
+    ]
+   },
+   {
+    "who": "sys",
+    "wait": 3
+   },
+   {
+    "who": "narr",
+    "text": "피고인만 빼고 전원이 동시에 '입력 중'이다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "전부 인정하고 한 사람씩 사과한다",
+    "effects": {
+     "stats": {
+      "heat": -20,
+      "reputation": 5,
+      "sincerity": 3,
+      "stress": 5
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "판결합니다. 집행유예"
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "단, 치킨은 실형"
+     }
+    ]
+   },
+   {
+    "text": "최후 변론을 한다",
+    "effects": {
+     "stats": {
+      "talk": 2,
+      "heat": 5
+     }
+    },
+    "chance": 50,
+    "fail": {
+     "stats": {
+      "heat": 10,
+      "esteem": -3
+     },
+     "album": "최후 변론 역효과"
+    },
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "변론하다가 진상 하나를 더 자백했다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "피고인 방금 자백함 ㅋㅋ"
+     }
+    ],
+    "reply": [
+     {
+      "who": "narr",
+      "text": "변론 3분. 두 명이 공감을 눌렀다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "판결 보류. 재판은 계속된다"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 재판방 캡처로 '단톡 마녀사냥 당함' 콘텐츠를 올린다",
+    "effects": {
+     "stats": {
+      "reputation": -12,
+      "heat": 15,
+      "money": 30,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "재판방 캡처 역공"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "조회수는 났다. 수익은 3만원."
+     },
+     {
+      "who": "narr",
+      "text": "댓글 1위: '피해자가 한 방 가득인데 마녀사냥?'"
+     }
+    ]
+   },
+   {
+    "text": "방을 나간다",
+    "effects": {
+     "stats": {
+      "heat": 5,
+      "reputation": -3
+     },
+     "album": "재판 궐석"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "궐석 재판이 열렸다. 판결은 만장일치였다."
+     }
+    ]
+   }
+  ],
+  "hint": 0,
+  "cliffhanger": "판결문이 공지에 걸렸다. '집행유예. 단, 치킨은 실형.'"
+ },
+ {
+  "id": "d_villain_fan",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    10,
+    100
+   ],
+   "stats": {
+    "villain": [
+     3,
+     99
+    ]
+   }
+  },
+  "weight": 4,
+  "once": true,
+  "title": "레전드 빌런님께",
+  "lines": [
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "님 진짜 레전드 빌런이세요 ㅋㅋ"
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "님 진상 모음 다 봤어요. 정주행 세 번"
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "저도 님처럼 살고 싶어요"
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "'대참사 에디션' 티셔츠도 샀어요 ㅋㅋ",
+    "ifFlags": [
+     "v_tshirt"
+    ]
+   },
+   {
+    "who": "them",
+    "name": "모르는 계정",
+    "text": "'되요' 50번 원본도 소장 중",
+    "ifFlags": [
+     "v_selfpraise"
+    ]
+   },
+   {
+    "who": "narr",
+    "text": "팬이 생겼다. 기뻐해야 하는지 모르겠다."
+   }
+  ],
+  "choices": [
+   {
+    "text": "저처럼 살지 마세요. 진짜로",
+    "effects": {
+     "stats": {
+      "sincerity": 2,
+      "heat": -3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "모르는 계정",
+      "text": "ㅋㅋ 이 답장도 레전드"
+     },
+     {
+      "who": "narr",
+      "text": "그 DM이 '빌런의 참회' 밈이 됐다. 이번 밈은 나쁘지 않았다."
+     }
+    ]
+   },
+   {
+    "text": "사인해 드릴까요?",
+    "effects": {
+     "stats": {
+      "esteem": 2,
+      "heat": 3
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "모르는 계정",
+      "text": "헐 대박 ㅋㅋ 액자 함"
+     }
+    ]
+   },
+   {
+    "text": "(진상) 팬한테 진상 노하우를 유료로 판다",
+    "effects": {
+     "stats": {
+      "reputation": -8,
+      "heat": 8,
+      "money": 25,
+      "villain": 1
+     },
+     "setFlags": [
+      "villain_move"
+     ],
+     "album": "빌런 노하우 유료 강의"
+    },
+    "reply": [
+     {
+      "who": "narr",
+      "text": "2.5만원이 들어왔다."
+     },
+     {
+      "who": "narr",
+      "text": "다음 날 팬이 '따라 했다가 단톡에서 강퇴당함' 후기를 올렸다."
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ },
+ {
+  "id": "d_villain_redeem",
+  "layer": "daily",
+  "trigger": {
+   "day": [
+    15,
+    100
+   ],
+   "stats": {
+    "villain": [
+     3,
+     99
+    ],
+    "sincerity": [
+     40,
+     100
+    ]
+   }
+  },
+  "weight": 6,
+  "once": true,
+  "title": "사과 투어",
+  "lines": [
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "야 진짜로 묻는다"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "한 명씩 다 찾아가서 사과할 생각 있냐"
+   },
+   {
+    "who": "them",
+    "name": "태현",
+    "text": "있으면 내가 순서 짜 줄게. 코치답게"
+   }
+  ],
+  "choices": [
+   {
+    "text": "있어. 순서 짜 줘",
+    "effects": {
+     "stats": {
+      "villain": -3,
+      "heat": -15,
+      "reputation": 6,
+      "sincerity": 2,
+      "stress": 3
+     }
+    },
+    "chance": 60,
+    "fail": {
+     "stats": {
+      "villain": -1,
+      "heat": -5,
+      "stress": 6
+     },
+     "album": "사과 투어 첫 집에서 문전박대"
+    },
+    "failReply": [
+     {
+      "who": "narr",
+      "text": "첫 집부터 문이 안 열렸다. 그래도 나머지는 돌았다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "괜찮아. 사과는 문 말고 사람한테 하는 거다"
+     }
+    ],
+    "reply": [
+     {
+      "who": "narr",
+      "text": "사과 투어 닷새. 문 열어 준 사람이 닫은 사람보다 많았다."
+     },
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "코치 복직 신청한다 ㅋㅋ"
+     }
+    ]
+   },
+   {
+    "text": "사과문 하나로 퉁친다",
+    "effects": {
+     "stats": {
+      "heat": -5
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "그것도 사과긴 하지. 반쪽짜리"
+     }
+    ]
+   },
+   {
+    "text": "아직은 아니야",
+    "effects": {
+     "stats": {
+      "stress": 2
+     }
+    },
+    "reply": [
+     {
+      "who": "them",
+      "name": "태현",
+      "text": "ㅇㅋ. 마음 바뀌면 말해"
+     }
+    ]
+   }
+  ],
+  "hint": 0
+ }
+]

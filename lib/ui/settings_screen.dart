@@ -128,6 +128,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => c.setHapticOn(!c.hapticOn),
                   ),
                 ),
+                const SizedBox(height: AppSpace.listGap),
+                // 읽은 장면 빨리 감기(r1_meeting D5). 이전 회차에서 본 장면의 읽씹 대기를 광고 없이
+                // 건너뛴다. 처음 보는 장면은 켜 있어도 그대로다.
+                ListenableBuilder(
+                  listenable: c,
+                  builder: (context, _) => AppListRow(
+                    key: const Key('settings-fast-forward'),
+                    title: '읽은 장면 빨리 감기',
+                    subtitle: '지난 회차에서 본 장면은 답장 대기를 바로 건너뛸 수 있어요',
+                    leading: const Icon(Icons.fast_forward_outlined, size: 22),
+                    trailing: Switch(
+                      value: c.fastForwardSeen,
+                      onChanged: c.setFastForwardSeen,
+                    ),
+                    showChevron: false,
+                    onTap: () => c.setFastForwardSeen(!c.fastForwardSeen),
+                  ),
+                ),
                 const SizedBox(height: AppSpace.sectionGap),
                 const SectionHeader(title: '개인정보'),
                 FutureBuilder<bool>(

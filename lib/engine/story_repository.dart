@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'effects.dart';
@@ -19,6 +20,21 @@ class StoryBundle {
 
   /// 서사 신호(선택). 파일이 없거나 비면 [SignalBook.empty].
   final SignalBook signals;
+
+  /// 시작 스토리(`starts.json`, docs/overhaul2/01_design.md §3). 파일이 없거나 비면 클래식 하나만
+  /// 있는 것으로 본다([startsOrClassic]) — 예전 데이터·테스트용 합성 번들이 그대로 돈다.
+  final List<StartScenario> starts;
+  late final Map<String, StartScenario> startById = {
+    for (final s in starts) s.id: s,
+  };
+
+  /// 고를 수 있는 시작. 정의가 없으면 클래식 하나.
+  List<StartScenario> get startsOrClassic => starts.isEmpty
+      ? const [StartScenario(id: StartScenario.classic, title: '치킨 열 마리')]
+      : starts;
+
+  /// [id] 시작. 모르는 id 는 null.
+  StartScenario? startOf(String id) => startById[id];
   late final Map<String, StoryEvent> eventById = {
     for (final e in events) e.id: e,
   };
@@ -130,10 +146,14 @@ class StoryBundle {
     required this.events,
     required this.endings,
     this.signals = SignalBook.empty,
+    this.starts = const [],
   });
 
   /// 선택 데이터. 없어도 앱이 돈다.
   static const signalsFile = 'signals.json';
+
+  /// 시작 스토리 정의(선택). 없으면 클래식만.
+  static const startsFile = 'starts.json';
 
   /// 이벤트는 레이어별로 파일이 나뉘어 있다. 파일을 추가하면 여기에만 이름을 넣으면 된다.
   static const eventFiles = [
@@ -152,10 +172,18 @@ class StoryBundle {
     'route_yuna.json',
     // 형식을 깨는 이벤트(전화·알림·사진). docs/MOMENTS_SPEC.md. 비어 있거나 없어도 된다.
     'events_moments.json',
+    // 시작 스토리 장면(docs/overhaul2/01_design.md §3). 작가가 채우는 중이면 없어도 된다.
+    'events_start.json',
+    // 자유 시스템(소문 문턱·돌발 일상·위기, §5). 없어도 된다.
+    'events_freedom.json',
   ];
 
   /// 없거나 비어 있어도 되는 이벤트 파일. 작가가 채우는 중인 파일이 앱을 막지 않게 한다.
-  static const optionalEventFiles = {'events_moments.json'};
+  static const optionalEventFiles = {
+    'events_moments.json',
+    'events_start.json',
+    'events_freedom.json',
+  };
 
   factory StoryBundle.fromJsonStrings({
     required String config,
@@ -163,9 +191,11 @@ class StoryBundle {
     required List<String> events,
     required String endings,
     String? signals,
+    String? starts,
     Set<String>? knownMinigames,
     bool requireEndingHints = false,
     bool requireDailyDepth = false,
+    bool? deep,
   }) {
     final bundle = StoryBundle(
       config: GameConfig.fromJson(jsonDecode(config) as Map<String, dynamic>),
@@ -184,11 +214,15 @@ class StoryBundle {
           .map((e) => Ending.fromJson(e as Map<String, dynamic>))
           .toList(),
       signals: SignalBook.fromJsonString(signals),
+      starts: starts == null || starts.trim().isEmpty
+          ? const []
+          : StartScenario.listFromJson(jsonDecode(starts)),
     );
     bundle.validate(
       knownMinigames: knownMinigames,
       requireEndingHints: requireEndingHints,
       requireDailyDepth: requireDailyDepth,
+      deep: deep,
     );
     return bundle;
   }
@@ -220,12 +254,20 @@ class StoryBundle {
     } catch (_) {
       signals = null;
     }
+    // 시작 스토리도 선택. 없으면 클래식만.
+    String? starts;
+    try {
+      starts = await rootBundle.loadString('$dir/$startsFile');
+    } catch (_) {
+      starts = null;
+    }
     return StoryBundle.fromJsonStrings(
       config: config,
       characters: characters,
       events: events,
       endings: endings,
       signals: signals,
+      starts: starts,
       knownMinigames: knownMinigames,
       // 출시 데이터는 엔딩마다 사람이 쓴 힌트가 있어야 한다(홈·앨범의 "아직 못 본 엔딩").
       requireEndingHints: true,
@@ -244,9 +286,7 @@ class StoryBundle {
   /// 여성 회차 대사가 남성 쪽 이름을 실수로 부르는 일이 없다.
   Map<String, String> charNamesFor(String pref) => _charNames.putIfAbsent(
     pref,
-    () => Map.unmodifiable({
-      for (final c in charactersFor(pref)) c.id: c.name,
-    }),
+    () => Map.unmodifiable({for (final c in charactersFor(pref)) c.id: c.name}),
   );
   final Map<String, Map<String, String>> _charNames = {};
 
@@ -262,11 +302,21 @@ class StoryBundle {
   /// [requireEndingHints] 면 엔딩마다 비어 있지 않은 `hint` 가 있어야 한다.
   /// [requireDailyDepth] 면 반복 가능한 일상이 100일을 버틸 만큼 있어야 한다([_checkRepeatables]).
   /// 둘 다 **출시 데이터에만** 해당한다 — 테스트용 합성 번들은 이벤트가 몇 개뿐이라 기본은 끈다.
+  ///
+  /// [deep] 이면 무거운 화면 검사(조건 붙은 줄을 MBTI 17 × 목소리 13 × 플래그 축으로 거른 뒤
+  /// 대사·선택지·반응이 비지 않는지, [_checkViews])까지 돈다. 기본은 **출시 빌드가 아닐 때**
+  /// (디버그·프로파일·`flutter test`)다 — 출시 빌드는 실행할 때마다 도는 값이 커서
+  /// (r1_bugs R1-5) 가벼운 구조 검사(키·참조·`next`·날짜 중복·시작·플래그·조건 형식·모먼트 규칙)만
+  /// 돈다. 이벤트 글의 자리표시자 형식도 무거운 쪽이다(글 전부를 훑는다).
+  /// 화면 검사는 데이터가 바뀌는 곳(테스트·CI)에서 매번 돌므로 출시 데이터는 이미 통과한 것이다.
+  /// 구조 검사에 걸리면 출시 빌드도 예외를 던져 앱이 시작 실패 화면으로 안전하게 멈춘다.
   void validate({
     Set<String>? knownMinigames,
     bool requireEndingHints = false,
     bool requireDailyDepth = false,
+    bool? deep,
   }) {
+    final heavy = deep ?? !kReleaseMode;
     final ids = <String>{};
     final charIds = <String>{};
     for (final c in characters) {
@@ -306,6 +356,7 @@ class StoryBundle {
       _checkTemplate(text, 'signals $where');
     }
     _checkStatKeys(config.initialStats.keys, 'config.initialStats');
+    _checkStatKeys(config.dailyDrift.keys, 'config.dailyDrift');
     final early = config.earlyAffection;
     for (var i = 0; i < early.curve.length; i++) {
       final m = early.curve[i];
@@ -334,20 +385,30 @@ class StoryBundle {
       if (e.layer == EventLayer.main && e.day == null) {
         throw StateError('main 이벤트는 day 가 필요: ${e.id}');
       }
-      for (final (where, text) in e.displayTexts) {
-        _checkTemplate(text, where, bareMbtiOk: true);
+      // 자리표시자 형식은 글 전부를 훑어 검증 시간의 절반쯤을 쓴다(r1_bugs R1-5). 깨져도
+      // 화면에 중괄호가 보일 뿐 진행은 막지 않으므로 무거운 검사 쪽이다.
+      if (heavy) {
+        for (final (where, text) in e.displayTexts) {
+          _checkTemplate(text, where, bareMbtiOk: true);
+        }
       }
       _checkTrigger(
         e.trigger,
         '${e.id}.trigger',
         hasCharacter: e.character != null,
       );
-      _checkMbti(e);
+      _checkMbti(e, texts: heavy);
+      if (heavy) _checkViews(e);
       _checkMoment(e);
+      final clock = e.clock;
+      if (clock != null && e.clockSeconds == null) {
+        throw StateError('clock 은 "HH:MM"(00:00~23:59): ${e.id} -> "$clock"');
+      }
       _checkImage(e.image, '${e.id}.image');
       _checkActionScene(e);
       _checkLines(e.lines, '${e.id}.lines');
       _checkVariants(e);
+      _checkFlagGates(e);
       for (var i = 0; i < e.choices.length; i++) {
         final c = e.choices[i];
         final where = '${e.id}.choices[$i]';
@@ -422,6 +483,10 @@ class StoryBundle {
     }
     if (!endings.any((e) => e.isDefault)) throw StateError('default 엔딩이 없음');
     if (requireDailyDepth) _checkRepeatables();
+    _checkStarts();
+    _checkFlagRefs();
+    _checkEndingFlags();
+    _checkM36Reads();
 
     if (knownMinigames != null) {
       final missing = referencedMinigames.difference(knownMinigames);
@@ -429,20 +494,443 @@ class StoryBundle {
     }
 
     // main 이벤트는 날짜가 겹치면 하루에 둘이 잡혀 흐름이 꼬인다.
-    // 예외: 쪽별 버전(`trigger.pref` f 와 m 각 1개)은 한 회차에 하나만 열리므로 같은 날 둔다.
-    // 공용(pref 없음)과 쪽별 버전이 같은 날 겹치면 한 회차에 둘이 잡히므로 오류다.
-    final mainDays = <int, Map<String?, String>>{};
+    // 예외: 한 회차에 하나만 열리는 버전들은 같은 날 둔다. 키는 (pref, startKey) 둘이다.
+    // - pref: 쪽별 버전(`trigger.pref` f 와 m). null 은 공용.
+    // - startKey: 시작 스토리([mainStartKey]). null 은 공용.
+    // 두 축 모두에서 "같거나 한쪽이 공용"이면 한 회차에 둘이 잡히므로 오류다.
+    final mainDays = <int, List<(String?, String?, String)>>{};
+    final startIds = starts.isEmpty ? null : startById.keys;
     for (final e in events.where((e) => e.layer == EventLayer.main)) {
-      final slots = mainDays.putIfAbsent(e.day!, () => {});
+      final slots = mainDays.putIfAbsent(e.day!, () => []);
       final p = e.trigger.pref;
-      final clash =
-          slots[p] ??
-          (p == null && slots.isNotEmpty ? slots.values.first : null) ??
-          (p != null ? slots[null] : null);
-      if (clash != null) {
-        throw StateError('main 날짜 중복: ${e.day}일 ($clash, ${e.id})');
+      final k = mainStartKey(e.trigger, startIds: startIds);
+      bool overlaps(String? a, String? b) => a == null || b == null || a == b;
+      for (final (op, ok, oid) in slots) {
+        if (overlaps(p, op) && overlaps(k, ok)) {
+          throw StateError('main 날짜 중복: ${e.day}일 ($oid, ${e.id})');
+        }
       }
-      slots[p] = e.id;
+      slots.add((p, k, e.id));
+    }
+  }
+
+  /// main 날짜 검증 키의 시작 축(01_design §5.0 B3).
+  /// `trigger.flags` 안의 시작 플래그 → 그 시작 id. `notFlags` 에 `start_alt` → [StartScenario.classic].
+  /// 둘 다 없으면 null(모든 시작에 공용).
+  ///
+  /// [startIds] 를 주면(검증기는 늘 준다) **실제 시작 id 로만** 키를 만든다(r1_bugs R1-4).
+  /// 갈래 플래그 `sc_clip_deny` 도 `sc_` 로 시작하지만 시작이 아니다 — 그 시작(`sc_clip`)의
+  /// 갈래이므로 가장 긴 시작 id 접두어(`<id>_`)로 접는다. 그래야 `flags:[sc_clip]` main 과
+  /// `flags:[sc_clip_deny]` main 이 같은 날이면 "같은 시작" 으로 겹쳐 오류가 난다(deny 회차에서는
+  /// 둘 다 후보라 하루에 main 이 둘이 된다). 어느 시작에도 안 걸리는 `sc_*` 는 무시한다.
+  /// [startIds] 가 없으면 예전 규칙(`sc_` 로 시작하는 첫 플래그).
+  static String? mainStartKey(Trigger t, {Iterable<String>? startIds}) {
+    if (startIds == null) {
+      for (final f in t.flags) {
+        if (f.startsWith(StartScenario.idPrefix)) return f;
+      }
+    } else {
+      for (final f in t.flags) {
+        final k = startOfFlag(f, startIds);
+        if (k != null && k != StartScenario.classic) return k;
+      }
+    }
+    if (t.notFlags.contains(StartScenario.altFlag)) {
+      return StartScenario.classic;
+    }
+    return null;
+  }
+
+  /// 플래그 [f] 가 가리키는 시작 id. 시작 id 그대로이거나 `<id>_…` 갈래면 그 id(가장 긴 것).
+  /// 아니면 null.
+  static String? startOfFlag(String f, Iterable<String> startIds) {
+    String? best;
+    for (final id in startIds) {
+      if (f == id || f.startsWith('${id}_')) {
+        if (best == null || id.length > best.length) best = id;
+      }
+    }
+    return best;
+  }
+
+  /// 파급 줄(`ifFlags`·`ifNotFlags`) 규칙(01_design §5.2).
+  /// 조건 붙은 선택지가 있는 이벤트는 조건 **없는** 선택지가 2개 이상이어야 한다 —
+  /// 어떤 플래그 조합에서도 선택지가 1개 이하로 줄지 않게. 전화의 거절 선택지는 조건을 못 단다.
+  void _checkFlagGates(StoryEvent e) {
+    void names(List<String> fs, String where) {
+      for (final f in fs) {
+        if (f.isEmpty) throw StateError('빈 플래그 이름: $where');
+      }
+    }
+
+    void lines(List<Line> ls, String where) {
+      for (var i = 0; i < ls.length; i++) {
+        names(ls[i].ifFlags, '$where[$i].ifFlags');
+        names(ls[i].ifNotFlags, '$where[$i].ifNotFlags');
+      }
+    }
+
+    lines(e.lines, '${e.id}.lines');
+    for (var i = 0; i < e.variants.length; i++) {
+      lines(e.variants[i], '${e.id}.variants[$i]');
+    }
+    var gated = 0;
+    for (var i = 0; i < e.choices.length; i++) {
+      final c = e.choices[i];
+      final where = '${e.id}.choices[$i]';
+      names(c.ifFlags, '$where.ifFlags');
+      names(c.ifNotFlags, '$where.ifNotFlags');
+      lines(c.reply, '$where.reply');
+      lines(c.failReply, '$where.failReply');
+      lines(c.critReply, '$where.critReply');
+      // 반응 줄은 선택 **전에** 걸러진다(화면이 이벤트를 열 때 거른 사본을 만든다). 그래서 같은
+      // 선택지가 세우거나 지우는 플래그로 반응 줄을 가르면 의도와 반대로 보인다.
+      final own = {
+        ...c.effects.setFlags,
+        ...c.fail.setFlags,
+        ...c.effects.clearFlags,
+        ...c.fail.clearFlags,
+      };
+      for (final (name, ls) in [
+        ('reply', c.reply),
+        ('failReply', c.failReply),
+        ('critReply', c.critReply),
+      ]) {
+        for (var k = 0; k < ls.length; k++) {
+          final hit = [
+            ...ls[k].ifFlags,
+            ...ls[k].ifNotFlags,
+          ].where(own.contains);
+          if (hit.isNotEmpty) {
+            throw StateError(
+              '반응 줄이 같은 선택지가 바꾸는 플래그로 갈림(선택 전에 걸러져 반대로 보인다): '
+              '$where.$name[$k] -> ${hit.join(', ')}',
+            );
+          }
+        }
+      }
+      if (c.isFlagGated) {
+        gated++;
+        if (c.decline) {
+          throw StateError('전화 거절 선택지에 ifFlags/ifNotFlags 금지: $where');
+        }
+      }
+    }
+    if (gated == 0) return;
+    final free = e.choices.length - gated;
+    if (free < 2) {
+      throw StateError(
+        'ifFlags/ifNotFlags 없는 선택지가 $free개(최소 2): ${e.id} '
+        '— 플래그 조합에 따라 선택지가 1개 이하로 줄어든다',
+      );
+    }
+  }
+
+  /// 엔진이 이벤트 밖에서 직접 세우는 플래그. 파급 줄이 읽어도 되는 이름이다.
+  /// 시작별 `done_<startId>` 는 시작 목록에 따라 달라서 [settableFlags] 가 더한다.
+  static const engineFlags = {
+    'album_10',
+    'album_20',
+    'album_30',
+    'burnout_1',
+    'burnout_2',
+    'burnout_3',
+    'burnout_x3',
+    StartScenario.veteranFlag,
+  };
+
+  /// 새 게임 때 메타 `completedStarts` 로 세우는 `done_<startId>` 전부(r1_meeting §3).
+  late final Set<String> doneFlags = {
+    for (final s in startsOrClassic) StartScenario.doneFlag(s.id),
+  };
+
+  /// 어딘가에서 `setFlags` 로 세워지는 플래그 전부(이벤트 효과·실패 효과·시작 보정 + [engineFlags]
+  /// + [doneFlags]).
+  late final Set<String> settableFlags = {
+    ...engineFlags,
+    ...doneFlags,
+    for (final e in events)
+      for (final c in e.choices) ...[...c.effects.setFlags, ...c.fail.setFlags],
+    for (final s in starts) ...s.effects.setFlags,
+    for (final a in config.actions) ...a.effects.setFlags,
+  };
+
+  /// 파급 줄이 읽는 플래그는 어딘가에서 세워져야 한다(오타 방지, §5.2).
+  void _checkFlagRefs() {
+    final known = settableFlags;
+    void check(List<String> fs, String where) {
+      for (final f in fs) {
+        if (!known.contains(f)) {
+          throw StateError('아무도 세우지 않는 플래그를 읽음: $where -> $f');
+        }
+      }
+    }
+
+    void lines(List<Line> ls, String where) {
+      for (var i = 0; i < ls.length; i++) {
+        check(ls[i].ifFlags, '$where[$i].ifFlags');
+        check(ls[i].ifNotFlags, '$where[$i].ifNotFlags');
+      }
+    }
+
+    // 트리거는 다른 경로(엔딩·예전 데이터)로 세워지는 플래그도 읽으므로 전부를 보지는 않는다.
+    // 엔진 전용 이름(`done_*`·`veteran`)만은 오타가 곧 "영영 안 열리는 카메오" 라 여기서 본다.
+    void engineOnly(List<String> fs, String where) {
+      for (final f in fs) {
+        if ((f.startsWith(StartScenario.donePrefix) ||
+                f == StartScenario.veteranFlag) &&
+            !known.contains(f)) {
+          throw StateError('엔진이 세우지 않는 플래그를 읽음: $where -> $f');
+        }
+      }
+    }
+
+    for (final e in events) {
+      final t = e.trigger;
+      engineOnly(t.flags, '${e.id}.trigger.flags');
+      engineOnly(t.notFlags, '${e.id}.trigger.notFlags');
+      final fc = t.flagsAtLeast;
+      if (fc != null) engineOnly(fc.of, '${e.id}.trigger.flagsAtLeast');
+      lines(e.lines, '${e.id}.lines');
+      for (var i = 0; i < e.variants.length; i++) {
+        lines(e.variants[i], '${e.id}.variants[$i]');
+      }
+      for (var i = 0; i < e.choices.length; i++) {
+        final c = e.choices[i];
+        final where = '${e.id}.choices[$i]';
+        final req = c.require;
+        if (req != null) engineOnly(req.flags, '$where.require.flags');
+        check(c.ifFlags, '$where.ifFlags');
+        check(c.ifNotFlags, '$where.ifNotFlags');
+        lines(c.reply, '$where.reply');
+        lines(c.failReply, '$where.failReply');
+        lines(c.critReply, '$where.critReply');
+      }
+    }
+  }
+
+  /// 엔딩 `when` 이 읽는 `m36_*`·`done_*`·`veteran` 은 어딘가에서 세워지는 플래그여야 한다
+  /// (r3_meeting F5). 엔딩은 회차의 마지막 판정이라 오타가 나면 해피 엔딩이 조용히 늘 열리거나
+  /// (`notFlags` 오타) 영영 안 열린다(`flags` 오타). 다른 이름은 예전 데이터·합성 번들이 엔진 밖
+  /// (테스트)에서 세우기도 해서 보지 않는다. 엔진 판정은 이벤트 트리거와 같은 규칙이다.
+  void _checkEndingFlags() {
+    final known = settableFlags;
+    for (final e in endings) {
+      final t = e.when;
+      for (final (k, fs) in [
+        ('flags', t.flags),
+        ('notFlags', t.notFlags),
+        ('flagsAtLeast', t.flagsAtLeast?.of ?? const <String>[]),
+      ]) {
+        for (final f in fs) {
+          if (_checkedEndingFlag(f) && !known.contains(f)) {
+            throw StateError('엔딩이 아무도 세우지 않는 플래그를 읽음: ending ${e.id}.when.$k -> $f');
+          }
+        }
+      }
+    }
+  }
+
+  static bool _checkedEndingFlag(String f) =>
+      f.startsWith(m36Prefix) ||
+      f.startsWith(StartScenario.donePrefix) ||
+      f == StartScenario.veteranFlag;
+
+  /// m36 "마지막 선택" 결과 플래그 접두어(r2_meeting E3).
+  static const m36Prefix = 'm36_';
+
+  /// `m36_*` 를 읽는 이벤트는 m36 다음 날부터만 열린다(r3_meeting F3). 그 전에 열리면 m36 결과가
+  /// 아직 없는데 `notFlags: [m36_confessed]` 같은 조건이 참이 되어, m36 보다 먼저 정반대 장면이 뜬다
+  /// (r3_script N-1 `sc_leak_settle_out`).
+  ///
+  /// - 기준일은 `m36_*` 를 세우는 main 의 가장 늦은 날 + 1. 세우는 main 이 없으면(대본 작업 전) 검사하지 않는다.
+  /// - `next` 로만 닿는 장면(`day [0,0]`)과 세우는 장면 자신은 뺀다 — 같은 날 사슬로 이어진다.
+  /// - 읽는 자리: 트리거(`flags`·`notFlags`·`flagsAtLeast`), 줄·선택지·반응의 `ifFlags`·`ifNotFlags`,
+  ///   선택지 `require.flags`.
+  void _checkM36Reads() {
+    bool sets(StoryEvent e) => e.choices.any(
+      (c) => [
+        ...c.effects.setFlags,
+        ...c.fail.setFlags,
+      ].any((f) => f.startsWith(m36Prefix)),
+    );
+    final setters = [
+      for (final e in events)
+        if (e.layer == EventLayer.main && e.day != null && sets(e)) e,
+    ];
+    if (setters.isEmpty) return;
+    final from = setters.map((e) => e.day!).reduce((a, b) => a > b ? a : b) + 1;
+    final setterIds = {for (final e in setters) e.id};
+    // "막는" 결과 플래그(해피 엔딩이 notFlags 로 읽는 것: m36_parted·m36_rejected)를 **부정으로** 읽는
+    // 것은 언제든 된다 — m36 전에는 그 플래그가 없으니 "아직 정리하지 않았다" 가 맞다(r5 R5-5:
+    // 정리 뒤 데이트 장면을 막는 notFlags). 그 밖의 부정 읽기(`notFlags: [m36_confessed]` = "고백하지
+    // 않았다")는 m36 전에는 거짓말이 되므로 D93 부터다(r3 N-1).
+    final blockers = {
+      for (final x in endings)
+        if (x.tier == 'happy') ...x.when.notFlags.where((f) => f.startsWith(m36Prefix)),
+    };
+    final ifNots = <String>{};
+    void neg(List<Line> ls) {
+      for (final l in ls) {
+        ifNots.addAll(l.ifNotFlags);
+      }
+    }
+
+    for (final e in events) {
+      if (setterIds.contains(e.id)) continue;
+      final t = e.trigger;
+      ifNots.clear();
+      neg(e.lines);
+      for (final v in e.variants) {
+        neg(v);
+      }
+      for (final c in e.choices) {
+        ifNots.addAll(c.ifNotFlags);
+        neg(c.reply);
+        neg(c.failReply);
+        neg(c.critReply);
+      }
+      final positive = <String>{
+        ...t.flags,
+        ...?t.flagsAtLeast?.of,
+        ..._flagRefsOf(e).difference(ifNots),
+        for (final c in e.choices) ...?c.require?.flags,
+      };
+      final negative = {...t.notFlags, ...ifNots};
+      final reads = {
+        ...positive,
+        ...negative.where((f) => !blockers.contains(f)),
+      };
+      if (!reads.any((f) => f.startsWith(m36Prefix))) continue;
+      final d = t.day;
+      if (d != null && d.max < 1) continue; // next 로만 닿는다.
+      final earliest = e.layer == EventLayer.main ? e.day! : (d?.min ?? 1);
+      if (earliest < from) {
+        throw StateError(
+          '$m36Prefix* 를 읽는 이벤트는 D$from 이후에만 시작: ${e.id} (D$earliest부터 열림)',
+        );
+      }
+    }
+  }
+
+  /// 시작 스토리 정의(01_design §3.0·§5.0 B1). 없으면(빈 목록) 검사하지 않는다 — 클래식만.
+  void _checkStarts() {
+    if (starts.isEmpty) return;
+    final seen = <String>{};
+    for (final st in starts) {
+      final where = 'starts ${st.id}';
+      if (!seen.add(st.id)) throw StateError('시작 id 중복: ${st.id}');
+      if (st.title.trim().isEmpty) throw StateError('시작 title 없음: $where');
+      if (st.hook.trim().isEmpty) throw StateError('시작 hook 없음: $where');
+      if (st.introLine.trim().isEmpty || st.introReply.trim().isEmpty) {
+        throw StateError('시작 introLine/introReply 없음: $where');
+      }
+      for (final (k, v) in [
+        ('title', st.title),
+        ('hook', st.hook),
+        ('logline', st.logline),
+        ('introLine', st.introLine),
+        ('introReply', st.introReply),
+        for (final t in st.tags) ('tags', t),
+      ]) {
+        _checkNoTemplate(v, '$where.$k');
+      }
+      if (st.spice < 1 || st.spice > 3) {
+        throw StateError('시작 spice 는 1~3: $where -> ${st.spice}');
+      }
+      if (st.unlockEndings < 0) {
+        throw StateError('시작 unlockEndings 는 0 이상: $where');
+      }
+      _checkImage(st.image, '$where.image');
+      for (final MapEntry(:key, :value) in st.castLines.entries) {
+        if (!characterById.containsKey(key)) {
+          throw StateError('castLines 가 없는 캐릭터를 지목: $where -> $key');
+        }
+        _checkTemplate(value, '$where.castLines.$key');
+      }
+      final fx = st.effects;
+      _checkEffects(fx, '$where.effects');
+      if (fx.album != null) throw StateError('시작 보정에 album 금지: $where');
+      if (fx.clearFlags.isNotEmpty) {
+        throw StateError('시작 보정에 clearFlags 금지: $where');
+      }
+      for (final k in [...fx.affection.keys, ...fx.trust.keys]) {
+        if (k == '*' || k == topKey) {
+          throw StateError('시작 보정은 캐릭터 id 로만: $where -> $k');
+        }
+      }
+      // §3.0 시작 보정 상한.
+      fx.stats.forEach((k, v) {
+        if (k == Stat.heat) {
+          if (v < 0 || v > StartScenario.maxHeat) {
+            throw StateError('시작 소문은 0~${StartScenario.maxHeat}: $where -> $v');
+          }
+          return;
+        }
+        if (v.abs() > StartScenario.maxStatShift) {
+          throw StateError(
+            '시작 보정은 스탯당 ±${StartScenario.maxStatShift}: $where.$k -> $v',
+          );
+        }
+        if (k == Stat.sincerity && v < StartScenario.minSincerity) {
+          throw StateError(
+            '시작 진정성은 ${StartScenario.minSincerity} 아래 금지: $where -> $v',
+          );
+        }
+      });
+      fx.affection.forEach((k, v) {
+        if (v < 0 || v > StartScenario.maxAffection) {
+          throw StateError(
+            '시작 호감은 0~${StartScenario.maxAffection}: $where.$k -> $v',
+          );
+        }
+      });
+      fx.trust.forEach((k, v) {
+        if (v.abs() > StartScenario.maxStatShift) {
+          throw StateError(
+            '시작 신뢰는 ±${StartScenario.maxStatShift}: $where.$k -> $v',
+          );
+        }
+      });
+      final flags = fx.setFlags;
+      if (st.isClassic) {
+        if (flags.isNotEmpty) {
+          throw StateError('classic 은 플래그를 세우지 않는다(플래그 없음 = 클래식): $where');
+        }
+        continue;
+      }
+      if (!st.id.startsWith(StartScenario.idPrefix)) {
+        throw StateError('신규 시작 id 는 ${StartScenario.idPrefix} 로 시작: ${st.id}');
+      }
+      if (!flags.contains(StartScenario.altFlag) || !flags.contains(st.id)) {
+        throw StateError(
+          '신규 시작은 setFlags 에 ${StartScenario.altFlag} 와 자기 id: $where',
+        );
+      }
+      // 루트 진행 플래그(`*_met` 등)는 세우지 않는다(§3.0) — sc_* 와 start_alt 만.
+      for (final f in flags) {
+        if (f != StartScenario.altFlag &&
+            !f.startsWith(StartScenario.idPrefix)) {
+          throw StateError('시작 보정은 sc_* 플래그만 세운다: $where -> $f');
+        }
+      }
+    }
+    if (!seen.contains(StartScenario.classic)) {
+      throw StateError('starts.json 에 ${StartScenario.classic} 이 없음');
+    }
+    final rec = [
+      for (final st in starts)
+        if (st.recommended) st.id,
+    ];
+    if (rec.length > 1) {
+      throw StateError('recommended 는 하나만: ${rec.join(', ')}');
+    }
+    for (final st in starts) {
+      if (st.recommended && st.unlockEndings > 0) {
+        throw StateError(
+          'recommended 시작은 처음부터 열려 있어야 한다(unlockEndings 0): ${st.id}',
+        );
+      }
     }
   }
 
@@ -468,9 +956,7 @@ class StoryBundle {
       if (v.isEmpty) throw StateError('변형 대사가 비어 있음: $where');
       _checkLines(v, '$where.lines');
       if (v.any((l) => l.photo != null) != basePhoto) {
-        throw StateError(
-          '변형의 사진 줄 유무가 원본과 다름: $where (모먼트 판정이 회차마다 달라진다)',
-        );
+        throw StateError('변형의 사진 줄 유무가 원본과 다름: $where (모먼트 판정이 회차마다 달라진다)');
       }
     }
   }
@@ -709,6 +1195,15 @@ class StoryBundle {
     final voices = voiced
         ? <CharacterDef?>[null, ...characters]
         : const <CharacterDef?>[null];
+    // 파급 줄 축: 플래그 없음, 이벤트가 읽는 플래그 전부, 하나씩. 조합 전부(2^n)는 과하고, 이 셋이
+    // "전부 ifFlags 라 아무것도 안 보임"·"전부 ifNotFlags 라 다 숨음" 두 함정을 다 덮는다.
+    final refs = e.hasFlagGates ? _flagRefsOf(e) : const <String>{};
+    final flagSets = <Set<String>>[
+      const {},
+      if (refs.isNotEmpty) refs,
+      if (refs.length > 1)
+        for (final f in refs) {f},
+    ];
     final out = <(String, MbtiView)>[];
     for (final p in players) {
       // 이벤트 트리거가 이 플레이어를 막으면 거른 결과는 볼 일이 없다.
@@ -718,16 +1213,46 @@ class StoryBundle {
         continue;
       }
       for (final voice in voices) {
-        final v = MbtiView.of(p, charMbti, voice: voice);
-        final label = [
-          if (e.hasPlayerGates) 'MBTI ${p ?? '모름'}',
-          if (voiced)
-            voice == null
-                ? '1위 없음(${v.humor}·${v.politeness})'
-                : '1위 ${voice.name}(${v.humor}·${v.politeness})',
-        ].join(' · ');
-        out.add((label, v));
+        for (final flags in flagSets) {
+          final v = MbtiView.of(p, charMbti, voice: voice, flags: flags);
+          final label = [
+            if (e.hasPlayerGates) 'MBTI ${p ?? '모름'}',
+            if (voiced)
+              voice == null
+                  ? '1위 없음(${v.humor}·${v.politeness})'
+                  : '1위 ${voice.name}(${v.humor}·${v.politeness})',
+            if (refs.isNotEmpty)
+              flags.isEmpty ? '플래그 없음' : '플래그 ${flags.join('+')}',
+          ].join(' · ');
+          out.add((label, v));
+        }
       }
+    }
+    return out;
+  }
+
+  /// 이벤트의 줄·선택지·반응이 `ifFlags`·`ifNotFlags` 로 읽는 플래그 전부.
+  Set<String> _flagRefsOf(StoryEvent e) {
+    final out = <String>{};
+    void lines(List<Line> ls) {
+      for (final l in ls) {
+        out
+          ..addAll(l.ifFlags)
+          ..addAll(l.ifNotFlags);
+      }
+    }
+
+    lines(e.lines);
+    for (final v in e.variants) {
+      lines(v);
+    }
+    for (final c in e.choices) {
+      out
+        ..addAll(c.ifFlags)
+        ..addAll(c.ifNotFlags);
+      lines(c.reply);
+      lines(c.failReply);
+      lines(c.critReply);
     }
     return out;
   }
@@ -740,13 +1265,15 @@ class StoryBundle {
   /// 본다. 고백·첫 싸움 씬이 무음이던 것이 원래 이 버그였고(docs/review/11_story_verdict.md
   /// 4-7), 조건으로 다시 만들면 **데이터가 문법적으로 멀쩡해서** 나머지 테스트가 전부 초록인 채로
   /// 되살아난다. 그래서 검증기가 잡는다.
-  void _checkMbti(StoryEvent e) {
+  ///
+  /// [texts] 가 아니면(출시 빌드의 가벼운 검사) 글 안의 `{mbti}` 위치는 보지 않는다.
+  void _checkMbti(StoryEvent e, {bool texts = true}) {
     final hasChar = e.character != null;
     final t = e.trigger;
     // 이벤트 전체가 MBTI 를 아는 플레이어에게만 열리면 어디서든 {mbti} 를 써도 된다.
     final eventKnows = t.mbti != null;
     void bare(String text, String where, bool known) {
-      if (!known && TextTemplate.hasBareMbti(text)) {
+      if (texts && !known && TextTemplate.hasBareMbti(text)) {
         throw StateError(
           '{mbti} 는 mbti 조건이 붙은 줄·선택지에서만(아니면 {mbti|대체어}): $where "$text"',
         );
@@ -799,6 +1326,11 @@ class StoryBundle {
       lines(c.failReply, '$where.failReply', known);
       lines(c.critReply, '$where.critReply', known);
     }
+  }
+
+  /// [_viewCases] 각각에서 거른 뒤에도 대사·선택지·반응이 비지 않는지(무거운 검사, [validate] 의
+  /// `deep`). 조건 형식은 [_checkMbti] 가 늘 본다.
+  void _checkViews(StoryEvent e) {
     if (!e.hasMbtiGates) return;
 
     for (final (who, v) in _viewCases(e)) {

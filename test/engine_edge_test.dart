@@ -19,6 +19,7 @@ import 'package:mossol/game_controller.dart';
 import 'package:mossol/minigames/minigame.dart';
 import 'package:mossol/minigames/registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'story_files.dart';
 
 // ---------------------------------------------------------------------------
 // 도우미
@@ -29,9 +30,10 @@ StoryBundle loadRealBundle() => StoryBundle.fromJsonStrings(
   characters: File('assets/story/characters.json').readAsStringSync(),
   events: [
     for (final f in StoryBundle.eventFiles)
-      File('assets/story/$f').readAsStringSync(),
+      readStoryFile(f),
   ],
   endings: File('assets/story/endings.json').readAsStringSync(),
+  starts: readStartsFile(),
   signals: File('assets/story/signals.json').existsSync()
       ? File('assets/story/signals.json').readAsStringSync()
       : null,
@@ -571,7 +573,10 @@ void main() {
     }
 
     test('모든 엔딩이 조건을 맞추면 실제로 선택된다(우선순위에 가려지지 않음)', () {
-      expect(real.endings.length, 60);
+      expect(
+        real.endings.where((e) => !overhaul2EndingIds.contains(e.id)).length,
+        60,
+      );
       final shadowed = <String>[];
       for (final e in real.endings) {
         final s = stateFor(e);
